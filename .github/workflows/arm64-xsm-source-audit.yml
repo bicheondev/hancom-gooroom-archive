@@ -52,15 +52,20 @@ jobs:
           test "$(git -C work/published rev-parse FETCH_HEAD)" = "$PUBLISHED_COMMIT"
           git -C work/published checkout --quiet --detach FETCH_HEAD
 
-      - name: Record binary identity, ELF ABI, strings, and source literals
+      - name: Record binary identity, ELF ABI, disassembly, strings, and source literals
         run: |
           set -euxo pipefail
           binary=work/package/lib/xsm.so
+          cp "$binary" work/audit/original-xsm-amd64.so
           file "$binary" | tee work/audit/file.txt
           sha256sum "$binary" | tee work/audit/SHA256SUMS
+          readelf -a -W "$binary" > work/audit/readelf-all.txt
           readelf -h -d -s -n "$binary" > work/audit/readelf.txt
           objdump -p "$binary" > work/audit/objdump-private-headers.txt
+          objdump -drwC -Mintel "$binary" > work/audit/objdump-disassembly-intel.txt
+          nm -D -n "$binary" > work/audit/dynamic-symbols.txt
           strings -a -n 4 "$binary" | LC_ALL=C sort -u > work/audit/xsm-binary-strings.txt
+          strings -a -t x -n 4 "$binary" > work/audit/xsm-binary-strings-offsets.txt
           cp work/published/xsm.c work/audit/published-xsm.c
           sha256sum work/published/xsm.c >> work/audit/SHA256SUMS
 
@@ -99,11 +104,13 @@ jobs:
               value for value in interesting if value not in literals
           )
           report = {
-              'schema': 1,
+              'schema': 2,
               'package_repository': 'gooroom/gooroom-libsecurity-extensions',
               'package_commit': '4990bab95ae1dcaa29f38836da83edfa0969ed73',
               'published_repository': 'ultract/X.org-Security-Module',
               'published_commit': 'fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7',
+              'original_binary_included': True,
+              'full_disassembly_included': True,
               'interesting_binary_strings': interesting,
               'interesting_strings_absent_from_published_source_literals':
                   missing_from_published_literals,
@@ -112,6 +119,10 @@ jobs:
               json.dumps(report, indent=2, ensure_ascii=False) + '\n',
               encoding='utf-8')
           PY
+          find work/audit -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/audit/ALL-SHA256SUMS
           cat work/audit/source-delta.json
 
       - name: Upload immutable XSM audit evidence
