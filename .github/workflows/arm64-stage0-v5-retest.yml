@@ -27,8 +27,8 @@ env:
 
 jobs:
   retest:
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
     steps:
       - name: Check out the current boot gate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -39,10 +39,9 @@ jobs:
       - name: Install AArch64 UEFI/QEMU tools
         run: |
           set -euxo pipefail
-          case "$(uname -m)" in
-            aarch64|arm64) ;;
-            *) echo 'A native ARM64 runner is required.' >&2; exit 1 ;;
-          esac
+          test "$(uname -m)" = x86_64
+          # The ISO remains AArch64. This job uses QEMU TCG only for the boot
+          # gate, leaving native ARM64 runners available for package builds.
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             jq qemu-efi-aarch64 qemu-system-arm
@@ -91,7 +90,7 @@ jobs:
             "work/$ISO_NAME" \
             work/evidence/qemu-stage0-v5-retest.log \
             "$MARKER" \
-            900 \
+            1200 \
             4096 \
             4
           grep -Fq "$MARKER" work/evidence/qemu-stage0-v5-retest.log
@@ -107,7 +106,7 @@ jobs:
               status: "passed",
               architecture: "arm64",
               firmware: "AArch64 UEFI",
-              machine: "QEMU virt",
+              machine: "QEMU virt via TCG",
               iso: $iso,
               iso_sha256: $sha256,
               readiness_marker: $marker,
