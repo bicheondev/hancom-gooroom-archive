@@ -1,0 +1,115 @@
+name: ARM64 port - enable foreign-payload preflight builder
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-enable-v6-builder-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-enable-v6-builder
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Route infrastructure retries through the foreign-payload preflight
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-infrastructure-retry-v3.yml')
+          text = path.read_text(encoding='utf-8')
+
+          text = text.replace(
+              "      - 'arm64/scripts/select_infrastructure_retry_wave_v3.py'\n",
+              "      - 'arm64/scripts/select_infrastructure_retry_wave_v3.py'\n"
+              "      - 'arm64/scripts/build_locked_source_arm64_v6.sh'\n"
+              "      - 'arm64/scripts/build_locked_source_arm64_v5.sh'\n"
+              "      - 'arm64/scripts/build_locked_source_arm64_v2.sh'\n"
+              "      - 'arm64/scripts/build_locked_dsc_source_arm64_v2.sh'\n"
+              "      - 'arm64/scripts/scan_prebuilt_install_payloads.py'\n",
+              1,
+          )
+
+          text = text.replace(
+              "          test -f arm64/scripts/build_locked_source_arm64_v5.sh\n",
+              "          test -f arm64/scripts/build_locked_source_arm64_v6.sh\n"
+              "          test -f arm64/scripts/build_locked_source_arm64_v5.sh\n"
+              "          test -f arm64/scripts/scan_prebuilt_install_payloads.py\n",
+              1,
+          )
+
+          for marker in (
+              "              arm64/scripts/build_locked_source_arm64_v5.sh \\\n",
+              "              arm64/scripts/build_locked_source_arm64_v2.sh \\\n",
+          ):
+              if marker not in text:
+                  raise SystemExit(f'expected builder hash marker missing: {marker!r}')
+          text = text.replace(
+              "              arm64/scripts/build_locked_source_arm64_v5.sh \\\n",
+              "              arm64/scripts/build_locked_source_arm64_v6.sh \\\n"
+              "              arm64/scripts/build_locked_source_arm64_v5.sh \\\n",
+          )
+          text = text.replace(
+              "              arm64/scripts/build_locked_dsc_source_arm64_v2.sh \\\n",
+              "              arm64/scripts/build_locked_dsc_source_arm64_v2.sh \\\n"
+              "              arm64/scripts/scan_prebuilt_install_payloads.py \\\n",
+          )
+
+          text = text.replace(
+              "          bash -n arm64/scripts/build_locked_source_arm64_v5.sh\n",
+              "          bash -n arm64/scripts/build_locked_source_arm64_v6.sh\n"
+              "          bash -n arm64/scripts/build_locked_source_arm64_v5.sh\n",
+              1,
+          )
+          text = text.replace(
+              "          python3 -m py_compile arm64/scripts/verify_arm64_rebuild_v3.py\n",
+              "          python3 -m py_compile \\\n"
+              "            arm64/scripts/scan_prebuilt_install_payloads.py \\\n"
+              "            arm64/scripts/verify_arm64_rebuild_v3.py\n",
+              1,
+          )
+          text = text.replace(
+              "          bash arm64/scripts/build_locked_source_arm64_v5.sh \\\n",
+              "          bash arm64/scripts/build_locked_source_arm64_v6.sh \\\n",
+              1,
+          )
+
+          required = (
+              'build_locked_source_arm64_v6.sh',
+              'scan_prebuilt_install_payloads.py',
+          )
+          for value in required:
+              if value not in text:
+                  raise SystemExit(f'patch did not install {value}')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git rm -f .github/workflows/arm64-enable-v6-builder-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-infrastructure-retry-v3.yml
+          git commit -m 'Preflight exact ARM64 sources for embedded foreign payloads'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
