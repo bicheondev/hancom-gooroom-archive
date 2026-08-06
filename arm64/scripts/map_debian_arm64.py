@@ -305,12 +305,57 @@ def main() -> int:
             "selected": None,
         }
         if package["architecture"] == "all":
-            row.update(
-                status="reuse-exact-all",
-                arm64_package=package["package"],
-                arm64_version=package["version"],
-                reason="Architecture: all payload is preserved from the AMD64 reference",
-            )
+            row["arm64_package"] = package["package"]
+            if (package["source"], package["source_version"]) in custom:
+                row.update(
+                    status="reuse-exact-all",
+                    arm64_version=package["version"],
+                    reason=(
+                        "exact vendor Architecture: all payload is preserved from "
+                        "the AMD64 reference and acquired through the vendor lock"
+                    ),
+                )
+            else:
+                selected_record, mode, error = select_package(
+                    args.apt_config,
+                    package["package"],
+                    package["version"],
+                    package["source"],
+                    package["source_version"],
+                )
+                if selected_record is None or mode != "exact":
+                    row.update(
+                        status="missing-exact-all",
+                        arm64_version=package["version"],
+                        reason=(
+                            "no unambiguous Architecture: all binary from the exact "
+                            "Debian source and binary version"
+                            + (f": {error}" if error else "")
+                        ),
+                    )
+                else:
+                    metadata, metadata_error = selected_metadata(
+                        args.apt_config,
+                        package["package"],
+                        selected_record,
+                        uri_cache,
+                    )
+                    if metadata is None or metadata.get("architecture") != "all":
+                        row.update(
+                            status="missing-download-metadata",
+                            arm64_version=package["version"],
+                            reason=metadata_error or "selected package is not Architecture: all",
+                        )
+                    else:
+                        row.update(
+                            status="reuse-exact-all",
+                            arm64_version=metadata["version"],
+                            selected=metadata,
+                            reason=(
+                                "exact Architecture: all binary, source version, URL, "
+                                "size and SHA-256 locked"
+                            ),
+                        )
         elif package["package"] in CUSTOM_REPLACE:
             replacement, reason = CUSTOM_REPLACE[package["package"]]
             row.update(
