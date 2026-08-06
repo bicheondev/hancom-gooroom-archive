@@ -1,0 +1,337 @@
+name: ARM64 port - build and boot-test stage0 v6 ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-v6.yml'
+      - 'arm64/scripts/build_stage0_v6.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-v6
+  cancel-in-progress: true
+
+env:
+  REFERENCE_ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  REFERENCE_ISO_SIZE: '1566277632'
+  REFERENCE_ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+  OUTPUT_ISO_NAME: Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso
+  RELEASE_TAG: v3.3-arm64-stage0-v6
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 300
+    steps:
+      - name: Check out the ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 runner
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo "Native ARM64 runner required, got $(uname -m)" >&2; exit 1 ;;
+          esac
+
+      - name: Install image construction and AArch64 VM tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 ca-certificates curl jq file rsync \
+            mmdebstrap debootstrap debian-archive-keyring \
+            xorriso squashfs-tools \
+            grub-common grub-efi-arm64-bin \
+            dosfstools mtools \
+            qemu-system-arm qemu-efi-aarch64
+          python3 -m py_compile arm64/scripts/build_stage0_v6.py
+
+      - name: Download and verify the exact AMD64 reference image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/reference
+          gh release download v3.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$REFERENCE_ISO_NAME" \
+            --dir work/reference
+          reference="work/reference/$REFERENCE_ISO_NAME"
+          test "$(stat -c '%s' "$reference")" = "$REFERENCE_ISO_SIZE"
+          printf '%s  %s\n' "$REFERENCE_ISO_SHA256" "$reference" \
+            | sha256sum --check --strict
+
+      - name: Build a real architecture-audited stage0 ISO
+        id: build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/stage0-v6 work/output work/evidence
+          mkdir -p work/stage0-v6 work/output work/evidence
+          set +e
+          sudo python3 arm64/scripts/build_stage0_v6.py \
+            --reference-iso "work/reference/$REFERENCE_ISO_NAME" \
+            --output-iso "work/output/$OUTPUT_ISO_NAME" \
+            --work-dir work/stage0-v6 \
+            --evidence-dir work/evidence \
+            2>&1 | tee work/evidence/workflow-build.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          sudo chown -R "$(id -u):$(id -g)" work || true
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Inspect ISO structure before running QEMU
+        id: structure
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/output/$OUTPUT_ISO_NAME"
+          test -s "$iso"
+          test "$(stat -c '%s' "$iso")" -gt 104857600
+          mkdir -p work/iso-inspection/root
+          xorriso -osirrox on -indev "$iso" \
+            -extract / work/iso-inspection/root \
+            > work/evidence/xorriso-extract.log 2>&1
+          test -f work/iso-inspection/root/boot/grub/efi.img
+          test -f work/iso-inspection/root/live/vmlinuz
+          test -f work/iso-inspection/root/live/initrd.img
+          test -f work/iso-inspection/root/live/filesystem.squashfs
+          unsquashfs -s work/iso-inspection/root/live/filesystem.squashfs \
+            > work/evidence/squashfs-summary.txt
+          mdir -i work/iso-inspection/root/boot/grub/efi.img ::/EFI/BOOT \
+            > work/evidence/efi-directory.txt
+          mcopy -i work/iso-inspection/root/boot/grub/efi.img \
+            ::/EFI/BOOT/BOOTAA64.EFI work/evidence/BOOTAA64.EFI
+          file work/evidence/BOOTAA64.EFI \
+            | tee work/evidence/bootaa64-file.txt
+          grep -Eqi 'aarch64|arm64' work/evidence/bootaa64-file.txt
+          sha256sum --check "work/output/$OUTPUT_ISO_NAME.sha256"
+
+      - name: Boot the ISO with AArch64 UEFI QEMU
+        id: qemu
+        if: steps.build.outcome == 'success' && steps.structure.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/output/$OUTPUT_ISO_NAME"
+          serial=work/evidence/qemu-serial.log
+          qemu_log=work/evidence/qemu.log
+          : > "$serial"
+          : > "$qemu_log"
+
+          code=''
+          vars_template=''
+          for candidate in \
+            /usr/share/AAVMF/AAVMF_CODE.fd \
+            /usr/share/AAVMF/AAVMF_CODE.ms.fd \
+            /usr/share/qemu-efi-aarch64/QEMU_EFI.fd; do
+            if [ -f "$candidate" ]; then code="$candidate"; break; fi
+          done
+          for candidate in \
+            /usr/share/AAVMF/AAVMF_VARS.fd \
+            /usr/share/AAVMF/AAVMF_VARS.ms.fd; do
+            if [ -f "$candidate" ]; then vars_template="$candidate"; break; fi
+          done
+          test -n "$code"
+          vars=work/evidence/AAVMF_VARS.fd
+          if [ -n "$vars_template" ]; then
+            cp "$vars_template" "$vars"
+          else
+            truncate -s 64M "$vars"
+          fi
+
+          accel=(-accel tcg,thread=multi)
+          cpu=max
+          if [ -c /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            accel=(-accel kvm)
+            cpu=host
+          fi
+
+          qemu-system-aarch64 \
+            -machine virt,gic-version=3 \
+            -cpu "$cpu" -smp 4 -m 4096 \
+            "${accel[@]}" \
+            -drive "if=pflash,format=raw,readonly=on,file=$code" \
+            -drive "if=pflash,format=raw,file=$vars" \
+            -device virtio-scsi-pci,id=scsi0 \
+            -drive "if=none,media=cdrom,readonly=on,file=$iso,id=cdrom0" \
+            -device scsi-cd,drive=cdrom0 \
+            -device virtio-gpu-pci \
+            -device qemu-xhci \
+            -device usb-kbd \
+            -device usb-tablet \
+            -netdev user,id=net0 \
+            -device virtio-net-pci,netdev=net0 \
+            -boot order=d,menu=off \
+            -display none -monitor none \
+            -serial "file:$serial" \
+            -no-reboot -rtc base=utc \
+            > "$qemu_log" 2>&1 &
+          pid=$!
+
+          boot=false
+          graphical=false
+          for _ in $(seq 1 240); do
+            if grep -Fq 'HANCOM_GOOROOM_3_3_ARM64_STAGE0_V6_BOOT_OK' "$serial"; then
+              boot=true
+            fi
+            if grep -Fq 'HANCOM_GOOROOM_3_3_ARM64_STAGE0_V6_GRAPHICAL_OK' "$serial"; then
+              graphical=true
+            fi
+            if [ "$boot" = true ] && [ "$graphical" = true ]; then break; fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 5
+          done
+
+          kill -TERM "$pid" 2>/dev/null || true
+          sleep 5
+          kill -KILL "$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          tail -n 600 "$serial" > work/evidence/qemu-serial-tail.log || true
+          tail -n 300 "$qemu_log" > work/evidence/qemu-tail.log || true
+
+          jq -n \
+            --argjson boot "$boot" \
+            --argjson graphical "$graphical" \
+            --arg firmware "$code" \
+            --arg acceleration "${accel[*]}" \
+            '{
+              schema:1,
+              boot_marker_found:$boot,
+              graphical_marker_found:$graphical,
+              firmware:$firmware,
+              acceleration:$acceleration,
+              passed:($boot and $graphical)
+            }' > work/evidence/qemu-result.json
+          cat work/evidence/qemu-result.json
+          jq -e '.passed == true' work/evidence/qemu-result.json
+
+      - name: Write final stage0 v6 result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/evidence
+          jq -n \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg structure_outcome '${{ steps.structure.outcome }}' \
+            --arg qemu_outcome '${{ steps.qemu.outcome }}' \
+            --arg iso_name "$OUTPUT_ISO_NAME" \
+            --argjson iso_exists "$(test -f "work/output/$OUTPUT_ISO_NAME" && echo true || echo false)" \
+            '{
+              schema:1,
+              status:"stage0-not-final-equivalence",
+              iso_name:$iso_name,
+              iso_exists:$iso_exists,
+              build_outcome:$build_outcome,
+              build_exit_code:$build_exit_code,
+              structure_outcome:$structure_outcome,
+              qemu_outcome:$qemu_outcome,
+              passed:($build_outcome=="success" and $structure_outcome=="success" and $qemu_outcome=="success")
+            }' > work/evidence/workflow-result.json
+          find work/evidence work/output -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/evidence/LOCKSUMS.sha256
+          cat work/evidence/workflow-result.json
+
+      - name: Upload ISO only together with complete evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-stage0-v6-${{ github.run_id }}
+          path: |
+            work/output
+            work/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish boot-tested stage0 v6 prerelease
+        if: steps.build.outcome == 'success' && steps.structure.outcome == 'success' && steps.qemu.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/release-notes.md <<'EOF'
+          Real AArch64 UEFI stage0 v6 image for Hancom Gooroom 3.3 ARM64 work.
+
+          Passed gates:
+          - reference AMD64 ISO size and SHA-256
+          - native ARM64 Debian Bullseye live rootfs construction
+          - architecture-neutral-only Hancom Gooroom reference overlay
+          - zero x86 ELF files in the completed rootfs
+          - AArch64 EFI/BOOT/BOOTAA64.EFI structure
+          - readable live SquashFS
+          - AArch64 UEFI QEMU boot marker
+          - active graphical display-manager marker
+
+          This is explicitly a stage0 image. It is not yet a package-for-package
+          ARM64 equivalent of the AMD64 release and must not be represented as
+          the final port.
+          EOF
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target arm64-port --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 stage0 v6' \
+              --notes-file work/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            "work/output/$OUTPUT_ISO_NAME" \
+            "work/output/$OUTPUT_ISO_NAME.sha256" \
+            work/evidence/stage0-v6-build.json \
+            work/evidence/rootfs-elf-audit.json \
+            work/evidence/reference-overlay.json \
+            work/evidence/qemu-result.json \
+            work/evidence/workflow-result.json
+
+      - name: Commit compact immutable stage0 evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/locks/stage0-v6/${GITHUB_RUN_ID}"
+          mkdir -p "$destination"
+          for file in \
+            stage0-v6-build.json rootfs-elf-audit.json reference-overlay.json \
+            qemu-result.json workflow-result.json LOCKSUMS.sha256; do
+            cp "work/evidence/$file" "$destination/" 2>/dev/null || true
+          done
+          cp "work/output/$OUTPUT_ISO_NAME.sha256" "$destination/" 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record ARM64 stage0 v6 run ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
+
+      - name: Enforce real ISO and QEMU gates
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.passed == true and .iso_exists == true' \
+            work/evidence/workflow-result.json
