@@ -2,9 +2,9 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 85,
-    "workflow_name_count": 85,
-    "referenced_local_file_count": 133,
+    "workflow_count": 86,
+    "workflow_name_count": 86,
+    "referenced_local_file_count": 138,
     "error_count": 50,
     "warning_count": 0,
     "passed": false
@@ -448,6 +448,34 @@
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/map_debian_arm64.py"
+      ]
+    },
+    {
+      "filename": "arm64-dependency-retry-controller-v3.yml",
+      "path": ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      "name": "ARM64 port - exact dependency retry controller v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/classify_native_rebuild_failures_v3.py",
+        "arm64/scripts/collect_native_rebuild_results_v4.py",
+        "arm64/scripts/materialize_rebuild_dependency_repo_v3.py",
+        "arm64/scripts/select_dependency_retry_wave_v3.py",
+        "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
     },
     {
@@ -2015,6 +2043,9 @@
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
+    "arm64/scripts/build_locked_source_arm64_v5.sh": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
+    ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
@@ -2061,6 +2092,7 @@
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
     "arm64/scripts/classify_native_rebuild_failures_v3.py": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit-v3.yml"
     ],
     "arm64/scripts/collect_native_rebuild_results_v2.py": [
@@ -2068,6 +2100,9 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
+    ],
+    "arm64/scripts/collect_native_rebuild_results_v4.py": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -2104,6 +2139,9 @@
     ],
     "arm64/scripts/materialize_rebuild_dependency_repo_v2.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml"
+    ],
+    "arm64/scripts/materialize_rebuild_dependency_repo_v3.py": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
     "arm64/scripts/merge_effective_git_source_lock.py": [
       ".github/workflows/arm64-merge-effective-source-lock.yml"
@@ -2218,6 +2256,9 @@
     "arm64/scripts/select_dependency_retry_wave.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml"
     ],
+    "arm64/scripts/select_dependency_retry_wave_v3.py": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
+    ],
     "arm64/scripts/select_native_rebuild_batch.py": [
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
@@ -2285,6 +2326,9 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
+    ],
+    "arm64/scripts/verify_arm64_rebuild_v3.py": [
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
     "arm64/scripts/verify_arm64_rootfs.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
