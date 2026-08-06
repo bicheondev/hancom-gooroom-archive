@@ -77,7 +77,9 @@ jobs:
             etc/apt/sources.list \
             etc/apt/sources.list.d/.list \
             etc/apt/sources.list.d/official-package-repositories.list \
-            etc/apt/preferences.d/gooroom.pref; do
+            etc/apt/preferences.d/gooroom.pref \
+            var/lib/apt/lists/update.hancomgooroom.com_gooroom_dists_gooroom-3.0_main_binary-amd64_Packages \
+            var/lib/apt/lists/update.hancomgooroom.com_hancom_dists_hancom-3.0_main_binary-amd64_Packages; do
             output="work/evidence/${path//\//_}"
             if ! unsquashfs -cat "$SQUASHFS" "$path" > "$output" 2>/dev/null; then
               rm -f "$output"
