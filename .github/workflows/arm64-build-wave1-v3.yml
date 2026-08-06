@@ -1,0 +1,105 @@
+name: ARM64 port - build exact package wave 1 v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-wave1-v3.yml'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v3.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-wave1-v3
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - accountsservice
+          - file-roller
+          - celluloid
+          - cups-pk-helper
+          - mousetweaks
+          - gnome-screenshot
+          - p7zip
+
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install verification tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Build exact locked source for ARM64
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v3.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py
+          output="work/${SOURCE_NAME}-arm64-v3"
+          rm -rf "$output"
+          arm64/scripts/run_locked_source_arm64_v3.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            "$output"
+
+      - name: Recheck exact source, versions, architectures, and payloads
+        if: success()
+        env:
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          output="work/${SOURCE_NAME}-arm64-v3"
+          python3 arm64/scripts/validate_arm64_source_outputs_v3.py \
+            --lock arm64/locks/effective-sources/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source "$SOURCE_NAME" \
+            --output-dir "$output"
+          jq -e '.status == "passed"' \
+            "$output/arm64-source-output-validation-v3.json"
+          find "$output" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > "$output/SHA256SUMS"
+          test -s "$output/SHA256SUMS"
+
+      - name: Upload exact ARM64 DEBs and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.source }}-exact-arm64-wave1-v3
+          path: work/${{ matrix.source }}-arm64-v3
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
