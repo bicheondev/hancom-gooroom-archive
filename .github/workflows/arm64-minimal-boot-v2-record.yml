@@ -1,0 +1,188 @@
+name: ARM64 port - record minimal boot v2 attempt
+
+on:
+  workflow_run:
+    workflows: ['ARM64 port - prove minimal UEFI live boot chain v2']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Existing minimal boot v2 workflow run ID
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-minimal-boot-v2-record
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.head_branch == 'arm64-port'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download the complete attempt
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euxo pipefail
+          if [ "$EVENT_NAME" = workflow_run ]; then
+            run_id="$EVENT_RUN_ID"
+          else
+            run_id="$INPUT_RUN_ID"
+          fi
+          rm -rf work/minimal-boot-v2-attempt
+          mkdir -p work/minimal-boot-v2-attempt
+          gh run view "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,headBranch,headSha,createdAt,updatedAt,url \
+            > work/minimal-boot-v2-run.json
+          set +e
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-arm64-minimal-boot-v2 \
+            --dir work/minimal-boot-v2-attempt
+          download_rc=$?
+          set -e
+          echo "download_rc=$download_rc" >> "$GITHUB_OUTPUT"
+
+      - name: Produce bounded and hashed attempt evidence
+        env:
+          DOWNLOAD_RC: ${{ steps.metadata.outputs.download_rc }}
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/minimal-boot-v2-attempt
+          mkdir -p arm64/locks/minimal-boot-v2-attempt
+          cp work/minimal-boot-v2-run.json \
+            arm64/locks/minimal-boot-v2-attempt/workflow-run.json
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import re
+
+          source = Path('work/minimal-boot-v2-attempt')
+          destination = Path('arm64/locks/minimal-boot-v2-attempt')
+          run = json.loads(Path('work/minimal-boot-v2-run.json').read_text(encoding='utf-8'))
+          build_path = source / 'minimal-boot-result.json'
+          build = (
+              json.loads(build_path.read_text(encoding='utf-8'))
+              if build_path.is_file()
+              else None
+          )
+          qemu_path = source / 'qemu-minimal-boot.log'
+          qemu_lines = (
+              qemu_path.read_text(encoding='utf-8', errors='replace').splitlines()
+              if qemu_path.is_file()
+              else []
+          )
+          marker = any(
+              'HANCOM_GOOROOM_ARM64_MINIMAL_READY' in line
+              for line in qemu_lines
+          )
+          pattern = re.compile(
+              r'(?:^E:|error|failed|failure|unable|missing|not found|'
+              r'no installation candidate|unmet depend|cannot|panic)',
+              re.IGNORECASE,
+          )
+          files = []
+          for path in sorted(source.rglob('*')):
+              if not path.is_file():
+                  continue
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              files.append({
+                  'path': str(path.relative_to(source)),
+                  'size': path.stat().st_size,
+                  'sha256': digest.hexdigest(),
+              })
+          reasons = []
+          if run.get('conclusion') != 'success':
+              reasons.append(f"workflow conclusion={run.get('conclusion')}")
+          if int(os.environ['DOWNLOAD_RC']) != 0:
+              reasons.append('artifact download failed')
+          if not build:
+              reasons.append('minimal build result missing')
+          if not marker:
+              reasons.append('serial readiness marker missing')
+          result = {
+              'schema': 'hancom-gooroom-arm64-minimal-boot-v2-attempt-v1',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace(
+                  '+00:00', 'Z'
+              ),
+              'status': 'failed' if reasons else 'passed',
+              'reasons': reasons,
+              'workflow_run': run,
+              'artifact_download_exit_code': int(os.environ['DOWNLOAD_RC']),
+              'build_result': build,
+              'readiness_marker_found': marker,
+              'qemu_error_lines': [
+                  line[:1000] for line in qemu_lines if pattern.search(line)
+              ][-120:],
+              'qemu_log_tail': qemu_lines[-200:],
+              'artifact_files': files,
+          }
+          (destination / 'minimal-boot-v2-attempt-summary.json').write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          if build_path.is_file():
+              (destination / 'minimal-boot-result.json').write_bytes(
+                  build_path.read_bytes()
+              )
+          for name in (
+              'minimal-debootstrap.log',
+              'minimal-chroot-install.stderr.log',
+              'minimal-xorriso.log',
+          ):
+              path = source / name
+              if not path.is_file():
+                  continue
+              lines = path.read_text(
+                  encoding='utf-8', errors='replace'
+              ).splitlines()
+              (destination / f'{name}.tail').write_text(
+                  '\n'.join(lines[-300:]) + '\n', encoding='utf-8'
+              )
+          print(json.dumps(result, indent=2, ensure_ascii=False))
+          PY
+          find arm64/locks/minimal-boot-v2-attempt -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > arm64/locks/minimal-boot-v2-attempt/LOCKSUMS.sha256
+
+      - name: Commit the attempt before enforcing it
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/minimal-boot-v2-attempt
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Hancom Gooroom ARM64 minimal boot v2 attempt'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce the recorded boot gate
+        run: |
+          set -euxo pipefail
+          test "$(jq -r '.status' arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json)" = passed
