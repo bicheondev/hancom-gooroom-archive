@@ -2,12 +2,12 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 93,
-    "workflow_name_count": 93,
-    "referenced_local_file_count": 134,
-    "error_count": 0,
+    "workflow_count": 94,
+    "workflow_name_count": 94,
+    "referenced_local_file_count": 136,
+    "error_count": 1,
     "warning_count": 27,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -553,6 +553,28 @@
         "arm64/locks/sources/source-lock.json",
         "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
         "arm64/scripts/merge_exact_source_locks.py"
+      ]
+    },
+    {
+      "filename": "arm64-enable-v6-builder-maintenance.yml",
+      "path": ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
+      "name": "ARM64 port - enable foreign-payload preflight builder",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/build_locked_source_arm64_v6.sh",
+        "arm64/scripts/scan_prebuilt_install_payloads.py",
+        "arm64/scripts/select_infrastructure_retry_wave_v3.py",
+        "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
     },
     {
@@ -2159,6 +2181,7 @@
       ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
@@ -2178,6 +2201,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
@@ -2187,8 +2211,12 @@
     ],
     "arm64/scripts/build_locked_source_arm64_v5.sh": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+    ],
+    "arm64/scripts/build_locked_source_arm64_v6.sh": [
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
@@ -2399,6 +2427,9 @@
     "arm64/scripts/run_stage0_live_iso.sh": [
       ".github/workflows/arm64-stage0-live.yml"
     ],
+    "arm64/scripts/scan_prebuilt_install_payloads.py": [
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml"
+    ],
     "arm64/scripts/select_arm64_build_wave.py": [
       ".github/workflows/arm64-build-wave2-v2.yml",
       ".github/workflows/arm64-build-wave2-v3.yml",
@@ -2417,6 +2448,7 @@
       ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
     "arm64/scripts/select_infrastructure_retry_wave_v3.py": [
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
       ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
     "arm64/scripts/select_native_rebuild_batch.py": [
@@ -2495,6 +2527,7 @@
     ],
     "arm64/scripts/verify_arm64_rebuild_v3.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
@@ -2522,7 +2555,12 @@
       ".github/workflows/arm64-build-wave1-v2.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
