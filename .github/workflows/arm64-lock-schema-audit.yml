@@ -1,0 +1,77 @@
+name: ARM64 port - audit generated lock schemas
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-lock-schema-audit.yml'
+      - 'arm64/scripts/inspect_lock_schemas.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/debian-arm64/**'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/rebuild-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-lock-schema-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out generated locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Inventory every lock schema
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/inspect_lock_schemas.py \
+            --root arm64/locks \
+            --output work/lock-schemas.json
+          sha256sum work/lock-schemas.json > work/lock-schemas.sha256
+
+      - name: Upload schema audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-lock-schemas
+          path: |
+            work/lock-schemas.json
+            work/lock-schemas.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit schema audit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p arm64/audit
+          cp work/lock-schemas.json arm64/audit/
+          cp work/lock-schemas.sha256 arm64/audit/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/audit/lock-schemas.json arm64/audit/lock-schemas.sha256
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit generated ARM64 lock schemas'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
