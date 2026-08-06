@@ -1,0 +1,85 @@
+name: ARM64 port - index verified rebuild results v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-index-rebuild-results-v2.yml'
+      - 'arm64/scripts/index_rebuild_results_v2.py'
+      - 'arm64/locks/rebuild-results/**'
+      - 'arm64/locks/dsc-rebuild-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-rebuild-result-index-v2
+  cancel-in-progress: true
+
+jobs:
+  index:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out accumulated rebuild evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Build one verified package index across Git and DSC provenance
+        id: index
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/rebuild-index
+          set +e
+          python3 arm64/scripts/index_rebuild_results_v2.py \
+            --root arm64/locks/rebuild-results \
+            --root arm64/locks/dsc-rebuild-results \
+            --output-dir work/rebuild-index
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/rebuild-index -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > work/rebuild-index/LOCKSUMS.sha256
+          cat work/rebuild-index/summary.json
+
+      - name: Upload unified package evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-rebuild-result-index-v2
+          path: work/rebuild-index
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit unified rebuild result index
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/rebuild-result-index-v2
+          mkdir -p arm64/locks/rebuild-result-index-v2
+          cp -a work/rebuild-index/. arm64/locks/rebuild-result-index-v2/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/rebuild-result-index-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Index verified ARM64 rebuild results v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce an unambiguous verified binary index
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.index.outputs.exit_code }}' = '0'
+          jq -e '.package_index_usable == true' work/rebuild-index/summary.json
