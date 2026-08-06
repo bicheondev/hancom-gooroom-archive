@@ -1,0 +1,236 @@
+name: ARM64 port - audit exact vendor payload repacks
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-vendor-payload-repacks.yml'
+      - 'arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/locks/vendor-binaries/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-vendor-payload-repacks
+  cancel-in-progress: true
+
+env:
+  VENDOR_BINARY_RUN_ID: '31097604490'
+  VENDOR_BINARY_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+  RELEASE_TAG: v3.3-arm64-payload-repacks
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact blocker and vendor binary locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact DEB inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev binutils file jq ca-certificates
+          python3 -m py_compile \
+            arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py
+          gh --version
+
+      - name: Download the previously locked exact vendor DEBs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor-artifact
+          mkdir -p work/vendor-artifact
+          gh run download "$VENDOR_BINARY_RUN_ID" \
+            --repo '${{ github.repository }}' \
+            --name "$VENDOR_BINARY_ARTIFACT" \
+            --dir work/vendor-artifact
+          vendor_debs="$(find work/vendor-artifact -type d -name vendor-debs -print -quit)"
+          test -n "$vendor_debs"
+          test "$(find "$vendor_debs" -maxdepth 1 -type f -name '*.deb' | wc -l)" -gt 0
+          printf '%s\n' "$vendor_debs" > work/vendor-debs-path.txt
+          gh api "repos/${{ github.repository }}/actions/runs/$VENDOR_BINARY_RUN_ID/artifacts" \
+            > work/vendor-artifact-api.json
+          jq -e \
+            --arg name "$VENDOR_BINARY_ARTIFACT" '
+              [.artifacts[] | select(.name == $name and .expired == false)] | length == 1
+            ' work/vendor-artifact-api.json
+
+      - name: Audit native payloads and repack only byte-identical data trees
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/payload-repack-audit work/payload-repacks
+          mkdir -p work/payload-repack-audit work/payload-repacks
+          vendor_debs="$(cat work/vendor-debs-path.txt)"
+          sudo python3 arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py \
+            --blockers arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --vendor-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
+            --vendor-debs "$vendor_debs" \
+            --output-dir work/payload-repack-audit \
+            --repack-dir work/payload-repacks \
+            2>&1 | tee work/payload-repack-audit/workflow-audit.log
+          sudo chown -R "$(id -u):$(id -g)" \
+            work/payload-repack-audit work/payload-repacks
+          find work/payload-repack-audit work/payload-repacks \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/payload-repack-audit/LOCKSUMS.sha256
+          cat work/payload-repack-audit/summary.json
+
+      - name: Publish exact architecture-neutral repacks persistently
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          count="$(jq -r '.repacked_binary_count' work/payload-repack-audit/summary.json)"
+          if [ "$count" -eq 0 ]; then
+            jq -n \
+              --slurpfile summary work/payload-repack-audit/summary.json '
+                {summary:($summary[0] + {release_complete:false,release_published:false}),packages:[],errors:[]}
+              ' > work/payload-repack-audit/payload-repack-release-lock.json
+            exit 0
+          fi
+
+          cat > work/payload-repack-audit/release-notes.md <<'EOF'
+          Exact Hancom Gooroom 3.3 vendor DEB payloads repacked for ARM64 only
+          after confirming that the original AMD64 package contained no native
+          ELF payload and that all data paths, modes, uid/gid, symlink targets,
+          regular-file SHA-256 values, and maintainer scripts were unchanged.
+          Only the binary package Architecture control field changed.
+          EOF
+          if ! gh release view "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo '${{ github.repository }}' \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 architecture-neutral ARM64 repacks' \
+              --notes-file work/payload-repack-audit/release-notes.md
+          fi
+          mapfile -t assets < <(find work/payload-repacks -maxdepth 1 -type f -name '*.deb' | sort)
+          test "${#assets[@]}" -eq "$count"
+          gh release upload "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            "${assets[@]}" \
+            work/payload-repack-audit/payload-repack-lock.json
+          gh api "repos/${{ github.repository }}/releases/tags/$RELEASE_TAG" \
+            > work/payload-repack-audit/release-api.json
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('work/payload-repack-audit')
+          audit = json.loads((root / 'payload-repack-lock.json').read_text())
+          release = json.loads((root / 'release-api.json').read_text())
+          assets = {row['name']: row for row in release.get('assets', [])}
+          packages = []
+          errors = []
+          for source in audit.get('sources', []):
+              for binary in source.get('binary_packages', []):
+                  if binary.get('status') != 'repacked':
+                      continue
+                  name = binary['repacked_filename']
+                  asset = assets.get(name)
+                  if not asset:
+                      errors.append({'package': binary['package'], 'reason': 'release-asset-missing'})
+                      continue
+                  expected_digest = f"sha256:{binary['repacked_sha256']}"
+                  if int(asset.get('size', -1)) != int(binary['repacked_size']):
+                      errors.append({'package': binary['package'], 'reason': 'release-size-mismatch'})
+                  if asset.get('digest') and asset.get('digest') != expected_digest:
+                      errors.append({'package': binary['package'], 'reason': 'release-digest-mismatch'})
+                  packages.append({
+                      'source': source['source'],
+                      'source_version': source['source_version'],
+                      'package': binary['package'],
+                      'version': binary['version'],
+                      'architecture': 'arm64',
+                      'original_filename': binary['original_filename'],
+                      'original_size': binary['original_size'],
+                      'original_sha256': binary['original_sha256'],
+                      'filename': name,
+                      'size': binary['repacked_size'],
+                      'sha256': binary['repacked_sha256'],
+                      'release_asset_id': asset.get('id'),
+                      'release_digest': asset.get('digest'),
+                      'browser_download_url': asset.get('browser_download_url'),
+                      'payload_identity_preserved': binary['payload_identity_preserved'],
+                      'control_auxiliary_identity_preserved': binary['control_auxiliary_identity_preserved'],
+                  })
+          summary = {
+              **audit['summary'],
+              'release_published': True,
+              'release_complete': not errors and len(packages) == audit['summary']['repacked_binary_count'],
+              'release_tag': release.get('tag_name'),
+              'release_id': release.get('id'),
+              'release_url': release.get('html_url'),
+              'release_package_count': len(packages),
+              'release_error_count': len(errors),
+          }
+          output = {'summary': summary, 'packages': packages, 'errors': errors}
+          (root / 'payload-repack-release-lock.json').write_text(
+              json.dumps(output, ensure_ascii=False, indent=2) + '\n'
+          )
+          if not summary['release_complete']:
+              raise SystemExit(json.dumps(output, indent=2))
+          PY
+
+      - name: Upload complete payload audit and repacks
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-payload-repacks
+          path: |
+            work/payload-repack-audit
+            work/payload-repacks
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact exact repack authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/payload-repacks
+          mkdir -p arm64/locks/payload-repacks
+          cp work/payload-repack-audit/payload-repack-lock.json \
+            arm64/locks/payload-repacks/
+          cp work/payload-repack-audit/payload-repack-release-lock.json \
+            arm64/locks/payload-repacks/
+          cp work/payload-repack-audit/summary.json \
+            arm64/locks/payload-repacks/
+          cp work/payload-repack-audit/blocked.json \
+            arm64/locks/payload-repacks/
+          cp work/payload-repack-audit/LOCKSUMS.sha256 \
+            arm64/locks/payload-repacks/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/payload-repacks
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact architecture-neutral ARM64 vendor repacks'
+            for attempt in 1 2 3 4; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                exit 0
+              fi
+              sleep $((attempt * 3))
+            done
+            exit 1
+          fi
