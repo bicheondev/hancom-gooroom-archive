@@ -9,7 +9,7 @@ usage() {
 [ "$#" -eq 3 ] || usage
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BASE_RUNNER="$SCRIPT_DIR/run_locked_source_arm64.sh"
+BASE_RUNNER="$SCRIPT_DIR/run_locked_source_arm64_v4.sh"
 VALIDATOR="$SCRIPT_DIR/validate_arm64_source_outputs_v3.py"
 REFERENCE="$REPO_ROOT/arm64/locks/reference/amd64-reference.json"
 LOCK_JSON="$1"
@@ -28,7 +28,7 @@ LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 
 set +e
-"$BASE_RUNNER" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR" 2>&1 | tee "$LOG"
+bash "$BASE_RUNNER" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR" 2>&1 | tee "$LOG"
 legacy_rc="${PIPESTATUS[0]}"
 set -e
 
