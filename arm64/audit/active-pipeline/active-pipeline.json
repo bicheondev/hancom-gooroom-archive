@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 103,
-    "workflow_name_count": 103,
-    "referenced_local_file_count": 164,
+    "workflow_count": 104,
+    "workflow_name_count": 104,
+    "referenced_local_file_count": 166,
     "error_count": 0,
-    "warning_count": 30,
+    "warning_count": 31,
     "passed": true
   },
   "workflows": [
@@ -809,6 +809,26 @@
       "referenced_local_files": [
         "arm64/audit/lock-schemas.json",
         "arm64/scripts/inspect_lock_schemas.py"
+      ]
+    },
+    {
+      "filename": "arm64-materialize-debian-reference-repo-v2.yml",
+      "path": ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      "name": "ARM64 port - materialize exact Debian reference repository v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/debian-reference-repository-v2/artifact-lock.json",
+        "arm64/locks/package-plan/debian-arm64-map-normalized.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py"
       ]
     },
     {
@@ -2160,6 +2180,9 @@
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
+    "arm64/locks/debian-reference-repository-v2/artifact-lock.json": [
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
+    ],
     "arm64/locks/effective-sources-v2/effective-source-lock-v2.json": [
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
@@ -2240,6 +2263,7 @@
       ".github/workflows/arm64-minimal-boot-v2-record.yml"
     ],
     "arm64/locks/package-plan/debian-arm64-map-normalized.json": [
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
     "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
@@ -2272,6 +2296,7 @@
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-extract-repository-keys.yml",
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
       ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
@@ -2565,6 +2590,9 @@
     ],
     "arm64/scripts/materialize_build_dependency_repo_v2.py": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
+    ],
+    "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py": [
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
     ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
@@ -2906,6 +2934,11 @@
     {
       "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
       "local_path": "arm64/locks/linux-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      "local_path": "arm64/locks/debian-reference-repository-v2/artifact-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
