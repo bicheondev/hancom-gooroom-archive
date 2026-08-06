@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 83,
-    "workflow_name_count": 83,
-    "referenced_local_file_count": 128,
-    "error_count": 48,
+    "workflow_count": 84,
+    "workflow_name_count": 84,
+    "referenced_local_file_count": 132,
+    "error_count": 49,
     "warning_count": 0,
     "passed": false
   },
@@ -117,6 +117,27 @@
         "arm64/scripts/summarize_arm64_build_wave.py",
         "arm64/scripts/validate_arm64_source_outputs_v3.py",
         "arm64/scripts/validate_arm64_source_outputs_v4.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-qtbase.yml",
+      "path": ".github/workflows/arm64-build-qtbase.yml",
+      "name": "ARM64 port - build exact QtBase for ARM64",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+        "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh",
+        "arm64/scripts/build_locked_apt_source_arm64.sh",
+        "arm64/scripts/build_locked_apt_source_arm64_v2.sh",
+        "arm64/scripts/verify_deb_payload_machine.py"
       ]
     },
     {
@@ -270,7 +291,7 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "actions/upload-artifact@ea165f8d65b6e75fa02"
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
@@ -1802,7 +1823,11 @@
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
+      ".github/workflows/arm64-build-qtbase.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
+    ],
+    "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh": [
+      ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -1943,6 +1968,12 @@
     ],
     "arm64/scripts/build_exact_arm64_rootfs.sh": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
+    ],
+    "arm64/scripts/build_locked_apt_source_arm64.sh": [
+      ".github/workflows/arm64-build-qtbase.yml"
+    ],
+    "arm64/scripts/build_locked_apt_source_arm64_v2.sh": [
+      ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2237,6 +2268,9 @@
       ".github/workflows/arm64-exact-rootfs-v2.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
+    "arm64/scripts/verify_deb_payload_machine.py": [
+      ".github/workflows/arm64-build-qtbase.yml"
+    ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
@@ -2258,11 +2292,14 @@
       "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-build-wave2-v2.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/upload-artifact@ea165f8d65b6e75fa02"
-      ]
+      "path": ".github/workflows/arm64-build-qtbase.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
+    },
+    {
+      "path": ".github/workflows/arm64-build-qtbase.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh"
     },
     {
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
