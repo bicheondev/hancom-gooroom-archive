@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 94,
-    "workflow_name_count": 94,
-    "referenced_local_file_count": 133,
+    "workflow_count": 93,
+    "workflow_name_count": 93,
+    "referenced_local_file_count": 132,
     "error_count": 0,
     "warning_count": 36,
     "passed": true
@@ -1346,23 +1346,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-git-builder-v2.yml",
-      "path": ".github/workflows/arm64-repair-git-builder-v2.yml",
-      "name": "ARM64 port - repair self-contained exact Git builder v2",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/repair_git_builder_v2.py"
-      ]
-    },
-    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -2174,8 +2157,7 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
-      ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
-      ".github/workflows/arm64-repair-git-builder-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v5.sh": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
@@ -2313,9 +2295,6 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
-    ],
-    "arm64/scripts/repair_git_builder_v2.py": [
-      ".github/workflows/arm64-repair-git-builder-v2.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
