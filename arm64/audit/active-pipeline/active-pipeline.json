@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 107,
-    "workflow_name_count": 107,
-    "referenced_local_file_count": 183,
+    "workflow_count": 108,
+    "workflow_name_count": 108,
+    "referenced_local_file_count": 184,
     "error_count": 0,
     "warning_count": 42,
     "passed": true
@@ -181,6 +181,27 @@
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_with_local_repo.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
+      ]
+    },
+    {
+      "filename": "arm64-build-p7zip-targeted-v2.yml",
+      "path": ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
+      "name": "ARM64 port - rebuild exact p7zip with full binary docs",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/run_p7zip_full_binary_arm64.sh",
+        "arm64/scripts/verify_arm64_rebuild.py"
       ]
     },
     {
@@ -2282,6 +2303,7 @@
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
+      ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
       ".github/workflows/arm64-build-wave1-v2.yml",
@@ -2398,6 +2420,7 @@
     "arm64/locks/reference/amd64-reference.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
       ".github/workflows/arm64-build-wave2-v1.yml",
@@ -2581,6 +2604,7 @@
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64.sh": [
+      ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-retry-wave1-full-binary.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
@@ -2853,6 +2877,9 @@
     "arm64/scripts/run_locked_source_arm64_with_vendor.sh": [
       ".github/workflows/arm64-build-security-status-tools.yml"
     ],
+    "arm64/scripts/run_p7zip_full_binary_arm64.sh": [
+      ".github/workflows/arm64-build-p7zip-targeted-v2.yml"
+    ],
     "arm64/scripts/run_stage0_live_iso.sh": [
       ".github/workflows/arm64-stage0-live.yml"
     ],
@@ -2958,6 +2985,7 @@
     ],
     "arm64/scripts/verify_arm64_rebuild.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
