@@ -1,0 +1,50 @@
+name: ARM64 port - test acquisition and retry control logic
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-pipeline-unit-tests.yml'
+      - 'arm64/tests/**'
+      - 'arm64/scripts/build_package_acquisition_plan_v2.py'
+      - 'arm64/scripts/classify_native_rebuild_failures.py'
+      - 'arm64/scripts/select_dependency_retry_wave.py'
+      - 'arm64/scripts/audit_workflow_secret_literals.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-pipeline-unit-tests
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out tested control-plane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Execute behavioral tests
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m unittest discover \
+            -s arm64/tests \
+            -p 'test_*.py' \
+            -v \
+            2>&1 | tee unit-test.log
+
+      - name: Upload test transcript
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-pipeline-unit-tests
+          path: unit-test.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
