@@ -93,16 +93,39 @@ jobs:
           retention-days: 30
           compression-level: 9
 
-      - name: Commit current package-layer status
+      - name: Commit current package-layer status without deleting sibling audits
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf arm64/status
-          mkdir -p arm64/status
-          cp -a work/port-coverage/. arm64/status/
+          coverage_dir=arm64/status/coverage
+          rm -rf "$coverage_dir"
+          mkdir -p "$coverage_dir" arm64/status
+          cp -a work/port-coverage/. "$coverage_dir/"
+
+          # Keep stable top-level convenience files while preserving independent
+          # directories such as arm64/status/rebuild-failures.
+          for name in \
+            summary.json \
+            coverage.json \
+            coverage.tsv \
+            source-blockers.json \
+            build-blockers.json \
+            source-recovery-required.json \
+            LOCKSUMS.sha256; do
+            cp "work/port-coverage/$name" "arm64/status/$name"
+          done
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add arm64/status
+          git add -A \
+            "$coverage_dir" \
+            arm64/status/summary.json \
+            arm64/status/coverage.json \
+            arm64/status/coverage.tsv \
+            arm64/status/source-blockers.json \
+            arm64/status/build-blockers.json \
+            arm64/status/source-recovery-required.json \
+            arm64/status/LOCKSUMS.sha256
           if git diff --cached --quiet; then
             exit 0
           fi
