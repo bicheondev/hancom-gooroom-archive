@@ -17,11 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_RUN_ID: '31116113425'
+  SOURCE_RUN_ID: '31118124384'
   SOURCE_ARTIFACT: hancom-gooroom-3.3-arm64-stage0-v5
   ISO_NAME: Hancom-Gooroom-3.3-arm64-stage0-v5.iso
-  ISO_SIZE: '898717696'
-  ISO_SHA256: 923fa5a051189b324dc77610b6c66935524a054ff99712429a7b818a14bb8687
+  ISO_SIZE: '898713600'
+  ISO_SHA256: 2956e79abde2416d370a41e3262b6395d186c99916dec8a1f79ff923a8e7138b
   MARKER: HANCOM_GOOROOM_ARM64_STAGE0_READY
   RELEASE_TAG: v3.3-arm64-stage0-v5
 
@@ -138,7 +138,7 @@ jobs:
           Hancom Gooroom 3.3 ARM64 stage-0 bring-up image.
 
           This is not the final parity release. It is the exact stage-0 ISO from
-          Actions run 31116113425, verified by size and SHA-256 and then booted
+          Actions run 31118124384, verified by size and SHA-256 and then booted
           through AArch64 UEFI/QEMU until the readiness marker was observed.
           EOF
           if ! gh release view "$RELEASE_TAG" \
