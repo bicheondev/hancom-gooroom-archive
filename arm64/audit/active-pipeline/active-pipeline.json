@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 95,
-    "workflow_name_count": 95,
-    "referenced_local_file_count": 145,
+    "workflow_count": 96,
+    "workflow_name_count": 96,
+    "referenced_local_file_count": 147,
     "error_count": 0,
     "warning_count": 29,
     "passed": true
@@ -745,6 +745,27 @@
         "arm64/locks/effective-sources/latest-git-merge-report.json",
         "arm64/locks/sources/source-lock.json",
         "arm64/scripts/merge_effective_git_source_lock.py"
+      ]
+    },
+    {
+      "filename": "arm64-merge-source-authorities-v2.yml",
+      "path": ".github/workflows/arm64-merge-source-authorities-v2.yml",
+      "name": "ARM64 port - merge exact source authorities v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/apt-source-fallback-v2/apt-source-fallback-lock.json",
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/merge_source_authorities_v2.py"
       ]
     },
     {
@@ -1960,6 +1981,9 @@
     "arm64/locks/acquisition-plan/summary.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
+    "arm64/locks/apt-source-fallback-v2/apt-source-fallback-lock.json": [
+      ".github/workflows/arm64-merge-source-authorities-v2.yml"
+    ],
     "arm64/locks/build-wave1-v3/wave1-v3-summary.json": [
       ".github/workflows/arm64-wave1-v3-record.yml"
     ],
@@ -2002,6 +2026,7 @@
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-merge-effective-source-lock.yml",
+      ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-package-repo-incremental.yml",
@@ -2069,6 +2094,7 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-extract-repository-keys.yml",
+      ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
@@ -2112,6 +2138,7 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-linux-apt-source-lock.yml",
+      ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
@@ -2355,6 +2382,9 @@
     ],
     "arm64/scripts/merge_exact_source_locks.py": [
       ".github/workflows/arm64-effective-source-lock.yml"
+    ],
+    "arm64/scripts/merge_source_authorities_v2.py": [
+      ".github/workflows/arm64-merge-source-authorities-v2.yml"
     ],
     "arm64/scripts/normalize_debian_arm64_map.py": [
       ".github/workflows/arm64-normalize-package-map.yml"
