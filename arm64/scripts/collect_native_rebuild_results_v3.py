@@ -209,6 +209,9 @@ def main() -> int:
             "build_exit_code": job.get("build_exit_code"),
             "verify_outcome": job.get("verify_outcome"),
             "retry_reason": job.get("retry_reason"),
+            "builder_sha256": job.get("builder_sha256"),
+            "previous_builder_sha256": job.get("previous_builder_sha256"),
+            "infrastructure_evidence": job.get("infrastructure_evidence", []),
             "dependency_repository_packages_sha256": job.get(
                 "dependency_repository_packages_sha256"
             )
