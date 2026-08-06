@@ -10,6 +10,8 @@ usage() {
 LOCK_JSON="$1"
 SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REFERENCE_JSON="${HANCOM_GOOROOM_REFERENCE_JSON:-$SCRIPT_DIR/../locks/reference/amd64-reference.json}"
 
 for command in jq dpkg-deb file sha256sum find grep sort; do
   command -v "$command" >/dev/null || {
@@ -20,6 +22,10 @@ done
 
 [ -f "$LOCK_JSON" ] || {
   echo "lock file not found: $LOCK_JSON" >&2
+  exit 2
+}
+[ -f "$REFERENCE_JSON" ] || {
+  echo "AMD64 reference lock not found: $REFERENCE_JSON" >&2
   exit 2
 }
 [ -d "$OUTPUT_DIR" ] || {
@@ -45,7 +51,25 @@ entry="$(jq -ce --arg source "$SOURCE_NAME" '
 SOURCE_VERSION="$(jq -r '.source_version' <<<"$entry")"
 COMMIT_SHA="$(jq -r '.selected.commit_sha' <<<"$entry")"
 TREE_SHA="$(jq -r '.selected.tree_sha' <<<"$entry")"
-mapfile -t EXPECTED_PACKAGES < <(jq -r '.binary_packages[]' <<<"$entry")
+
+# dpkg-buildpackage -B produces only architecture-dependent binaries. A mixed
+# source can also own Architecture: all packages; those are reused byte-for-byte
+# from the independently verified AMD64 reference and are not expected here.
+mapfile -t EXPECTED_PACKAGES < <(jq -r \
+  --arg source "$SOURCE_NAME" \
+  --arg version "$SOURCE_VERSION" '
+    .packages[]
+    | select(
+        .source == $source
+        and .source_version == $version
+        and .architecture != "all"
+      )
+    | .package
+  ' "$REFERENCE_JSON" | sort -u)
+[ "${#EXPECTED_PACKAGES[@]}" -gt 0 ] || {
+  echo "No architecture-dependent package is required for $SOURCE_NAME $SOURCE_VERSION" >&2
+  exit 2
+}
 
 jq -e \
   --arg source "$SOURCE_NAME" \
@@ -68,6 +92,12 @@ jq -e \
     and .tree_sha == $tree
     and .verified_tree_sha == $tree
   ' "$OUTPUT_DIR/source-lock-evidence.json" >/dev/null
+
+expected_json="$(printf '%s\n' "${EXPECTED_PACKAGES[@]}" | jq -Rsc 'split("\n")[:-1] | sort')"
+jq -e --argjson expected "$expected_json" '
+  (.expected_binary_packages | sort) == $expected
+  and .binary_package_policy == "AMD64 reference packages whose Architecture is not all"
+' "$OUTPUT_DIR/build-lock.json" >/dev/null
 
 shopt -s nullglob
 DEBS=("$OUTPUT_DIR"/*.deb)
@@ -121,7 +151,7 @@ for expected in "${EXPECTED_PACKAGES[@]}"; do
     fi
   done
   if [ "$found" != true ]; then
-    echo "Expected binary package was not built: $expected" >&2
+    echo "Expected architecture-dependent package was not built: $expected" >&2
     exit 6
   fi
 done
@@ -131,17 +161,17 @@ done
   sha256sum --check SHA256SUMS
 )
 
-expected_json="$(printf '%s\n' "${EXPECTED_PACKAGES[@]}" | jq -Rsc 'split("\n")[:-1]')"
 produced_json="$(printf '%s\n' "${produced_packages[@]}" | jq -Rsc 'split("\n")[:-1] | sort')"
 cat > "$OUTPUT_DIR/verification-summary.json" <<EOF
 {
-  "schema": 1,
+  "schema": 2,
   "source": $(jq -Rn --arg value "$SOURCE_NAME" '$value'),
   "source_version": $(jq -Rn --arg value "$SOURCE_VERSION" '$value'),
   "commit_sha": $(jq -Rn --arg value "$COMMIT_SHA" '$value'),
   "tree_sha": $(jq -Rn --arg value "$TREE_SHA" '$value'),
-  "expected_binary_packages": $expected_json,
+  "expected_architecture_dependent_packages": $expected_json,
   "produced_binary_packages": $produced_json,
+  "architecture_all_policy": "reuse exact verified AMD64 Architecture: all binaries",
   "deb_count": ${#DEBS[@]},
   "wrong_architecture_executable_count": 0,
   "verified": true
