@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-build-wave1.yml'
       - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
       - 'arm64/locks/effective-sources/**'
   workflow_dispatch:
@@ -51,7 +52,7 @@ jobs:
           docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            git jq dpkg-dev ca-certificates file
+            git jq dpkg-dev ca-certificates file python3
 
       - name: Build exact locked source for ARM64
         env:
@@ -61,10 +62,11 @@ jobs:
           set -euxo pipefail
           chmod +x \
             arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
             arm64/scripts/verify_locked_arm64_build.sh
           output="work/${SOURCE_NAME}-arm64"
           rm -rf "$output"
-          arm64/scripts/build_locked_source_arm64.sh \
+          arm64/scripts/run_locked_source_arm64.sh \
             arm64/locks/effective-sources/effective-source-lock.json \
             "$SOURCE_NAME" \
             "$output"
