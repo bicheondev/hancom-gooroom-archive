@@ -2,10 +2,10 @@
 """Retry exact ARM64 sources whose latest attempt failed in build infrastructure.
 
 A source is eligible only when its exact Git tree or signed DSC identity still
-matches the current authority and its latest failure is clearly infrastructural
-(exit 69/126/127 or a bounded diagnostic marker). A retry using the same current
-builder SHA-256 is never repeated. Sources with a proven missing-source blocker
-are excluded even when an older attempt was misclassified as infrastructure.
+matches the current authority and its latest failure is clearly infrastructural.
+A retry using the same current builder SHA-256 is never repeated. Sources with
+a proven missing-source blocker are excluded even when an older attempt was
+misclassified as infrastructure.
 """
 
 from __future__ import annotations
@@ -30,6 +30,14 @@ INFRASTRUCTURE_MARKERS = (
     "required command is missing:",
     "no such file or directory",
     "command not found",
+)
+CONTAINER_REGISTRY_TRANSIENT_MARKERS = (
+    "registry-1.docker.io",
+    "500 internal server error",
+    "unexpected http status: 500",
+    "error response from daemon",
+    "failed to resolve reference",
+    "failed to do request",
 )
 
 
@@ -98,12 +106,31 @@ def diagnostic_text(row: dict[str, Any]) -> str:
 def infrastructure_failure(row: dict[str, Any]) -> tuple[bool, list[str]]:
     evidence: list[str] = []
     exit_code = str(row.get("build_exit_code", ""))
+    text = diagnostic_text(row)
+
     if exit_code in INFRASTRUCTURE_EXIT_CODES:
         evidence.append(f"build-exit-code:{exit_code}")
-    text = diagnostic_text(row)
     for marker in INFRASTRUCTURE_MARKERS:
         if marker in text:
             evidence.append(f"diagnostic:{marker}")
+
+    transient_markers = sorted(
+        {
+            marker
+            for marker in CONTAINER_REGISTRY_TRANSIENT_MARKERS
+            if marker in text
+        }
+    )
+    # Docker exits 125 when the client cannot create the build container. Treat
+    # that code as infrastructure only when the bounded diagnostic proves an
+    # external registry/daemon transport failure; an arbitrary exit 125 is not
+    # enough to qualify for a retry.
+    if exit_code == "125" and transient_markers:
+        evidence.append("build-exit-code:125-container-start-failure")
+        evidence.extend(
+            f"diagnostic:{marker}" for marker in transient_markers
+        )
+
     no_binary = not row.get("deb_artifacts")
     verification_skipped = row.get("verify_outcome") in (None, "", "skipped")
     return (
@@ -272,10 +299,11 @@ def main() -> int:
         )
 
     summary = {
-        "schema": 4,
+        "schema": 5,
         "policy": (
-            "retry-infrastructure-failures-on-new-builder-identity-once-"
-            "excluding-proven-source-recovery-blockers"
+            "retry-proven-infrastructure-failures-on-new-builder-identity-once-"
+            "including-bounded-container-registry-transients-and-excluding-"
+            "proven-source-recovery-blockers"
         ),
         "builder_sha256": args.builder_sha256,
         "limit": limit,
