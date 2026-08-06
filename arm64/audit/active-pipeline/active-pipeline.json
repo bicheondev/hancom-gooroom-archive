@@ -2,8 +2,8 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 88,
-    "workflow_name_count": 88,
+    "workflow_count": 89,
+    "workflow_name_count": 89,
     "referenced_local_file_count": 121,
     "error_count": 74,
     "warning_count": 0,
@@ -914,6 +914,20 @@
         "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json",
         "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
       ]
+    },
+    {
+      "filename": "arm64-monitor-curated-batches.yml",
+      "path": ".github/workflows/arm64-monitor-curated-batches.yml",
+      "name": "ARM64 port - monitor initial curated rebuild batches and advance",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-native-rebuild-backlog.yml",
