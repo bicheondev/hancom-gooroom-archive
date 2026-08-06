@@ -1,0 +1,148 @@
+name: ARM64 port - retry wave1 full binary packaging
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-retry-wave1-full-binary.yml'
+      - 'arm64/scripts/run_locked_source_arm64_full_binary.sh'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_arm64_rebuild.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-retry-wave1-full-binary
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [celluloid, p7zip]
+    steps:
+      - name: Check out exact source locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 and install verifier tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          docker version
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git jq dpkg-dev ca-certificates python3 file
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_full_binary.sh
+          python3 -m py_compile arm64/scripts/verify_arm64_rebuild.py
+
+      - name: Select the exact lock without substituting versions
+        id: lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          lock=arm64/locks/sources-api-baseline/source-lock.json
+          if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
+            lock=arm64/locks/effective-sources/effective-source-lock.json
+          fi
+          test -f "$lock"
+          jq -e --arg source '${{ matrix.source }}' '
+            .sources[]
+            | select(
+                .source == $source
+                and .status == "resolved"
+                and .selected != null
+                and (.selected.type // "git") == "git"
+                and .selected.declared_source == .source
+                and .selected.declared_version == .source_version
+              )
+          ' "$lock" >/dev/null
+          echo "path=$lock" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r --arg source '${{ matrix.source }}' '.sources[] | select(.source == $source and .status == "resolved") | .source_version' "$lock" | head -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Build exact source including Architecture all binaries
+        id: build
+        continue-on-error: true
+        shell: bash
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: arm64/locks/reference/amd64-reference.json
+        run: |
+          set -o pipefail
+          output='work/${{ matrix.source }}-arm64-full'
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          timeout --signal=TERM --kill-after=120 9600 \
+            arm64/scripts/run_locked_source_arm64_full_binary.sh \
+              '${{ steps.lock.outputs.path }}' \
+              '${{ matrix.source }}' \
+              "$output" \
+            2>&1 | tee "$output/workflow-build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Verify exact source, versions, ARM64 machine code, and expected native packages
+        id: verify
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_arm64_rebuild.py \
+            --lock '${{ steps.lock.outputs.path }}' \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source '${{ matrix.source }}' \
+            --source-version '${{ steps.lock.outputs.version }}' \
+            --directory 'work/${{ matrix.source }}-arm64-full' \
+            --output 'work/${{ matrix.source }}-arm64-full/verification.json'
+
+      - name: Write result even when packaging fails
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output='work/${{ matrix.source }}-arm64-full'
+          mkdir -p "$output"
+          jq -n \
+            --arg source '${{ matrix.source }}' \
+            --arg source_version '${{ steps.lock.outputs.version }}' \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg verify_outcome '${{ steps.verify.outcome }}' \
+            '{schema:1,source:$source,source_version:$source_version,build_mode:"all-binary-packages",build_outcome:$build_outcome,build_exit_code:$build_exit_code,verify_outcome:$verify_outcome,passed:($build_outcome=="success" and $verify_outcome=="success")}' \
+            > "$output/retry-result.json"
+
+      - name: Upload exact packages or complete failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.source }}-exact-arm64-full-binary-retry
+          path: work/${{ matrix.source }}-arm64-full
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce the preserved result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.build.outcome }}' = success
+          test '${{ steps.verify.outcome }}' = success
+          jq -e '.passed == true' 'work/${{ matrix.source }}-arm64-full/retry-result.json'
