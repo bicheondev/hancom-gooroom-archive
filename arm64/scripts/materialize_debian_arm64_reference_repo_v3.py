@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Materialize only Debian-owned exact ARM64/all package routes.
+"""Materialize Debian-owned exact ARM64/all package routes.
 
-Architecture replacements are intentionally not Debian reference packages.
-Examples include the Gooroom-patched ARM64 kernel replacing an AMD64 kernel
-package. Those exact replacement DEBs belong to the separately verified custom
-rebuild repository and are resolved only when both repositories are merged.
+Architecture replacements are split by source provenance:
+
+* ordinary Debian replacements such as binutils-aarch64-linux-gnu and
+  grub-efi-arm64 remain in the Debian reference repository at the exact source
+  version recorded by the AMD64 image;
+* Gooroom/Hancom-patched replacements such as the ARM64 kernel remain in the
+  separately verified custom rebuild repository.
 
 The underlying v2 downloader, source/version checks, checksum audit, and local
 APT repository construction are unchanged.
@@ -24,17 +27,37 @@ def acquisition_targets_v3(
     normalized: dict[str, Any], reference: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     targets, skipped, blockers = _original_acquisition_targets(normalized, reference)
+
+    custom_source_identities = {
+        (str(row.get("source", "")), str(row.get("source_version", "")))
+        for row in reference.get("packages", [])
+        if row.get("custom_candidate")
+    }
+
     debian_targets: list[dict[str, Any]] = []
     for target in targets:
-        if target.get("mapping_status") == "arch-replace":
+        if target.get("mapping_status") != "arch-replace":
+            debian_targets.append(target)
+            continue
+
+        identity = (
+            str(target.get("source", "")),
+            str(target.get("source_version", "")),
+        )
+        if identity in custom_source_identities:
             skipped.append(
                 {
                     **target,
-                    "reason": "architecture-replacement-from-custom-exact-repository",
+                    "reason": "custom-architecture-replacement-from-exact-rebuild-repository",
                 }
             )
-        else:
-            debian_targets.append(target)
+            continue
+
+        # This is a Debian-owned architecture replacement. The v2 verifier will
+        # still require the replacement binary's Source and source Version to
+        # match target['source']/target['source_version'] exactly.
+        debian_targets.append(target)
+
     return debian_targets, skipped, blockers
 
 
