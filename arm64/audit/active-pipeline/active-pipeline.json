@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 95,
-    "workflow_name_count": 95,
+    "workflow_count": 92,
+    "workflow_name_count": 92,
     "referenced_local_file_count": 126,
-    "error_count": 8,
+    "error_count": 5,
     "warning_count": 37,
     "passed": false
   },
@@ -655,20 +655,6 @@
       ]
     },
     {
-      "filename": "arm64-fix-dependency-retry-v3-maintenance.yml",
-      "path": ".github/workflows/arm64-fix-dependency-retry-v3-maintenance.yml",
-      "name": "ARM64 port - fix dependency retry repository identity wiring",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-installed-system-boot.yml",
       "path": ".github/workflows/arm64-installed-system-boot.yml",
       "name": "ARM64 port - boot-test installed GPT system from final ISO",
@@ -1197,25 +1183,6 @@
         "arm64/scripts/resolve_source_apt_archival.py",
         "arm64/scripts/resolve_source_apt_archival_fast.py",
         "arm64/scripts/resolve_source_apt_fast.py"
-      ]
-    },
-    {
-      "filename": "arm64-qtbase-apt-source-archive.yml",
-      "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
-      "name": "ARM64 port - recover QtBase archival source candidate",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/sources-api-baseline/source-lock.json",
-        "arm64/scripts/resolve_source_apt.py",
-        "arm64/scripts/resolve_source_apt_archival.py"
       ]
     },
     {
@@ -1849,20 +1816,6 @@
       ]
     },
     {
-      "filename": "arm64-wire-v3-followups-maintenance.yml",
-      "path": ".github/workflows/arm64-wire-v3-followups-maintenance.yml",
-      "name": "ARM64 port - wire v3 rebuild follow-up controllers",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-workflow-secret-audit.yml",
       "path": ".github/workflows/arm64-workflow-secret-audit.yml",
       "name": "ARM64 port - audit workflows for literal credentials",
@@ -2051,7 +2004,6 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml",
-      ".github/workflows/arm64-qtbase-apt-source-archive.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
@@ -2292,13 +2244,11 @@
     "arm64/scripts/resolve_source_apt.py": [
       ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml",
-      ".github/workflows/arm64-qtbase-apt-source-archive.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/scripts/resolve_source_apt_archival.py": [
-      ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml",
-      ".github/workflows/arm64-qtbase-apt-source-archive.yml"
+      ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml"
     ],
     "arm64/scripts/resolve_source_apt_archival_fast.py": [
       ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml"
@@ -2498,22 +2448,9 @@
       "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
-      "path": ".github/workflows/arm64-fix-dependency-retry-v3-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
       "path": ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml",
       "local_path": "arm64/scripts/resolve_source_apt_archival.py",
       "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
-      "local_path": "arm64/scripts/resolve_source_apt_archival.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-wire-v3-followups-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
     }
   ],
   "warnings": [
