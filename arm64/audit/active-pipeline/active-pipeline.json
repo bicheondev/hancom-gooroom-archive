@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 86,
-    "workflow_name_count": 86,
+    "workflow_count": 87,
+    "workflow_name_count": 87,
     "referenced_local_file_count": 120,
-    "error_count": 2,
+    "error_count": 3,
     "warning_count": 30,
     "passed": false
   },
@@ -585,6 +585,20 @@
         "arm64/scripts/test_arm64_iso_qemu.sh",
         "arm64/scripts/verify_arm64_rootfs.py"
       ]
+    },
+    {
+      "filename": "arm64-fix-dependency-retry-v3-maintenance.yml",
+      "path": ".github/workflows/arm64-fix-dependency-retry-v3-maintenance.yml",
+      "name": "ARM64 port - fix dependency retry repository identity wiring",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-installed-system-boot.yml",
@@ -2280,6 +2294,10 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-fix-dependency-retry-v3-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
     {
       "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
       "local_path": "arm64/scripts/publish_rebuild_packages_v3.py",
