@@ -19,6 +19,7 @@ import shlex
 import subprocess
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 
 REPLACE = {
@@ -243,8 +244,17 @@ def selected_metadata(
         uri_cache[cache_key] = uri
     if int(uri["download_size"]) != size:
         return None, f"APT URI size {uri['download_size']} differs from Packages size {size}"
-    if Path(uri["download_filename"]).name != Path(filename).name:
-        return None, "APT URI filename differs from Packages Filename basename"
+    pool_basename = Path(unquote(urlparse(uri["url"]).path)).name
+    if pool_basename != Path(filename).name:
+        return None, (
+            "APT URI pool basename differs from Packages Filename basename: "
+            f"{pool_basename} != {Path(filename).name}"
+        )
+    apt_digest = str(uri["apt_digest"])
+    if not apt_digest.startswith("SHA256:"):
+        return None, f"APT URI did not provide a SHA256 digest: {apt_digest}"
+    if apt_digest.removeprefix("SHA256:").lower() != sha256:
+        return None, "APT URI SHA256 differs from Packages SHA256"
     source_name, source_version = record_source(record, package_name)
     return (
         {
