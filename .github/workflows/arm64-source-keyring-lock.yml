@@ -1,0 +1,161 @@
+name: ARM64 port - lock trusted vendor source-signing keys
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-keyring-lock.yml'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-source-keyring-lock
+  cancel-in-progress: true
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact-ISO and OpenPGP tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools gnupg gpgv jq ca-certificates
+
+      - name: Extract and export only public keys trusted by the reference ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/source-keyring
+          mkdir -p work/source-keyring/iso-root work/source-keyring/raw
+          gh release download v3.3 \
+            --repo '${{ github.repository }}' \
+            --pattern "$ISO_NAME" \
+            --dir work/source-keyring
+          iso="work/source-keyring/$ISO_NAME"
+          test "$(stat -c '%s' "$iso")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$iso" | sha256sum --check --strict
+          xorriso -osirrox on -indev "$iso" \
+            -extract / work/source-keyring/iso-root \
+            > work/source-keyring/xorriso.log 2>&1
+          squashfs="$(find work/source-keyring/iso-root -type f -name filesystem.squashfs -print -quit)"
+          test -n "$squashfs"
+
+          keyrings=()
+          for version in 1.0 2.0 3.0; do
+            output="work/source-keyring/raw/gooroom-archive-${version}.gpg"
+            unsquashfs -cat "$squashfs" \
+              "etc/apt/trusted.gpg.d/gooroom-archive-${version}.gpg" \
+              > "$output"
+            test -s "$output"
+            keyrings+=(--keyring "$output")
+          done
+
+          export GNUPGHOME="$(mktemp -d)"
+          trap 'rm -rf "$GNUPGHOME"' EXIT
+          gpg --batch --no-default-keyring "${keyrings[@]}" \
+            --export-options export-minimal \
+            --armor --export \
+            > work/source-keyring/gooroom-archive-public-keys.asc
+          test -s work/source-keyring/gooroom-archive-public-keys.asc
+          gpg --batch --show-keys --with-colons --fingerprint \
+            work/source-keyring/gooroom-archive-public-keys.asc \
+            > work/source-keyring/key-details.colons
+          awk -F: '$1 == "fpr" {print $10}' \
+            work/source-keyring/key-details.colons \
+            | sort -u \
+            > work/source-keyring/fingerprints.txt
+          test -s work/source-keyring/fingerprints.txt
+
+          gpg --batch --yes --dearmor \
+            --output work/source-keyring/gooroom-archive-public-keys.gpg \
+            work/source-keyring/gooroom-archive-public-keys.asc
+          gpgv \
+            --keyring work/source-keyring/gooroom-archive-public-keys.gpg \
+            --version \
+            > work/source-keyring/gpgv-version.txt
+
+          jq -n \
+            --arg iso_name "$ISO_NAME" \
+            --arg iso_sha256 "$ISO_SHA256" \
+            --arg iso_size "$ISO_SIZE" \
+            --argjson fingerprint_count "$(wc -l < work/source-keyring/fingerprints.txt)" \
+            '{
+              schema: 1,
+              policy: "public-source-signing-keys-extracted-from-exact-reference-iso",
+              reference_iso: {
+                name: $iso_name,
+                size: ($iso_size | tonumber),
+                sha256: $iso_sha256
+              },
+              source_keyring_paths: [
+                "etc/apt/trusted.gpg.d/gooroom-archive-1.0.gpg",
+                "etc/apt/trusted.gpg.d/gooroom-archive-2.0.gpg",
+                "etc/apt/trusted.gpg.d/gooroom-archive-3.0.gpg"
+              ],
+              fingerprint_count: $fingerprint_count
+            }' > work/source-keyring/provenance.json
+          find work/source-keyring -maxdepth 1 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-keyring/LOCKSUMS.sha256
+
+      - name: Upload complete source-key evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-source-signing-key-lock
+          path: |
+            work/source-keyring/gooroom-archive-public-keys.asc
+            work/source-keyring/gooroom-archive-public-keys.gpg
+            work/source-keyring/fingerprints.txt
+            work/source-keyring/key-details.colons
+            work/source-keyring/provenance.json
+            work/source-keyring/LOCKSUMS.sha256
+            work/source-keyring/gpgv-version.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit portable public key bundle and immutable provenance
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/keys/source-signing
+          mkdir -p arm64/keys/source-signing
+          cp work/source-keyring/gooroom-archive-public-keys.asc arm64/keys/source-signing/
+          cp work/source-keyring/fingerprints.txt arm64/keys/source-signing/
+          cp work/source-keyring/provenance.json arm64/keys/source-signing/
+          cp work/source-keyring/LOCKSUMS.sha256 arm64/keys/source-signing/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/keys/source-signing
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock source-signing public keys from Hancom Gooroom 3.3 ISO'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
