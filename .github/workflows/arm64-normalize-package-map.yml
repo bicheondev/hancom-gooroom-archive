@@ -92,7 +92,7 @@ jobs:
           test '${{ steps.normalize.outputs.exit_code }}' = '0'
           jq -e '.complete == true' work/normalized-package-map/summary.json
 
-      - name: Dispatch acquisition planning after map normalization
+      - name: Dispatch repository materialization and acquisition planning
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -114,5 +114,6 @@ jobs:
           }
           if [ -f work/normalized-package-map/summary.json ] \
              && jq -e '.complete == true' work/normalized-package-map/summary.json >/dev/null; then
+            dispatch arm64-materialize-debian-reference-repo-v2.yml
             dispatch arm64-package-acquisition-plan-v2.yml
           fi
