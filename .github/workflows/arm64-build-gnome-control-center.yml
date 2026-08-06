@@ -1,0 +1,130 @@
+name: ARM64 port - build control center with exact accountsservice
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-gnome-control-center.yml'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_with_local_repo.sh'
+      - 'arm64/scripts/prepare_composite_source_chroot.sh'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-control-center-chain
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install repository tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git gzip jq python3
+
+      - name: Build and verify exact Gooroom accountsservice first
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_with_local_repo.sh \
+            arm64/scripts/prepare_composite_source_chroot.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
+          rm -rf work/accountsservice-arm64 work/accountsservice-local-debs
+          arm64/scripts/run_locked_source_arm64.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            accountsservice \
+            work/accountsservice-arm64
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            accountsservice \
+            work/accountsservice-arm64
+
+          mkdir -p work/accountsservice-local-debs
+          find work/accountsservice-arm64 -maxdepth 1 -type f \
+            -name '*.deb' ! -name '*-dbgsym_*' \
+            -exec cp -v '{}' work/accountsservice-local-debs/ \;
+          test -f work/accountsservice-local-debs/libaccountsservice-dev_0.6.55-3+grm3u1_arm64.deb
+          test -f work/accountsservice-local-debs/libaccountsservice0_0.6.55-3+grm3u1_arm64.deb
+
+      - name: Build control center against exact locally built accountsservice
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          HANCOM_GOOROOM_LOCAL_DEB_DIR: ${{ github.workspace }}/work/accountsservice-local-debs
+          HANCOM_GOOROOM_LOCAL_SOURCE: accountsservice
+          HANCOM_GOOROOM_LOCAL_REQUIRED_PACKAGES: libaccountsservice-dev libaccountsservice0
+        run: |
+          set -euxo pipefail
+          rm -rf work/gnome-control-center-arm64
+          arm64/scripts/run_locked_source_arm64_with_local_repo.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gnome-control-center \
+            work/gnome-control-center-arm64
+
+      - name: Verify target and exact dependency chain
+        env:
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+        run: |
+          set -euxo pipefail
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gnome-control-center \
+            work/gnome-control-center-arm64
+
+          jq -e '
+            .policy == "exact-locally-built-source-dependency-repository"
+            and .target_source == "gnome-control-center"
+            and .dependency_source.source == "accountsservice"
+            and .dependency_source.source_version == "0.6.55-3+grm3u1"
+            and ([.packages[].package] | index("libaccountsservice-dev") != null)
+            and ([.packages[].package] | index("libaccountsservice0") != null)
+            and (all(.packages[];
+              .source == "accountsservice"
+              and .source_version == "0.6.55-3+grm3u1"
+              and (.architecture == "arm64" or .architecture == "all")
+            ))
+          ' work/gnome-control-center-arm64/local-build-dependencies.json
+
+          grep -F $'libaccountsservice-dev\t0.6.55-3+grm3u1\tarm64' \
+            work/gnome-control-center-arm64/build-environment-packages.tsv
+          grep -F $'libaccountsservice0\t0.6.55-3+grm3u1\tarm64' \
+            work/gnome-control-center-arm64/build-environment-packages.tsv
+
+      - name: Upload exact chain build and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-control-center-exact-arm64-with-accountsservice
+          path: |
+            work/accountsservice-arm64
+            work/gnome-control-center-arm64
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
