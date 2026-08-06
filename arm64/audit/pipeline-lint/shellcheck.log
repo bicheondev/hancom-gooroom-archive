@@ -1,9 +1,0 @@
-
-In arm64/scripts/run_locked_source_arm64_with_local_repo.sh line 99:
-    if [[ "$source_field" =~ \(([^)]+)\) ]]; then
-       ^-- SC1073 (error): Couldn't parse this test expression. Fix to allow more checks.
-                                     ^-- SC1072 (error): Expected test to end here (don't wrap commands in []/[[]]). Fix any mentioned problems and try again.
-
-For more information:
-  https://www.shellcheck.net/wiki/SC1072 -- Expected test to end here (don't ...
-  https://www.shellcheck.net/wiki/SC1073 -- Couldn't parse this test expressi...
