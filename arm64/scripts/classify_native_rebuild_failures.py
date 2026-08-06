@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +36,16 @@ CATEGORY_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "submodules without independent commit locks",
             "couldn't find remote ref",
             "fatal: couldn't find",
+        ),
+    ),
+    (
+        "source-recovery-required",
+        (
+            "source-recovery-required",
+            "prebuilt non-arm64 elf",
+            "directly installed prebuilt foreign elf",
+            "unable to recognise the format of the input file",
+            "lib/xsm.so",
         ),
     ),
     (
@@ -165,6 +174,8 @@ def diagnostic_text(row: dict[str, Any]) -> str:
             pieces.append(str(diagnostic.get("filename", "")))
             pieces.append(str(diagnostic.get("tail", "")))
     pieces.extend(str(value) for value in row.get("verification_errors", []))
+    pieces.append(str(row.get("error", "")))
+    pieces.append(str(row.get("failure_reason", "")))
     pieces.append(str(row.get("build_outcome", "")))
     pieces.append(str(row.get("build_exit_code", "")))
     pieces.append(str(row.get("verify_outcome", "")))
@@ -172,6 +183,11 @@ def diagnostic_text(row: dict[str, Any]) -> str:
 
 
 def classify(text: str, row: dict[str, Any]) -> tuple[str, list[str]]:
+    # The dedicated preflight exit code is authoritative even if bounded logs
+    # were truncated before the marker text was persisted.
+    if str(row.get("build_exit_code", "")) == "86":
+        return "source-recovery-required", ["build exit code 86"]
+
     matches: list[tuple[str, list[str]]] = []
     for category, patterns in CATEGORY_RULES:
         found = sorted({pattern for pattern in patterns if pattern in text})
@@ -241,16 +257,20 @@ def main() -> int:
     dependency_failures = [
         row for row in classifications if row["category"] == "dependency-resolution"
     ]
+    source_recovery_failures = [
+        row for row in classifications if row["category"] == "source-recovery-required"
+    ]
     unknown_failures = [
         row for row in classifications if row["category"] == "unknown"
     ]
     summary = {
-        "schema": 1,
+        "schema": 2,
         "policy": "diagnostic-only-failure-classification",
         "latest_result_count": len(classifications),
         "passed_count": category_counts.get("passed", 0),
         "failed_count": len(classifications) - category_counts.get("passed", 0),
         "dependency_resolution_failure_count": len(dependency_failures),
+        "source_recovery_required_count": len(source_recovery_failures),
         "unknown_failure_count": len(unknown_failures),
         "category_counts": dict(sorted(category_counts.items())),
     }
@@ -271,6 +291,10 @@ def main() -> int:
     )
     (args.output_dir / "dependency-failures.json").write_text(
         json.dumps(dependency_failures, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (args.output_dir / "source-recovery-failures.json").write_text(
+        json.dumps(source_recovery_failures, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     (args.output_dir / "unknown-failures.json").write_text(
