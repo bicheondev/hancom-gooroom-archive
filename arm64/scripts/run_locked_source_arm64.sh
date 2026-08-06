@@ -12,7 +12,8 @@ BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64.sh"
 PATCHED_BUILDER="$(mktemp)"
 trap 'rm -f "$PATCHED_BUILDER"' EXIT
 
-# Old Bullseye devscripts/equivs has two compatibility quirks:
+# Old Bullseye devscripts/equivs and rootful build containers have three
+# compatibility quirks:
 #
 # 1. The generated package can be named either
 #      <source>-build-deps_<version>_<arch>.deb
@@ -20,6 +21,9 @@ trap 'rm -f "$PATCHED_BUILDER"' EXIT
 #      <source>-build-deps-depends_<version>_<arch>.deb
 # 2. Some revisions return a non-zero status after successfully writing the
 #    dummy package. Treat that return code as fatal only when no package exists.
+# 3. `cp -a` from the privileged container can preserve root ownership and make
+#    the mounted output directory unwritable by the host runner. Normalise only
+#    the output permissions before the container exits.
 #
 # Patch only these compatibility points. Exact source/version, commit/tree,
 # Debian snapshot, output architecture, and package validation remain unchanged.
@@ -59,6 +63,21 @@ if source.count(old_command) != 1:
         f"expected exactly one mk-build-deps block, found {source.count(old_command)}"
     )
 source = source.replace(old_command, new_command)
+
+old_copy = '''cp -av "$ROOT/build/output/." /out/ || true
+exit "$BUILD_RC"
+'''
+new_copy = '''cp -av "$ROOT/build/output/." /out/ || true
+# The rootful container may preserve root ownership on /out itself.  The host
+# runner must be able to append the immutable build lock and checksum manifest.
+chmod -R a+rwX /out || true
+exit "$BUILD_RC"
+'''
+if source.count(old_copy) != 1:
+    raise SystemExit(
+        f"expected exactly one chroot output copy block, found {source.count(old_copy)}"
+    )
+source = source.replace(old_copy, new_copy)
 
 Path(sys.argv[2]).write_text(source, encoding="utf-8")
 PY
