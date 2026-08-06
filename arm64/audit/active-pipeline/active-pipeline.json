@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 95,
-    "workflow_name_count": 95,
-    "referenced_local_file_count": 139,
+    "workflow_count": 93,
+    "workflow_name_count": 93,
+    "referenced_local_file_count": 136,
     "error_count": 0,
     "warning_count": 27,
     "passed": true
@@ -1394,42 +1394,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-debian-all-asset-mapping.yml",
-      "path": ".github/workflows/arm64-repair-debian-all-asset-mapping.yml",
-      "name": "ARM64 port - lock non-vendor Architecture all assets",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/map_debian_arm64.py",
-        "arm64/scripts/repair_debian_all_asset_mapping.py"
-      ]
-    },
-    {
-      "filename": "arm64-repair-target-package-identity.yml",
-      "path": ".github/workflows/arm64-repair-target-package-identity.yml",
-      "name": "ARM64 port - propagate ARM64 target package identity",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_package_acquisition_plan_v2.py",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/normalize_debian_arm64_map.py",
-        "arm64/scripts/repair_target_package_identity_pipeline.py"
-      ]
-    },
-    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -2232,8 +2196,7 @@
       ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
-      ".github/workflows/arm64-package-acquisition-plan-v2.yml",
-      ".github/workflows/arm64-repair-target-package-identity.yml"
+      ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v4.py": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
@@ -2313,11 +2276,7 @@
       ".github/workflows/arm64-vendor-source-lock.yml"
     ],
     "arm64/scripts/map_debian_arm64.py": [
-      ".github/workflows/arm64-debian-map.yml",
-      ".github/workflows/arm64-repair-debian-all-asset-mapping.yml"
-    ],
-    "arm64/scripts/materialize_package_acquisition_plan.py": [
-      ".github/workflows/arm64-repair-target-package-identity.yml"
+      ".github/workflows/arm64-debian-map.yml"
     ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
@@ -2343,8 +2302,7 @@
       ".github/workflows/arm64-effective-source-lock.yml"
     ],
     "arm64/scripts/normalize_debian_arm64_map.py": [
-      ".github/workflows/arm64-normalize-package-map.yml",
-      ".github/workflows/arm64-repair-target-package-identity.yml"
+      ".github/workflows/arm64-normalize-package-map.yml"
     ],
     "arm64/scripts/prepare_composite_source_chroot.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
@@ -2370,12 +2328,6 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
-    ],
-    "arm64/scripts/repair_debian_all_asset_mapping.py": [
-      ".github/workflows/arm64-repair-debian-all-asset-mapping.yml"
-    ],
-    "arm64/scripts/repair_target_package_identity_pipeline.py": [
-      ".github/workflows/arm64-repair-target-package-identity.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
