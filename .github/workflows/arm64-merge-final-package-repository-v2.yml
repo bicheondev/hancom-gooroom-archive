@@ -58,6 +58,12 @@ jobs:
             echo "custom_artifact=$(jq -r '.artifact_name' "$custom_lock")" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Enforce exact repository inputs are ready
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.gate.outputs.ready }}' = 'true'
+
       - name: Install package repository verification tools
         if: steps.gate.outputs.ready == 'true'
         run: |
