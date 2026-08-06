@@ -2,9 +2,9 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 71,
-    "workflow_name_count": 71,
-    "referenced_local_file_count": 96,
+    "workflow_count": 72,
+    "workflow_name_count": 72,
+    "referenced_local_file_count": 97,
     "error_count": 60,
     "warning_count": 0,
     "passed": false
@@ -1060,6 +1060,31 @@
       ]
     },
     {
+      "filename": "arm64-qtbase-resolve-build-v3.yml",
+      "path": ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
+      "name": "ARM64 port - prioritized resolve and build exact QtBase v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/promote_targeted_source_lock.py",
+        "arm64/scripts/run_locked_source_arm64.sh",
+        "arm64/scripts/run_locked_source_arm64_v4.sh",
+        "arm64/scripts/summarize_arm64_build_wave.py",
+        "arm64/scripts/targeted_source_archaeology_v2.py",
+        "arm64/scripts/validate_arm64_source_outputs_v3.py",
+        "arm64/scripts/validate_arm64_source_outputs_v4.py"
+      ]
+    },
+    {
       "filename": "arm64-qtbase-targeted-source-archaeology.yml",
       "path": ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml",
       "name": "ARM64 port - targeted exact QtBase source archaeology",
@@ -1507,7 +1532,8 @@
       ".github/workflows/arm64-package-smoke.yml",
       ".github/workflows/arm64-pipeline-selfcheck.yml",
       ".github/workflows/arm64-port-coverage.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/locks/iso/release-lock.json": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -1665,7 +1691,8 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-native-rebuild-batch.yml",
       ".github/workflows/arm64-package-smoke.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-builder-v2-maintenance.yml",
@@ -1776,7 +1803,8 @@
     ],
     "arm64/scripts/promote_targeted_source_lock.py": [
       ".github/workflows/arm64-build-qtbase-targeted.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
@@ -1802,7 +1830,8 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-package-smoke.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/run_locked_source_arm64_component_compat.sh": [
       ".github/workflows/arm64-build-wave5-browser.yml"
@@ -1816,7 +1845,8 @@
       ".github/workflows/arm64-build-wave1-v4.yml",
       ".github/workflows/arm64-build-wave2-v2.yml",
       ".github/workflows/arm64-build-wave2-v3.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/run_locked_source_arm64_with_local_repo.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml"
@@ -1859,11 +1889,15 @@
       ".github/workflows/arm64-build-wave2-v2.yml",
       ".github/workflows/arm64-build-wave2-v3.yml",
       ".github/workflows/arm64-pipeline-selfcheck.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml"
+    ],
+    "arm64/scripts/targeted_source_archaeology_v2.py": [
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -1875,14 +1909,16 @@
       ".github/workflows/arm64-build-wave2-v1.yml",
       ".github/workflows/arm64-build-wave2-v2.yml",
       ".github/workflows/arm64-build-wave2-v3.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/validate_arm64_source_outputs_v4.py": [
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-wave1-v4.yml",
       ".github/workflows/arm64-build-wave2-v2.yml",
       ".github/workflows/arm64-build-wave2-v3.yml",
-      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml"
+      ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
+      ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/verify_arm64_rebuild.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
