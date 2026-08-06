@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 88,
-    "workflow_name_count": 88,
-    "referenced_local_file_count": 121,
+    "workflow_count": 90,
+    "workflow_name_count": 90,
+    "referenced_local_file_count": 123,
     "error_count": 4,
-    "warning_count": 30,
+    "warning_count": 36,
     "passed": false
   },
   "workflows": [
@@ -561,6 +561,23 @@
       ]
     },
     {
+      "filename": "arm64-extract-repository-keys.yml",
+      "path": ".github/workflows/arm64-extract-repository-keys.yml",
+      "name": "ARM64 port - extract original repository signing keys",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json"
+      ]
+    },
+    {
       "filename": "arm64-final-live-iso.yml",
       "path": ".github/workflows/arm64-final-live-iso.yml",
       "name": "ARM64 port - assemble and boot-test final live ISO",
@@ -1011,6 +1028,31 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-port-coverage-v2.yml",
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "name": "ARM64 port - exact authority and phase coverage v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/acquisition-plan/package-acquisition-plan.json",
+        "arm64/locks/debian-arm64/normalized-package-map.json",
+        "arm64/locks/effective-sources-v3/effective-source-lock.json",
+        "arm64/locks/installed-system/release-lock.json",
+        "arm64/locks/iso/release-lock.json",
+        "arm64/locks/rebuild-release/rebuild-release-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/rootfs/verification.json",
+        "arm64/scripts/summarize_arm64_port_coverage_v2.py"
+      ]
     },
     {
       "filename": "arm64-port-coverage.yml",
@@ -1771,7 +1813,8 @@
       ".github/workflows/arm64-lock-schema-audit.yml"
     ],
     "arm64/locks/acquisition-plan/package-acquisition-plan.json": [
-      ".github/workflows/arm64-exact-rootfs-v2.yml"
+      ".github/workflows/arm64-exact-rootfs-v2.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/acquisition-plan/summary.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
@@ -1789,7 +1832,11 @@
       ".github/workflows/arm64-wave2-v1-record.yml"
     ],
     "arm64/locks/debian-arm64/normalized-package-map.json": [
-      ".github/workflows/arm64-package-acquisition-plan-v3.yml"
+      ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
+    "arm64/locks/effective-sources-v3/effective-source-lock.json": [
+      ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -1823,14 +1870,16 @@
       ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
-      ".github/workflows/arm64-installed-system-boot.yml"
+      ".github/workflows/arm64-installed-system-boot.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/iso/iso-build.json": [
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/locks/iso/release-lock.json": [
       ".github/workflows/arm64-final-live-iso.yml",
-      ".github/workflows/arm64-installed-system-boot.yml"
+      ".github/workflows/arm64-installed-system-boot.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/linux-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-linux-apt-source-lock.yml"
@@ -1858,6 +1907,7 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
@@ -1868,6 +1918,7 @@
       ".github/workflows/arm64-debian-map.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
+      ".github/workflows/arm64-extract-repository-keys.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
@@ -1876,6 +1927,7 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-normalize-package-map.yml",
       ".github/workflows/arm64-package-repo-wave1.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
@@ -1898,7 +1950,8 @@
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/locks/rootfs/verification.json": [
-      ".github/workflows/arm64-final-live-iso.yml"
+      ".github/workflows/arm64-final-live-iso.yml",
+      ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/sources-api-baseline/source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2254,6 +2307,9 @@
     "arm64/scripts/summarize_arm64_ci_state.py": [
       ".github/workflows/arm64-ci-state-snapshot.yml"
     ],
+    "arm64/scripts/summarize_arm64_port_coverage_v2.py": [
+      ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
     "arm64/scripts/targeted_source_archaeology.py": [
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml"
@@ -2432,6 +2488,36 @@
     {
       "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/debian-arm64/normalized-package-map.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/installed-system/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/iso/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v2.yml",
+      "local_path": "arm64/locks/rootfs/verification.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
