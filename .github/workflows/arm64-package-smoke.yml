@@ -6,7 +6,8 @@ on:
     paths:
       - '.github/workflows/arm64-package-smoke.yml'
       - 'arm64/scripts/build_locked_source_arm64.sh'
-      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
       - 'arm64/locks/effective-sources/**'
   workflow_dispatch:
 
@@ -38,57 +39,36 @@ jobs:
           docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            git jq dpkg-dev ca-certificates file
+            git jq dpkg-dev ca-certificates file python3
 
       - name: Build accountsservice from the exact locked commit
         env:
           HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
         run: |
           set -euxo pipefail
-          chmod +x arm64/scripts/build_locked_source_arm64.sh
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
           rm -rf work/accountsservice-arm64
-          arm64/scripts/build_locked_source_arm64.sh \
-            arm64/locks/sources-api-baseline/source-lock.json \
+          arm64/scripts/run_locked_source_arm64.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
             accountsservice \
             work/accountsservice-arm64
 
       - name: Verify package, source, and machine metadata
         run: |
           set -euxo pipefail
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            accountsservice \
+            work/accountsservice-arm64
           jq -e '
             .source == "accountsservice"
             and .source_version == "0.6.55-3+grm3u1"
             and .target_architecture == "arm64"
             and .debian_snapshot == "20230730T235959Z"
           ' work/accountsservice-arm64/build-lock.json
-          jq -e '
-            .commit_sha == .verified_commit_sha
-            and .tree_sha == .verified_tree_sha
-          ' work/accountsservice-arm64/source-lock-evidence.json
-
-          found=0
-          for deb in work/accountsservice-arm64/*.deb; do
-            found=1
-            dpkg-deb -f "$deb" Package Version Architecture
-            test "$(dpkg-deb -f "$deb" Version)" = '0.6.55-3+grm3u1'
-            case "$(dpkg-deb -f "$deb" Architecture)" in
-              arm64|all) ;;
-              *) exit 1 ;;
-            esac
-
-            root="$(mktemp -d)"
-            dpkg-deb -x "$deb" "$root"
-            find "$root" -type f -print0 \
-              | xargs -0 -r file \
-              > "$deb.file-report.txt"
-            if grep -E 'ELF .* (x86-64|Intel 80386)' "$deb.file-report.txt"; then
-              echo "x86 executable leaked into $deb" >&2
-              exit 1
-            fi
-            rm -rf "$root"
-          done
-          test "$found" = 1
-          sha256sum --check work/accountsservice-arm64/SHA256SUMS
 
       - name: Upload exact ARM64 package and failure evidence
         if: always()
