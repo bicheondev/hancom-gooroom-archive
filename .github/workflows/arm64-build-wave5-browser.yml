@@ -7,7 +7,9 @@ on:
       - '.github/workflows/arm64-build-wave5-browser.yml'
       - 'arm64/scripts/build_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/prepare_composite_source_chroot.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/source-components/**'
       - 'arm64/locks/effective-sources/**'
       - 'arm64/locks/reference/**'
   workflow_dispatch:
@@ -49,12 +51,14 @@ jobs:
         env:
           HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
           SOURCE_NAME: gooroom-browser
         run: |
           set -euxo pipefail
           chmod +x \
             arm64/scripts/build_locked_source_arm64.sh \
             arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/prepare_composite_source_chroot.sh \
             arm64/scripts/verify_locked_arm64_build.sh
           rm -rf work/gooroom-browser-arm64
           arm64/scripts/run_locked_source_arm64.sh \
@@ -65,6 +69,7 @@ jobs:
       - name: Verify browser source, version, architecture, and payload machine types
         env:
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
         run: |
           set -euxo pipefail
           arm64/scripts/verify_locked_arm64_build.sh \
