@@ -53,10 +53,13 @@ qemu=(
   -nographic
   -monitor none
   -serial stdio
-  -device virtio-rng-pci
-  -drive "if=none,id=cdrom,media=cdrom,format=raw,file=$ISO"
-  -device virtio-scsi-pci,id=scsi0
-  -device scsi-cd,drive=cdrom,bus=scsi0.0
+  # AAVMF already contains the virtio drivers. Ubuntu's QEMU package does not
+  # ship efi-virtio.rom, so explicitly disable optional PCI expansion ROMs
+  # instead of failing before firmware can inspect the ISO.
+  -device virtio-rng-pci,romfile=
+  -drive "if=none,id=cdrom,media=cdrom,format=raw,readonly=on,file=$ISO"
+  -device virtio-scsi-pci,id=scsi0,romfile=
+  -device scsi-cd,drive=cdrom,bus=scsi0.0,bootindex=0
   -no-reboot
 )
 if [ -n "$VARS" ]; then
