@@ -12,13 +12,14 @@ LOCK_JSON="$1"
 SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64.sh"
+BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64_v2.sh"
 COMPAT_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
 COMPOSITE_HELPER="${HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER:-$SCRIPT_DIR/prepare_composite_source_chroot.sh}"
 COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-$SCRIPT_DIR/../locks/source-components}"
 LOCAL_DEB_DIR="${HANCOM_GOOROOM_LOCAL_DEB_DIR:-}"
 LOCAL_SOURCE_NAME="${HANCOM_GOOROOM_LOCAL_SOURCE:-}"
 LOCAL_REQUIRED_PACKAGES_RAW="${HANCOM_GOOROOM_LOCAL_REQUIRED_PACKAGES:-}"
+SOURCE_VERSION_RE='\(([^)]+)\)'
 
 for command in jq dpkg-deb dpkg-scanpackages sha256sum gzip python3 stat find; do
   command -v "$command" >/dev/null || {
@@ -96,7 +97,7 @@ for deb in "${LOCAL_DEBS[@]}"; do
     declared_source_version="$version"
   else
     declared_source="${source_field%% *}"
-    if [[ "$source_field" =~ \(([^)]+)\) ]]; then
+    if [[ "$source_field" =~ $SOURCE_VERSION_RE ]]; then
       declared_source_version="${BASH_REMATCH[1]}"
     else
       declared_source_version="$version"
@@ -170,11 +171,11 @@ done
 # Patch a disposable copy of only the generic builder to mount the verified
 # repository. The checked-in compatibility wrapper still performs the exact
 # target Git commit/tree/version and AMD64-reference package gates unchanged.
-cp "$BASE_BUILDER" "$BUILDER_DIR/build_locked_source_arm64.sh"
+cp "$BASE_BUILDER" "$BUILDER_DIR/build_locked_source_arm64_v2.sh"
 cp "$COMPAT_WRAPPER" "$BUILDER_DIR/run_locked_source_arm64.sh"
 chmod +x "$BUILDER_DIR/"*.sh
 
-python3 - "$BUILDER_DIR/build_locked_source_arm64.sh" <<'PY'
+python3 - "$BUILDER_DIR/build_locked_source_arm64_v2.sh" <<'PY'
 from pathlib import Path
 import sys
 
