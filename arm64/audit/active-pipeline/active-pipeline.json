@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 88,
-    "workflow_name_count": 88,
-    "referenced_local_file_count": 121,
-    "error_count": 74,
+    "workflow_count": 89,
+    "workflow_name_count": 89,
+    "referenced_local_file_count": 124,
+    "error_count": 76,
     "warning_count": 0,
     "passed": false
   },
@@ -1231,6 +1231,26 @@
       ]
     },
     {
+      "filename": "arm64-qtbase-apt-source-lock.yml",
+      "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
+      "name": "ARM64 port - recover exact QtBase source from APT",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-apt-source/LOCKSUMS.sh",
+        "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/resolve_source_apt.py"
+      ]
+    },
+    {
       "filename": "arm64-qtbase-resolve-and-build-v2.yml",
       "path": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       "name": "ARM64 port - resolve and build exact QtBase v2",
@@ -1909,6 +1929,12 @@
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan.yml"
     ],
+    "arm64/locks/qtbase-apt-source/LOCKSUMS.sh": [
+      ".github/workflows/arm64-qtbase-apt-source-lock.yml"
+    ],
+    "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
+      ".github/workflows/arm64-qtbase-apt-source-lock.yml"
+    ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-dependency-retry.yml",
@@ -1959,6 +1985,7 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-native-rebuild-batch.yml",
       ".github/workflows/arm64-port-coverage.yml",
+      ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-source-lock.yml"
     ],
     "arm64/locks/sources/source-lock.json": [
@@ -2223,6 +2250,9 @@
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/scripts/resolve_source_apt.py": [
+      ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/scripts/resolve_source_git_seeded.py": [
       ".github/workflows/arm64-source-lock.yml"
@@ -2606,6 +2636,16 @@
     {
       "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/qtbase-apt-source/LOCKSUMS.sh"
+    },
+    {
+      "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
     },
     {
       "path": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
