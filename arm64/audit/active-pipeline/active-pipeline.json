@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 109,
-    "workflow_name_count": 109,
+    "workflow_count": 110,
+    "workflow_name_count": 110,
     "referenced_local_file_count": 186,
     "error_count": 0,
     "warning_count": 35,
@@ -2048,6 +2048,23 @@
       ]
     },
     {
+      "filename": "arm64-stage0-v5-retest.yml",
+      "path": ".github/workflows/arm64-stage0-v5-retest.yml",
+      "name": "ARM64 port - retest the exact stage-0 v5 ISO",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/boot_test_arm64_uefi_iso.sh"
+      ]
+    },
+    {
       "filename": "arm64-static-audit.yml",
       "path": ".github/workflows/arm64-static-audit.yml",
       "name": "ARM64 port - static lock and workflow audit",
@@ -2598,7 +2615,8 @@
     ],
     "arm64/scripts/boot_test_arm64_uefi_iso.sh": [
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
-      ".github/workflows/arm64-stage0-live-v5.yml"
+      ".github/workflows/arm64-stage0-live-v5.yml",
+      ".github/workflows/arm64-stage0-v5-retest.yml"
     ],
     "arm64/scripts/build_arm64_installed_disk.sh": [
       ".github/workflows/arm64-installed-system-boot.yml"
