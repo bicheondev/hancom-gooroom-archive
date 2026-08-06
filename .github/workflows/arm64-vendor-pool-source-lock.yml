@@ -67,8 +67,11 @@ jobs:
               "etc/apt/trusted.gpg.d/gooroom-archive-${version}.gpg" \
               > "work/vendor-input/keyrings/gooroom-archive-${version}.gpg"
           done
-          sha256sum work/vendor-input/* work/vendor-input/keyrings/* \
-            > work/vendor-input/INPUTSUMS.sha256
+          find work/vendor-input -type f ! -name INPUTSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/vendor-input-sums
+          mv /tmp/vendor-input-sums work/vendor-input/INPUTSUMS.sha256
 
       - name: Probe exact signed source descriptors
         id: recover
@@ -89,8 +92,11 @@ jobs:
           rc=$?
           set -e
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
-          sha256sum work/vendor-pool-lock/* work/vendor-pool-lock/dsc/* \
-            | sort -k2 > work/vendor-pool-lock/LOCKSUMS.sha256
+          find work/vendor-pool-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/vendor-pool-lock-sums
+          mv /tmp/vendor-pool-lock-sums work/vendor-pool-lock/LOCKSUMS.sha256
           cat work/vendor-pool-lock/vendor-pool-source-lock-summary.json
 
       - name: Upload source recovery evidence
