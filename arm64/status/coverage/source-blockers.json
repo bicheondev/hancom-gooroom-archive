@@ -1,0 +1,246 @@
+[
+  {
+    "source": "gnome-flashback",
+    "source_version": "3.38.0-2+grm3u2+han3u4",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gnome-flashback"
+    ],
+    "reused_all_packages": [
+      "gnome-flashback-common",
+      "gnome-session-flashback"
+    ],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-applauncher-applet",
+    "source_version": "0.4.0+grm3u1+han3u2",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-applauncher-applet"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-dockbarx-applet",
+    "source_version": "0.3.1+grm3u1+han3u1",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-dockbarx-applet"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-greeter",
+    "source_version": "0.3.1+grm3u1+han3u2",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-greeter"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-guide",
+    "source_version": "0.5.3+grm3u1+han3u1",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-guide"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-integration-applet",
+    "source_version": "0.3.1+grm3u1+han3u3",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-integration-applet"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "gooroom-libsecurity-extensions",
+    "source_version": "0.1.7+grm3u1",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-libsecurity-extensions"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "exact-locked",
+    "source_status": "source-recovery-required",
+    "repository_full_name": "gooroom/gooroom-libsecurity-extensions",
+    "commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+    "tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+    "build_status": "source-recovery-required",
+    "build_evidence": {
+      "blocker_file": "arm64/source-recovery-blockers.json",
+      "reason": "The exact packaging tree installs a prebuilt x86-64 Xorg module and does not contain its matching source.",
+      "audit_evidence": {
+        "actions_run_id": "31093652899",
+        "artifact_id": "8964516130",
+        "artifact_name": "gooroom-libsecurity-extensions-0.1.7-grm3u1-source-recovery-audit",
+        "artifact_digest": "sha256:20d54a9b2e10b0f8bdfc6f3cc69b352e06748329d47a5509671a414518648576",
+        "audit_status": "confirmed-embedded-x86-elf-source-recovery-required"
+      },
+      "acceptance_gate": {
+        "required": [
+          "Recover or obtain source whose behavior matches the exact packaged xsm.so.",
+          "Build the recovered source as AArch64 against the Bullseye Xorg ABI.",
+          "Verify the output contains no x86 ELF and passes package/source/version locks."
+        ],
+        "automatic_substitution_allowed": false,
+        "omit_from_final_iso_allowed": false
+      }
+    },
+    "source_recovery_blocker": {
+      "source": "gooroom-libsecurity-extensions",
+      "source_version": "0.1.7+grm3u1",
+      "status": "source-recovery-required",
+      "reason": "The exact packaging tree installs a prebuilt x86-64 Xorg module and does not contain its matching source.",
+      "exact_packaging_authority": {
+        "repository_full_name": "gooroom/gooroom-libsecurity-extensions",
+        "commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+        "tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+        "install_manifest": "debian/install",
+        "installed_path": "lib/xsm.so",
+        "git_blob_sha1": "416fbb7260c30d5075b1da6dd32aa8d81ef4a49f",
+        "size": 27072,
+        "sha256": "d28c255bb00061b0df60f977e9c022a01e8d98e957b1cbcd145aaa3940aa37c8",
+        "elf_machine": "x86_64",
+        "build_id_sha1": "0371d4cd90f7748dfb3011789f5337bc1b5c353e"
+      },
+      "public_source_anchor": {
+        "repository_full_name": "ultract/X.org-Security-Module",
+        "commit_sha": "fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7",
+        "tree_sha": "aef0ff9c73f625763b3822c7cfa7179799f26637",
+        "equivalent_to_packaged_binary": false,
+        "difference_summary": [
+          "The packaged binary dynamically loads libjson-c.so.5; the public source anchor does not contain those literals.",
+          "The packaged binary contains Gnome Flashback, Metacity, gnome-terminal-server and newer AT-SPI paths absent from the public source anchor.",
+          "The packaged binary contains modified XSM policy and diagnostic strings absent from the public source anchor."
+        ]
+      },
+      "audit_evidence": {
+        "actions_run_id": "31093652899",
+        "artifact_id": "8964516130",
+        "artifact_name": "gooroom-libsecurity-extensions-0.1.7-grm3u1-source-recovery-audit",
+        "artifact_digest": "sha256:20d54a9b2e10b0f8bdfc6f3cc69b352e06748329d47a5509671a414518648576",
+        "audit_status": "confirmed-embedded-x86-elf-source-recovery-required"
+      },
+      "acceptance_gate": {
+        "required": [
+          "Recover or obtain source whose behavior matches the exact packaged xsm.so.",
+          "Build the recovered source as AArch64 against the Bullseye Xorg ABI.",
+          "Verify the output contains no x86 ELF and passes package/source/version locks."
+        ],
+        "automatic_substitution_allowed": false,
+        "omit_from_final_iso_allowed": false
+      }
+    }
+  },
+  {
+    "source": "gooroom-session-manager",
+    "source_version": "0.3.9+grm3u1+han3u2",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "gooroom-session-manager"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "linux",
+    "source_version": "5.10.179-1+grm3u1",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "linux-image-5.10.0-23-amd64"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  },
+  {
+    "source": "qtbase-opensource-src",
+    "source_version": "5.15.2+dfsg-9+grm3u1",
+    "role": "rebuild-arm64",
+    "amd64_binary_packages": [
+      "libqt5core5a",
+      "libqt5dbus5",
+      "libqt5gui5",
+      "libqt5network5",
+      "libqt5printsupport5",
+      "libqt5sql5",
+      "libqt5test5",
+      "libqt5widgets5",
+      "libqt5xml5"
+    ],
+    "reused_all_packages": [],
+    "packaging_source_status": "unresolved",
+    "source_status": "unresolved",
+    "repository_full_name": null,
+    "commit_sha": null,
+    "tree_sha": null,
+    "build_status": "source-blocked",
+    "build_evidence": null,
+    "source_recovery_blocker": null
+  }
+]
