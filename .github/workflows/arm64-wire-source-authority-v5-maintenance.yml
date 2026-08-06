@@ -1,0 +1,87 @@
+name: ARM64 port - wire every source recovery to authority v5
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-wire-source-authority-v5-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-authority-v4
+  cancel-in-progress: true
+
+jobs:
+  wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source recovery and authority controllers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Point key, Wayback, monitor, and exhaustive probes to authority v5
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          targets = [
+              Path('.github/workflows/arm64-source-keyring-lock.yml'),
+              Path('.github/workflows/arm64-wayback-source-recovery.yml'),
+              Path('.github/workflows/arm64-source-recovery-monitor-v2.yml'),
+              Path('.github/workflows/arm64-source-lock-exhaustive.yml'),
+              Path('.github/workflows/arm64-source-authority-v9-maintenance.yml'),
+          ]
+          for path in targets:
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('arm64-source-authority-v3.yml', 'arm64-source-authority-v5.yml')
+              text = text.replace('arm64-source-authority-v4.yml', 'arm64-source-authority-v5.yml')
+              path.write_text(text, encoding='utf-8')
+          PY
+          for path in \
+            .github/workflows/arm64-source-keyring-lock.yml \
+            .github/workflows/arm64-wayback-source-recovery.yml \
+            .github/workflows/arm64-source-recovery-monitor-v2.yml \
+            .github/workflows/arm64-source-lock-exhaustive.yml; do
+            [ ! -f "$path" ] || grep -F 'arm64-source-authority-v5.yml' "$path"
+          done
+
+      - name: Remove one-shot wiring and commit authority v5 routing
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git rm -f .github/workflows/arm64-wire-source-authority-v5-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows
+          git commit -m 'Route all exact source recovery through authority v5'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 3))
+          done
+
+      - name: Re-run source authority v5 with all current evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
