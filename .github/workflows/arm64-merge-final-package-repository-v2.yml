@@ -1,0 +1,188 @@
+name: ARM64 port - merge final exact package repository v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-merge-final-package-repository-v2.yml'
+      - 'arm64/scripts/merge_final_package_repositories_v2.py'
+      - 'arm64/locks/debian-reference-repository-v2/**'
+      - 'arm64/locks/build-dependency-repository-v2/**'
+      - 'arm64/locks/package-plan/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-final-package-repository-v2
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out package authorities and merger
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check all exact package repository gates
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=true
+          normalized=arm64/locks/package-plan/debian-arm64-map-normalized.json
+          debian_summary=arm64/locks/debian-reference-repository-v2/summary.json
+          debian_lock=arm64/locks/debian-reference-repository-v2/artifact-lock.json
+          custom_summary=arm64/locks/build-dependency-repository-v2/summary.json
+          custom_lock=arm64/locks/build-dependency-repository-v2/artifact-lock.json
+          for path in "$normalized" "$debian_summary" "$debian_lock" "$custom_summary" "$custom_lock"; do
+            [ -f "$path" ] || ready=false
+          done
+          if [ "$ready" = true ]; then
+            jq -e '.summary.complete == true' "$normalized" >/dev/null || ready=false
+            jq -e '.repository_ready == true and .blocker_count == 0' "$debian_summary" >/dev/null || ready=false
+            jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' "$custom_summary" >/dev/null || ready=false
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if [ "$ready" = true ]; then
+            echo "debian_run_id=$(jq -r '.actions_run_id' "$debian_lock")" >> "$GITHUB_OUTPUT"
+            echo "debian_artifact=$(jq -r '.artifact_name' "$debian_lock")" >> "$GITHUB_OUTPUT"
+            echo "custom_run_id=$(jq -r '.actions_run_id' "$custom_lock")" >> "$GITHUB_OUTPUT"
+            echo "custom_artifact=$(jq -r '.artifact_name' "$custom_lock")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install package repository verification tools
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev apt-utils jq ca-certificates
+          python3 -m py_compile arm64/scripts/merge_final_package_repositories_v2.py
+          gh --version
+
+      - name: Download both exact repositories by locked run and artifact identity
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/debian-artifact work/custom-artifact
+          mkdir -p work/debian-artifact work/custom-artifact
+          gh run download '${{ steps.gate.outputs.debian_run_id }}' \
+            --repo '${{ github.repository }}' \
+            --name '${{ steps.gate.outputs.debian_artifact }}' \
+            --dir work/debian-artifact
+          gh run download '${{ steps.gate.outputs.custom_run_id }}' \
+            --repo '${{ github.repository }}' \
+            --name '${{ steps.gate.outputs.custom_artifact }}' \
+            --dir work/custom-artifact
+
+          mapfile -t debian_indexes < <(find work/debian-artifact -type f -name Packages | sort)
+          mapfile -t custom_indexes < <(find work/custom-artifact -type f -name Packages | sort)
+          test "${#debian_indexes[@]}" = 1
+          test "${#custom_indexes[@]}" = 1
+          dirname "${debian_indexes[0]}" > work/debian-repository-path.txt
+          dirname "${custom_indexes[0]}" > work/custom-repository-path.txt
+
+          debian_summary="$(find work/debian-artifact -type f -path '*/debian-reference-evidence/summary.json' -print -quit)"
+          custom_summary="$(find work/custom-artifact -type f -path '*/build-dependency-evidence/summary.json' -print -quit)"
+          test -n "$debian_summary"
+          test -n "$custom_summary"
+          jq -e '.repository_ready == true and .blocker_count == 0' "$debian_summary"
+          jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' "$custom_summary"
+
+      - name: Resolve every reference package to exactly one final DEB
+        if: steps.gate.outputs.ready == 'true'
+        id: merge
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/final-package-repository work/final-package-evidence
+          mkdir -p work/final-package-repository work/final-package-evidence
+          set +e
+          python3 arm64/scripts/merge_final_package_repositories_v2.py \
+            --normalized-map arm64/locks/package-plan/debian-arm64-map-normalized.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --debian-repository "$(cat work/debian-repository-path.txt)" \
+            --custom-repository "$(cat work/custom-repository-path.txt)" \
+            --output-repository work/final-package-repository \
+            --output-dir work/final-package-evidence \
+            2>&1 | tee work/final-package-workflow.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/final-package-repository work/final-package-evidence \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/final-package-evidence/LOCKSUMS.sha256
+          cat work/final-package-evidence/summary.json
+
+      - name: Upload final exact package repository and blockers
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-final-package-repository-v2
+          path: |
+            work/final-package-repository
+            work/final-package-evidence
+            work/final-package-workflow.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit final repository identity and package authority
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/final-package-repository-v2
+          mkdir -p arm64/locks/final-package-repository-v2
+          cp work/final-package-evidence/summary.json \
+            arm64/locks/final-package-repository-v2/
+          cp work/final-package-evidence/final-package-authority.json \
+            arm64/locks/final-package-repository-v2/
+          cp work/final-package-evidence/blockers.json \
+            arm64/locks/final-package-repository-v2/
+          cp work/final-package-evidence/excluded.json \
+            arm64/locks/final-package-repository-v2/
+          cp work/final-package-evidence/selected-routes.tsv \
+            arm64/locks/final-package-repository-v2/
+          cp work/final-package-evidence/LOCKSUMS.sha256 \
+            arm64/locks/final-package-repository-v2/
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-final-package-repository-v2' \
+            --arg debian_run_id '${{ steps.gate.outputs.debian_run_id }}' \
+            --arg custom_run_id '${{ steps.gate.outputs.custom_run_id }}' \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,input_repository_runs:{debian:$debian_run_id,custom:$custom_run_id}}' \
+            > arm64/locks/final-package-repository-v2/artifact-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/final-package-repository-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Lock final exact Hancom Gooroom ARM64 package repository v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce complete exact final package authority
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.merge.outputs.exit_code }}' = '0'
+          jq -e '.final_repository_ready == true and .blocker_count == 0' \
+            work/final-package-evidence/summary.json
