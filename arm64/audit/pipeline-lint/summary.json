@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "checks": [
+    {
+      "name": "python-compile",
+      "exit_code": 0,
+      "passed": true
+    },
+    {
+      "name": "bash-syntax",
+      "exit_code": 2,
+      "passed": false
+    },
+    {
+      "name": "shellcheck",
+      "exit_code": 1,
+      "passed": false
+    },
+    {
+      "name": "yaml-json",
+      "exit_code": 0,
+      "passed": true
+    },
+    {
+      "name": "static-invariants",
+      "exit_code": 1,
+      "passed": false
+    }
+  ],
+  "passed": false,
+  "failed_checks": [
+    "bash-syntax",
+    "shellcheck",
+    "static-invariants"
+  ]
+}
