@@ -1,12 +1,14 @@
 {
   "summary": {
-    "schema": 1,
-    "policy": "exact-source-and-verified-native-arm64-before-iso-assembly",
+    "schema": 2,
+    "policy": "exact-source-and-verified-native-arm64-before-iso-assembly-including-source-recovery-gates",
     "custom_source_count": 74,
     "reuse_all_source_count": 25,
     "native_rebuild_source_count": 49,
-    "exact_source_locked_count": 59,
+    "exact_packaging_source_locked_count": 59,
+    "exact_buildable_source_locked_count": 59,
     "arch_replace_count": 1,
+    "source_recovery_required_count": 0,
     "source_blocker_count": 9,
     "native_build_passed_count": 20,
     "native_build_failed_count": 13,
@@ -26,12 +28,14 @@
         "libaccountsservice0"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/accountsservice",
       "commit_sha": "706c15ce56c8facdad9733989d305840ad109de8",
       "tree_sha": "4efcdc4c26fe2ca5bfc4d009e0ab918fbf06f91d",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/accountsservice/0.6.55-3_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/accountsservice/0.6.55-3_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "adduser",
@@ -41,12 +45,14 @@
       "reused_all_packages": [
         "adduser"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/adduser",
       "commit_sha": "e87eca4c870601b171882bd07f5a90ce866b5e70",
       "tree_sha": "b0d2c9f5aa79935f585634ad8a3440a9649a1298",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "arc-icon-theme",
@@ -56,12 +62,14 @@
       "reused_all_packages": [
         "arc-icon-theme"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/arc-icon-theme",
       "commit_sha": "ca7f7fd3dfe2d7be01fe57465b3a7f356a037159",
       "tree_sha": "ca26d7275638abc0c685aceb504c75679c78b4c5",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "arc-theme",
@@ -71,12 +79,14 @@
       "reused_all_packages": [
         "arc-theme"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "celluloid",
@@ -88,12 +98,14 @@
       "reused_all_packages": [
         "gnome-mpv"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/celluloid",
       "commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
       "tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/celluloid/0.20-2_grm3u6/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/celluloid/0.20-2_grm3u6/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "cups-pk-helper",
@@ -103,12 +115,14 @@
         "cups-pk-helper"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/cups-pk-helper",
       "commit_sha": "fead88f5fe9626f17bcba1cb9f3f2407c933dfb4",
       "tree_sha": "8e016f0c497e909186752f250d49ca1efb0ce561",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/cups-pk-helper/0.2.6-1ubuntu3_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/cups-pk-helper/0.2.6-1ubuntu3_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "debian-system-adjustments",
@@ -118,12 +132,14 @@
       "reused_all_packages": [
         "debian-system-adjustments"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/debian-system-adjustments",
       "commit_sha": "a6a0f5177684ecc172799192a21da63597fb56a7",
       "tree_sha": "eb11c72d52d5bac3e9663de73ef96245b24944ca",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "dpkg",
@@ -135,12 +151,14 @@
       "reused_all_packages": [
         "libdpkg-perl"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/dpkg",
       "commit_sha": "251444d812939e48e092400708ad3cd8ade36326",
       "tree_sha": "1a5c57b238149446b5ea4f2a76916b3e72d051ef",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "eog",
@@ -150,12 +168,14 @@
         "eog"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/eog",
       "commit_sha": "6db9c892f4b8b824cb49d0353dd74392235e02b9",
       "tree_sha": "6f2608b0ed80be8e4ed8f63b8930efd961bc921f",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/eog/3.38.2-1_grm3u4/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/eog/3.38.2-1_grm3u4/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "file-roller",
@@ -165,12 +185,14 @@
         "file-roller"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/file-roller",
       "commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
       "tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/file-roller/3.38.1-1_grm3u3/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/file-roller/3.38.1-1_grm3u3/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "flat-remix-gtk-theme",
@@ -180,12 +202,14 @@
       "reused_all_packages": [
         "flat-remix-gtk-theme"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/flat-remix-gtk-theme",
       "commit_sha": "64daf4d276372e4491275820f40ae26f64aaa95d",
       "tree_sha": "9872cabaa26f440666b585d8e104e8bb3299daa1",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gdebi",
@@ -196,12 +220,14 @@
         "gdebi",
         "gdebi-core"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancom-io/gdebi",
       "commit_sha": "26dc2b7b2971d58f9459aab5d243d41a7d90007a",
       "tree_sha": "caf3e4fd72b32128661ef4f5d2609e00346f72f1",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gedit",
@@ -213,12 +239,14 @@
       "reused_all_packages": [
         "gedit-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gedit",
       "commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
       "tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gedit/3.38.1-1_grm3u3/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gedit/3.38.1-1_grm3u3/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-bluetooth",
@@ -229,12 +257,14 @@
         "libgnome-bluetooth13"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gnome-bluetooth",
       "commit_sha": "377e4a327d5e26e2d202aab48da04d0a077d4f93",
       "tree_sha": "46ac22ded0d9e36d45ba2bd9ad5ae427f38cfca5",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gnome-bluetooth/3.34.3-2_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gnome-bluetooth/3.34.3-2_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-control-center",
@@ -246,12 +276,14 @@
       "reused_all_packages": [
         "gnome-control-center-data"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gnome-control-center",
       "commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
       "tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-flashback",
@@ -264,12 +296,14 @@
         "gnome-flashback-common",
         "gnome-session-flashback"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-panel",
@@ -282,12 +316,14 @@
       "reused_all_packages": [
         "gnome-panel-data"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gnome-panel",
       "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
       "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gnome-panel/3.38.0-1+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gnome-panel/3.38.0-1+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-screenshot",
@@ -297,12 +333,14 @@
         "gnome-screenshot"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gnome-screenshot",
       "commit_sha": "0829ef62630f694dba017cc39f6422b777bd8396",
       "tree_sha": "d97cf1f6dfac3a1cc30679b0c5b63c47218d0bfb",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gnome-screenshot/3.38.0-1_grm3u2/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gnome-screenshot/3.38.0-1_grm3u2/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gnome-settings-daemon",
@@ -314,12 +352,14 @@
       "reused_all_packages": [
         "gnome-settings-daemon-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gnome-settings-daemon",
       "commit_sha": "f94e8eaddd981096dc167d69848b24b085b33cc5",
       "tree_sha": "a5fec2ac6898a8b0ce9dffd4377e06ef497d61ba",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-agent-service",
@@ -329,12 +369,14 @@
       "reused_all_packages": [
         "gooroom-agent-service"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-agent-service",
       "commit_sha": "e36c9c0934710e2d70cb1f7dcb1507410edfea52",
       "tree_sha": "c0e8dd80095abd6c81659006b783f1ec1c278d4c",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-applauncher-applet",
@@ -344,12 +386,14 @@
         "gooroom-applauncher-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-archive-keyring",
@@ -359,12 +403,14 @@
       "reused_all_packages": [
         "gooroom-archive-keyring"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-archive-keyring",
       "commit_sha": "d59dd39ec853898ed870c9fdcb688fefef143659",
       "tree_sha": "e806feedc6ec188f02816fadaf838cac3374e633",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-artwork-common",
@@ -374,12 +420,14 @@
       "reused_all_packages": [
         "gooroom-artwork-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-artwork-common",
       "commit_sha": "08af38619bf9b88be33bab7fa5e021288c88fdd9",
       "tree_sha": "c9300216251965461e95420e82793a2fc7b3d510",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-artwork-gnome-flashback",
@@ -389,12 +437,14 @@
       "reused_all_packages": [
         "gooroom-artwork-gnome-flashback"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-artwork-gnome-flashback",
       "commit_sha": "dfc53a6dda50a0544de9f5f0b5caf1bd44c57ae9",
       "tree_sha": "079be5b3127f1a4ff89d09a4adc5d14e95605798",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-bootsplash-theme",
@@ -404,12 +454,14 @@
       "reused_all_packages": [
         "gooroom-bootsplash-theme"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-browser",
@@ -421,12 +473,14 @@
       "reused_all_packages": [
         "gooroom-browser-l10n"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-browser",
       "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
       "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-client-server-register",
@@ -436,12 +490,14 @@
       "reused_all_packages": [
         "gooroom-client-server-register"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancom-io/gooroom-client-server-register",
       "commit_sha": "a474ca61b38c16e841bcfcf10caa4437f1dfd37e",
       "tree_sha": "acaa957e544af01d396144fbdd066f380f9d419d",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-dockbarx",
@@ -453,12 +509,14 @@
         "gooroom-dockbarx-common",
         "gooroom-dockbarx-dockx"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-dockbarx",
       "commit_sha": "30c8db06001137852e6ea5b6b926711a4f9f5109",
       "tree_sha": "12b0945e3bd672cb616ace06391dcb8a3a62fec8",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-dockbarx-applet",
@@ -468,12 +526,14 @@
         "gooroom-dockbarx-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-greeter",
@@ -483,12 +543,14 @@
         "gooroom-greeter"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-guide",
@@ -498,12 +560,14 @@
         "gooroom-guide"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-icon-themes",
@@ -513,12 +577,14 @@
       "reused_all_packages": [
         "gooroom-icon-themes"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-indicator-applet",
@@ -528,12 +594,14 @@
         "gooroom-indicator-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-indicator-applet",
       "commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
       "tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-indicator-applet/0.3.0_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-indicator-applet/0.3.0_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-info",
@@ -543,12 +611,14 @@
       "reused_all_packages": [
         "gooroom-info"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-info",
       "commit_sha": "ee417b75cfe8a442f4876591ce0ca3814f595bc2",
       "tree_sha": "c0d97f030de5d86080ac67ed3210eb6f80b018b7",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-integration-applet",
@@ -558,12 +628,14 @@
         "gooroom-integration-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-libsecurity-extensions",
@@ -573,12 +645,14 @@
         "gooroom-libsecurity-extensions"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-libsecurity-extensions",
       "commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
       "tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-logout",
@@ -588,12 +662,14 @@
         "gooroom-logout"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-logout",
       "commit_sha": "28dcdee1a4297eaa5c3403a6b5630d3c23250379",
       "tree_sha": "fd614ae882300afbb5e91206547a21642a59807c",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-logout/0.3.0_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-logout/0.3.0_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-notice-applet",
@@ -603,12 +679,14 @@
         "gooroom-notice-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-notice-applet",
       "commit_sha": "3109138327c56be9b704c3efb6b4fdb305de5dfe",
       "tree_sha": "1b7737d55f83af87ea607e6ae989a98368348d83",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-notice-applet/0.3.4_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-notice-applet/0.3.4_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-notifyd",
@@ -618,12 +696,14 @@
         "gooroom-notifyd"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-notifyd",
       "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
       "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-notifyd/0.5.0_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-notifyd/0.5.0_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-resource-access-control",
@@ -634,12 +714,14 @@
         "grac-device-daemon",
         "grac-editor"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-resource-access-control",
       "commit_sha": "c67a5d3a3bc80ef66a81829a8e593e2fdfcabc55",
       "tree_sha": "e9cea2d045d86b44fd6e2205a9cbca89e4cb0c3f",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-security-status-tools",
@@ -649,12 +731,14 @@
         "gooroom-security-status-tools"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-security-status-tools",
       "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
       "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-security-utils",
@@ -664,12 +748,14 @@
       "reused_all_packages": [
         "gooroom-security-utils"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-security-utils",
       "commit_sha": "bf71213bb3a61fccb7b736151c8814b9975894d6",
       "tree_sha": "c91c872121b780ced52a7df3f4ddf9fda73eff39",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-session-manager",
@@ -679,12 +765,14 @@
         "gooroom-session-manager"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-showdesktop-applet",
@@ -694,12 +782,14 @@
         "gooroom-showdesktop-applet"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-showdesktop-applet",
       "commit_sha": "7a296d9d0b9c35c01014f08495cc6da347f07ca0",
       "tree_sha": "d139bced2ae046922d3c0e35dc8357551245b6a3",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-showdesktop-applet/0.2.0_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-showdesktop-applet/0.2.0_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-software",
@@ -712,12 +802,14 @@
       "reused_all_packages": [
         "gooroom-software-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-software",
       "commit_sha": "2aedea76a1c77853d80ec2d05cbfcbec48879eaf",
       "tree_sha": "5181988d917696bc0159edae219f1dcb5dd5fe09",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gooroom-software/3.30.6+5+grm3u6/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gooroom-software/3.30.6+5+grm3u6/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-translations",
@@ -727,12 +819,14 @@
       "reused_all_packages": [
         "gooroom-translations"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-update",
@@ -742,12 +836,14 @@
       "reused_all_packages": [
         "gooroom-update"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroom-update",
       "commit_sha": "77c1b2c089474694cc43890a2909474195e60307",
       "tree_sha": "d78f4852a478795b802230c43c06a93e8c2fe0f4",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroom-yelp-adjustments",
@@ -757,12 +853,14 @@
       "reused_all_packages": [
         "gooroom-yelp-adjustments"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancomgooroom/gooroom-yelp-adjustments",
       "commit_sha": "a6c805e5ce0fc1e9c6a91737b6c5621e0ee8e34e",
       "tree_sha": "70555ad741c77011ff01c74b002adad64a097933",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gooroomsystem",
@@ -772,12 +870,14 @@
       "reused_all_packages": [
         "gooroomsystem"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gooroomsystem",
       "commit_sha": "4ffafbff7cfd57191b24a9621acfd36ef97b4aa5",
       "tree_sha": "c5d4e1311b16547ff077c8adc86c34549cdf0110",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "gtk+2.0",
@@ -790,12 +890,14 @@
       "reused_all_packages": [
         "libgtk2.0-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gtk2",
       "commit_sha": "dd67a4d4c36d6b0a178663d0fe192cadf836877d",
       "tree_sha": "8020c98e6206a576e3a6049962be7ad10b5b8333",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gtk+2.0/2.24.33-2+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gtk+2.0/2.24.33-2+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "gtk+3.0",
@@ -810,12 +912,14 @@
       "reused_all_packages": [
         "libgtk-3-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/gtk3",
       "commit_sha": "b566a9d629f2f6ce1b2bf415c102a15a1d2d2495",
       "tree_sha": "e6d2a53b942106b26c58d54a8a52edfde7dea3ae",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/gtk+3.0/3.24.24-4+grm3u2/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/gtk+3.0/3.24.24-4+grm3u2/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "hancom-gooroom-themepack",
@@ -825,12 +929,14 @@
       "reused_all_packages": [
         "hancom-gooroom-themepack"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancomgooroom/hancom-gooroom-themepack",
       "commit_sha": "b6c43160b8cc70feb3326b79a8d47baaab3578a3",
       "tree_sha": "da35fa4c0b8d42064a00d889fbd49c7c9f7d9b3b",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "hancom-toolkit",
@@ -840,12 +946,14 @@
         "hancom-toolkit"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancomgooroom/hancom-toolkit",
       "commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
       "tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/hancom-toolkit/0.3.3_han3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/hancom-toolkit/0.3.3_han3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "hancom-viewer-installer",
@@ -855,12 +963,14 @@
         "hancom-viewer-installer"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancom-io/hancom-viewer-installer",
       "commit_sha": "883c293b0a23e7bd47e54ef0a5edf3d26b7906b9",
       "tree_sha": "b394ff18973f4c0ce3d594845e0f6be3360ac250",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/hancom-viewer-installer/0.2.2_han3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/hancom-viewer-installer/0.2.2_han3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "hancomgrm-adjustments-utils",
@@ -870,12 +980,14 @@
         "hancomgrm-adjustments-utils"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancomgooroom/hancomgrm-adjustments-utils",
       "commit_sha": "2f8d22c40c79922bdb444fe787bd05f7d55f10e6",
       "tree_sha": "c9bf9631d38a6c95af97f80affbd71fe534a94c6",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/hancomgrm-adjustments-utils/0.3.3_han3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/hancomgrm-adjustments-utils/0.3.3_han3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "libnma",
@@ -887,12 +999,14 @@
       "reused_all_packages": [
         "libnma-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/libnma",
       "commit_sha": "7ea056fd93525e344559ebc2e38b90ce5937ecc8",
       "tree_sha": "2ada6a3ee3ba66b0768ef666baba32e4998a6eff",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/libnma/1.8.30-1_grm3u2/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/libnma/1.8.30-1_grm3u2/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "lightdm",
@@ -903,12 +1017,14 @@
         "lightdm"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/lightdm",
       "commit_sha": "6824813cf5d82b8c5cc47009e2e7be45717af6f8",
       "tree_sha": "aef7445a73e7240dc68bf83edf506ad5f1bd0ce3",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/lightdm/1.26.0-7+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/lightdm/1.26.0-7+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "linux",
@@ -918,12 +1034,14 @@
         "linux-image-5.10.0-23-amd64"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "linux-signed-amd64",
@@ -933,12 +1051,14 @@
         "linux-image-amd64"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "arch-replace",
       "source_status": "arch-replace",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "live-config",
@@ -949,12 +1069,14 @@
         "live-config",
         "live-config-systemd"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/live-config",
       "commit_sha": "7542b09395dc84e6a5f12c28ebe621f37b3df85b",
       "tree_sha": "00cfca2dedf4b6f7808dcc5bc63725c91c4a9938",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "live-installer",
@@ -964,12 +1086,14 @@
       "reused_all_packages": [
         "live-installer"
       ],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "metacity",
@@ -982,12 +1106,14 @@
       "reused_all_packages": [
         "metacity-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/metacity",
       "commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
       "tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/metacity/1_3.38.0-2+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/metacity/1_3.38.0-2+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "mousetweaks",
@@ -997,12 +1123,14 @@
         "mousetweaks"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/mousetweaks",
       "commit_sha": "06ed39e08e6e2427a515bdab114d02a35fc010f8",
       "tree_sha": "3ef99087b50a0e5f759bcb7ce3df144680bc60fa",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/mousetweaks/3.32.0-3_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/mousetweaks/3.32.0-3_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "nautilus",
@@ -1015,12 +1143,14 @@
       "reused_all_packages": [
         "nautilus-data"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/nautilus",
       "commit_sha": "8d7900ad94c2dbfe167e0dd9a00ee37f203f0511",
       "tree_sha": "d3b2a8e8599902b40da81867f85c2ac81fe4d984",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "network-manager",
@@ -1031,12 +1161,14 @@
         "network-manager"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/network-manager",
       "commit_sha": "712e0531988c471901936d0c8c415a1a8cec96fe",
       "tree_sha": "fafc1de993a88e4bc27f53912199b8b65acb86b9",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/network-manager/1.30.0-2+grm3u3/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/network-manager/1.30.0-2+grm3u3/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "network-manager-applet",
@@ -1046,12 +1178,14 @@
         "network-manager-gnome"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/network-manager-applet",
       "commit_sha": "fb22dadeb9eeb78b4d256a2a78d619aa5687cbea",
       "tree_sha": "5b8aeb62c1e855d611025b10e4fd7e0eb351c9ad",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/network-manager-applet/1.20.0-3_grm3u4/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/network-manager-applet/1.20.0-3_grm3u4/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "nimf",
@@ -1063,12 +1197,14 @@
         "nimf-libhangul"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/nimf",
       "commit_sha": "583ad8b183db06a84c6b85a80fe132583566909d",
       "tree_sha": "a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/nimf/2023.06.30+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/nimf/2023.06.30+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "p7zip",
@@ -1079,12 +1215,14 @@
         "p7zip-full"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/p7zip",
       "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
       "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
       "build_status": "failed",
-      "build_evidence": "arm64/locks/rebuild-results/p7zip/16.02+dfsg-8+grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/p7zip/16.02+dfsg-8+grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "pam-gooroom",
@@ -1094,12 +1232,14 @@
         "pam-gooroom"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/libpam-gooroom-authenticator",
       "commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
       "tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/pam-gooroom/0.4.3_grm3u1/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/pam-gooroom/0.4.3_grm3u1/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "policykit-1",
@@ -1112,12 +1252,14 @@
         "policykit-1"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/policykit-1",
       "commit_sha": "0563a8a6e1276df34e70c52029b0d8e3a2314520",
       "tree_sha": "c636768dd74927fb948b0c4527966a110de5516b",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "qtbase-opensource-src",
@@ -1135,12 +1277,14 @@
         "libqt5xml5"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "unresolved",
       "source_status": "unresolved",
       "repository_full_name": null,
       "commit_sha": null,
       "tree_sha": null,
       "build_status": "source-blocked",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "synaptic",
@@ -1150,12 +1294,14 @@
         "synaptic"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/synaptic",
       "commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
       "tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
       "build_status": "passed",
-      "build_evidence": "arm64/locks/rebuild-results/synaptic/0.90.2_grm3u3/result.json"
+      "build_evidence": "arm64/locks/rebuild-results/synaptic/0.90.2_grm3u3/result.json",
+      "source_recovery_blocker": null
     },
     {
       "source": "system-config-printer",
@@ -1167,12 +1313,14 @@
         "system-config-printer",
         "system-config-printer-common"
       ],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "gooroom/system-config-printer",
       "commit_sha": "451f170fa30eed547da91b8716cfac0b0998ba83",
       "tree_sha": "46ec00e143769ca20b0d6fc52859824285122883",
       "build_status": "not-required",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     },
     {
       "source": "yelp",
@@ -1183,12 +1331,14 @@
         "yelp"
       ],
       "reused_all_packages": [],
+      "packaging_source_status": "exact-locked",
       "source_status": "exact-locked",
       "repository_full_name": "hancom-io/yelp",
       "commit_sha": "73af67d27815adcd09e4c319f692754a4b008a85",
       "tree_sha": "404913af82e2c63363d1a864b5226812fd1c77b6",
       "build_status": "pending",
-      "build_evidence": null
+      "build_evidence": null,
+      "source_recovery_blocker": null
     }
   ]
 }
