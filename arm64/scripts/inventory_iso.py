@@ -17,6 +17,18 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
+CUSTOM_NAME_MARKERS = (
+    "gooroom",
+    "hancom",
+    "hancomgrm",
+    "nimf",
+    "live-installer",
+    "dockbarx",
+    "pam-gooroom",
+)
+CUSTOM_VERSION_RE = re.compile(r"(?:^|[+~.:-])(?:grm|han)\d", re.IGNORECASE)
+
+
 def parse_deb822(text: str) -> Iterable[dict[str, str]]:
     stanza: dict[str, str] = {}
     current: str | None = None
@@ -49,17 +61,19 @@ def parse_source(value: str | None, package: str, version: str) -> tuple[str, st
     return match.group(1), (match.group(2) or version)
 
 
-def is_custom_candidate(package: str, source: str) -> bool:
+def is_custom_candidate(package: str, source: str, source_version: str) -> bool:
+    """Return true for every Gooroom/Hancom-named or vendor-versioned source.
+
+    Looking only at names misses patched foundations such as dpkg, GTK,
+    NetworkManager and the kernel. Their +grm/+han Debian revisions are just as
+    version-sensitive as packages whose names contain gooroom or hancom.
+    """
+
     haystack = f"{package} {source}".lower()
-    markers = (
-        "gooroom",
-        "hancom",
-        "hancomgrm",
-        "nimf",
-        "live-installer",
-        "dockbarx",
+    return (
+        any(marker in haystack for marker in CUSTOM_NAME_MARKERS)
+        or CUSTOM_VERSION_RE.search(source_version) is not None
     )
-    return any(marker in haystack for marker in markers)
 
 
 def main() -> int:
@@ -96,7 +110,7 @@ def main() -> int:
             "depends": stanza.get("Depends", ""),
             "pre_depends": stanza.get("Pre-Depends", ""),
             "provides": stanza.get("Provides", ""),
-            "custom_candidate": is_custom_candidate(package, source),
+            "custom_candidate": is_custom_candidate(package, source, source_version),
         }
         records.append(record)
 
@@ -111,13 +125,15 @@ def main() -> int:
             "source": source,
             "source_version": source_version,
             "binary_packages": sorted(binary_packages),
-            "custom_candidate": is_custom_candidate(" ".join(binary_packages), source),
+            "custom_candidate": is_custom_candidate(
+                " ".join(binary_packages), source, source_version
+            ),
         }
         for (source, source_version), binary_packages in sorted(source_groups.items())
     ]
 
     manifest = {
-        "schema": 1,
+        "schema": 2,
         "policy": "fail-closed-exact-version",
         "reference_iso": {
             "name": args.iso_name,
