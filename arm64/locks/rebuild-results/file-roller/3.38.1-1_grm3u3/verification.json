@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "file-roller",
+  "source_version": "3.38.1-1+grm3u3",
+  "repository_full_name": "gooroom/file-roller",
+  "commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
+  "tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
+  "expected_native_binary_versions": {
+    "file-roller": "3.38.1-1+grm3u3"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "file-roller-dbgsym_3.38.1-1+grm3u3_arm64.deb",
+      "sha256": "8a04891dd4863be3337ed714392d0d35e6ebf077831aae36e37fcc162112f7ec",
+      "size": 613552,
+      "package": "file-roller-dbgsym",
+      "version": "3.38.1-1+grm3u3",
+      "architecture": "arm64",
+      "source_field": "file-roller",
+      "parsed_source": "file-roller",
+      "parsed_source_version": "3.38.1-1+grm3u3",
+      "expected_from_iso": false,
+      "payload_entry_count": 5,
+      "elf_machine_counts": {
+        "aarch64": 4
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "file-roller_3.38.1-1+grm3u3_arm64.deb",
+      "sha256": "e4cd29f2d2a4c4dcd30fac7ef721250c9cf241f7204e9768e88dc0db3e435d7f",
+      "size": 671960,
+      "package": "file-roller",
+      "version": "3.38.1-1+grm3u3",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "file-roller",
+      "parsed_source_version": "3.38.1-1+grm3u3",
+      "expected_from_iso": true,
+      "payload_entry_count": 486,
+      "elf_machine_counts": {
+        "aarch64": 3
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "file-roller",
+    "source_version": "3.38.1-1+grm3u3",
+    "repository": "gooroom/file-roller",
+    "commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
+    "tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
+    "source_archive_sha256": "6177b0fbd851ddc815640239cf1d91679c8d74fd635017253332063879574f5e",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "file-roller"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "file-roller",
+      "file-roller-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "file-roller",
+    "source_version": "3.38.1-1+grm3u3",
+    "repository": "gooroom/file-roller",
+    "commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
+    "tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
+    "verified_commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
+    "verified_tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
+    "deterministic_source_archive_sha256": "6177b0fbd851ddc815640239cf1d91679c8d74fd635017253332063879574f5e"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
