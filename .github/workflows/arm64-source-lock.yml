@@ -1,0 +1,66 @@
+name: ARM64 port - lock exact source commits
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-lock.yml'
+      - 'arm64/scripts/resolve_source_refs.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-source-lock
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve exact AMD64 source versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/source-lock
+          python3 arm64/scripts/resolve_source_refs.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --output-dir work/source-lock \
+            --max-changelog-commits 300
+          sha256sum work/source-lock/* | sort -k2 > work/source-lock/LOCKSUMS.sha256
+          cat work/source-lock/source-lock-summary.json
+
+      - name: Upload source resolution evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-source-lock
+          path: work/source-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record source locks on the port branch
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/sources
+          mkdir -p arm64/locks/sources
+          cp -a work/source-lock/. arm64/locks/sources/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock exact Hancom Gooroom 3.3 source commits'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
