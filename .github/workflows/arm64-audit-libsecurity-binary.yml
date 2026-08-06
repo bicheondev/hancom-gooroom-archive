@@ -113,39 +113,46 @@ jobs:
 
           python3 - "$out/packaged-xsm.strings.sorted.txt" "$upstream/xsm.c" \
             "$out/source-string-comparison.json" <<'PY'
-import json
-import re
-import sys
-from pathlib import Path
+          import json
+          import re
+          import sys
+          from pathlib import Path
 
-binary_strings = set(Path(sys.argv[1]).read_text(errors="replace").splitlines())
-source = Path(sys.argv[2]).read_text(encoding="utf-8", errors="strict")
-source_strings = {
-    bytes(value, "utf-8").decode("unicode_escape")
-    for value in re.findall(r'"((?:[^"\\]|\\.)*)"', source)
-}
-interesting_prefixes = (
-    "/usr/", "/lib/", "gnome-", "xfce", "cinnamon", "vmtoolsd",
-    "libjson", "Xsm", "screenshot", "screencast", "clipboard",
-)
-interesting_binary = sorted(
-    item for item in binary_strings
-    if item.startswith(interesting_prefixes) or any(token in item for token in interesting_prefixes)
-)
-result = {
-    "schema": 1,
-    "binary_interesting_strings": interesting_binary,
-    "binary_strings_absent_from_public_source_literals": sorted(
-        item for item in interesting_binary if item not in source_strings
-    ),
-    "public_source_literals_absent_from_binary_strings": sorted(
-        item for item in source_strings
-        if (item.startswith(interesting_prefixes) or any(token in item for token in interesting_prefixes))
-        and item not in binary_strings
-    ),
-}
-Path(sys.argv[3]).write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
-PY
+          binary_strings = set(Path(sys.argv[1]).read_text(errors="replace").splitlines())
+          source = Path(sys.argv[2]).read_text(encoding="utf-8", errors="strict")
+          source_strings = {
+              bytes(value, "utf-8").decode("unicode_escape")
+              for value in re.findall(r'"((?:[^"\\]|\\.)*)"', source)
+          }
+          interesting_prefixes = (
+              "/usr/", "/lib/", "gnome-", "xfce", "cinnamon", "vmtoolsd",
+              "libjson", "Xsm", "screenshot", "screencast", "clipboard",
+          )
+          interesting_binary = sorted(
+              item for item in binary_strings
+              if item.startswith(interesting_prefixes)
+              or any(token in item for token in interesting_prefixes)
+          )
+          result = {
+              "schema": 1,
+              "binary_interesting_strings": interesting_binary,
+              "binary_strings_absent_from_public_source_literals": sorted(
+                  item for item in interesting_binary if item not in source_strings
+              ),
+              "public_source_literals_absent_from_binary_strings": sorted(
+                  item for item in source_strings
+                  if (
+                      item.startswith(interesting_prefixes)
+                      or any(token in item for token in interesting_prefixes)
+                  )
+                  and item not in binary_strings
+              ),
+          }
+          Path(sys.argv[3]).write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          PY
           cat "$out/source-string-comparison.json"
 
       - name: Assert the exact payload is not ARM64
