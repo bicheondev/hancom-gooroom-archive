@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 95,
-    "workflow_name_count": 95,
-    "referenced_local_file_count": 135,
+    "workflow_count": 96,
+    "workflow_name_count": 96,
+    "referenced_local_file_count": 136,
     "error_count": 0,
     "warning_count": 36,
     "passed": true
@@ -601,6 +601,32 @@
         "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
         "arm64/scripts/test_arm64_iso_qemu.sh",
         "arm64/scripts/verify_arm64_rootfs.py"
+      ]
+    },
+    {
+      "filename": "arm64-infrastructure-retry-v3.yml",
+      "path": ".github/workflows/arm64-infrastructure-retry-v3.yml",
+      "name": "ARM64 port - retry exact sources after builder infrastructure repair",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/collect_native_rebuild_results_v4.py",
+        "arm64/scripts/select_infrastructure_retry_wave_v3.py",
+        "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
     },
     {
@@ -2170,6 +2196,7 @@
       ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
+      ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
@@ -2188,6 +2215,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml",
@@ -2196,6 +2224,7 @@
     ],
     "arm64/scripts/build_locked_source_arm64_v5.sh": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
@@ -2254,6 +2283,7 @@
     ],
     "arm64/scripts/collect_native_rebuild_results_v4.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml",
       ".github/workflows/arm64-repair-result-collector-v3.yml"
     ],
@@ -2434,6 +2464,9 @@
     "arm64/scripts/select_dependency_retry_wave_v3.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
+    "arm64/scripts/select_infrastructure_retry_wave_v3.py": [
+      ".github/workflows/arm64-infrastructure-retry-v3.yml"
+    ],
     "arm64/scripts/select_native_rebuild_batch.py": [
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
@@ -2510,6 +2543,7 @@
     ],
     "arm64/scripts/verify_arm64_rebuild_v3.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/verify_arm64_rootfs.py": [
