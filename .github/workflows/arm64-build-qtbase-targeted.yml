@@ -1,0 +1,198 @@
+name: ARM64 port - build exact targeted QtBase source
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-qtbase-targeted.yml'
+      - 'arm64/scripts/promote_targeted_source_lock.py'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v4.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/scripts/validate_arm64_source_outputs_v4.py'
+      - 'arm64/scripts/summarize_arm64_build_wave.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-targeted-qtbase-arm64
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  SOURCE_VERSION: 5.15.2+dfsg-9+grm3u1
+
+jobs:
+  build-and-record:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Promote a resolved targeted Git record into a build lock
+        id: promote
+        run: |
+          set -uxo pipefail
+          targeted=arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json
+          rm -rf work/qtbase-targeted-lock work/qtbase-arm64-targeted
+          mkdir -p work/qtbase-targeted-lock work/qtbase-arm64-targeted
+          if [ ! -f "$targeted" ]; then
+            printf 'exact targeted source lock is not available\n' \
+              > work/qtbase-arm64-targeted/precondition-failure.txt
+            printf '%s\n' "$SOURCE_NAME" \
+              > work/qtbase-arm64-targeted/source-name.txt
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          python3 arm64/scripts/promote_targeted_source_lock.py \
+            --effective-lock arm64/locks/effective-sources/effective-source-lock.json \
+            --targeted-lock "$targeted" \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-lock work/qtbase-targeted-lock/effective-source-lock.json \
+            --evidence work/qtbase-targeted-lock/promotion.json
+          rc=$?
+          set -e
+          if [ "$rc" != 0 ]; then
+            printf 'targeted source promotion failed with code %s\n' "$rc" \
+              > work/qtbase-arm64-targeted/precondition-failure.txt
+            printf '%s\n' "$SOURCE_NAME" \
+              > work/qtbase-arm64-targeted/source-name.txt
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Verify native ARM64 host and install verification tools
+        if: steps.promote.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Build the exact targeted QtBase commit for ARM64
+        id: build
+        if: steps.promote.outputs.ready == 'true'
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v4.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py \
+            arm64/scripts/validate_arm64_source_outputs_v4.py
+          arm64/scripts/run_locked_source_arm64_v4.sh \
+            work/qtbase-targeted-lock/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            work/qtbase-arm64-targeted
+          jq -e '.status == "passed"' \
+            work/qtbase-arm64-targeted/arm64-source-output-validation-v4.json
+          find work/qtbase-arm64-targeted -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > work/qtbase-arm64-targeted/SHA256SUMS
+
+      - name: Upload exact QtBase packages or precondition diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-exact-arm64-targeted
+          path: |
+            work/qtbase-arm64-targeted
+            work/qtbase-targeted-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Summarize this exact QtBase build attempt
+        if: always()
+        run: |
+          set -uxo pipefail
+          rm -rf work/qtbase-targeted-evidence
+          mkdir -p work/qtbase-targeted-evidence
+          set +e
+          python3 arm64/scripts/summarize_arm64_build_wave.py \
+            --artifacts-root work \
+            --output-dir work/qtbase-targeted-evidence \
+            --schema hancom-gooroom-arm64-targeted-qtbase-build-evidence-v1 \
+            --expected-source "$SOURCE_NAME" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$GITHUB_SHA" \
+            --head-branch "$GITHUB_REF_NAME" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --repository "$GITHUB_REPOSITORY" \
+            --server-url "$GITHUB_SERVER_URL" \
+            --download-status success
+          summary_rc=$?
+          set -e
+          echo "$summary_rc" > work/qtbase-targeted-evidence/summarizer.exit-code
+          if [ -f work/qtbase-targeted-lock/promotion.json ]; then
+            cp work/qtbase-targeted-lock/promotion.json \
+              work/qtbase-targeted-evidence/
+          fi
+          if [ -f work/qtbase-targeted-lock/effective-source-lock.json ]; then
+            cp work/qtbase-targeted-lock/effective-source-lock.json \
+              work/qtbase-targeted-evidence/promoted-effective-source-lock.json
+          fi
+          find work/qtbase-targeted-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/qtbase-targeted-evidence/LOCKSUMS.sha256
+          jq . work/qtbase-targeted-evidence/summary.json
+
+      - name: Commit the build evidence before enforcing it
+        if: always()
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/build-qtbase-targeted
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/qtbase-targeted-evidence/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact targeted QtBase ARM64 build evidence'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload consolidated QtBase evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-targeted-arm64-evidence
+          path: work/qtbase-targeted-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce the exact QtBase native build
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.promote.outputs.ready }}' = true
+          test '${{ steps.build.outcome }}' = success
+          test "$(jq -r '.status' work/qtbase-targeted-evidence/summary.json)" = passed
