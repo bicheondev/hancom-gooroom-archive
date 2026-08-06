@@ -1,0 +1,258 @@
+name: ARM64 port - boot-test installed GPT system from final ISO
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-installed-system-boot.yml'
+      - 'arm64/scripts/build_arm64_installed_disk.sh'
+      - 'arm64/scripts/test_arm64_installed_disk_qemu.sh'
+      - 'arm64/locks/iso/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-installed-system-boot
+  cancel-in-progress: true
+
+env:
+  DEFAULT_RELEASE_TAG: v3.3-arm64
+  DEFAULT_ISO_NAME: Hancom-Gooroom-3.3-arm64.hybrid.iso
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
+      release_tag: ${{ steps.gate.outputs.release_tag }}
+      iso_name: ${{ steps.gate.outputs.iso_name }}
+      iso_sha256: ${{ steps.gate.outputs.iso_sha256 }}
+      iso_size: ${{ steps.gate.outputs.iso_size }}
+    steps:
+      - name: Check out the QEMU-booted ISO lock
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Require final live-ISO boot evidence
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          release_tag="$DEFAULT_RELEASE_TAG"
+          iso_name="$DEFAULT_ISO_NAME"
+          iso_sha256=''
+          iso_size=''
+          release_lock=arm64/locks/iso/release-lock.json
+          iso_lock=arm64/locks/iso/iso-build.json
+          if [ -f "$release_lock" ] && [ -f "$iso_lock" ]; then
+            if jq -e '.qemu_booted == true' "$release_lock" >/dev/null; then
+              release_tag="$(jq -r '.release_tag // empty' "$release_lock")"
+              iso_name="$(jq -r '.iso_asset // empty' "$release_lock")"
+              iso_sha256="$(jq -r '.iso_sha256 // empty' "$iso_lock")"
+              iso_size="$(jq -r '.iso_size // empty' "$iso_lock")"
+              if [ -n "$release_tag" ] \
+                 && [ -n "$iso_name" ] \
+                 && [[ "$iso_sha256" =~ ^[0-9a-f]{64}$ ]] \
+                 && [[ "$iso_size" =~ ^[0-9]+$ ]]; then
+                ready=true
+              fi
+            fi
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "iso_name=$iso_name" >> "$GITHUB_OUTPUT"
+          echo "iso_sha256=$iso_sha256" >> "$GITHUB_OUTPUT"
+          echo "iso_size=$iso_size" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Installed-system boot gate'
+            echo
+            echo "- Final live ISO ready: \`$ready\`"
+            echo "- Release: \`$release_tag\`"
+            echo "- ISO: \`$iso_name\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  installed-boot:
+    needs: gate
+    if: needs.gate.outputs.ready == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    steps:
+      - name: Check out installed-system builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install GPT, filesystem, GRUB, and AArch64 QEMU tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools \
+            gdisk parted util-linux dosfstools e2fsprogs rsync \
+            qemu-utils qemu-system-arm qemu-efi-aarch64 \
+            jq file ca-certificates zstd
+          chmod +x \
+            arm64/scripts/build_arm64_installed_disk.sh \
+            arm64/scripts/test_arm64_installed_disk_qemu.sh
+          gh --version
+
+      - name: Download and verify the QEMU-booted final ISO release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/final-iso
+          gh release download '${{ needs.gate.outputs.release_tag }}' \
+            --repo '${{ github.repository }}' \
+            --pattern '${{ needs.gate.outputs.iso_name }}' \
+            --dir work/final-iso
+          iso='work/final-iso/${{ needs.gate.outputs.iso_name }}'
+          test "$(stat -c '%s' "$iso")" = '${{ needs.gate.outputs.iso_size }}'
+          printf '%s  %s\n' '${{ needs.gate.outputs.iso_sha256 }}' "$iso" \
+            | sha256sum --check --strict
+
+      - name: Extract the final live root filesystem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/iso-root work/installed-rootfs work/extract-evidence
+          mkdir -p work/iso-root work/extract-evidence
+          xorriso -osirrox on \
+            -indev 'work/final-iso/${{ needs.gate.outputs.iso_name }}' \
+            -extract /live/filesystem.squashfs work/iso-root/filesystem.squashfs \
+            > work/extract-evidence/xorriso.log 2>&1
+          unsquashfs -d work/installed-rootfs work/iso-root/filesystem.squashfs \
+            > work/extract-evidence/unsquashfs.log 2>&1
+          sha256sum work/iso-root/filesystem.squashfs \
+            > work/extract-evidence/filesystem.squashfs.sha256
+
+      - name: Install the rootfs onto a fresh GPT disk image
+        shell: bash
+        env:
+          HANCOM_GOOROOM_INSTALLED_DISK_GIB: '12'
+        run: |
+          set -o pipefail
+          rm -rf work/installed-disk-evidence work/disk
+          mkdir -p work/installed-disk-evidence work/disk
+          sudo -E arm64/scripts/build_arm64_installed_disk.sh \
+            work/installed-rootfs \
+            work/disk/Hancom-Gooroom-3.3-arm64-installed.qcow2 \
+            work/installed-disk-evidence \
+            2>&1 | tee work/installed-disk-evidence/workflow-disk-build.log
+          sudo chown -R "$(id -u):$(id -g)" \
+            work/disk work/installed-disk-evidence
+
+      - name: Boot the installed disk without the live ISO
+        shell: bash
+        env:
+          HANCOM_GOOROOM_QEMU_TIMEOUT: '1200'
+        run: |
+          set -o pipefail
+          rm -rf work/installed-qemu-evidence
+          mkdir -p work/installed-qemu-evidence
+          arm64/scripts/test_arm64_installed_disk_qemu.sh \
+            work/disk/Hancom-Gooroom-3.3-arm64-installed.qcow2 \
+            work/installed-qemu-evidence \
+            2>&1 | tee work/installed-qemu-evidence/workflow-qemu-test.log
+          jq -e '.passed == true and .marker_found == true' \
+            work/installed-qemu-evidence/installed-boot-result.json
+
+      - name: Assemble compact installed-system evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/installed-system-evidence
+          mkdir -p work/installed-system-evidence
+          cp work/installed-disk-evidence/installed-disk-build.json work/installed-system-evidence/
+          cp work/installed-disk-evidence/partition-table.txt work/installed-system-evidence/
+          cp work/installed-disk-evidence/sgdisk-verify.txt work/installed-system-evidence/
+          cp work/installed-disk-evidence/fstab work/installed-system-evidence/
+          cp work/installed-disk-evidence/grub.cfg work/installed-system-evidence/
+          cp work/installed-disk-evidence/installed-bootaa64-file.txt work/installed-system-evidence/
+          cp work/installed-disk-evidence/installed-bootaa64.sha256 work/installed-system-evidence/
+          cp work/installed-disk-evidence/qcow2-info.json work/installed-system-evidence/
+          cp work/installed-disk-evidence/installed-disk.sha256 work/installed-system-evidence/
+          cp work/installed-qemu-evidence/installed-boot-result.json work/installed-system-evidence/
+          cp work/installed-qemu-evidence/serial-tail.log work/installed-system-evidence/
+          cp work/installed-qemu-evidence/qemu-tail.log work/installed-system-evidence/
+          find work/installed-system-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/installed-system-evidence/LOCKSUMS.sha256
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -C work/installed-system-evidence -cf - . \
+            | zstd -19 -T0 \
+              -o work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst
+          sha256sum work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst \
+            > work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst.sha256
+          rm -f work/disk/Hancom-Gooroom-3.3-arm64-installed.qcow2
+
+      - name: Upload installed-system boot evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-installed-system-boot
+          path: |
+            work/installed-system-evidence
+            work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst
+            work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Attach installed-system evidence to the ARM64 prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh release upload '${{ needs.gate.outputs.release_tag }}' \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst \
+            work/Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst.sha256
+
+      - name: Commit installed-system boot lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/installed-system
+          mkdir -p arm64/locks/installed-system
+          cp -a work/installed-system-evidence/. arm64/locks/installed-system/
+          jq -n \
+            --arg release_tag '${{ needs.gate.outputs.release_tag }}' \
+            --arg iso_asset '${{ needs.gate.outputs.iso_name }}' \
+            --arg iso_sha256 '${{ needs.gate.outputs.iso_sha256 }}' \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            '{
+              schema: 1,
+              release_tag: $release_tag,
+              iso_asset: $iso_asset,
+              iso_sha256: $iso_sha256,
+              actions_run_id: $actions_run_id,
+              actions_run_url: $actions_run_url,
+              installed_gpt_system_qemu_booted: true,
+              evidence_asset: "Hancom-Gooroom-3.3-arm64-installed-boot-evidence.tar.zst"
+            }' > arm64/locks/installed-system/release-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/installed-system
+          git commit -m 'Lock QEMU-booted installed Hancom Gooroom 3.3 ARM64 system'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
