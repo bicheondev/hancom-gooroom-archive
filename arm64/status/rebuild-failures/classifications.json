@@ -1,19 +1,22 @@
 {
   "summary": {
-    "schema": 2,
+    "schema": 3,
     "policy": "diagnostic-only-failure-classification",
     "latest_result_count": 33,
     "passed_count": 26,
     "failed_count": 7,
     "dependency_resolution_failure_count": 0,
     "source_recovery_required_count": 1,
-    "unknown_failure_count": 1,
+    "composite_source_required_count": 1,
+    "infrastructure_transient_count": 1,
+    "unknown_failure_count": 0,
     "category_counts": {
+      "composite-source-required": 1,
+      "infrastructure-transient": 1,
       "passed": 26,
       "post-build-verification": 3,
-      "snapshot-or-bootstrap": 2,
-      "source-recovery-required": 1,
-      "unknown": 1
+      "snapshot-or-bootstrap": 1,
+      "source-recovery-required": 1
     }
   },
   "sources": [
@@ -177,10 +180,9 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
       "batch": "infrastructure-retry-v3",
       "passed": false,
-      "category": "snapshot-or-bootstrap",
+      "category": "composite-source-required",
       "classification_evidence": [
-        "debootstrap",
-        "snapshot.debian.org"
+        "modulenotfounderror: no module named 'replace_gn_files'"
       ],
       "build_outcome": "failure",
       "build_exit_code": "2",
@@ -425,8 +427,14 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
       "batch": "infrastructure-retry-v3",
       "passed": false,
-      "category": "unknown",
-      "classification_evidence": [],
+      "category": "infrastructure-transient",
+      "classification_evidence": [
+        "build exit code 125",
+        "500 internal server error",
+        "error response from daemon",
+        "registry-1.docker.io",
+        "unexpected http status: 500"
+      ],
       "build_outcome": "failure",
       "build_exit_code": "125",
       "verify_outcome": "skipped",
