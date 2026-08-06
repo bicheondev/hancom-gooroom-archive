@@ -21,10 +21,9 @@ LEGACY_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
 PATCHED_WRAPPER="$(mktemp "$SCRIPT_DIR/.run_locked_source_arm64_v4.XXXXXX")"
 trap 'rm -f "$PATCHED_WRAPPER"' EXIT
 
-# The canonical wrapper was written against the original build-lock field,
-# while build_locked_source_arm64.sh now emits EXPECTED_PACKAGES_JSON itself.
-# Rewrite only that asserted patch block, preserving every other historical,
-# source-composition, and package-specific compatibility transformation.
+# Adapt two stale asserted transformations in the historical wrapper to the
+# current base builder. Every replacement is fail-closed and validates the
+# exact old block before producing an executable wrapper.
 python3 - "$LEGACY_WRAPPER" "$PATCHED_WRAPPER" <<'PY'
 from pathlib import Path
 import sys
@@ -32,42 +31,123 @@ import sys
 source_path = Path(sys.argv[1])
 output_path = Path(sys.argv[2])
 text = source_path.read_text(encoding="utf-8")
-start_marker = "old_manifest_field = '''"
-end_marker = "source = source.replace(old_manifest_field, new_manifest_field)\n"
-start = text.find(start_marker)
-if start < 0:
-    raise SystemExit("stale build-lock patch block start was not found")
-end = text.find(end_marker, start)
-if end < 0:
-    raise SystemExit("stale build-lock patch block end was not found")
-end += len(end_marker)
-block = text[start:end]
-required = (
-    "$(jq -c '.binary_packages' <<<\"$entry\")",
-    '"binary_package_policy"',
-    '"source_composition"',
-)
-missing = [token for token in required if token not in block]
-if missing:
-    raise SystemExit(
-        "refusing to patch an unrecognized build-lock block; missing: "
-        + ", ".join(missing)
-    )
-if text.find(start_marker, end) >= 0:
-    raise SystemExit("more than one stale build-lock patch block was found")
 
-replacement = """manifest_anchor = '''  \"expected_binary_packages\": $EXPECTED_PACKAGES_JSON,
+
+def replace_asserted_block(
+    value: str,
+    *,
+    start_marker: str,
+    end_marker: str,
+    required: tuple[str, ...],
+    replacement: str,
+    label: str,
+) -> str:
+    start = value.find(start_marker)
+    if start < 0:
+        raise SystemExit(f"{label} start was not found")
+    end = value.find(end_marker, start)
+    if end < 0:
+        raise SystemExit(f"{label} end was not found")
+    end += len(end_marker)
+    block = value[start:end]
+    missing = [token for token in required if token not in block]
+    if missing:
+        raise SystemExit(
+            f"refusing to patch an unrecognized {label}; missing: "
+            + ", ".join(missing)
+        )
+    if value.find(start_marker, end) >= 0:
+        raise SystemExit(f"more than one {label} was found")
+    return value[:start] + replacement + value[end:]
+
+
+# The old wrapper inserted all source-component variables by replacing a
+# fallback EXPECTED_PACKAGES assignment. The current builder reaches that line
+# only when no reference manifest is present, leaving the variables unbound in
+# normal exact-reference builds. Insert the component setup after the selected
+# Git tree instead, where every required source-lock field and WORK_DIR exists.
+component_replacement = r"""component_anchor = '''TREE_SHA="$(jq -r '.selected.tree_sha // empty' <<<"$entry")"
 '''
-manifest_fields = manifest_anchor + '''  \"binary_package_policy\": \"AMD64 reference packages whose Architecture is not all\",
-  \"source_composition\": $SOURCE_COMPOSITION_JSON,
+component_setup = component_anchor + '''COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-}"
+COMPOSITE_HELPER="${HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER:-}"
+SOURCE_COMPONENT_LOCK=""
+SOURCE_COMPONENT_LOCK_PRESENT=false
+SOURCE_COMPONENT_LOCK_SHA256=""
+SOURCE_COMPONENT_LOCK_MOUNT="$WORK_DIR/source-component-lock.json"
+printf '{}\\n' > "$SOURCE_COMPONENT_LOCK_MOUNT"
+
+[ -f "$COMPOSITE_HELPER" ] || {
+  echo "composite source helper not found: $COMPOSITE_HELPER" >&2
+  exit 2
+}
+if [ -n "$COMPONENT_LOCK_DIR" ] && [ -f "$COMPONENT_LOCK_DIR/$SOURCE_NAME.json" ]; then
+  SOURCE_COMPONENT_LOCK="$(readlink -f "$COMPONENT_LOCK_DIR/$SOURCE_NAME.json")"
+  jq -e \\
+    --arg source "$SOURCE_NAME" \\
+    --arg version "$SOURCE_VERSION" \\
+    --arg repository "$REPOSITORY" \\
+    --arg commit "$COMMIT_SHA" \\
+    --arg tree "$TREE_SHA" \\
+    --arg snapshot "$SNAPSHOT" '
+      .source == $source
+      and .source_version == $version
+      and .packaging.repository_full_name == $repository
+      and .packaging.commit_sha == $commit
+      and .packaging.tree_sha == $tree
+      and .upstream.snapshot == $snapshot
+      and .composition.extract == "upstream.files.orig only"
+    ' "$SOURCE_COMPONENT_LOCK" >/dev/null
+  cp "$SOURCE_COMPONENT_LOCK" "$SOURCE_COMPONENT_LOCK_MOUNT"
+  SOURCE_COMPONENT_LOCK_PRESENT=true
+  SOURCE_COMPONENT_LOCK_SHA256="$(sha256sum "$SOURCE_COMPONENT_LOCK" | awk '{print $1}')"
+fi
+'''
+if source.count(component_anchor) != 1:
+    raise SystemExit(
+        f"expected exactly one selected-tree anchor, found {source.count(component_anchor)}"
+    )
+source = source.replace(component_anchor, component_setup)
+"""
+text = replace_asserted_block(
+    text,
+    start_marker="old_expected = '''",
+    end_marker="source = source.replace(old_expected, new_expected)\n",
+    required=(
+        "SOURCE_COMPONENT_LOCK_PRESENT=false",
+        ".architecture != \"all\"",
+        ".composition.extract",
+    ),
+    replacement=component_replacement,
+    label="stale expected-package/source-component patch block",
+)
+
+# build_locked_source_arm64.sh now emits EXPECTED_PACKAGES_JSON itself. Keep
+# the extra policy/composition evidence, but anchor it to the current field.
+manifest_replacement = r"""manifest_anchor = '''  "expected_binary_packages": $EXPECTED_PACKAGES_JSON,
+'''
+manifest_fields = manifest_anchor + '''  "binary_package_policy": "AMD64 reference packages whose Architecture is not all",
+  "source_composition": $SOURCE_COMPOSITION_JSON,
 '''
 if source.count(manifest_anchor) != 1:
     raise SystemExit(
-        f\"expected exactly one current build-lock expected-package field, found {source.count(manifest_anchor)}\"
+        f"expected exactly one current build-lock expected-package field, found {source.count(manifest_anchor)}"
     )
 source = source.replace(manifest_anchor, manifest_fields)
 """
-output_path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+text = replace_asserted_block(
+    text,
+    start_marker="old_manifest_field = '''",
+    end_marker="source = source.replace(old_manifest_field, new_manifest_field)\n",
+    required=(
+        "$(jq -c '.binary_packages' <<<\"$entry\")",
+        '"binary_package_policy"',
+        '"source_composition"',
+    ),
+    replacement=manifest_replacement,
+    label="stale build-lock patch block",
+)
+
+output_path.write_text(text, encoding="utf-8")
 PY
 
 chmod +x "$PATCHED_WRAPPER"
