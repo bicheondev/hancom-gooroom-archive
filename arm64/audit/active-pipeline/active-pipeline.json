@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 91,
-    "workflow_name_count": 91,
-    "referenced_local_file_count": 123,
-    "error_count": 5,
+    "workflow_count": 90,
+    "workflow_name_count": 90,
+    "referenced_local_file_count": 121,
+    "error_count": 4,
     "warning_count": 36,
     "passed": false
   },
@@ -1464,26 +1464,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-stage0-live-v2.yml",
-      "path": ".github/workflows/arm64-stage0-live-v2.yml",
-      "name": "ARM64 port - build and boot-test stage-0 live ISO v2",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/reference/amd64-reference.json",
-        "arm64/scripts/build_stage0_live_iso.sh",
-        "arm64/scripts/build_stage0_live_iso_v2.sh",
-        "arm64/scripts/stage0_retry_patch.py"
-      ]
-    },
-    {
       "filename": "arm64-stage0-live-v3.yml",
       "path": ".github/workflows/arm64-stage0-live-v3.yml",
       "name": "ARM64 port - build and boot-test stage-0 live ISO v3",
@@ -1947,7 +1927,6 @@
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-lock.yml",
-      ".github/workflows/arm64-stage0-live-v2.yml",
       ".github/workflows/arm64-stage0-live-v3.yml",
       ".github/workflows/arm64-stage0-live-v4.yml",
       ".github/workflows/arm64-stage0-live-v5.yml",
@@ -2082,13 +2061,9 @@
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
     "arm64/scripts/build_stage0_live_iso.sh": [
-      ".github/workflows/arm64-stage0-live-v2.yml",
       ".github/workflows/arm64-stage0-live-v3.yml",
       ".github/workflows/arm64-stage0-live-v4.yml",
       ".github/workflows/arm64-stage0-live-v5.yml"
-    ],
-    "arm64/scripts/build_stage0_live_iso_v2.sh": [
-      ".github/workflows/arm64-stage0-live-v2.yml"
     ],
     "arm64/scripts/build_stage0_live_iso_v3.sh": [
       ".github/workflows/arm64-stage0-live-v3.yml",
@@ -2298,9 +2273,6 @@
     "arm64/scripts/select_next_native_rebuild_wave.py": [
       ".github/workflows/arm64-native-rebuild-backlog.yml"
     ],
-    "arm64/scripts/stage0_retry_patch.py": [
-      ".github/workflows/arm64-stage0-live-v2.yml"
-    ],
     "arm64/scripts/summarize_arm64_boot_attempt.py": [
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
@@ -2400,11 +2372,6 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
       "local_path": "arm64/scripts/resolve_source_apt_archival.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-live-v2.yml",
-      "local_path": "arm64/scripts/build_stage0_live_iso_v2.sh",
       "reason": "referenced-local-code-missing"
     },
     {
