@@ -1,0 +1,73 @@
+name: ARM64 port - audit final package plan inputs
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-package-plan-audit.yml'
+      - 'arm64/scripts/audit_package_plan_inventory.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/debian-arm64/**'
+      - 'arm64/locks/package-map/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/effective-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-package-plan-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out every package lock
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Discover and rank package-plan documents
+        run: |
+          set -euxo pipefail
+          rm -rf work/package-plan-audit
+          mkdir -p work/package-plan-audit
+          python3 arm64/scripts/audit_package_plan_inventory.py \
+            --locks-root arm64/locks \
+            --output work/package-plan-audit/inventory.json
+          find work/package-plan-audit -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/package-plan-audit/LOCKSUMS.sha256
+          jq '{status, candidate_count, best_candidate}' \
+            work/package-plan-audit/inventory.json
+
+      - name: Commit the package-plan audit
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/package-plan-audit
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/package-plan-audit/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record ARM64 final package-plan inventory'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload the complete audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-arm64-package-plan-audit
+          path: work/package-plan-audit
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
