@@ -1,0 +1,61 @@
+name: ARM64 port - repair Debian epoch asset URI validation
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-repair-debian-asset-epoch-uri.yml'
+      - 'arm64/scripts/repair_debian_asset_epoch_uri.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-repair-debian-asset-epoch-uri
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact Debian asset mapper
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate pool URL basename and SHA256 instead of local epoch name
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/repair_debian_asset_epoch_uri.py \
+            --target arm64/scripts/map_debian_arm64.py
+          python3 -m py_compile \
+            arm64/scripts/repair_debian_asset_epoch_uri.py \
+            arm64/scripts/map_debian_arm64.py
+          grep -Fq 'pool_basename = Path(unquote(urlparse' \
+            arm64/scripts/map_debian_arm64.py
+          grep -Fq 'APT URI SHA256 differs from Packages SHA256' \
+            arm64/scripts/map_debian_arm64.py
+
+      - name: Commit epoch-aware exact asset validation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/map_debian_arm64.py
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Handle Debian epochs in exact ARM64 asset URLs'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
