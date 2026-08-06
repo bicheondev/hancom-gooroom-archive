@@ -7,6 +7,7 @@ on:
       - '.github/workflows/arm64-build-wave5-browser.yml'
       - 'arm64/scripts/build_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_component_compat.sh'
       - 'arm64/scripts/prepare_composite_source_chroot.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
       - 'arm64/locks/source-components/**'
@@ -58,10 +59,11 @@ jobs:
           chmod +x \
             arm64/scripts/build_locked_source_arm64.sh \
             arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_component_compat.sh \
             arm64/scripts/prepare_composite_source_chroot.sh \
             arm64/scripts/verify_locked_arm64_build.sh
           rm -rf work/gooroom-browser-arm64
-          arm64/scripts/run_locked_source_arm64.sh \
+          arm64/scripts/run_locked_source_arm64_component_compat.sh \
             arm64/locks/effective-sources/effective-source-lock.json \
             gooroom-browser \
             work/gooroom-browser-arm64
