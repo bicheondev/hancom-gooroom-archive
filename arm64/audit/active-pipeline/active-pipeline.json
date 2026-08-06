@@ -2,8 +2,8 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 82,
-    "workflow_name_count": 82,
+    "workflow_count": 83,
+    "workflow_name_count": 83,
     "referenced_local_file_count": 128,
     "error_count": 48,
     "warning_count": 0,
@@ -1302,6 +1302,20 @@
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/scripts/resolve_source_git_seeded.py"
       ]
+    },
+    {
+      "filename": "arm64-source-recovery-monitor-v2.yml",
+      "path": ".github/workflows/arm64-source-recovery-monitor-v2.yml",
+      "name": "ARM64 port - coordinate source key and Wayback recovery v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-source-recovery-monitor.yml",
