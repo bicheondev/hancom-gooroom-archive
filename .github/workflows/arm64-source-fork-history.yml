@@ -1,0 +1,138 @@
+name: ARM64 port - recover exact sources from official fork networks
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-fork-history.yml'
+      - 'arm64/scripts/resolve_source_fork_history.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/sources-exhaustive/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-fork-history
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out reference and exact source evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify resolver syntax and Git transport
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git python3 jq ca-certificates
+          python3 -m py_compile arm64/scripts/resolve_source_fork_history.py
+          git --version
+
+      - name: Scan only unresolved exact source identities in official fork networks
+        id: recover
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: '0'
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/source-fork-history work/source-fork-probes
+          mkdir -p work/source-fork-history work/source-fork-probes
+          arguments=(
+            --reference arm64/locks/reference/amd64-reference.json
+            --output-dir work/source-fork-history
+            --work-dir work/source-fork-probes
+            --forks-per-repository 100
+            --repositories-per-target 8
+            --workers 6
+            --max-history 0
+          )
+          while IFS= read -r lock; do
+            arguments+=(--existing-lock "$lock")
+          done < <(
+            find arm64/locks -mindepth 2 -maxdepth 2 -type f \
+              -name source-lock.json \
+              -path 'arm64/locks/sources*/*' \
+              -print | sort
+          )
+          set +e
+          python3 arm64/scripts/resolve_source_fork_history.py \
+            "${arguments[@]}" \
+            2>&1 | tee work/source-fork-history/workflow-resolver.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/source-fork-history -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-fork-history/LOCKSUMS.sha256
+          cat work/source-fork-history/source-lock-summary.json
+
+      - name: Upload complete fork-network source evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-source-fork-history
+          path: work/source-fork-history
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact exact source lock
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/sources-fork-history
+          mkdir -p arm64/locks/sources-fork-history
+          cp -a work/source-fork-history/. arm64/locks/sources-fork-history/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/sources-fork-history
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact sources recovered from official fork networks'
+            for attempt in 1 2 3 4; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                break
+              fi
+              if [ "$attempt" -eq 4 ]; then
+                exit 1
+              fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Recompute the authoritative exact source gate
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
+
+      - name: Preserve fail-closed result after evidence publication
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/source-fork-history/source-lock-summary.json
+          test '${{ steps.recover.outputs.exit_code }}' = '0'
+          test "$(jq -r '.rebuild_unresolved_count // 0' \
+            work/source-fork-history/source-lock-summary.json)" = '0'
