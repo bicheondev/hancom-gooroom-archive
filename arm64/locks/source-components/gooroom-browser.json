@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "policy": "exact-packaging-git-plus-exact-debian-upstream-source",
+  "source": "gooroom-browser",
+  "source_version": "3.5.0-1+grm3u3",
+  "packaging": {
+    "repository_full_name": "gooroom/gooroom-browser",
+    "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+    "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+    "layout": "debian-directory-only"
+  },
+  "changelog_anchor": {
+    "position": 2,
+    "source": "chromium",
+    "version": "111.0.5563.110-1~deb11u1",
+    "meaning": "first non-Gooroom source stanza immediately below the top Gooroom packaging stanza"
+  },
+  "upstream": {
+    "source": "chromium",
+    "version": "111.0.5563.110-1~deb11u1",
+    "upstream_version": "111.0.5563.110",
+    "suite": "bullseye-security",
+    "snapshot": "20230730T235959Z",
+    "retrieval": "apt-get source --download-only from signed Debian snapshot indexes",
+    "files": {
+      "dsc": {
+        "name": "chromium_111.0.5563.110-1~deb11u1.dsc",
+        "size": 3808,
+        "sha1": "7413474de8aac0009ff41285bb594fe25dffd1ac",
+        "sha256": "c687af3dadd2fb80bc8bedfe424391f814758e08f97ac0a79bf4b74e9a209811"
+      },
+      "orig": {
+        "name": "chromium_111.0.5563.110.orig.tar.xz",
+        "size": 653761308,
+        "sha1": "edab4c6cae713a109c23c549684736c0d50ccb76",
+        "sha256": "a9fd234e79d192179124e7efb3a14094c2e54a13c2e261fe5b8cccb53d73d9f2"
+      },
+      "debian": {
+        "name": "chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+        "size": 298384,
+        "sha1": "63d4184da0b16faf411a18be6802ac05c4395934",
+        "sha256": "7ec5b71bf6e2e715503b12ebe6aed750ac93a7d244407aa4ae6026ea693b5477"
+      }
+    },
+    "required_paths": [
+      "BUILD.gn",
+      "build/linux/unbundle/replace_gn_files.py",
+      "chrome",
+      "third_party"
+    ]
+  },
+  "composition": {
+    "extract": "upstream.files.orig only",
+    "overlay": "packaging Git tree debian/ directory",
+    "exclude": "Debian upstream debian.tar.xz payload",
+    "reason": "the exact Gooroom Git commit contains packaging only; applying Debian's debian.tar.xz would replace or duplicate the locked Gooroom packaging"
+  },
+  "evidence": [
+    "gooroom/gooroom-browser@829ad92a98f523a79c7b30f3d5b604bfaef03eb0:debian/changelog",
+    "Debian BTS #1033015 accepted-source checksums for chromium 111.0.5563.110-1~deb11u1"
+  ]
+}
