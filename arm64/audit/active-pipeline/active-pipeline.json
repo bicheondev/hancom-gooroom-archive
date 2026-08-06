@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 102,
-    "workflow_name_count": 102,
-    "referenced_local_file_count": 162,
+    "workflow_count": 103,
+    "workflow_name_count": 103,
+    "referenced_local_file_count": 164,
     "error_count": 0,
-    "warning_count": 29,
+    "warning_count": 30,
     "passed": true
   },
   "workflows": [
@@ -666,6 +666,28 @@
         "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
         "arm64/scripts/test_arm64_iso_qemu.sh",
         "arm64/scripts/verify_arm64_rootfs.py"
+      ]
+    },
+    {
+      "filename": "arm64-import-historical-artifacts-v2.yml",
+      "path": ".github/workflows/arm64-import-historical-artifacts-v2.yml",
+      "name": "ARM64 port - reaudit historical ARM64 artifacts v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v2/effective-source-lock-v2.json",
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/effective-sources/source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/import_historical_arm64_artifacts_v2.py"
       ]
     },
     {
@@ -2140,6 +2162,7 @@
     ],
     "arm64/locks/effective-sources-v2/effective-source-lock-v2.json": [
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
@@ -2167,6 +2190,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-merge-effective-source-lock.yml",
       ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
@@ -2184,6 +2208,9 @@
     ],
     "arm64/locks/effective-sources/latest-git-merge-report.json": [
       ".github/workflows/arm64-merge-effective-source-lock.yml"
+    ],
+    "arm64/locks/effective-sources/source-lock.json": [
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml",
@@ -2244,6 +2271,7 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-extract-repository-keys.yml",
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
@@ -2289,6 +2317,7 @@
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
@@ -2512,6 +2541,9 @@
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
+    ],
+    "arm64/scripts/import_historical_arm64_artifacts_v2.py": [
+      ".github/workflows/arm64-import-historical-artifacts-v2.yml"
     ],
     "arm64/scripts/index_rebuild_results_v2.py": [
       ".github/workflows/arm64-index-rebuild-results-v2.yml"
@@ -2849,6 +2881,11 @@
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-import-historical-artifacts-v2.yml",
+      "local_path": "arm64/locks/effective-sources/source-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
