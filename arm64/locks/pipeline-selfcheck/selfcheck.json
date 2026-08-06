@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-06T11:12:35.657598Z",
+  "generated_at": "2026-08-06T11:13:57.866388Z",
   "status": "failed",
   "python": [
     {
@@ -168,7 +168,15 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/select_native_rebuild_batch_v3.py",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/select_next_native_rebuild_wave.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/source_authority_v3.py",
       "status": "passed"
     },
     {
@@ -287,6 +295,10 @@
     },
     {
       "path": "arm64/scripts/build_stage0_minimal_boot_iso_v3.sh",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/build_stage0_minimal_iso.sh",
       "status": "passed"
     },
     {
@@ -447,7 +459,7 @@
     {
       "path": ".github/workflows/arm64-chain-progress-maintenance.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f00d5be0380>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f00d5bd52b0>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd4a67d12e0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd4a67d1070>)"
     },
     {
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
@@ -679,6 +691,10 @@
     },
     {
       "path": ".github/workflows/arm64-stage0-live.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-minimal.yml",
       "status": "passed"
     },
     {
@@ -2000,6 +2016,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-stage0-minimal.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-minimal.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-stage0-v3-record.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2150,7 +2178,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:12:36.311333Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:13:58.568132Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2160,14 +2188,14 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:12:36.350467Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:13:58.609856Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
   "issues": [
     "bash syntax failed: arm64/scripts/run_locked_source_arm64_with_local_repo.sh",
     "invalid action reference: .github/workflows/arm64-build-wave2-v2.yml: actions/upload-artifact@ea165f8d65b6e75fa02: action revision is not a 40-hex commit",
-    "YAML parse failed: .github/workflows/arm64-chain-progress-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f00d5be0380>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f00d5bd52b0>)",
+    "YAML parse failed: .github/workflows/arm64-chain-progress-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd4a67d12e0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd4a67d1070>)",
     "invalid action reference: .github/workflows/arm64-debian-map.yml: actions/checkout@v4: action revision is not a 40-hex commit",
     "invalid action reference: .github/workflows/arm64-debian-map.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
     "invalid action reference: .github/workflows/arm64-effective-source-lock.yml: actions/checkout@v4: action revision is not a 40-hex commit",
