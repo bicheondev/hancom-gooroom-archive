@@ -1,0 +1,169 @@
+name: ARM64 port - lock original vendor source packages
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-vendor-source-lock.yml'
+      - 'arm64/scripts/lock_vendor_sources.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-vendor-source-lock
+  cancel-in-progress: true
+
+jobs:
+  lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Fetch signed repository metadata and source indexes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/vendor-repos
+
+          fetch_repo() {
+            local repository="$1"
+            local suite="$2"
+            local output="work/vendor-repos/$repository"
+            mkdir -p "$output"
+
+            local found=''
+            local base=''
+            local suffix=''
+            for scheme in https http; do
+              base="${scheme}://update.hancomgooroom.com/${repository}"
+              for candidate in Sources.xz Sources.gz Sources; do
+                if curl \
+                  --fail --location --silent --show-error \
+                  --retry 3 --retry-all-errors --connect-timeout 20 \
+                  "$base/dists/$suite/main/source/$candidate" \
+                  --output "$output/$candidate"; then
+                  found="$output/$candidate"
+                  suffix="$candidate"
+                  printf '%s\n' "$base" > "$output/base-url.txt"
+                  break 2
+                fi
+              done
+            done
+
+            if [ -z "$found" ]; then
+              echo "No Sources index found for $repository/$suite" >&2
+              exit 1
+            fi
+
+            case "$suffix" in
+              Sources.xz) xz -dc "$found" > "$output/Sources" ;;
+              Sources.gz) gzip -dc "$found" > "$output/Sources" ;;
+              Sources) cp "$found" "$output/Sources.decoded" && mv "$output/Sources.decoded" "$output/Sources" ;;
+              *) exit 1 ;;
+            esac
+
+            base="$(cat "$output/base-url.txt")"
+            for metadata in InRelease Release Release.gpg; do
+              curl \
+                --fail --location --silent --show-error \
+                --retry 3 --retry-all-errors --connect-timeout 20 \
+                "$base/dists/$suite/$metadata" \
+                --output "$output/$metadata" || true
+            done
+
+            printf '%s\n' "$suite" > "$output/suite.txt"
+            printf '%s\n' "$suffix" > "$output/source-index-name.txt"
+            sha256sum "$output"/* | sort -k2 > "$output/INDEXSUMS.sha256"
+          }
+
+          fetch_repo gooroom gooroom-3.0
+          fetch_repo hancom hancom-3.0
+
+      - name: Lock exact ISO source versions to repository records
+        id: lock
+        run: |
+          set -uxo pipefail
+          rm -rf work/vendor-lock
+          gooroom_base="$(cat work/vendor-repos/gooroom/base-url.txt)"
+          hancom_base="$(cat work/vendor-repos/hancom/base-url.txt)"
+          set +e
+          python3 arm64/scripts/lock_vendor_sources.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --index work/vendor-repos/gooroom/Sources \
+            --index-metadata "$(jq -cn \
+              --arg repository gooroom \
+              --arg suite gooroom-3.0 \
+              --arg base_url "$gooroom_base" \
+              '{repository:$repository,suite:$suite,base_url:$base_url}')" \
+            --index work/vendor-repos/hancom/Sources \
+            --index-metadata "$(jq -cn \
+              --arg repository hancom \
+              --arg suite hancom-3.0 \
+              --arg base_url "$hancom_base" \
+              '{repository:$repository,suite:$suite,base_url:$base_url}')" \
+            --output-dir work/vendor-lock
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          sha256sum work/vendor-lock/* | sort -k2 > work/vendor-lock/LOCKSUMS.sha256
+          cat work/vendor-lock/vendor-source-lock-summary.json
+
+      - name: Upload repository and source-lock evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-vendor-source-lock
+          path: |
+            work/vendor-repos
+            work/vendor-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record vendor source locks on the port branch
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/vendor-sources
+          mkdir -p arm64/locks/vendor-sources
+          cp -a work/vendor-lock/. arm64/locks/vendor-sources/
+          mkdir -p arm64/locks/vendor-sources/index-evidence/gooroom
+          mkdir -p arm64/locks/vendor-sources/index-evidence/hancom
+          for repository in gooroom hancom; do
+            cp -f work/vendor-repos/$repository/base-url.txt \
+              arm64/locks/vendor-sources/index-evidence/$repository/
+            cp -f work/vendor-repos/$repository/suite.txt \
+              arm64/locks/vendor-sources/index-evidence/$repository/
+            cp -f work/vendor-repos/$repository/source-index-name.txt \
+              arm64/locks/vendor-sources/index-evidence/$repository/
+            cp -f work/vendor-repos/$repository/INDEXSUMS.sha256 \
+              arm64/locks/vendor-sources/index-evidence/$repository/
+            cp -f work/vendor-repos/$repository/InRelease \
+              arm64/locks/vendor-sources/index-evidence/$repository/ 2>/dev/null || true
+            cp -f work/vendor-repos/$repository/Release \
+              arm64/locks/vendor-sources/index-evidence/$repository/ 2>/dev/null || true
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/vendor-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock exact Hancom Gooroom 3.3 vendor source packages'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Report unresolved vendor sources without substituting versions
+        run: |
+          set -euxo pipefail
+          jq . work/vendor-lock/vendor-source-lock-summary.json
+          if [ '${{ steps.lock.outputs.exit_code }}' != '0' ]; then
+            echo 'Some exact source versions are absent from the original vendor Sources indexes.' >&2
+            echo 'They remain blocked until an exact Git commit or exact source archive is proven.' >&2
+          fi
