@@ -1,0 +1,155 @@
+name: ARM64 port - exact source authority controller v4
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-authority-v4.yml'
+      - 'arm64/scripts/merge_exact_source_authority_v3.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/vendor-pool-sources/**'
+      - 'arm64/locks/wayback-sources/**'
+      - 'arm64/keys/source-signing/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-authority-v4
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      build_allowed: ${{ steps.merge.outputs.build_allowed }}
+      signed_dsc_count: ${{ steps.merge.outputs.signed_dsc_count }}
+      resolved_count: ${{ steps.merge.outputs.resolved_count }}
+      blocker_count: ${{ steps.merge.outputs.blocker_count }}
+    steps:
+      - name: Check out every available exact source proof
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Merge signed DSC first, then exact Git tree, without substitution
+        id: merge
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/source-authority-v4
+          mkdir -p work/source-authority-v4
+          arguments=(
+            --reference arm64/locks/reference/amd64-reference.json
+            --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json
+            --output-dir work/source-authority-v4
+          )
+          for lock in \
+            arm64/locks/sources-api-baseline/source-lock.json \
+            arm64/locks/sources/source-lock.json; do
+            if [ -f "$lock" ]; then
+              arguments+=(--git-lock "$lock")
+            fi
+          done
+          wayback=arm64/locks/wayback-sources/wayback-source-release-lock.json
+          if [ -f "$wayback" ]; then
+            arguments+=(--wayback-release-lock "$wayback")
+          fi
+          set +e
+          python3 arm64/scripts/merge_exact_source_authority_v3.py \
+            "${arguments[@]}"
+          rc=$?
+          set -e
+          summary=work/source-authority-v4/effective-source-lock-summary.json
+          build_allowed="$(jq -r '.build_allowed' "$summary")"
+          signed="$(jq -r '.signed_dsc_resolved_count // 0' "$summary")"
+          resolved="$(jq -r '.resolved_count // 0' "$summary")"
+          blockers="$(jq -r '.rebuild_blocker_count // 0' "$summary")"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          echo "build_allowed=$build_allowed" >> "$GITHUB_OUTPUT"
+          echo "signed_dsc_count=$signed" >> "$GITHUB_OUTPUT"
+          echo "resolved_count=$resolved" >> "$GITHUB_OUTPUT"
+          echo "blocker_count=$blockers" >> "$GITHUB_OUTPUT"
+          find work/source-authority-v4 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-authority-v4/LOCKSUMS.sha256
+          cat "$summary"
+
+      - name: Upload source authority and every exact blocker
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-source-authority-v4-${{ github.run_id }}
+          path: work/source-authority-v4
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit authority v4 before running any source build
+        if: always()
+        id: commit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/effective-sources-v3
+          mkdir -p arm64/locks/effective-sources-v3
+          cp -a work/source-authority-v4/. arm64/locks/effective-sources-v3/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/effective-sources-v3
+          if git diff --cached --quiet; then
+            echo 'pushed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m 'Lock exact Git or signed DSC source authority v4'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              echo 'pushed=true' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Start immediate baseline and bounded backlog builds
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/source-authority-v4/effective-source-lock.json
+          signed='${{ steps.merge.outputs.signed_dsc_count }}'
+          if [ "$signed" -gt 0 ] \
+             && [ ! -f arm64/keys/source-signing/gooroom-archive-public-keys.asc ]; then
+            echo 'Signed DSC source selected; waiting for its reference-ISO key bundle before dispatch.' >&2
+            exit 0
+          fi
+          gh workflow run arm64-native-rebuild-controller-v3.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port \
+            -f mode=baseline \
+            -f limit=6 || true
+          gh workflow run arm64-native-rebuild-controller-v3.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port \
+            -f mode=backlog \
+            -f limit=6 || true
+          gh workflow run arm64-port-coverage.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port || true
+
+      - name: Preserve fail-closed conclusion for unresolved native sources
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.build_allowed == true and .rebuild_blocker_count == 0' \
+            work/source-authority-v4/effective-source-lock-summary.json
