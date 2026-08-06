@@ -1,0 +1,83 @@
+name: Inventory Hancom Gooroom 3.3 AMD64
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/hancom-gooroom-3.3-arm64
+    paths:
+      - .github/workflows/inventory-v3.3-amd64.yml
+      - tools/inventory-amd64.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inventory-hancom-gooroom-3.3-amd64
+  cancel-in-progress: true
+
+env:
+  ISO_URL: https://github.com/bicheondev/hancom-gooroom-archive/releases/download/v3.3/Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out porting branch
+        uses: actions/checkout@v4
+
+      - name: Reclaim runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc || true
+          df -h
+
+      - name: Install ISO analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            xorriso \
+            squashfs-tools \
+            p7zip-full \
+            jq \
+            file \
+            dpkg-dev
+
+      - name: Download and verify the immutable AMD64 reference ISO
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p build/reference
+          curl \
+            --fail \
+            --location \
+            --retry 8 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --output "build/reference/${ISO_NAME}" \
+            "$ISO_URL"
+          printf '%s  %s\n' "$ISO_SHA256" "build/reference/${ISO_NAME}" | sha256sum --check --strict
+
+      - name: Generate package, source and architecture inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          chmod +x tools/inventory-amd64.sh
+          tools/inventory-amd64.sh \
+            "build/reference/${ISO_NAME}" \
+            build/inventory \
+            build/work
+          jq . build/inventory/inventory.json
+          df -h
+
+      - name: Upload immutable AMD64 inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-amd64-inventory
+          path: build/inventory
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 30
