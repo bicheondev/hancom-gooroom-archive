@@ -1,22 +1,20 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-06T13:23:45Z",
+    "generated_at": "2026-08-06T13:34:37Z",
     "branch": "arm64-port",
-    "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
+    "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 8,
-      "in_progress": 7,
-      "no-run": 81,
-      "pending": 2,
-      "queued": 2
+      "completed": 10,
+      "in_progress": 8,
+      "no-run": 82
     },
     "latest_run_conclusion_counts": {
       "cancelled": 2,
       "failure": 3,
-      "none": 92,
-      "success": 3
+      "none": 90,
+      "success": 5
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -43,18 +41,7 @@
       "name": ".github/workflows/arm64-prioritize-current-retry-maintenance.yml",
       "path": ".github/workflows/arm64-prioritize-current-retry-maintenance.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31104503829,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "6180f3694f0c92a617545ef22dbbb8ae4f854ce3",
-        "created_at": "2026-08-06T13:08:06Z",
-        "updated_at": "2026-08-06T13:08:06Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104503829",
-        "display_title": "Prioritize the newest exact-source ARM64 retry"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328585875,
@@ -90,16 +77,16 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105592062,
-        "run_number": 190,
+        "id": 31106486872,
+        "run_number": 194,
         "event": "push",
         "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "db834e61abdb28066d186d7686e2a5cb5b499844",
-        "created_at": "2026-08-06T13:22:15Z",
-        "updated_at": "2026-08-06T13:22:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105592062",
-        "display_title": "Build and boot-test a real ARM64 recovery stage-0 ISO"
+        "conclusion": "success",
+        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
+        "created_at": "2026-08-06T13:33:37Z",
+        "updated_at": "2026-08-06T13:34:02Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106486872",
+        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
       }
     },
     {
@@ -129,16 +116,16 @@
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697790,
-        "run_number": 4,
+        "id": 31106550713,
+        "run_number": 5,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:40Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697790",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:27Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550713",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -160,14 +147,36 @@
       "name": "ARM64 port - build control center with exact accountsservice",
       "path": ".github/workflows/arm64-build-gnome-control-center.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31105972462,
+        "run_number": 5,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "40f5d94f8408bb2ff35f7386c8a41843f93deabc",
+        "created_at": "2026-08-06T13:27:07Z",
+        "updated_at": "2026-08-06T13:28:49Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972462",
+        "display_title": "Use exact locked Snapshot pool fallback for composite source members"
+      }
     },
     {
       "workflow_id": 328476660,
       "name": "ARM64 port - build exact Gooroom browser",
       "path": ".github/workflows/arm64-build-wave5-browser.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31105972150,
+        "run_number": 12,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "40f5d94f8408bb2ff35f7386c8a41843f93deabc",
+        "created_at": "2026-08-06T13:27:07Z",
+        "updated_at": "2026-08-06T13:29:53Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972150",
+        "display_title": "Use exact locked Snapshot pool fallback for composite source members"
+      }
     },
     {
       "workflow_id": 328564306,
@@ -259,16 +268,16 @@
       "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697811,
-        "run_number": 13,
+        "id": 31106550692,
+        "run_number": 15,
         "event": "push",
-        "status": "queued",
+        "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:37Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697811",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:33Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550692",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -294,11 +303,11 @@
         "id": 31105592369,
         "run_number": 1,
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
+        "status": "completed",
+        "conclusion": "failure",
         "head_sha": "db834e61abdb28066d186d7686e2a5cb5b499844",
         "created_at": "2026-08-06T13:22:15Z",
-        "updated_at": "2026-08-06T13:22:18Z",
+        "updated_at": "2026-08-06T13:25:06Z",
         "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105592369",
         "display_title": "Build and boot-test a real ARM64 recovery stage-0 ISO"
       }
@@ -309,16 +318,16 @@
       "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697841,
-        "run_number": 6,
+        "id": 31106551003,
+        "run_number": 7,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:42Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697841",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:28Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106551003",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -327,16 +336,16 @@
       "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697795,
-        "run_number": 17,
+        "id": 31106550774,
+        "run_number": 20,
         "event": "push",
         "status": "completed",
         "conclusion": "cancelled",
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:39Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697795",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:26Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550774",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -352,16 +361,16 @@
       "path": ".github/workflows/arm64-native-rebuild-backlog.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105699471,
-        "run_number": 12,
+        "id": 31106550752,
+        "run_number": 13,
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:38Z",
-        "updated_at": "2026-08-06T13:23:41Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105699471",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:33Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550752",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -391,16 +400,16 @@
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697958,
-        "run_number": 7,
+        "id": 31106550687,
+        "run_number": 9,
         "event": "push",
-        "status": "completed",
-        "conclusion": "cancelled",
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697958",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:28Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550687",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -479,16 +488,16 @@
       "path": ".github/workflows/arm64-pipeline-lint.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105592051,
-        "run_number": 247,
+        "id": 31106487847,
+        "run_number": 251,
         "event": "push",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "db834e61abdb28066d186d7686e2a5cb5b499844",
-        "created_at": "2026-08-06T13:22:15Z",
-        "updated_at": "2026-08-06T13:22:47Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105592051",
-        "display_title": "Build and boot-test a real ARM64 recovery stage-0 ISO"
+        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
+        "created_at": "2026-08-06T13:33:37Z",
+        "updated_at": "2026-08-06T13:33:59Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106487847",
+        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
       }
     },
     {
@@ -602,16 +611,16 @@
       "path": ".github/workflows/arm64-pipeline-selfcheck.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105592037,
-        "run_number": 231,
+        "id": 31106488159,
+        "run_number": 235,
         "event": "push",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "db834e61abdb28066d186d7686e2a5cb5b499844",
-        "created_at": "2026-08-06T13:22:15Z",
-        "updated_at": "2026-08-06T13:22:36Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105592037",
-        "display_title": "Build and boot-test a real ARM64 recovery stage-0 ISO"
+        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
+        "created_at": "2026-08-06T13:33:37Z",
+        "updated_at": "2026-08-06T13:33:55Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106488159",
+        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
       }
     },
     {
@@ -626,18 +635,7 @@
       "name": "ARM64 port - prioritize newest infrastructure retry v2",
       "path": ".github/workflows/arm64-prioritize-current-retry-maintenance-v2.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31104826555,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "f02bbfab9c0aa557dfa3bd461ae495af494e1ac6",
-        "created_at": "2026-08-06T13:12:21Z",
-        "updated_at": "2026-08-06T13:13:12Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104826555",
-        "display_title": "Prioritize newest exact-source ARM64 retry with valid maintenance wor…"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328533416,
@@ -673,16 +671,16 @@
       "path": ".github/workflows/arm64-publish-rebuild-packages.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697830,
-        "run_number": 15,
+        "id": 31106550855,
+        "run_number": 18,
         "event": "push",
-        "status": "queued",
+        "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:37Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697830",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:28Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550855",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -782,16 +780,16 @@
       "path": ".github/workflows/arm64-port-coverage.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105698017,
-        "run_number": 44,
+        "id": 31106550690,
+        "run_number": 50,
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:42Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105698017",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "status": "completed",
+        "conclusion": "cancelled",
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:26Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550690",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -814,16 +812,16 @@
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105700159,
-        "run_number": 14,
+        "id": 31106550717,
+        "run_number": 16,
         "event": "push",
-        "status": "pending",
+        "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:39Z",
-        "updated_at": "2026-08-06T13:23:40Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105700159",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:27Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550717",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -831,18 +829,7 @@
       "name": "ARM64 port - retry exact sources after builder infrastructure repair",
       "path": ".github/workflows/arm64-infrastructure-retry-v3.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31104940988,
-        "run_number": 10,
-        "event": "push",
-        "status": "pending",
-        "conclusion": null,
-        "head_sha": "6d7c7c7f0b923e0e1033906772cd251351eda035",
-        "created_at": "2026-08-06T13:13:49Z",
-        "updated_at": "2026-08-06T13:13:50Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104940988",
-        "display_title": "Retry bounded Docker registry transport failures exactly once"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328525435,
@@ -850,16 +837,16 @@
       "path": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105697812,
-        "run_number": 8,
+        "id": 31106550750,
+        "run_number": 9,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:40Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105697812",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:33Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550750",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -889,16 +876,16 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 31105698098,
-        "run_number": 6,
+        "id": 31106551083,
+        "run_number": 7,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "27cc8c42759c420e7a7fb996acbca636108fdbac",
-        "created_at": "2026-08-06T13:23:37Z",
-        "updated_at": "2026-08-06T13:23:40Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105698098",
-        "display_title": "Add normalized verification evidence for security status tools"
+        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
+        "created_at": "2026-08-06T13:34:24Z",
+        "updated_at": "2026-08-06T13:34:32Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106551083",
+        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
       }
     },
     {
@@ -946,7 +933,7 @@
       "exists": true,
       "path": "arm64/audit/active-pipeline/summary.json",
       "values": {
-        "passed": false
+        "passed": true
       }
     },
     "workflow_secrets": {
@@ -963,14 +950,14 @@
         "package_layer_ready": false,
         "iso_assembly_allowed": false,
         "source_blocker_count": 10,
-        "native_build_blocker_count": 23
+        "native_build_blocker_count": 20
       }
     },
     "rebuild_failures": {
       "exists": true,
       "path": "arm64/status/rebuild-failures/summary.json",
       "values": {
-        "failed_count": 7,
+        "failed_count": 4,
         "dependency_resolution_failure_count": 0
       }
     },
@@ -995,7 +982,7 @@
       "path": "arm64/locks/acquisition-plan/summary.json",
       "values": {
         "ready_for_fetch": false,
-        "blocker_count": 1189
+        "blocker_count": 1181
       }
     },
     "rootfs": {
