@@ -1,0 +1,307 @@
+name: ARM64 port - recover exact signed vendor sources from Wayback
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-wayback-source-recovery.yml'
+      - 'arm64/scripts/recover_vendor_sources_wayback.py'
+      - 'arm64/locks/vendor-pool-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-wayback-source-recovery
+  cancel-in-progress: true
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+  SOURCE_RELEASE_TAG: v3.3-arm64-sources
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    steps:
+      - name: Check out exact pool paths and source identities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO, signature, and source verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools gpgv jq ca-certificates python3
+          python3 -m py_compile arm64/scripts/recover_vendor_sources_wayback.py
+
+      - name: Extract the exact trusted Gooroom archive keyrings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/iso-root work/keyrings
+          gh release download v3.3 \
+            --repo '${{ github.repository }}' \
+            --pattern "$ISO_NAME" \
+            --dir work
+          test "$(stat -c '%s' "work/$ISO_NAME")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "work/$ISO_NAME" \
+            | sha256sum --check --strict
+          xorriso -osirrox on -indev "work/$ISO_NAME" -extract / work/iso-root
+          squashfs="$(find work/iso-root -type f -name filesystem.squashfs -print -quit)"
+          test -n "$squashfs"
+          for version in 1.0 2.0 3.0; do
+            unsquashfs -cat "$squashfs" \
+              "etc/apt/trusted.gpg.d/gooroom-archive-${version}.gpg" \
+              > "work/keyrings/gooroom-archive-${version}.gpg"
+          done
+          sha256sum work/keyrings/* | sort -k2 > work/keyrings/KEYRINGS.sha256
+
+      - name: Probe exact original pool URLs in Internet Archive
+        id: recover
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/wayback-source-lock
+          set +e
+          python3 arm64/scripts/recover_vendor_sources_wayback.py \
+            --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json \
+            --keyring work/keyrings/gooroom-archive-1.0.gpg \
+            --keyring work/keyrings/gooroom-archive-2.0.gpg \
+            --keyring work/keyrings/gooroom-archive-3.0.gpg \
+            --output-dir work/wayback-source-lock \
+            --workers 4 \
+            2>&1 | tee work/wayback-source-recovery.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/wayback-source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/wayback-source-lock/LOCKSUMS.sha256
+          cat work/wayback-source-lock/summary.json
+
+      - name: Upload complete recovery evidence and recovered source files
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-wayback-exact-sources
+          path: |
+            work/keyrings/KEYRINGS.sha256
+            work/wayback-source-lock
+            work/wayback-source-recovery.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Create or retain the exact-source prerelease
+        if: steps.recover.outcome == 'success' || steps.recover.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          resolved="$(jq -r '.resolved_count // 0' work/wayback-source-lock/summary.json)"
+          if [ "$resolved" -eq 0 ]; then
+            exit 0
+          fi
+          cat > work/wayback-source-lock/release-notes.md <<'EOF'
+          Exact signed source package files recovered from Internet Archive
+          captures of the original Hancom/Gooroom APT pool URLs.
+
+          Each accepted source has:
+          - a valid signature under a trusted keyring extracted from the exact
+            Hancom Gooroom 3.3 AMD64 reference ISO;
+          - exact Source and Version equality;
+          - complete source payload size and SHA-256 equality to the signed .dsc.
+
+          These are provenance/build inputs, not a standalone operating-system release.
+          EOF
+          if ! gh release view "$SOURCE_RELEASE_TAG" \
+            --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release create "$SOURCE_RELEASE_TAG" \
+              --repo '${{ github.repository }}' \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 exact recovered source packages' \
+              --notes-file work/wayback-source-lock/release-notes.md
+          fi
+
+      - name: Publish recovered exact source files persistently
+        if: steps.recover.outcome == 'success' || steps.recover.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          resolved="$(jq -r '.resolved_count // 0' work/wayback-source-lock/summary.json)"
+          if [ "$resolved" -eq 0 ]; then
+            exit 0
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root = Path('work/wayback-source-lock')
+          rows = []
+          for path in sorted((root / 'sources').rglob('*')):
+              if not path.is_file():
+                  continue
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              rows.append({
+                  'path': str(path),
+                  'filename': path.name,
+                  'size': path.stat().st_size,
+                  'sha256': digest,
+              })
+          names = {}
+          errors = []
+          for row in rows:
+              previous = names.get(row['filename'])
+              if previous and previous != row['sha256']:
+                  errors.append({
+                      'reason': 'release-asset-filename-collision',
+                      'filename': row['filename'],
+                      'first_sha256': previous,
+                      'second_sha256': row['sha256'],
+                  })
+              names[row['filename']] = row['sha256']
+          manifest = {'schema': 1, 'files': rows, 'errors': errors}
+          (root / 'source-file-manifest.json').write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + '\n'
+          )
+          if errors:
+              raise SystemExit(json.dumps(errors, indent=2))
+          PY
+          mapfile -t assets < <(jq -r '.files[].path' \
+            work/wayback-source-lock/source-file-manifest.json)
+          test "${#assets[@]}" -gt 0
+          gh release upload "$SOURCE_RELEASE_TAG" \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            "${assets[@]}" \
+            work/wayback-source-lock/source-file-manifest.json \
+            work/wayback-source-lock/wayback-source-lock.json
+          gh api \
+            "repos/${{ github.repository }}/releases/tags/$SOURCE_RELEASE_TAG" \
+            > work/wayback-source-lock/release-api.json
+
+      - name: Lock persistent source release asset identities
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          resolved="$(jq -r '.resolved_count // 0' work/wayback-source-lock/summary.json)"
+          if [ "$resolved" -eq 0 ]; then
+            jq -n --slurpfile summary work/wayback-source-lock/summary.json \
+              '{summary:($summary[0] + {release_published:false}),sources:[],errors:[]}' \
+              > work/wayback-source-lock/wayback-source-release-lock.json
+            exit 0
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('work/wayback-source-lock')
+          source_lock = json.loads((root / 'wayback-source-lock.json').read_text())
+          release = json.loads((root / 'release-api.json').read_text())
+          manifest = json.loads((root / 'source-file-manifest.json').read_text())
+          assets = {row['name']: row for row in release.get('assets', [])}
+          file_rows = {row['filename']: row for row in manifest.get('files', [])}
+          errors = []
+          sources = []
+          for row in source_lock.get('sources', []):
+              selected = row.get('wayback_selected')
+              if row.get('wayback_status') != 'resolved' or not selected:
+                  continue
+              locked_files = []
+              for filename in selected.get('saved_files', []):
+                  local = file_rows.get(filename)
+                  asset = assets.get(filename)
+                  if not local or not asset:
+                      errors.append({
+                          'source': row.get('source'),
+                          'filename': filename,
+                          'reason': 'release-asset-or-local-manifest-missing',
+                      })
+                      continue
+                  if int(asset.get('size', -1)) != int(local['size']):
+                      errors.append({
+                          'source': row.get('source'),
+                          'filename': filename,
+                          'reason': 'release-asset-size-mismatch',
+                      })
+                  digest = asset.get('digest')
+                  if digest and digest != f"sha256:{local['sha256']}":
+                      errors.append({
+                          'source': row.get('source'),
+                          'filename': filename,
+                          'reason': 'release-asset-digest-mismatch',
+                      })
+                  locked_files.append({
+                      **local,
+                      'release_asset_id': asset.get('id'),
+                      'release_digest': digest,
+                      'browser_download_url': asset.get('browser_download_url'),
+                  })
+              sources.append({
+                  'source': row.get('source'),
+                  'source_version': row.get('source_version'),
+                  'role': row.get('role'),
+                  'dsc_sha256': selected.get('dsc_sha256'),
+                  'capture_timestamp': selected.get('capture_timestamp'),
+                  'files': locked_files,
+              })
+          summary = {
+              **source_lock['summary'],
+              'release_published': True,
+              'release_tag': release.get('tag_name'),
+              'release_id': release.get('id'),
+              'release_url': release.get('html_url'),
+              'release_source_count': len(sources),
+              'release_error_count': len(errors),
+              'release_complete': not errors,
+          }
+          output = {'summary': summary, 'sources': sources, 'errors': errors}
+          (root / 'wayback-source-release-lock.json').write_text(
+              json.dumps(output, ensure_ascii=False, indent=2) + '\n'
+          )
+          if errors:
+              raise SystemExit(json.dumps(errors, indent=2))
+          PY
+
+      - name: Commit compact Wayback source and release locks
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/wayback-sources
+          mkdir -p arm64/locks/wayback-sources
+          cp work/wayback-source-lock/summary.json arm64/locks/wayback-sources/
+          cp work/wayback-source-lock/wayback-source-lock.json arm64/locks/wayback-sources/
+          cp work/wayback-source-lock/wayback-source-release-lock.json arm64/locks/wayback-sources/
+          cp work/wayback-source-lock/rebuild-blockers.json arm64/locks/wayback-sources/
+          cp work/wayback-source-lock/LOCKSUMS.sha256 arm64/locks/wayback-sources/
+          cp work/wayback-source-lock/source-file-manifest.json arm64/locks/wayback-sources/ 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/wayback-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact signed vendor sources recovered from Wayback'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
