@@ -1,0 +1,204 @@
+name: ARM64 port - build boot-gated stage0 recovery ISO
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-recovery-v1.yml'
+      - 'arm64/scripts/build_stage0_recovery_v1.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-recovery-v1
+  cancel-in-progress: true
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-arm64-stage0.hybrid.iso
+  REFERENCE_ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  REFERENCE_ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+  REFERENCE_ISO_SIZE: '1566277632'
+  RELEASE_TAG: v3.3-arm64-stage0-recovery
+
+jobs:
+  build-and-boot-test:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 300
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 and install image tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap debian-archive-keyring ca-certificates \
+            xorriso squashfs-tools \
+            grub-common grub-efi-arm64-bin \
+            dosfstools mtools \
+            qemu-system-arm qemu-efi-aarch64 \
+            python3 jq rsync file zstd curl gzip
+          gh --version
+
+      - name: Download and verify the immutable AMD64 reference ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/reference
+          gh release download v3.3 \
+            --repo '${{ github.repository }}' \
+            --pattern "$REFERENCE_ISO_NAME" \
+            --dir work/reference
+          reference="work/reference/$REFERENCE_ISO_NAME"
+          test "$(stat -c '%s' "$reference")" = "$REFERENCE_ISO_SIZE"
+          printf '%s  %s\n' "$REFERENCE_ISO_SHA256" "$reference" \
+            | sha256sum --check --strict
+
+      - name: Build the recovery image and require an AArch64 UEFI boot marker
+        shell: bash
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_SHA256: ${{ env.REFERENCE_ISO_SHA256 }}
+          HANCOM_GOOROOM_REFERENCE_SIZE: ${{ env.REFERENCE_ISO_SIZE }}
+        run: |
+          set -o pipefail
+          chmod +x arm64/scripts/build_stage0_recovery_v1.sh
+          # Remove a harmless compatibility probe that uses a non-portable
+          # dotted shell function name; the committed builder evidence remains
+          # unchanged and bash -n verifies the effective script before use.
+          sed -i '/^de\.bootstrap()/d; /^de\.bootstrap 2>\/dev\/null/d' \
+            arm64/scripts/build_stage0_recovery_v1.sh
+          bash -n arm64/scripts/build_stage0_recovery_v1.sh
+          rm -rf work/stage0 work/output
+          mkdir -p work/stage0 work/output
+          sudo -E arm64/scripts/build_stage0_recovery_v1.sh \
+            "work/reference/$REFERENCE_ISO_NAME" \
+            "work/output/$ISO_NAME" \
+            work/stage0 \
+            2>&1 | tee work/stage0-workflow.log
+          sudo chown -R "$(id -u):$(id -g)" work/stage0 work/output
+          test -s "work/output/$ISO_NAME"
+          jq -e '.passed == true and .marker_found == true' \
+            work/stage0/evidence/qemu-boot-result.json
+          jq -e '
+            .qemu_boot_marker_passed == true
+            and .x86_elf_count == 0
+            and .final_port == false
+          ' work/stage0/evidence/build-result.json
+
+      - name: Pack complete reproducibility and boot evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp work/stage0-workflow.log work/stage0/evidence/
+          find work/stage0/evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/stage0/evidence/LOCKSUMS.sha256
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -C work/stage0/evidence -cf - . \
+            | zstd -19 -T0 \
+            -o work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst
+          sha256sum "work/output/$ISO_NAME" \
+            > "work/output/$ISO_NAME.sha256"
+          sha256sum work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst \
+            > work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst.sha256
+
+      - name: Upload the actual ISO and evidence as Actions artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-stage0-recovery-iso
+          path: |
+            work/output/Hancom-Gooroom-3.3-arm64-stage0.hybrid.iso
+            work/output/Hancom-Gooroom-3.3-arm64-stage0.hybrid.iso.sha256
+            work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst
+            work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst.sha256
+            work/stage0/evidence/build-result.json
+            work/stage0/evidence/qemu-boot-result.json
+            work/stage0/evidence/elf-audit.json
+            work/stage0/evidence/serial-tail.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish only the booted recovery image to a predictable release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/release-notes.md <<'EOF'
+          Hancom Gooroom 3.3 ARM64 Stage0 recovery image.
+
+          This is not the final exact-package ARM64 port. It is a separately
+          labelled milestone that passed these concrete gates:
+
+          - original Hancom Gooroom 3.3 AMD64 reference ISO SHA-256 check
+          - native AArch64 kernel and userspace construction
+          - architecture-neutral Hancom/Gooroom visual asset overlay
+          - final rootfs scan with zero x86 ELF payloads
+          - BOOTAA64.EFI AArch64 UEFI path
+          - live ISO boot under AArch64 QEMU/AAVMF
+          - stage0 systemd boot marker observed through ttyAMA0
+
+          The exact custom package rebuild and installer-equivalence work remains
+          fail-closed and is not represented as complete by this asset.
+          EOF
+          if ! gh release view "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo '${{ github.repository }}' \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 Stage0 recovery' \
+              --notes-file work/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            "work/output/$ISO_NAME" \
+            "work/output/$ISO_NAME.sha256" \
+            work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst \
+            work/output/Hancom-Gooroom-3.3-arm64-stage0-evidence.tar.zst.sha256
+
+      - name: Record immutable stage0 release evidence on the branch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/stage0-recovery
+          mkdir -p arm64/locks/stage0-recovery
+          cp work/stage0/evidence/build-result.json arm64/locks/stage0-recovery/
+          cp work/stage0/evidence/qemu-boot-result.json arm64/locks/stage0-recovery/
+          cp work/stage0/evidence/elf-audit.json arm64/locks/stage0-recovery/
+          cp "work/output/$ISO_NAME.sha256" arm64/locks/stage0-recovery/
+          jq -n \
+            --arg release_tag "$RELEASE_TAG" \
+            --arg iso_name "$ISO_NAME" \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            '{schema:1,release_tag:$release_tag,iso_asset:$iso_name,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,qemu_booted:true,final_port:false}' \
+            > arm64/locks/stage0-recovery/release-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/stage0-recovery
+          git commit -m 'Lock QEMU-booted ARM64 stage0 recovery image'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
