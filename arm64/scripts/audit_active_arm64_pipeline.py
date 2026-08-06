@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Audit the active ARM64 workflow/script graph after one-shot maintenance.
 
-This audit is intentionally independent of GitHub's workflow API. It examines
-what the `arm64-port` branch would execute, rejects superseded v1 paths and
-moving action tags, and records referenced local scripts that no longer exist.
+The audit validates workflow syntax, immutable action references, and local
+executable inputs. Generated lock/evidence JSON paths are reported as runtime
+prerequisite warnings until their producer has run; they are not mistaken for
+missing source files. This distinction keeps the static graph fail-closed for
+code while allowing an intentionally staged pipeline to start from no outputs.
 """
 
 from __future__ import annotations
@@ -57,7 +59,13 @@ REQUIRED_SCRIPTS = {
     "arm64/scripts/build_arm64_live_iso.sh",
     "arm64/scripts/test_arm64_iso_qemu.sh",
 }
-LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z0-9_./-])(arm64/[A-Za-z0-9_./+-]+\.(?:py|sh|json))")
+# The trailing negative look-ahead prevents a checksum name such as
+# LOCKSUMS.sha256 from being truncated and misreported as LOCKSUMS.sh.
+LOCAL_PATH_RE = re.compile(
+    r"(?<![A-Za-z0-9_./-])"
+    r"(arm64/[A-Za-z0-9_./+-]+\.(?:py|sh|json))"
+    r"(?![A-Za-z0-9_.+-])"
+)
 ACTION_RE = re.compile(r"^([^\s]+/[^\s]+)@([^\s]+)$")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -97,6 +105,12 @@ def collect_run_text(value: Any, output: list[str]) -> None:
     elif isinstance(value, list):
         for child in value:
             collect_run_text(child, output)
+
+
+def missing_reference_is_error(local_path: str) -> bool:
+    """Only executable source inputs must exist before the workflow can run."""
+
+    return local_path.endswith((".py", ".sh"))
 
 
 def main() -> int:
@@ -169,12 +183,19 @@ def main() -> int:
         )
         for local_path in referenced:
             local_references[local_path].append(relative)
-            if not (root / local_path).exists():
-                errors.append(
+            if (root / local_path).exists():
+                continue
+            record = {
+                "path": relative,
+                "local_path": local_path,
+            }
+            if missing_reference_is_error(local_path):
+                errors.append({**record, "reason": "referenced-local-code-missing"})
+            else:
+                warnings.append(
                     {
-                        "path": relative,
-                        "reason": "referenced-local-file-missing",
-                        "local_path": local_path,
+                        **record,
+                        "reason": "runtime-prerequisite-not-yet-generated",
                     }
                 )
 
@@ -242,7 +263,7 @@ def main() -> int:
             )
 
     summary = {
-        "schema": 1,
+        "schema": 2,
         "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
         "workflow_count": len(workflows),
         "workflow_name_count": len(names),
