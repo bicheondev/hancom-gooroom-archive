@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 90,
-    "workflow_name_count": 90,
-    "referenced_local_file_count": 121,
+    "workflow_count": 91,
+    "workflow_name_count": 91,
+    "referenced_local_file_count": 122,
     "error_count": 4,
-    "warning_count": 36,
+    "warning_count": 37,
     "passed": false
   },
   "workflows": [
@@ -1146,6 +1146,26 @@
       ]
     },
     {
+      "filename": "arm64-qtbase-apt-source-lock-v2.yml",
+      "path": ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
+      "name": "ARM64 port - recover exact QtBase source from APT v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/resolve_source_apt.py",
+        "arm64/scripts/resolve_source_apt_fast.py"
+      ]
+    },
+    {
       "filename": "arm64-qtbase-apt-source-lock.yml",
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "name": "ARM64 port - recover exact QtBase source from APT",
@@ -1895,6 +1915,7 @@
     ],
     "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-build-qtbase.yml",
+      ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
@@ -1955,6 +1976,7 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-apt-source-archive.yml",
+      ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
@@ -2187,10 +2209,14 @@
     "arm64/scripts/resolve_source_apt.py": [
       ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-qtbase-apt-source-archive.yml",
+      ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/scripts/resolve_source_apt_archival.py": [
       ".github/workflows/arm64-qtbase-apt-source-archive.yml"
+    ],
+    "arm64/scripts/resolve_source_apt_fast.py": [
+      ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml"
     ],
     "arm64/scripts/resolve_source_git_seeded.py": [
       ".github/workflows/arm64-source-lock.yml"
@@ -2503,6 +2529,11 @@
     {
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
+      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
