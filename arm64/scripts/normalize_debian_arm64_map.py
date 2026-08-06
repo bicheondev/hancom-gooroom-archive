@@ -35,6 +35,8 @@ def canonical_status(value: Any) -> str:
         "use-arm64",
         "download-arm64",
         "exact",
+        "source-exact-binnmu",
+        "source-exact-arch-binnmu",
     }
     all_aliases = {
         "reuse-all",
