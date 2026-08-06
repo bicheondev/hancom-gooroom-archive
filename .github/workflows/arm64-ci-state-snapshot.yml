@@ -1,0 +1,94 @@
+name: ARM64 port - snapshot CI and phase-gate state
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-ci-state-snapshot.yml'
+      - 'arm64/scripts/summarize_arm64_ci_state.py'
+      - 'arm64/status/**'
+      - 'arm64/audit/**'
+      - 'arm64/locks/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-ci-state-snapshot
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out committed phase gates
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Query active workflows and recent branch runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/ci-state
+          mkdir -p work/ci-state
+          gh api --method GET \
+            "repos/${{ github.repository }}/actions/workflows" \
+            -f per_page=100 \
+            > work/ci-state/workflows-api.json
+          gh api --method GET \
+            "repos/${{ github.repository }}/actions/runs" \
+            -f branch=arm64-port \
+            -f per_page=100 \
+            > work/ci-state/runs-api.json
+          python3 arm64/scripts/summarize_arm64_ci_state.py \
+            --workflows work/ci-state/workflows-api.json \
+            --runs work/ci-state/runs-api.json \
+            --repository-root . \
+            --head-sha "$(git rev-parse HEAD)" \
+            --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --output-dir work/ci-state/summary
+          find work/ci-state -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/ci-state/LOCKSUMS.sha256
+          cat work/ci-state/summary/summary.json
+
+      - name: Upload complete CI state snapshot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-ci-state
+          path: work/ci-state
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact current state
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/status/ci-state
+          mkdir -p arm64/status/ci-state
+          cp work/ci-state/summary/ci-state.json arm64/status/ci-state/
+          cp work/ci-state/summary/summary.json arm64/status/ci-state/
+          cp work/ci-state/LOCKSUMS.sha256 arm64/status/ci-state/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/ci-state
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Snapshot current Hancom Gooroom ARM64 CI state'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
