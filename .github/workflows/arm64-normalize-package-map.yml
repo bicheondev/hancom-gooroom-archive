@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-normalize-package-map.yml'
       - 'arm64/scripts/normalize_debian_arm64_map.py'
+      - 'arm64/scripts/normalize_debian_arm64_map_v2.py'
       - 'arm64/locks/reference/**'
       - 'arm64/locks/debian-arm64/**'
   workflow_dispatch:
@@ -36,7 +37,7 @@ jobs:
           set -uxo pipefail
           rm -rf work/normalized-package-map
           set +e
-          python3 arm64/scripts/normalize_debian_arm64_map.py \
+          python3 arm64/scripts/normalize_debian_arm64_map_v2.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --map-dir arm64/locks/debian-arm64 \
             --output-dir work/normalized-package-map
