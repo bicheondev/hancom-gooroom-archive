@@ -1,0 +1,62 @@
+name: ARM64 port - prioritize current infrastructure retry
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-prioritize-current-retry-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-prioritize-current-retry-maintenance
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Cancel obsolete queued retries when a newer builder is pushed
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-infrastructure-retry-v3.yml')
+          text = path.read_text(encoding='utf-8')
+          old = '''concurrency:
+  group: hancom-gooroom-33-infrastructure-retry-v3
+  cancel-in-progress: false
+'''
+          new = '''concurrency:
+  group: hancom-gooroom-33-infrastructure-retry-v3
+  cancel-in-progress: true
+'''
+          if old not in text and new not in text:
+              raise SystemExit('retry concurrency block was not found')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+          git rm -f .github/workflows/arm64-prioritize-current-retry-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-infrastructure-retry-v3.yml
+          git commit -m 'Prioritize the newest ARM64 infrastructure retry builder'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
