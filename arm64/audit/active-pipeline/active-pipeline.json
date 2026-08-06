@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 84,
-    "workflow_name_count": 84,
-    "referenced_local_file_count": 132,
-    "error_count": 49,
+    "workflow_count": 85,
+    "workflow_name_count": 85,
+    "referenced_local_file_count": 133,
+    "error_count": 50,
     "warning_count": 0,
     "passed": false
   },
@@ -1171,6 +1171,24 @@
       ]
     },
     {
+      "filename": "arm64-rebuild-failure-audit-v3.yml",
+      "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
+      "name": "ARM64 port - classify exact-source rebuild failures v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-release/rebuild-release-lock.json",
+        "arm64/scripts/classify_native_rebuild_failures_v3.py"
+      ]
+    },
+    {
       "filename": "arm64-rebuild-failure-audit.yml",
       "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
       "name": "ARM64 port - classify native rebuild failures",
@@ -1833,6 +1851,7 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
     "arm64/locks/reference/amd64-reference.json": [
@@ -2040,6 +2059,9 @@
     "arm64/scripts/classify_native_rebuild_failures.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
+    ],
+    "arm64/scripts/classify_native_rebuild_failures_v3.py": [
+      ".github/workflows/arm64-rebuild-failure-audit-v3.yml"
     ],
     "arm64/scripts/collect_native_rebuild_results_v2.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2440,6 +2462,11 @@
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
+    },
+    {
+      "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
     },
     {
       "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
