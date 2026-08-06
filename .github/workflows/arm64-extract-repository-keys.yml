@@ -1,0 +1,176 @@
+name: ARM64 port - extract original repository signing keys
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-extract-repository-keys.yml'
+      - 'arm64/locks/vendor-binaries/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-repository-keys
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact vendor lock
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Debian and OpenPGP inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            dpkg-dev gnupg jq file
+
+      - name: Download and reverify all historical vendor packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor work/repository-keys
+          mkdir -p work/vendor work/repository-keys/files
+          run_id="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow arm64-vendor-binary-lock.yml \
+            --branch arm64-port \
+            --status success \
+            --limit 20 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          test -n "$run_id"
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-exact-vendor-debs \
+            --dir work/vendor
+          lock=work/vendor/vendor-binary-lock/vendor-binary-lock.json
+          test "$(jq -r '.summary.verified_count' "$lock")" = 123
+          test "$(jq -r '.summary.unresolved_count' "$lock")" = 0
+          sed 's#  work/vendor-debs/#  work/vendor/vendor-debs/#' \
+            work/vendor/vendor-binary-lock/DEBSUMS.sha256 \
+            > work/vendor/DEBSUMS.relocated.sha256
+          sha256sum --check work/vendor/DEBSUMS.relocated.sha256
+
+      - name: Extract every APT keyring payload from the original DEBs
+        run: |
+          set -euxo pipefail
+          manifest=work/repository-keys/key-files.tsv
+          printf 'package\tversion\tarchitecture\tpath\tsha256\tbytes\tfilename\n' > "$manifest"
+          while IFS= read -r -d '' deb; do
+            package="$(dpkg-deb -f "$deb" Package)"
+            version="$(dpkg-deb -f "$deb" Version)"
+            architecture="$(dpkg-deb -f "$deb" Architecture)"
+            extract="$(mktemp -d)"
+            dpkg-deb -x "$deb" "$extract"
+            while IFS= read -r -d '' key; do
+              relative="/${key#"$extract/"}"
+              case "$relative" in
+                /usr/share/keyrings/*|/etc/apt/trusted.gpg.d/*|/etc/apt/trusted.gpg) ;;
+                *) continue ;;
+              esac
+              safe_package="$(sed 's/[^A-Za-z0-9_.-]/_/g' <<<"$package")"
+              safe_name="$(sed 's/[^A-Za-z0-9_.-]/_/g' <<<"${key##*/}")"
+              destination="work/repository-keys/files/${safe_package}__${safe_name}"
+              cp "$key" "$destination"
+              printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$package" "$version" "$architecture" "$relative" \
+                "$(sha256sum "$destination" | cut -d' ' -f1)" \
+                "$(stat -c '%s' "$destination")" \
+                "${destination##*/}" >> "$manifest"
+            done < <(find "$extract" -type f \
+              \( -iname '*.gpg' -o -iname '*.asc' -o -iname '*.key' \
+                 -o -path '*/etc/apt/trusted.gpg' \) -print0)
+            rm -rf "$extract"
+          done < <(find work/vendor/vendor-debs -type f -name '*.deb' -print0)
+          test "$(($(wc -l < "$manifest") - 1))" -gt 0
+
+      - name: Lock OpenPGP fingerprints and reject secret keys
+        run: |
+          set -euxo pipefail
+          printf 'filename\tsha256\tfingerprint\tuid\n' \
+            > work/repository-keys/openpgp-fingerprints.tsv
+          for key in work/repository-keys/files/*; do
+            file "$key" >> work/repository-keys/file-report.txt
+            homedir="$(mktemp -d)"
+            chmod 0700 "$homedir"
+            set +e
+            listing="$(gpg --batch --homedir "$homedir" \
+              --with-colons --import-options show-only --import "$key" 2>/dev/null)"
+            rc=$?
+            set -e
+            rm -rf "$homedir"
+            if [ "$rc" -ne 0 ]; then
+              continue
+            fi
+            if grep -q '^sec:' <<<"$listing"; then
+              echo "secret OpenPGP key material found in $key" >&2
+              exit 4
+            fi
+            mapfile -t fingerprints < <(awk -F: '$1 == "fpr" {print $10}' <<<"$listing" | sort -u)
+            mapfile -t uids < <(awk -F: '$1 == "uid" {print $10}' <<<"$listing" | sort -u)
+            uid="$(IFS=' | '; echo "${uids[*]}")"
+            for fingerprint in "${fingerprints[@]}"; do
+              printf '%s\t%s\t%s\t%s\n' \
+                "${key##*/}" \
+                "$(sha256sum "$key" | cut -d' ' -f1)" \
+                "$fingerprint" "$uid" \
+                >> work/repository-keys/openpgp-fingerprints.tsv
+            done
+          done
+          test "$(($(wc -l < work/repository-keys/openpgp-fingerprints.tsv) - 1))" -gt 0
+          jq -n \
+            --arg reference_iso_sha256 "$(jq -r '.reference_iso.sha256' arm64/locks/reference/amd64-reference.json)" \
+            --argjson key_file_count "$(find work/repository-keys/files -type f | wc -l)" \
+            --argjson fingerprint_count "$(($(wc -l < work/repository-keys/openpgp-fingerprints.tsv) - 1))" \
+            '{
+              status: "verified-public-keys",
+              reference_iso_sha256: $reference_iso_sha256,
+              key_file_count: $key_file_count,
+              fingerprint_count: $fingerprint_count
+            }' > work/repository-keys/result.json
+          find work/repository-keys -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/repository-keys/SHA256SUMS
+          sha256sum --check work/repository-keys/SHA256SUMS
+
+      - name: Upload original repository public-key evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-original-repository-public-keys
+          path: work/repository-keys
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the verified public keyring lock
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/repository-keys
+          mkdir -p arm64/locks/repository-keys
+          cp -a work/repository-keys/files arm64/locks/repository-keys/
+          cp work/repository-keys/key-files.tsv arm64/locks/repository-keys/
+          cp work/repository-keys/openpgp-fingerprints.tsv arm64/locks/repository-keys/
+          cp work/repository-keys/file-report.txt arm64/locks/repository-keys/
+          cp work/repository-keys/result.json arm64/locks/repository-keys/
+          find arm64/locks/repository-keys -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > arm64/locks/repository-keys/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/repository-keys
+          git commit -m 'Lock original Hancom Gooroom repository public keys' || exit 0
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
