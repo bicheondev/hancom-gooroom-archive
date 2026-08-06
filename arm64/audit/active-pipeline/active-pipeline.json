@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
     "workflow_count": 93,
     "workflow_name_count": 93,
-    "referenced_local_file_count": 137,
+    "referenced_local_file_count": 142,
     "error_count": 0,
     "warning_count": 27,
     "passed": true
@@ -1154,7 +1154,12 @@
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
         "arm64/scripts/report_arm64_port_coverage.py",
-        "arm64/source-recovery-blockers.json"
+        "arm64/source-recovery-blockers.json",
+        "arm64/status/build-blockers.json",
+        "arm64/status/coverage.json",
+        "arm64/status/source-blockers.json",
+        "arm64/status/source-recovery-required.json",
+        "arm64/status/summary.json"
       ]
     },
     {
@@ -2533,6 +2538,21 @@
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
     "arm64/source-recovery-blockers.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/status/build-blockers.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/status/coverage.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/status/source-blockers.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/status/source-recovery-required.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/status/summary.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ]
   },
