@@ -10,12 +10,12 @@
     "signed_dsc_source_count": 0,
     "source_blocker_count": 9,
     "native_rebuild_source_count": 39,
-    "native_rebuild_passed_count": 26,
-    "native_rebuild_blocker_count": 13,
+    "native_rebuild_passed_count": 29,
+    "native_rebuild_blocker_count": 10,
     "normalized_package_count": 0,
     "normalized_status_counts": {},
     "expected_rebuilt_package_count": 0,
-    "persistent_rebuilt_package_count": 96,
+    "persistent_rebuilt_package_count": 126,
     "persistent_rebuilt_package_blocker_count": 0,
     "persistent_release_complete": true,
     "acquisition_ready": false,
@@ -265,6 +265,16 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214"
     },
     {
+      "source": "gtk+3.0",
+      "source_version": "3.24.24-4+grm3u2",
+      "authority": [
+        "git",
+        "e6d2a53b942106b26c58d54a8a52edfde7dea3ae"
+      ],
+      "actions_run_id": "31104803734",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734"
+    },
+    {
       "source": "hancom-toolkit",
       "source_version": "0.3.3+han3u1",
       "authority": [
@@ -293,6 +303,16 @@
       ],
       "actions_run_id": "31102922971",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971"
+    },
+    {
+      "source": "libnma",
+      "source_version": "1.8.30-1+grm3u2",
+      "authority": [
+        "git",
+        "2ada6a3ee3ba66b0768ef666baba32e4998a6eff"
+      ],
+      "actions_run_id": "31104940988",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104940988"
     },
     {
       "source": "lightdm",
@@ -343,6 +363,16 @@
       ],
       "actions_run_id": "31103220338",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338"
+    },
+    {
+      "source": "nimf",
+      "source_version": "2023.06.30+grm3u1",
+      "authority": [
+        "git",
+        "a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d"
+      ],
+      "actions_run_id": "31104803734",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734"
     },
     {
       "source": "pam-gooroom",
@@ -430,30 +460,6 @@
       "verify_outcome": "skipped"
     },
     {
-      "source": "gtk+3.0",
-      "source_version": "3.24.24-4+grm3u2",
-      "reason": "latest-exact-authority-build-not-verified",
-      "authority": [
-        "git",
-        "e6d2a53b942106b26c58d54a8a52edfde7dea3ae"
-      ],
-      "actions_run_id": "31097916427",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    },
-    {
-      "source": "libnma",
-      "source_version": "1.8.30-1+grm3u2",
-      "reason": "latest-exact-authority-build-not-verified",
-      "authority": [
-        "git",
-        "2ada6a3ee3ba66b0768ef666baba32e4998a6eff"
-      ],
-      "actions_run_id": "31102922971",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    },
-    {
       "source": "nautilus",
       "source_version": "3.38.2-1+deb11u1+grm3u8",
       "reason": "no-native-arm64-attempt-recorded",
@@ -463,18 +469,6 @@
       ]
     },
     {
-      "source": "nimf",
-      "source_version": "2023.06.30+grm3u1",
-      "reason": "latest-exact-authority-build-not-verified",
-      "authority": [
-        "git",
-        "a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d"
-      ],
-      "actions_run_id": "31097849441",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    },
-    {
       "source": "p7zip",
       "source_version": "16.02+dfsg-8+grm3u1",
       "reason": "latest-exact-authority-build-not-verified",
@@ -482,7 +476,7 @@
         "git",
         "e392d61e4303302107f9468a06ef0bcb49fe4f33"
       ],
-      "actions_run_id": "31097849441",
+      "actions_run_id": "31104803734",
       "build_outcome": "failure",
       "verify_outcome": "skipped"
     },
