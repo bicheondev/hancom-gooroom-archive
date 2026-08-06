@@ -51,8 +51,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
-          rm -rf work/vendor
-          mkdir -p work/vendor
+          rm -rf work/vendor work/stage0
+          mkdir -p work/vendor work/stage0
+          printf 'stage-0 workflow started\n' > work/stage0/WORKFLOW_STARTED.txt
           run_id="$(gh run list \
             --repo "$GITHUB_REPOSITORY" \
             --workflow arm64-vendor-binary-lock.yml \
@@ -68,7 +69,10 @@ jobs:
             --dir work/vendor
           test "$(jq -r '.summary.verified_count' work/vendor/vendor-binary-lock/vendor-binary-lock.json)" = 123
           test "$(jq -r '.summary.unresolved_count' work/vendor/vendor-binary-lock/vendor-binary-lock.json)" = 0
-          sha256sum --check work/vendor/vendor-binary-lock/DEBSUMS.sha256
+          sed 's#  work/vendor-debs/#  work/vendor/vendor-debs/#' \
+            work/vendor/vendor-binary-lock/DEBSUMS.sha256 \
+            > work/vendor/DEBSUMS.relocated.sha256
+          sha256sum --check work/vendor/DEBSUMS.relocated.sha256
 
       - name: Assemble the exact-branded ARM64 UEFI live ISO
         env:
