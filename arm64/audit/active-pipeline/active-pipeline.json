@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
     "workflow_count": 93,
     "workflow_name_count": 93,
-    "referenced_local_file_count": 136,
+    "referenced_local_file_count": 137,
     "error_count": 0,
     "warning_count": 27,
     "passed": true
@@ -1148,11 +1148,13 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-lock.json",
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
-        "arm64/scripts/report_arm64_port_coverage.py"
+        "arm64/scripts/report_arm64_port_coverage.py",
+        "arm64/source-recovery-blockers.json"
       ]
     },
     {
@@ -1932,7 +1934,8 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
@@ -2528,6 +2531,9 @@
     ],
     "arm64/scripts/verify_locked_arm64_build_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
+    ],
+    "arm64/source-recovery-blockers.json": [
+      ".github/workflows/arm64-port-coverage.yml"
     ]
   },
   "errors": [],
