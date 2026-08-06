@@ -2,8 +2,8 @@
 """Classify the latest native ARM64 rebuild failure for every source.
 
 Classification is deliberately diagnostic, not permissive: no category changes
-whether a package is accepted. It only decides which failed sources may be
-retried after the verified build-dependency repository changes.
+whether a package is accepted. It only decides which exact build path should be
+used next and keeps infrastructure failures separate from source deficiencies.
 """
 
 from __future__ import annotations
@@ -13,6 +13,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+
+CONTAINER_REGISTRY_TRANSIENT_MARKERS = (
+    "registry-1.docker.io",
+    "500 internal server error",
+    "unexpected http status: 500",
+    "error response from daemon",
+    "failed to resolve reference",
+    "failed to do request",
+)
 
 CATEGORY_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -47,6 +56,21 @@ CATEGORY_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "unable to recognise the format of the input file",
             "lib/xsm.so",
         ),
+    ),
+    (
+        "composite-source-required",
+        (
+            "modulenotfounderror: no module named 'replace_gn_files'",
+            "build/linux/unbundle/replace_gn_files.py",
+            "required upstream path is missing after extraction",
+            "packaging-only lock expected exactly debian/",
+            "source component lock not found",
+            "composite source helper not found",
+        ),
+    ),
+    (
+        "infrastructure-transient",
+        CONTAINER_REGISTRY_TRANSIENT_MARKERS,
     ),
     (
         "snapshot-or-bootstrap",
@@ -139,7 +163,9 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def latest_results(root: Path) -> dict[tuple[str, str], tuple[dict[str, Any], Path]]:
+def latest_results(
+    root: Path,
+) -> dict[tuple[str, str], tuple[dict[str, Any], Path]]:
     rows: dict[tuple[str, str], tuple[dict[str, Any], Path]] = {}
     if not root.exists():
         return rows
@@ -159,7 +185,11 @@ def latest_results(root: Path) -> dict[tuple[str, str], tuple[dict[str, Any], Pa
             run_id = 0
         previous = rows.get(key)
         try:
-            previous_id = int(str(previous[0].get("actions_run_id", "0"))) if previous else -1
+            previous_id = (
+                int(str(previous[0].get("actions_run_id", "0")))
+                if previous
+                else -1
+            )
         except ValueError:
             previous_id = -1
         if previous is None or run_id >= previous_id:
@@ -183,10 +213,24 @@ def diagnostic_text(row: dict[str, Any]) -> str:
 
 
 def classify(text: str, row: dict[str, Any]) -> tuple[str, list[str]]:
-    # The dedicated preflight exit code is authoritative even if bounded logs
-    # were truncated before the marker text was persisted.
-    if str(row.get("build_exit_code", "")) == "86":
+    exit_code = str(row.get("build_exit_code", ""))
+    # Dedicated preflight exit code is authoritative even if bounded logs were
+    # truncated before the marker text was persisted.
+    if exit_code == "86":
         return "source-recovery-required", ["build exit code 86"]
+
+    registry_markers = sorted(
+        {
+            marker
+            for marker in CONTAINER_REGISTRY_TRANSIENT_MARKERS
+            if marker in text
+        }
+    )
+    if exit_code == "125" and registry_markers:
+        return (
+            "infrastructure-transient",
+            ["build exit code 125", *registry_markers][:16],
+        )
 
     matches: list[tuple[str, list[str]]] = []
     for category, patterns in CATEGORY_RULES:
@@ -201,13 +245,18 @@ def classify(text: str, row: dict[str, Any]) -> tuple[str, list[str]]:
         None,
         "",
     }:
-        return "post-build-verification", ["build succeeded but verifier failed"]
+        return "post-build-verification", [
+            "build succeeded but verifier failed"
+        ]
     if not matches:
-        if str(row.get("build_exit_code", "")) in {"124", "137", "143"}:
-            return "timeout", [f"exit code {row.get('build_exit_code')}"]
+        if exit_code in {"124", "137", "143"}:
+            return "timeout", [f"exit code {exit_code}"]
         return "unknown", []
 
-    priority = {category: index for index, (category, _) in enumerate(CATEGORY_RULES)}
+    priority = {
+        category: index
+        for index, (category, _) in enumerate(CATEGORY_RULES)
+    }
     matches.sort(key=lambda item: priority[item[0]])
     category, evidence = matches[0]
     return category, evidence[:16]
@@ -253,24 +302,45 @@ def main() -> int:
 
     category_counts: dict[str, int] = {}
     for row in classifications:
-        category_counts[row["category"]] = category_counts.get(row["category"], 0) + 1
+        category_counts[row["category"]] = (
+            category_counts.get(row["category"], 0) + 1
+        )
     dependency_failures = [
-        row for row in classifications if row["category"] == "dependency-resolution"
+        row
+        for row in classifications
+        if row["category"] == "dependency-resolution"
     ]
     source_recovery_failures = [
-        row for row in classifications if row["category"] == "source-recovery-required"
+        row
+        for row in classifications
+        if row["category"] == "source-recovery-required"
+    ]
+    composite_source_failures = [
+        row
+        for row in classifications
+        if row["category"] == "composite-source-required"
+    ]
+    infrastructure_transient_failures = [
+        row
+        for row in classifications
+        if row["category"] == "infrastructure-transient"
     ]
     unknown_failures = [
         row for row in classifications if row["category"] == "unknown"
     ]
     summary = {
-        "schema": 2,
+        "schema": 3,
         "policy": "diagnostic-only-failure-classification",
         "latest_result_count": len(classifications),
         "passed_count": category_counts.get("passed", 0),
-        "failed_count": len(classifications) - category_counts.get("passed", 0),
+        "failed_count": len(classifications)
+        - category_counts.get("passed", 0),
         "dependency_resolution_failure_count": len(dependency_failures),
         "source_recovery_required_count": len(source_recovery_failures),
+        "composite_source_required_count": len(composite_source_failures),
+        "infrastructure_transient_count": len(
+            infrastructure_transient_failures
+        ),
         "unknown_failure_count": len(unknown_failures),
         "category_counts": dict(sorted(category_counts.items())),
     }
@@ -290,11 +360,31 @@ def main() -> int:
         encoding="utf-8",
     )
     (args.output_dir / "dependency-failures.json").write_text(
-        json.dumps(dependency_failures, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(dependency_failures, ensure_ascii=False, indent=2)
+        + "\n",
         encoding="utf-8",
     )
     (args.output_dir / "source-recovery-failures.json").write_text(
-        json.dumps(source_recovery_failures, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            source_recovery_failures, ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (args.output_dir / "composite-source-failures.json").write_text(
+        json.dumps(
+            composite_source_failures, ensure_ascii=False, indent=2
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (args.output_dir / "infrastructure-transient-failures.json").write_text(
+        json.dumps(
+            infrastructure_transient_failures,
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     (args.output_dir / "unknown-failures.json").write_text(
