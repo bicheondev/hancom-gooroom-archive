@@ -1,0 +1,98 @@
+name: ARM64 port - extract exact blocker binary provenance
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-extract-blocker-binary-evidence.yml'
+      - 'arm64/scripts/extract_blocker_binary_evidence.py'
+      - 'arm64/locks/apt-source-fallback-v2/unresolved.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-blocker-binary-provenance
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact blocker and vendor index evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Debian binary inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev binutils ca-certificates
+          python3 -m py_compile arm64/scripts/extract_blocker_binary_evidence.py
+
+      - name: Download only exact locked AMD64 binaries and extract provenance clues
+        id: extract
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/blocker-binary-evidence
+          set +e
+          python3 arm64/scripts/extract_blocker_binary_evidence.py \
+            --unresolved arm64/locks/apt-source-fallback-v2/unresolved.json \
+            --output-dir work/blocker-binary-evidence \
+            2>&1 | tee work/blocker-binary-evidence-workflow.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/blocker-binary-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/blocker-binary-evidence/LOCKSUMS.sha256
+          cat work/blocker-binary-evidence/summary.json
+
+      - name: Upload complete exact-binary evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-blocker-binary-provenance
+          path: |
+            work/blocker-binary-evidence
+            work/blocker-binary-evidence-workflow.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact provenance clues
+        if: always()
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/blocker-binary-evidence
+          mkdir -p arm64/locks/blocker-binary-evidence
+          cp -a work/blocker-binary-evidence/. arm64/locks/blocker-binary-evidence/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/blocker-binary-evidence
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Extract exact AMD64 blocker provenance clues'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce evidence for every APT source blocker
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.extract.outputs.exit_code }}' = '0'
+          jq -e '.complete == true and .failed_count == 0' \
+            work/blocker-binary-evidence/summary.json
