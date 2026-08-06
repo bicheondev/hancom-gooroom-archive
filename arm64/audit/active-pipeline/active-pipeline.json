@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 73,
-    "workflow_name_count": 73,
-    "referenced_local_file_count": 97,
-    "error_count": 62,
+    "workflow_count": 74,
+    "workflow_name_count": 74,
+    "referenced_local_file_count": 98,
+    "error_count": 63,
     "warning_count": 0,
     "passed": false
   },
@@ -387,6 +387,22 @@
       "referenced_local_files": [
         "arm64/scripts/build_locked_source_arm64.sh",
         "arm64/scripts/build_locked_source_arm64_v2.sh"
+      ]
+    },
+    {
+      "filename": "arm64-chain-progress-maintenance-safe.yml",
+      "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
+      "name": "ARM64 port - safely wire explicit progress dispatch chain",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/wire_progress_dispatches.py"
       ]
     },
     {
@@ -1981,6 +1997,9 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-package-smoke.yml"
+    ],
+    "arm64/scripts/wire_progress_dispatches.py": [
+      ".github/workflows/arm64-chain-progress-maintenance-safe.yml"
     ]
   },
   "errors": [
@@ -2013,6 +2032,10 @@
     },
     {
       "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
