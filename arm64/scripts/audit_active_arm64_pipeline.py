@@ -44,13 +44,16 @@ SUPERSEDED_WORKFLOWS = {
     "arm64-package-smoke.yml",
 }
 SUPERSEDED_SCRIPTS = {
-    "arm64/scripts/build_locked_source_arm64.sh",
     "arm64/scripts/finalize_arm64_live_rootfs.sh",
     "arm64/scripts/build_package_acquisition_plan.py",
     "arm64/scripts/prepare_rebuild_release_assets.py",
     "arm64/scripts/collect_native_rebuild_results.py",
 }
 REQUIRED_SCRIPTS = {
+    # v2/v5/v6 wrappers deliberately patch this exact historical core builder.
+    # It is therefore required compatibility infrastructure, not a superseded
+    # entry point. Its Git blob identity is verified when restored.
+    "arm64/scripts/build_locked_source_arm64.sh",
     "arm64/scripts/build_locked_source_arm64_v2.sh",
     "arm64/scripts/collect_native_rebuild_results_v2.py",
     "arm64/scripts/build_package_acquisition_plan_v2.py",
@@ -263,8 +266,8 @@ def main() -> int:
             )
 
     summary = {
-        "schema": 2,
-        "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
+        "schema": 3,
+        "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
         "workflow_count": len(workflows),
         "workflow_name_count": len(names),
         "referenced_local_file_count": len(local_references),
