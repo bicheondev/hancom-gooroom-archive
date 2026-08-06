@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 96,
-    "workflow_name_count": 96,
-    "referenced_local_file_count": 145,
-    "error_count": 81,
+    "workflow_count": 97,
+    "workflow_name_count": 97,
+    "referenced_local_file_count": 149,
+    "error_count": 83,
     "warning_count": 0,
     "passed": false
   },
@@ -1574,6 +1574,31 @@
       ]
     },
     {
+      "filename": "arm64-source-authority-v5-maintenance.yml",
+      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+      "name": "ARM64 port - finalize hardened Git and signed-DSC authority path",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_dsc_source_arm64.sh",
+        "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v3.sh",
+        "arm64/scripts/build_locked_source_arm64_v4.sh",
+        "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/publish_rebuild_packages_v3.py",
+        "arm64/scripts/publish_rebuild_packages_v4.py",
+        "arm64/scripts/wire_source_authority_v3.py",
+        "arm64/scripts/wire_source_authority_v4.py",
+        "arm64/scripts/wire_source_authority_v5.py"
+      ]
+    },
+    {
       "filename": "arm64-source-keyring-lock.yml",
       "path": ".github/workflows/arm64-source-keyring-lock.yml",
       "name": "ARM64 port - lock trusted vendor source-signing keys",
@@ -2233,7 +2258,11 @@
       ".github/workflows/arm64-exact-rootfs.yml"
     ],
     "arm64/scripts/build_locked_dsc_source_arm64.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
+    ],
+    "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/scripts/build_locked_source_arm64.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2272,10 +2301,15 @@
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v3.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v4.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
+    ],
+    "arm64/scripts/build_locked_source_arm64_v5.sh": [
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan.py": [
       ".github/workflows/arm64-export-v2-consolidation.yml",
@@ -2462,7 +2496,11 @@
     ],
     "arm64/scripts/publish_rebuild_packages_v3.py": [
       ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
+    ],
+    "arm64/scripts/publish_rebuild_packages_v4.py": [
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/scripts/recover_vendor_sources_wayback.py": [
       ".github/workflows/arm64-wayback-source-recovery.yml"
@@ -2680,10 +2718,15 @@
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/wire_source_authority_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/scripts/wire_source_authority_v4.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
+    ],
+    "arm64/scripts/wire_source_authority_v5.py": [
+      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
     ],
     "arm64/status/curated-batches-launch.json": [
       ".github/workflows/arm64-start-curated-batches.yml"
@@ -2950,6 +2993,15 @@
       "path": ".github/workflows/arm64-source-authority-v3.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
+    },
+    {
+      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
+    },
+    {
+      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
       "path": ".github/workflows/arm64-stage0-live-v2.yml",
