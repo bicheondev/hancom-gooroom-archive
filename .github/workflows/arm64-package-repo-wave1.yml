@@ -1,0 +1,209 @@
+name: ARM64 port - assemble verified package repository wave 1
+
+on:
+  workflow_run:
+    workflows:
+      - ARM64 port - exact package wave 1 verification gate
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-package-repo-wave1
+  cancel-in-progress: true
+
+jobs:
+  assemble:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out immutable source and reference locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Debian repository tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            apt-utils dpkg-dev jq xz-utils file
+
+      - name: Resolve successful gate and accountsservice runs
+        id: runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            gate_run='${{ github.event.workflow_run.id }}'
+          else
+            gate_run="$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow arm64-build-wave1-v3.yml \
+              --branch arm64-port \
+              --status success \
+              --limit 20 \
+              --json databaseId \
+              --jq '.[0].databaseId')"
+          fi
+          account_run="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow arm64-package-smoke.yml \
+            --branch arm64-port \
+            --status success \
+            --limit 20 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          test -n "$gate_run"
+          test -n "$account_run"
+          echo "gate=$gate_run" >> "$GITHUB_OUTPUT"
+          echo "accountsservice=$account_run" >> "$GITHUB_OUTPUT"
+
+      - name: Download all verified package artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GATE_RUN: ${{ steps.runs.outputs.gate }}
+          ACCOUNT_RUN: ${{ steps.runs.outputs.accountsservice }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/package-artifacts work/repository
+          mkdir -p work/package-artifacts work/repository/pool/main
+          for source in \
+            file-roller celluloid cups-pk-helper mousetweaks gnome-screenshot p7zip; do
+            gh run download "$GATE_RUN" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "${source}-exact-arm64-wave1-gate" \
+              --dir "work/package-artifacts/$source"
+          done
+          gh run download "$ACCOUNT_RUN" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'accountsservice-*-arm64' \
+            --dir work/package-artifacts/accountsservice
+          find work/package-artifacts -type f -name '*.deb' -print0 \
+            | xargs -0 -I{} cp -n '{}' work/repository/pool/main/
+          test "$(find work/repository/pool/main -type f -name '*.deb' | wc -l)" -gt 7
+
+      - name: Reverify exact versions, architecture, payloads, and checksums
+        env:
+          GATE_RUN: ${{ steps.runs.outputs.gate }}
+          ACCOUNT_RUN: ${{ steps.runs.outputs.accountsservice }}
+        run: |
+          set -euxo pipefail
+          lock=arm64/locks/effective-sources/effective-source-lock.json
+          manifest=work/repository/package-manifest.tsv
+          printf 'package\tversion\tarchitecture\tsource\tsha256\tbytes\tfilename\n' > "$manifest"
+          declare -A seen=()
+          while IFS= read -r -d '' deb; do
+            package="$(dpkg-deb -f "$deb" Package)"
+            version="$(dpkg-deb -f "$deb" Version)"
+            architecture="$(dpkg-deb -f "$deb" Architecture)"
+            source_field="$(dpkg-deb -f "$deb" Source 2>/dev/null || true)"
+            source="${source_field%% *}"
+            [ -n "$source" ] || source="$package"
+            case "$source" in
+              accountsservice|file-roller|celluloid|cups-pk-helper|mousetweaks|gnome-screenshot|p7zip) ;;
+              *) echo "unexpected source package in wave-1 repository: $source ($deb)" >&2; exit 3 ;;
+            esac
+            expected="$(jq -r --arg source "$source" '
+              .sources[] | select(.source == $source) | .source_version
+            ' "$lock" | head -n1)"
+            test -n "$expected"
+            test "$version" = "$expected"
+            test "$architecture" = arm64
+            sha="$(sha256sum "$deb" | cut -d' ' -f1)"
+            bytes="$(stat -c '%s' "$deb")"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$package" "$version" "$architecture" "$source" \
+              "$sha" "$bytes" "${deb##*/}" >> "$manifest"
+            seen["$source"]=1
+
+            extract="$(mktemp -d)"
+            dpkg-deb -x "$deb" "$extract"
+            if find "$extract" -type f -print0 \
+              | xargs -0 -r file \
+              | grep -E 'ELF.*(x86-64|80386)|PE32|Mach-O'; then
+              echo "non-ARM machine code found in $deb" >&2
+              rm -rf "$extract"
+              exit 4
+            fi
+            rm -rf "$extract"
+          done < <(find work/repository/pool/main -type f -name '*.deb' -print0)
+          for source in \
+            accountsservice file-roller celluloid cups-pk-helper \
+            mousetweaks gnome-screenshot p7zip; do
+            test "${seen[$source]:-0}" = 1
+          done
+          sort -t $'\t' -k4,4 -k1,1 -o "$manifest" "$manifest"
+          jq -n \
+            --arg gate_run "$GATE_RUN" \
+            --arg accountsservice_run "$ACCOUNT_RUN" \
+            --arg reference_iso_sha256 "$(jq -r '.reference_iso.sha256' arm64/locks/reference/amd64-reference.json)" \
+            --arg package_manifest_sha256 "$(sha256sum "$manifest" | cut -d' ' -f1)" \
+            --argjson deb_count "$(find work/repository/pool/main -type f -name '*.deb' | wc -l)" \
+            '{
+              status: "verified",
+              wave: 1,
+              architecture: "arm64",
+              gate_run: $gate_run,
+              accountsservice_run: $accountsservice_run,
+              reference_iso_sha256: $reference_iso_sha256,
+              deb_count: $deb_count,
+              package_manifest_sha256: $package_manifest_sha256
+            }' > work/repository/repository-result.json
+
+      - name: Generate deterministic APT indexes
+        run: |
+          set -euxo pipefail
+          cd work/repository
+          mkdir -p dists/hancom-gooroom-3.3/main/binary-arm64
+          dpkg-scanpackages --multiversion pool /dev/null \
+            > dists/hancom-gooroom-3.3/main/binary-arm64/Packages
+          xz -9e -k \
+            dists/hancom-gooroom-3.3/main/binary-arm64/Packages
+          apt-ftparchive release dists/hancom-gooroom-3.3 \
+            > dists/hancom-gooroom-3.3/Release
+          find . -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Upload verified ARM64 APT repository
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-package-repository-wave1
+          path: work/repository
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit repository manifest lock
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/package-repository-wave1
+          mkdir -p arm64/locks/package-repository-wave1
+          cp work/repository/package-manifest.tsv arm64/locks/package-repository-wave1/
+          cp work/repository/repository-result.json arm64/locks/package-repository-wave1/
+          cp work/repository/dists/hancom-gooroom-3.3/main/binary-arm64/Packages.xz \
+            arm64/locks/package-repository-wave1/
+          cp work/repository/dists/hancom-gooroom-3.3/Release \
+            arm64/locks/package-repository-wave1/
+          sha256sum arm64/locks/package-repository-wave1/* | sort -k2 \
+            > arm64/locks/package-repository-wave1/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/package-repository-wave1
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record verified Hancom Gooroom 3.3 ARM64 package repository wave 1'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
