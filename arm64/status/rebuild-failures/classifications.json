@@ -14,8 +14,7 @@
       "composite-source-required": 1,
       "infrastructure-transient": 1,
       "passed": 26,
-      "post-build-verification": 3,
-      "snapshot-or-bootstrap": 1,
+      "post-build-verification": 4,
       "source-recovery-required": 1
     }
   },
@@ -282,22 +281,21 @@
     {
       "source": "gooroom-security-status-tools",
       "source_version": "0.3.9+grm3u1",
-      "actions_run_id": "31102922971",
-      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
-      "batch": "infrastructure-retry-v3",
+      "actions_run_id": "31097724529",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31097724529",
+      "batch": "backlog-wave",
       "passed": false,
-      "category": "snapshot-or-bootstrap",
+      "category": "post-build-verification",
       "classification_evidence": [
-        "debootstrap",
-        "snapshot.debian.org"
+        "verification missing"
       ],
       "build_outcome": "failure",
-      "build_exit_code": "100",
+      "build_exit_code": "69",
       "verify_outcome": "skipped",
       "dependency_repository_packages_sha256": null,
       "dependency_release_lock_sha256": null,
-      "retry_reason": "builder-infrastructure-changed",
-      "result_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/result.json"
+      "retry_reason": "initial-or-curated-build",
+      "result_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9+grm3u1/result.json"
     },
     {
       "source": "gooroom-showdesktop-applet",
