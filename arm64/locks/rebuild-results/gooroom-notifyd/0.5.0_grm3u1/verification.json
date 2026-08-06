@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "gooroom-notifyd",
+  "source_version": "0.5.0+grm3u1",
+  "repository_full_name": "gooroom/gooroom-notifyd",
+  "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
+  "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
+  "expected_native_binary_versions": {
+    "gooroom-notifyd": "0.5.0+grm3u1"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "gooroom-notifyd-dbgsym_0.5.0+grm3u1_arm64.deb",
+      "sha256": "88bbe31e82d542d1be5b83d0b0d5e6c6264d8086e1010e73068928b40926bf3b",
+      "size": 94696,
+      "package": "gooroom-notifyd-dbgsym",
+      "version": "0.5.0+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gooroom-notifyd",
+      "parsed_source": "gooroom-notifyd",
+      "parsed_source_version": "0.5.0+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "gooroom-notifyd_0.5.0+grm3u1_arm64.deb",
+      "sha256": "a55b3e7f47522249aaf3c06b3d389e4b9a5c59d70dc0191cd5d87fbb6181839a",
+      "size": 26096,
+      "package": "gooroom-notifyd",
+      "version": "0.5.0+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "gooroom-notifyd",
+      "parsed_source_version": "0.5.0+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 5,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "gooroom-notifyd",
+    "source_version": "0.5.0+grm3u1",
+    "repository": "gooroom/gooroom-notifyd",
+    "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
+    "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
+    "source_archive_sha256": "9f70fecd8f2f4d74b16a95c07c27437179e39f8d9de1bdeaf42e11a260f768c6",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gooroom-notifyd"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "gooroom-notifyd",
+      "gooroom-notifyd-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gooroom-notifyd",
+    "source_version": "0.5.0+grm3u1",
+    "repository": "gooroom/gooroom-notifyd",
+    "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
+    "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
+    "verified_commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
+    "verified_tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
+    "deterministic_source_archive_sha256": "9f70fecd8f2f4d74b16a95c07c27437179e39f8d9de1bdeaf42e11a260f768c6"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}

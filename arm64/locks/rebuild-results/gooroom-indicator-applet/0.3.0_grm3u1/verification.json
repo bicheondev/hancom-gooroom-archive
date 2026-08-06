@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "gooroom-indicator-applet",
+  "source_version": "0.3.0+grm3u1",
+  "repository_full_name": "gooroom/gooroom-indicator-applet",
+  "commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
+  "tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
+  "expected_native_binary_versions": {
+    "gooroom-indicator-applet": "0.3.0+grm3u1"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "gooroom-indicator-applet-dbgsym_0.3.0+grm3u1_arm64.deb",
+      "sha256": "306bed1d86b621ece50b86eda4e3de77263cb0d38da5c71fa018c425ef55c2ee",
+      "size": 37760,
+      "package": "gooroom-indicator-applet-dbgsym",
+      "version": "0.3.0+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gooroom-indicator-applet",
+      "parsed_source": "gooroom-indicator-applet",
+      "parsed_source_version": "0.3.0+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "gooroom-indicator-applet_0.3.0+grm3u1_arm64.deb",
+      "sha256": "476caf39d3828905d855dfead989f08c8f891c34b0854e91cff422dc4cc9e44b",
+      "size": 8696,
+      "package": "gooroom-indicator-applet",
+      "version": "0.3.0+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "gooroom-indicator-applet",
+      "parsed_source_version": "0.3.0+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 6,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "gooroom-indicator-applet",
+    "source_version": "0.3.0+grm3u1",
+    "repository": "gooroom/gooroom-indicator-applet",
+    "commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
+    "tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
+    "source_archive_sha256": "631e4ed6d19f46232d05671d52381759136b0c5b9df288fd2c127a801b12210e",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gooroom-indicator-applet"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "gooroom-indicator-applet",
+      "gooroom-indicator-applet-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gooroom-indicator-applet",
+    "source_version": "0.3.0+grm3u1",
+    "repository": "gooroom/gooroom-indicator-applet",
+    "commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
+    "tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
+    "verified_commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
+    "verified_tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
+    "deterministic_source_archive_sha256": "631e4ed6d19f46232d05671d52381759136b0c5b9df288fd2c127a801b12210e"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
