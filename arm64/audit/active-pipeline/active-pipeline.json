@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 106,
-    "workflow_name_count": 106,
-    "referenced_local_file_count": 173,
+    "workflow_count": 107,
+    "workflow_name_count": 107,
+    "referenced_local_file_count": 183,
     "error_count": 0,
-    "warning_count": 37,
+    "warning_count": 42,
     "passed": true
   },
   "workflows": [
@@ -109,6 +109,35 @@
         "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json",
         "arm64/locks/vendor-binaries/vendor-binary-lock.json",
         "arm64/scripts/materialize_build_dependency_repo_v2.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-final-live-iso-v2.yml",
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "name": "ARM64 port - assemble final exact live ISO v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v2/summary.json",
+        "arm64/locks/final-iso-v2/release-lock.json",
+        "arm64/locks/final-package-repository-v2/summary.json",
+        "arm64/locks/final-rootfs-v2/artifact-lock.json",
+        "arm64/locks/final-rootfs-v2/final-package-authority.json",
+        "arm64/locks/final-rootfs-v2/verification.json",
+        "arm64/locks/rebuild-result-index-v2/summary.json",
+        "arm64/locks/reference/summary.json",
+        "arm64/scripts/apply_reference_config_overlay.py",
+        "arm64/scripts/build_final_arm64_live_iso_v2.sh",
+        "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh",
+        "arm64/scripts/test_final_arm64_iso_qemu_v2.sh",
+        "arm64/scripts/verify_final_arm64_rootfs_v2.py"
       ]
     },
     {
@@ -2239,6 +2268,9 @@
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
+    "arm64/locks/effective-sources-v2/summary.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
       ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-port-coverage.yml"
@@ -2286,6 +2318,9 @@
     "arm64/locks/effective-sources/source-lock.json": [
       ".github/workflows/arm64-import-historical-artifacts-v2.yml"
     ],
+    "arm64/locks/final-iso-v2/release-lock.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
     "arm64/locks/final-package-repository-v2/artifact-lock.json": [
       ".github/workflows/arm64-build-final-rootfs-v2.yml",
       ".github/workflows/arm64-merge-final-package-repository-v2.yml"
@@ -2294,7 +2329,17 @@
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
     "arm64/locks/final-package-repository-v2/summary.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
+    ],
+    "arm64/locks/final-rootfs-v2/artifact-lock.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/locks/final-rootfs-v2/final-package-authority.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/locks/final-rootfs-v2/verification.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml",
@@ -2343,6 +2388,9 @@
     ],
     "arm64/locks/rebuild-result-index-v2/rebuild-result-index.json": [
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
+    ],
+    "arm64/locks/rebuild-result-index-v2/summary.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
@@ -2393,6 +2441,9 @@
       ".github/workflows/arm64-vendor-pool-source-lock.yml",
       ".github/workflows/arm64-vendor-source-archive-lock.yml",
       ".github/workflows/arm64-vendor-source-lock.yml"
+    ],
+    "arm64/locks/reference/summary.json": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/locks/rootfs/artifact-lock.json": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -2474,6 +2525,7 @@
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/scripts/apply_reference_config_overlay.py": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
@@ -2504,6 +2556,9 @@
     ],
     "arm64/scripts/build_exact_arm64_rootfs.sh": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
+    ],
+    "arm64/scripts/build_final_arm64_live_iso_v2.sh": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/scripts/build_final_arm64_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
@@ -2632,6 +2687,9 @@
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
+    ],
+    "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/scripts/import_historical_arm64_artifacts_v2.py": [
       ".github/workflows/arm64-import-historical-artifacts-v2.yml"
@@ -2875,6 +2933,9 @@
     "arm64/scripts/test_arm64_iso_qemu.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
     ],
+    "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
     "arm64/scripts/validate_arm64_source_outputs_v3.py": [
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
@@ -2922,6 +2983,7 @@
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/scripts/verify_final_arm64_rootfs_v2.py": [
+      ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
@@ -2958,6 +3020,31 @@
   },
   "errors": [],
   "warnings": [
+    {
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "local_path": "arm64/locks/final-iso-v2/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "local_path": "arm64/locks/final-package-repository-v2/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "local_path": "arm64/locks/final-rootfs-v2/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "local_path": "arm64/locks/final-rootfs-v2/final-package-authority.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "local_path": "arm64/locks/final-rootfs-v2/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
     {
       "path": ".github/workflows/arm64-build-final-rootfs-v2.yml",
       "local_path": "arm64/locks/final-package-repository-v2/artifact-lock.json",
