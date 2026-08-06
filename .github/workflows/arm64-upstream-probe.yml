@@ -1,0 +1,151 @@
+name: ARM64 port - probe archived upstream repositories
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-upstream-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-upstream-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Probe Gooroom and Hancom repository indexes
+        run: |
+          set -euxo pipefail
+          rm -rf work/upstream-probe
+          mkdir -p work/upstream-probe/files
+
+          cat > work/upstream-probe/targets.tsv <<'EOF'
+          gooroom	http://update.hancomgooroom.com/gooroom	gooroom-3.0
+          hancom	http://update.hancomgooroom.com/hancom	hancom-3.0
+          EOF
+
+          : > work/upstream-probe/http-status.tsv
+          printf 'repository\tpath\thttp_code\tcontent_type\tsize_download\turl_effective\n' \
+            >> work/upstream-probe/http-status.tsv
+
+          while IFS=$'\t' read -r name base suite; do
+            for path in \
+              "dists/$suite/InRelease" \
+              "dists/$suite/Release" \
+              "dists/$suite/main/binary-amd64/Packages" \
+              "dists/$suite/main/binary-amd64/Packages.gz" \
+              "dists/$suite/main/binary-arm64/Packages" \
+              "dists/$suite/main/binary-arm64/Packages.gz" \
+              "dists/$suite/main/source/Sources" \
+              "dists/$suite/main/source/Sources.gz"; do
+              safe="${name}__${path//\//_}"
+              url="$base/$path"
+              meta="$(curl -L --connect-timeout 15 --max-time 120 --retry 3 \
+                --retry-delay 2 --silent --show-error \
+                --output "work/upstream-probe/files/$safe" \
+                --write-out '%{http_code}\t%{content_type}\t%{size_download}\t%{url_effective}' \
+                "$url" || true)"
+              printf '%s\t%s\t%s\n' "$name" "$path" "$meta" \
+                >> work/upstream-probe/http-status.tsv
+              code="${meta%%$'\t'*}"
+              if [ "$code" != 200 ]; then
+                rm -f "work/upstream-probe/files/$safe"
+              fi
+            done
+          done < work/upstream-probe/targets.tsv
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import gzip, hashlib, json
+
+          root = Path('work/upstream-probe')
+          rows = []
+          lines = (root / 'http-status.tsv').read_text().splitlines()
+          header = lines[0].split('\t')
+          for line in lines[1:]:
+              parts = line.split('\t')
+              parts += [''] * (len(header) - len(parts))
+              rows.append(dict(zip(header, parts)))
+
+          files = []
+          for path in sorted((root / 'files').glob('*')):
+              data = path.read_bytes()
+              decoded = data
+              if path.name.endswith('_Packages.gz') or path.name.endswith('_Sources.gz'):
+                  try:
+                      decoded = gzip.decompress(data)
+                      (path.with_suffix(path.suffix + '.decoded')).write_bytes(decoded)
+                  except OSError:
+                      pass
+              text = decoded.decode('utf-8', 'replace')
+              files.append({
+                  'name': path.name,
+                  'size': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+                  'package_stanza_count': text.count('\nPackage: ') + int(text.startswith('Package: ')),
+                  'architecture_arm64_mentions': text.count('Architecture: arm64'),
+                  'architecture_amd64_mentions': text.count('Architecture: amd64'),
+                  'source_stanza_count': text.count('\nPackage: ') + int(text.startswith('Package: ')) if 'Sources' in path.name else 0,
+              })
+
+          summary = {
+              'schema': 1,
+              'successful_http_200_count': sum(row.get('http_code') == '200' for row in rows),
+              'arm64_index_found': any(
+                  row.get('http_code') == '200' and 'binary-arm64' in row.get('path', '')
+                  for row in rows
+              ),
+              'source_index_found': any(
+                  row.get('http_code') == '200' and '/source/' in row.get('path', '')
+                  for row in rows
+              ),
+              'requests': rows,
+              'files': files,
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+
+          sha256sum work/upstream-probe/http-status.tsv \
+            work/upstream-probe/summary.json \
+            work/upstream-probe/files/* 2>/dev/null | sort -k2 \
+            > work/upstream-probe/LOCKSUMS.sha256 || true
+
+      - name: Upload probe evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-upstream-probe
+          path: work/upstream-probe
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record probe summary on the port branch
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/upstream
+          mkdir -p arm64/locks/upstream
+          cp work/upstream-probe/summary.json arm64/locks/upstream/
+          cp work/upstream-probe/http-status.tsv arm64/locks/upstream/
+          cp work/upstream-probe/LOCKSUMS.sha256 arm64/locks/upstream/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/upstream
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record Hancom Gooroom ARM64 repository availability'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
