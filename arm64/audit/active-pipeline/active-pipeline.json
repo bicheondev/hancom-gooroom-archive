@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 92,
-    "workflow_name_count": 92,
+    "workflow_count": 91,
+    "workflow_name_count": 91,
     "referenced_local_file_count": 122,
-    "error_count": 2,
+    "error_count": 1,
     "warning_count": 38,
     "passed": false
   },
@@ -1796,20 +1796,6 @@
       ]
     },
     {
-      "filename": "arm64-wire-source-authority-v5-maintenance.yml",
-      "path": ".github/workflows/arm64-wire-source-authority-v5-maintenance.yml",
-      "name": "ARM64 port - wire every source recovery to authority v5",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-workflow-secret-audit.yml",
       "path": ".github/workflows/arm64-workflow-secret-audit.yml",
       "name": "ARM64 port - audit workflows for literal credentials",
@@ -2413,10 +2399,6 @@
   "errors": [
     {
       "path": ".github/workflows/arm64-fix-failure-audit-v3-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-wire-source-authority-v5-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
     }
   ],
