@@ -12,6 +12,7 @@ SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
 SNAPSHOT="${HANCOM_GOOROOM_DEBIAN_SNAPSHOT:-20230730T235959Z}"
 BOOTSTRAP_IMAGE="${HANCOM_GOOROOM_BOOTSTRAP_IMAGE:-arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e}"
+REFERENCE_JSON="${HANCOM_GOOROOM_REFERENCE_JSON:-arm64/locks/reference/amd64-reference.json}"
 
 for command in jq git docker dpkg-parsechangelog dpkg-deb sha256sum gzip tar; do
   command -v "$command" >/dev/null || {
@@ -39,7 +40,38 @@ SELECTED_TYPE="$(jq -r '.selected.type // "git"' <<<"$entry")"
 REPOSITORY="$(jq -r '.selected.repository_full_name // empty' <<<"$entry")"
 COMMIT_SHA="$(jq -r '.selected.commit_sha // empty' <<<"$entry")"
 TREE_SHA="$(jq -r '.selected.tree_sha // empty' <<<"$entry")"
-EXPECTED_PACKAGES="$(jq -r '.binary_packages | join(" ")' <<<"$entry")"
+
+if [ -n "${HANCOM_GOOROOM_REQUIRED_PACKAGES:-}" ]; then
+  EXPECTED_PACKAGES="$HANCOM_GOOROOM_REQUIRED_PACKAGES"
+elif [ -f "$REFERENCE_JSON" ]; then
+  EXPECTED_PACKAGES="$(jq -r \
+    --arg source "$SOURCE_NAME" \
+    --arg version "$SOURCE_VERSION" '
+      [
+        .packages[]
+        | select(
+            .source == $source
+            and .source_version == $version
+            and .architecture == "amd64"
+          )
+        | .package
+      ]
+      | unique
+      | join(" ")
+    ' "$REFERENCE_JSON")"
+else
+  # Backward-compatible fallback for an externally supplied lock. This may
+  # include Architecture: all outputs; callers should provide either the
+  # reference manifest or HANCOM_GOOROOM_REQUIRED_PACKAGES.
+  EXPECTED_PACKAGES="$(jq -r '.binary_packages | join(" ")' <<<"$entry")"
+fi
+EXPECTED_PACKAGES_JSON="$(
+  if [ -n "$EXPECTED_PACKAGES" ]; then
+    printf '%s\n' $EXPECTED_PACKAGES | jq -Rsc 'split("\n")[:-1] | unique | sort'
+  else
+    printf '[]\n'
+  fi
+)"
 
 [ "$SELECTED_TYPE" = git ] || {
   echo "The Git package builder cannot consume source type: $SELECTED_TYPE" >&2
@@ -324,14 +356,14 @@ for expected in $EXPECTED_PACKAGES; do
     fi
   done
   if [ "$found" != true ]; then
-    echo "Expected binary package was not built: $expected" >&2
+    echo "Expected architecture-dependent binary package was not built: $expected" >&2
     exit 6
   fi
 done
 
 cat > "$OUTPUT_DIR_ABS/build-lock.json" <<EOF
 {
-  "schema": 3,
+  "schema": 4,
   "source": $(jq -Rn --arg v "$SOURCE_NAME" '$v'),
   "source_version": $(jq -Rn --arg v "$SOURCE_VERSION" '$v'),
   "repository": $(jq -Rn --arg v "$REPOSITORY" '$v'),
@@ -342,8 +374,8 @@ cat > "$OUTPUT_DIR_ABS/build-lock.json" <<EOF
   "target_architecture": "arm64",
   "debian_snapshot": $(jq -Rn --arg v "$SNAPSHOT" '$v'),
   "build_mode": "native-arm64-historical-chroot-binary-arch",
-  "expected_binary_packages": $(jq -c '.binary_packages' <<<"$entry"),
-  "produced_binary_packages": $(printf '%s\n' "${produced_packages[@]}" | jq -Rsc 'split("\n")[:-1]')
+  "expected_binary_packages": $EXPECTED_PACKAGES_JSON,
+  "produced_binary_packages": $(printf '%s\n' "${produced_packages[@]}" | jq -Rsc 'split("\n")[:-1] | unique | sort')
 }
 EOF
 
