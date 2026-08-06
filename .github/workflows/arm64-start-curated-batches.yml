@@ -1,0 +1,79 @@
+name: ARM64 port - start all curated exact-source rebuild batches
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-start-curated-batches.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-start-curated-batches
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the port branch for self-removal
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Dispatch every reserved native ARM64 source batch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch_batch() {
+            local batch="$1"
+            for attempt in 1 2 3 4; do
+              if gh workflow run arm64-native-rebuild-batch-v2.yml \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port \
+                -f batch="$batch"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          for batch in desktop-core desktop-extra system-core multimedia; do
+            dispatch_batch "$batch"
+            sleep 3
+          done
+
+      - name: Remove the one-shot dispatcher and persist the launch record
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p arm64/status
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            '{
+              schema: 1,
+              actions_run_id: $run_id,
+              actions_run_url: $run_url,
+              dispatched_batches: ["desktop-core", "desktop-extra", "system-core", "multimedia"]
+            }' > arm64/status/curated-batches-launch.json
+          git rm -f .github/workflows/arm64-start-curated-batches.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/curated-batches-launch.json
+          git commit -m 'Record launch of all curated ARM64 rebuild batches'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
