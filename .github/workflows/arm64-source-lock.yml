@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-source-lock.yml'
       - 'arm64/scripts/resolve_source_git.py'
+      - 'arm64/scripts/resolve_source_git_public.py'
       - 'arm64/locks/reference/**'
   workflow_dispatch:
 
@@ -35,7 +36,7 @@ jobs:
           set -uxo pipefail
           rm -rf work/source-lock work/source-probes
           set +e
-          python3 arm64/scripts/resolve_source_git.py \
+          python3 arm64/scripts/resolve_source_git_public.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --output-dir work/source-lock \
             --work-dir work/source-probes \
