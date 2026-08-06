@@ -1,0 +1,133 @@
+name: ARM64 port - lock AMD64 reference
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-inventory.yml'
+      - 'arm64/scripts/inventory_iso.py'
+      - 'arm64/VERSION_POLICY.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-amd64-reference
+  cancel-in-progress: false
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools file jq
+
+      - name: Download and verify the reference image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p work
+          gh release download v3.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" \
+            --dir work
+          test "$(stat -c '%s' "work/$ISO_NAME")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "work/$ISO_NAME" | sha256sum --check --strict
+
+      - name: Extract package and boot evidence
+        run: |
+          set -euxo pipefail
+          mkdir -p work/iso-root work/evidence work/locks
+          xorriso -osirrox on -indev "work/$ISO_NAME" -extract / work/iso-root
+
+          SQUASHFS="$(find work/iso-root -type f -name 'filesystem.squashfs' -print -quit)"
+          if [ -z "$SQUASHFS" ]; then
+            echo 'filesystem.squashfs was not found' >&2
+            find work/iso-root -maxdepth 4 -type f -printf '%P\n' | sort >&2
+            exit 1
+          fi
+          printf '%s\n' "$SQUASHFS" > work/evidence/squashfs-path.txt
+
+          unsquashfs -cat "$SQUASHFS" var/lib/dpkg/status > work/evidence/dpkg-status
+          unsquashfs -ll "$SQUASHFS" > work/evidence/squashfs-file-list.txt
+          find work/iso-root -printf '%y\t%s\t%P\n' | sort > work/evidence/iso-tree.tsv
+
+          for path in etc/os-release etc/debian_version etc/issue etc/apt/sources.list; do
+            output="work/evidence/${path//\//_}"
+            if ! unsquashfs -cat "$SQUASHFS" "$path" > "$output" 2>/dev/null; then
+              rm -f "$output"
+            fi
+          done
+
+          xorriso -indev "work/$ISO_NAME" -report_el_torito plain \
+            > work/evidence/el-torito.txt 2>&1 || true
+          xorriso -indev "work/$ISO_NAME" -report_system_area plain \
+            > work/evidence/system-area.txt 2>&1 || true
+
+          find work/iso-root -type f \( \
+              -iname '*.efi' -o -iname 'grub*.cfg' -o -iname 'isolinux.cfg' \
+              -o -iname 'vmlinuz*' -o -iname 'initrd*' \
+            \) -print0 \
+            | sort -z \
+            | xargs -0 -r file \
+            > work/evidence/boot-files.txt
+
+      - name: Generate the immutable AMD64 package lock
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/inventory_iso.py \
+            --status work/evidence/dpkg-status \
+            --output-dir work/locks \
+            --iso-name "$ISO_NAME" \
+            --iso-size "$ISO_SIZE" \
+            --iso-sha256 "$ISO_SHA256"
+          printf '%s  %s\n' "$ISO_SHA256" "$ISO_NAME" > work/locks/reference-iso.sha256
+          cp -f work/evidence/etc_os-release work/locks/os-release 2>/dev/null || true
+          cp -f work/evidence/etc_debian_version work/locks/debian-version 2>/dev/null || true
+          sha256sum work/locks/* | sort -k2 > work/locks/LOCKSUMS.sha256
+          jq . work/locks/summary.json
+
+      - name: Upload full reference evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-amd64-reference
+          path: |
+            work/locks
+            work/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record generated locks on the port branch
+        continue-on-error: true
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/reference
+          mkdir -p arm64/locks/reference
+          cp -a work/locks/. arm64/locks/reference/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/reference
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock Hancom Gooroom 3.3 AMD64 package versions'
+          git push origin HEAD:arm64-port
