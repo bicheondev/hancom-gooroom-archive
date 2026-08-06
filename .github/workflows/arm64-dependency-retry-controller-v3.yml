@@ -1,0 +1,431 @@
+name: ARM64 port - exact dependency retry controller v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dependency-retry-controller-v3.yml'
+      - 'arm64/scripts/materialize_rebuild_dependency_repo_v3.py'
+      - 'arm64/scripts/select_dependency_retry_wave_v3.py'
+      - 'arm64/scripts/build_locked_source_arm64_v5.sh'
+      - 'arm64/scripts/verify_arm64_rebuild_v3.py'
+      - 'arm64/locks/rebuild-release/**'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/status/rebuild-failures-v3/**'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Maximum dependency-failed sources in this wave
+        required: true
+        default: '4'
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-dependency-retry-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE_LOCK: arm64/locks/effective-sources-v3/effective-source-lock.json
+  REFERENCE: arm64/locks/reference/amd64-reference.json
+  RESULTS_ROOT: arm64/locks/rebuild-results
+  RELEASE_LOCK: arm64/locks/rebuild-release/rebuild-release-lock.json
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      selected_count: ${{ steps.select.outputs.selected_count }}
+      remaining_count: ${{ steps.select.outputs.remaining_count }}
+      matrix: ${{ steps.select.outputs.matrix }}
+      limit: ${{ steps.select.outputs.limit }}
+      repository_packages_sha256: ${{ steps.select.outputs.repository_packages_sha256 }}
+    steps:
+      - name: Check out persistent packages, exact source authorities, and failures
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact package and APT-index verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev ca-certificates jq
+          python3 -m py_compile \
+            arm64/scripts/materialize_rebuild_dependency_repo_v3.py \
+            arm64/scripts/select_dependency_retry_wave_v3.py \
+            arm64/scripts/classify_native_rebuild_failures_v3.py
+
+      - name: Materialize a hash-locked local dependency repository
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/dependency-repo-v3
+          mkdir -p work/dependency-repo-v3
+          set +e
+          python3 arm64/scripts/materialize_rebuild_dependency_repo_v3.py \
+            --release-lock "$RELEASE_LOCK" \
+            --output-dir work/dependency-repo-v3 \
+            2>&1 | tee work/dependency-repo-v3/workflow-materializer.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          if [ -f work/dependency-repo-v3/summary.json ]; then
+            echo "ready=$(jq -r '.ready' work/dependency-repo-v3/summary.json)" >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reclassify the latest exact source attempts
+        id: classify
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/dependency-retry-classification-v3
+          mkdir -p work/dependency-retry-classification-v3
+          set +e
+          python3 arm64/scripts/classify_native_rebuild_failures_v3.py \
+            --results "$RESULTS_ROOT" \
+            --output-dir work/dependency-retry-classification-v3 \
+            2>&1 | tee work/dependency-retry-classification-v3/workflow-classifier.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Select only failures that have a new dependency repository identity
+        id: select
+        env:
+          REQUESTED_LIMIT: ${{ inputs.limit || '4' }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          limit="$REQUESTED_LIMIT"
+          [[ "$limit" =~ ^[0-9]+$ ]]
+          if [ '${{ steps.materialize.outputs.exit_code }}' != '0' ] \
+             || [ '${{ steps.classify.outputs.exit_code }}' != '0' ]; then
+            jq -n \
+              --argjson limit "$limit" \
+              --arg materialize_exit '${{ steps.materialize.outputs.exit_code }}' \
+              --arg classify_exit '${{ steps.classify.outputs.exit_code }}' \
+              '{
+                summary: {
+                  schema: 3,
+                  limit: $limit,
+                  selected_count: 0,
+                  remaining_eligible_count: 0,
+                  dependency_repository_ready: false,
+                  prerequisite_failure: true,
+                  materialize_exit_code: $materialize_exit,
+                  classify_exit_code: $classify_exit
+                },
+                selected: [],
+                skipped: [],
+                matrix: {include: []}
+              }' > work/dependency-retry-plan-v3.json
+          else
+            python3 arm64/scripts/select_dependency_retry_wave_v3.py \
+              --lock "$SOURCE_LOCK" \
+              --reference "$REFERENCE" \
+              --classifications work/dependency-retry-classification-v3/classifications.json \
+              --dependency-repository work/dependency-repo-v3/summary.json \
+              --limit "$limit" \
+              --output work/dependency-retry-plan-v3.json
+          fi
+          selected="$(jq -r '.summary.selected_count // 0' work/dependency-retry-plan-v3.json)"
+          remaining="$(jq -r '.summary.remaining_eligible_count // 0' work/dependency-retry-plan-v3.json)"
+          matrix="$(jq -c '.matrix' work/dependency-retry-plan-v3.json)"
+          packages_sha256="$(jq -r '.summary.packages_sha256 // empty' \
+            work/dependency-repo-v3/summary.json 2>/dev/null || true)"
+          echo "selected_count=$selected" >> "$GITHUB_OUTPUT"
+          echo "remaining_count=$remaining" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+          echo "repository_packages_sha256=$packages_sha256" >> "$GITHUB_OUTPUT"
+          cat work/dependency-retry-plan-v3.json
+
+      - name: Upload exact dependency repository for native build jobs
+        if: steps.materialize.outputs.exit_code == '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dependency-repository-v3-${{ github.run_id }}
+          path: work/dependency-repo-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload retry selection and failure classification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dependency-retry-plan-v3-${{ github.run_id }}
+          path: |
+            work/dependency-retry-plan-v3.json
+            work/dependency-retry-classification-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce exact dependency repository prerequisites after evidence upload
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.materialize.outputs.exit_code }}' = '0'
+          test '${{ steps.classify.outputs.exit_code }}' = '0'
+          jq -e '.ready == true and .blocker_count == 0' \
+            work/dependency-repo-v3/summary.json
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.selected_count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 210
+    steps:
+      - name: Check out exact source authority and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Download the exact local dependency repository
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dependency-repository-v3-${{ github.run_id }}
+          path: work/dependency-repo-v3
+
+      - name: Install native source, signature, package, and container tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git curl gnupg gpgv jq dpkg-dev ca-certificates \
+            python3 coreutils binutils file
+          docker version
+          sha256sum --check work/dependency-repo-v3/SHA256SUMS
+          test "$(sha256sum work/dependency-repo-v3/Packages | awk '{print $1}')" \
+            = '${{ needs.plan.outputs.repository_packages_sha256 }}'
+
+      - name: Rebuild against the changed verified dependency repository
+        id: build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_REQUIRED_PACKAGES: ${{ matrix.required_native_packages_space }}
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ env.REFERENCE }}
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_DEPENDENCY_REPOSITORY: ${{ github.workspace }}/work/dependency-repo-v3
+        shell: bash
+        run: |
+          set -o pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          bash arm64/scripts/build_locked_source_arm64_v5.sh \
+            "$SOURCE_LOCK" \
+            '${{ matrix.source }}' \
+            "$output" \
+            2>&1 | tee "$output/workflow-build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Verify exact authority, version, and AArch64 payloads
+        id: verify
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 arm64/scripts/verify_arm64_rebuild_v3.py \
+            --lock "$SOURCE_LOCK" \
+            --reference "$REFERENCE" \
+            --source '${{ matrix.source }}' \
+            --source-version '${{ matrix.source_version }}' \
+            --directory 'work/rebuild/${{ matrix.source }}' \
+            --output 'work/rebuild/${{ matrix.source }}/verification.json' \
+            2>&1 | tee 'work/rebuild/${{ matrix.source }}/workflow-verify.log'
+
+      - name: Record dependency repository and exact source identities
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          mkdir -p "$output"
+          passed=false
+          if [ '${{ steps.build.outcome }}' = success ] \
+             && [ '${{ steps.verify.outcome }}' = success ]; then
+            passed=true
+          fi
+          jq -n \
+            --arg source '${{ matrix.source }}' \
+            --arg source_version '${{ matrix.source_version }}' \
+            --arg source_type '${{ matrix.source_type }}' \
+            --arg authority_provenance '${{ matrix.authority_provenance }}' \
+            --arg repository_full_name '${{ matrix.repository_full_name }}' \
+            --arg commit_sha '${{ matrix.commit_sha }}' \
+            --arg tree_sha '${{ matrix.tree_sha }}' \
+            --arg dsc_filename '${{ matrix.dsc_filename }}' \
+            --arg dsc_sha256 '${{ matrix.dsc_sha256 }}' \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg verify_outcome '${{ steps.verify.outcome }}' \
+            --arg retry_reason '${{ matrix.retry_reason }}' \
+            --arg dependency_repository_packages_sha256 '${{ matrix.dependency_repository_packages_sha256 }}' \
+            --arg dependency_release_lock_sha256 '${{ matrix.dependency_release_lock_sha256 }}' \
+            --arg previous_dependency_repository_packages_sha256 '${{ matrix.previous_dependency_repository_packages_sha256 }}' \
+            --arg previous_actions_run_id '${{ matrix.previous_actions_run_id }}' \
+            --argjson required_native_packages '${{ toJSON(matrix.required_native_packages) }}' \
+            --argjson reused_all_packages '${{ toJSON(matrix.reused_all_packages) }}' \
+            --argjson passed "$passed" \
+            '{
+              schema: 3,
+              source: $source,
+              source_version: $source_version,
+              source_type: $source_type,
+              authority_provenance: $authority_provenance,
+              repository_full_name: $repository_full_name,
+              commit_sha: $commit_sha,
+              tree_sha: $tree_sha,
+              dsc_filename: $dsc_filename,
+              dsc_sha256: $dsc_sha256,
+              build_outcome: $build_outcome,
+              build_exit_code: $build_exit_code,
+              verify_outcome: $verify_outcome,
+              retry_reason: $retry_reason,
+              dependency_repository_packages_sha256: $dependency_repository_packages_sha256,
+              dependency_release_lock_sha256: $dependency_release_lock_sha256,
+              previous_dependency_repository_packages_sha256: $previous_dependency_repository_packages_sha256,
+              previous_actions_run_id: $previous_actions_run_id,
+              required_native_packages: $required_native_packages,
+              reused_all_packages: $reused_all_packages,
+              passed: $passed
+            }' > "$output/job-result.json"
+          find "$output" -maxdepth 1 -type f ! -name ARTIFACTSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > "$output/ARTIFACTSUMS.sha256"
+
+      - name: Upload complete retry build and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: work/rebuild/${{ matrix.source }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Preserve failed job conclusion after evidence upload
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.build.outcome }}' = success
+          test '${{ steps.verify.outcome }}' = success
+
+  collect:
+    needs: [plan, build]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.selected_count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out accumulated compact rebuild results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download every current retry artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: arm64-rebuild-*
+          path: work/rebuild-artifacts
+          merge-multiple: false
+
+      - name: Collect compact Git-or-DSC retry results
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/collected-results
+          python3 arm64/scripts/collect_native_rebuild_results_v4.py \
+            --artifacts-dir work/rebuild-artifacts \
+            --output-dir work/collected-results \
+            --run-id '${{ github.run_id }}' \
+            --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --batch dependency-retry-v3
+
+      - name: Commit compact retry results
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RESULTS_ROOT/runs/${{ github.run_id }}"
+          cp work/collected-results/summary.json \
+            "$RESULTS_ROOT/runs/${{ github.run_id }}/summary.json"
+          find work/collected-results -mindepth 2 -maxdepth 2 -type d -print0 \
+            | while IFS= read -r -d '' directory; do
+                relative="${directory#work/collected-results/}"
+                rm -rf "$RESULTS_ROOT/$relative"
+                mkdir -p "$(dirname "$RESULTS_ROOT/$relative")"
+                cp -a "$directory" "$RESULTS_ROOT/$relative"
+              done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULTS_ROOT"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact dependency-retry ARM64 results v3'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Advance persistent publication, failure, coverage, and acquisition gates
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-publish-rebuild-packages-v3.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-rebuild-failure-audit-v3.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-port-coverage-v2.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-package-acquisition-plan-v3.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+
+      - name: Chain the next retry wave only when eligible failures remain
+        if: needs.plan.outputs.remaining_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-dependency-retry-controller-v3.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port \
+            -f limit='${{ needs.plan.outputs.limit }}'
