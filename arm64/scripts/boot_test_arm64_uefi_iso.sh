@@ -28,11 +28,40 @@ command -v qemu-system-aarch64 >/dev/null || {
 
 mkdir -p "$(dirname "$OUTPUT_LOG")"
 OUTPUT_LOG="$(readlink -f "$OUTPUT_LOG")"
-CODE="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
-  -type f \( -iname 'AAVMF_CODE*.fd' -o -iname 'QEMU_EFI*.fd' \) \
-  2>/dev/null | head -n1)"
-VARS="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
-  -type f -iname 'AAVMF_VARS*.fd' 2>/dev/null | head -n1)"
+
+# Prefer the non-Secure-Boot AAVMF pair deterministically. `find | head` may
+# select a Microsoft/Secure-Boot code image with an incompatible VARS template,
+# depending on package traversal order.
+CODE=""
+for candidate in \
+  /usr/share/AAVMF/AAVMF_CODE.fd \
+  /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \
+  /usr/share/qemu-efi-aarch64/QEMU_EFI-pflash.raw; do
+  if [ -f "$candidate" ]; then
+    CODE="$candidate"
+    break
+  fi
+done
+if [ -z "$CODE" ]; then
+  CODE="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+    -type f \( -iname 'AAVMF_CODE*.fd' -o -iname 'QEMU_EFI*.fd' \) \
+    2>/dev/null | sort | head -n1)"
+fi
+
+VARS=""
+for candidate in \
+  /usr/share/AAVMF/AAVMF_VARS.fd \
+  /usr/share/qemu-efi-aarch64/QEMU_VARS.fd; do
+  if [ -f "$candidate" ]; then
+    VARS="$candidate"
+    break
+  fi
+done
+if [ -z "$VARS" ]; then
+  VARS="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+    -type f -iname 'AAVMF_VARS*.fd' 2>/dev/null | sort | head -n1)"
+fi
+
 [ -n "$CODE" ] || {
   echo "ARM64 UEFI firmware code image is missing" >&2
   exit 69
@@ -46,7 +75,7 @@ if [ -c /dev/kvm ]; then
 fi
 qemu=(
   qemu-system-aarch64
-  -machine "virt,accel=$accel"
+  -machine "virt,gic-version=3,accel=$accel"
   -cpu "$cpu"
   -smp "$CPUS"
   -m "$MEMORY_MIB"
@@ -60,6 +89,7 @@ qemu=(
   -drive "if=none,id=cdrom,media=cdrom,format=raw,readonly=on,file=$ISO"
   -device virtio-scsi-pci,id=scsi0,romfile=
   -device scsi-cd,drive=cdrom,bus=scsi0.0,bootindex=0
+  -boot order=d,menu=off,strict=on
   -no-reboot
 )
 if [ -n "$VARS" ]; then
@@ -73,6 +103,13 @@ else
   vars_copy=""
   qemu+=( -bios "$CODE" )
 fi
+
+# Preserve the exact virtual-machine invocation and firmware identity even when
+# QEMU exits before writing guest serial output.
+printf '%q ' "${qemu[@]}" > "$OUTPUT_LOG.command.txt"
+printf '\n' >> "$OUTPUT_LOG.command.txt"
+printf 'code=%s\nvars=%s\naccel=%s\ncpu=%s\n' \
+  "$CODE" "${VARS:-}" "$accel" "$cpu" > "$OUTPUT_LOG.firmware.txt"
 
 cleanup() {
   set +e
