@@ -9,6 +9,8 @@ usage() {
 [ "$#" -eq 3 ] || usage
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# The v4 adapter must remain in this directory so the patched historical
+# wrapper resolves build_locked_source_arm64.sh and its lock helpers correctly.
 BASE_RUNNER="$SCRIPT_DIR/run_locked_source_arm64_v4.sh"
 VALIDATOR="$SCRIPT_DIR/validate_arm64_source_outputs_v3.py"
 REFERENCE="$REPO_ROOT/arm64/locks/reference/amd64-reference.json"
