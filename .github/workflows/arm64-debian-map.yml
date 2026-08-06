@@ -17,7 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SNAPSHOT: 20230730T235959Z
+  SNAPSHOT_BASE: 20230730T235959Z
+  SNAPSHOT_UPDATES: 20240331T235959Z
 
 jobs:
   map:
@@ -36,9 +37,12 @@ jobs:
           mkdir -p work/apt/lists/partial work/apt/archives/partial
           : > work/apt/status
           cat > work/apt/sources.list <<EOF
-          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT}/ bullseye main contrib non-free
-          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT}/ bullseye-updates main contrib non-free
-          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT}/ bullseye-security main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_BASE}/ bullseye-security main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_UPDATES}/ bullseye-security main contrib non-free
           EOF
           cat > work/apt/apt.conf <<EOF
           Dir::Etc::sourcelist "$PWD/work/apt/sources.list";
@@ -55,14 +59,20 @@ jobs:
           sudo apt-get -c "$PWD/work/apt/apt.conf" update
 
       - name: Map every package to an exact ARM64 disposition
+        id: map
         run: |
-          set -euxo pipefail
+          set -uxo pipefail
           rm -rf work/debian-map
+          set +e
           python3 arm64/scripts/map_debian_arm64.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --apt-config "$PWD/work/apt/apt.conf" \
-            --snapshot "$SNAPSHOT" \
+            --snapshot "$SNAPSHOT_BASE" \
+            --snapshot "$SNAPSHOT_UPDATES" \
             --output-dir work/debian-map
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           sha256sum work/debian-map/* | sort -k2 > work/debian-map/LOCKSUMS.sha256
           cat work/debian-map/debian-arm64-map-summary.json
 
@@ -90,3 +100,9 @@ jobs:
           git commit -m 'Map Hancom Gooroom 3.3 packages to exact ARM64 binaries'
           git pull --rebase origin arm64-port
           git push origin HEAD:arm64-port
+
+      - name: Enforce a complete exact-version map
+        run: |
+          set -euxo pipefail
+          test '${{ steps.map.outputs.exit_code }}' = '0'
+          test "$(jq -r '.strict_unresolved_count' work/debian-map/debian-arm64-map-summary.json)" = '0'
