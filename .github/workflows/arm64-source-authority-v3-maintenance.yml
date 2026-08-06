@@ -1,0 +1,130 @@
+name: ARM64 port - integrate signed DSC source authority v3 everywhere
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-authority-v3-maintenance.yml'
+      - 'arm64/scripts/wire_source_authority_v3.py'
+      - 'arm64/scripts/wire_source_authority_v4.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-authority-integration-v3
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out the complete port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Let earlier cleanup writers settle and reset to the latest branch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sleep 180
+          git fetch origin arm64-port
+          git reset --hard origin/arm64-port
+
+      - name: Wire Git-or-DSC source authority, publisher, and acquisition v3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile \
+            arm64/scripts/wire_source_authority_v3.py \
+            arm64/scripts/wire_source_authority_v4.py \
+            arm64/scripts/merge_exact_source_authority_v3.py \
+            arm64/scripts/source_authority_v3.py \
+            arm64/scripts/select_native_rebuild_batch_v3.py \
+            arm64/scripts/select_next_native_rebuild_wave_v3.py \
+            arm64/scripts/select_baseline_reverification_v3.py \
+            arm64/scripts/select_dependency_retry_wave_v3.py \
+            arm64/scripts/classify_native_rebuild_failures_v2.py \
+            arm64/scripts/verify_arm64_dsc_rebuild.py \
+            arm64/scripts/verify_arm64_rebuild_v3.py \
+            arm64/scripts/publish_rebuild_packages_v3.py \
+            arm64/scripts/build_package_acquisition_plan_v3.py
+          bash -n \
+            arm64/scripts/build_locked_source_arm64_v4.sh \
+            arm64/scripts/build_locked_dsc_source_arm64.sh
+          python3 arm64/scripts/wire_source_authority_v4.py \
+            --repository-root .
+
+      - name: Remove superseded parallel source and package authorities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          obsolete=(
+            .github/workflows/arm64-effective-source-lock.yml
+            .github/workflows/arm64-publish-rebuild-packages.yml
+            .github/workflows/arm64-source-authority-v3-maintenance.yml
+            arm64/scripts/build_locked_source_arm64_v3.sh
+          )
+          for path in "${obsolete[@]}"; do
+            git rm -f "$path" 2>/dev/null || rm -f "$path"
+          done
+
+      - name: Commit one exact Git-or-DSC execution path
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows arm64/scripts
+          if git diff --cached --quiet; then
+            echo 'Source authority v3 was already fully integrated.'
+            exit 0
+          fi
+          git commit -m 'Integrate exact signed DSC source authority across ARM64 pipeline'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 4))
+          done
+          exit 1
+
+      - name: Dispatch source recovery, authority merge, and all active controllers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          dispatch arm64-source-keyring-lock.yml
+          dispatch arm64-wayback-source-recovery.yml || true
+          dispatch arm64-source-authority-v3.yml || true
+          dispatch arm64-workflow-secret-audit.yml
+          dispatch arm64-active-pipeline-audit.yml
+          dispatch arm64-pipeline-lint.yml
+          dispatch arm64-pipeline-unit-tests.yml
+          dispatch arm64-baseline-rebuild-evidence.yml || true
+          dispatch arm64-native-rebuild-backlog.yml -f limit=6 || true
+          dispatch arm64-rebuild-failure-audit.yml || true
+          dispatch arm64-publish-rebuild-packages-v3.yml || true
+          dispatch arm64-package-acquisition-plan-v2.yml || true
+          dispatch arm64-port-coverage.yml || true
+          dispatch arm64-ci-state-snapshot.yml || true
