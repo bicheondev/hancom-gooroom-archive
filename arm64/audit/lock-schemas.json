@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "root": "arm64/locks",
-  "json_file_count": 284,
+  "json_file_count": 285,
   "error_count": 0,
   "files": [
     {
@@ -14621,6 +14621,151 @@
         },
         "deterministic_source_archive_sha256": {
           "type": "str"
+        }
+      }
+    },
+    {
+      "path": "rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/verification.json",
+      "size": 1922,
+      "sha256": "071c39557d69ba3e77649abf10a7fd675ab4f24159bf6cfb7fa74c3e958d53fb",
+      "top_type": "dict",
+      "key_frequency": {
+        "packages[].filename": 2,
+        "packages[].sha256": 2,
+        "packages[].size": 2,
+        "packages[].package": 2,
+        "packages[].version": 2,
+        "packages[].architecture": 2,
+        "packages[].parsed_source": 2,
+        "packages[].parsed_source_version": 2,
+        "packages[].expected_from_iso": 2,
+        "packages[].elf_machine_counts": 2,
+        "packages[].x86_payloads": 2,
+        "packages[].non_aarch64_elfs": 2,
+        "schema": 1,
+        "policy": 1,
+        "source": 1,
+        "source_version": 1,
+        "repository_full_name": 1,
+        "commit_sha": 1,
+        "tree_sha": 1,
+        "expected_native_binary_versions": 1,
+        "expected_native_binary_versions.gooroom-security-status-tools": 1,
+        "produced_package_count": 1,
+        "packages": 1,
+        "packages[].elf_machine_counts.aarch64": 1,
+        "missing_expected_packages": 1,
+        "x86_payloads": 1,
+        "non_aarch64_elfs": 1,
+        "warnings": 1,
+        "errors": 1,
+        "passed": 1,
+        "verification_source": 1,
+        "verification_source.actions_run_id": 1,
+        "verification_source.artifact_id": 1,
+        "verification_source.legacy_verification_summary_verified": 1,
+        "verification_source.wrong_architecture_executable_count": 1
+      },
+      "top_keys": [
+        "commit_sha",
+        "errors",
+        "expected_native_binary_versions",
+        "missing_expected_packages",
+        "non_aarch64_elfs",
+        "packages",
+        "passed",
+        "policy",
+        "produced_package_count",
+        "repository_full_name",
+        "schema",
+        "source",
+        "source_version",
+        "tree_sha",
+        "verification_source",
+        "warnings",
+        "x86_payloads"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "repository_full_name": {
+          "type": "str"
+        },
+        "commit_sha": {
+          "type": "str"
+        },
+        "tree_sha": {
+          "type": "str"
+        },
+        "expected_native_binary_versions": {
+          "type": "dict",
+          "keys": [
+            "gooroom-security-status-tools"
+          ]
+        },
+        "produced_package_count": {
+          "type": "int"
+        },
+        "packages": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "architecture",
+            "elf_machine_counts",
+            "expected_from_iso",
+            "filename",
+            "non_aarch64_elfs",
+            "package",
+            "parsed_source",
+            "parsed_source_version",
+            "sha256",
+            "size",
+            "version",
+            "x86_payloads"
+          ]
+        },
+        "missing_expected_packages": {
+          "type": "list",
+          "length": 0
+        },
+        "x86_payloads": {
+          "type": "list",
+          "length": 0
+        },
+        "non_aarch64_elfs": {
+          "type": "list",
+          "length": 0
+        },
+        "warnings": {
+          "type": "list",
+          "length": 0
+        },
+        "errors": {
+          "type": "list",
+          "length": 0
+        },
+        "passed": {
+          "type": "bool"
+        },
+        "verification_source": {
+          "type": "dict",
+          "keys": [
+            "actions_run_id",
+            "artifact_id",
+            "legacy_verification_summary_verified",
+            "wrong_architecture_executable_count"
+          ]
         }
       }
     },
