@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 72,
-    "workflow_name_count": 72,
+    "workflow_count": 73,
+    "workflow_name_count": 73,
     "referenced_local_file_count": 97,
-    "error_count": 60,
+    "error_count": 61,
     "warning_count": 0,
     "passed": false
   },
@@ -549,6 +549,33 @@
         "arm64/scripts/build_exact_arm64_rootfs.sh",
         "arm64/scripts/materialize_package_acquisition_plan.py",
         "arm64/scripts/verify_arm64_rootfs.py"
+      ]
+    },
+    {
+      "filename": "arm64-final-cleanup-maintenance-v3.yml",
+      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
+      "name": "ARM64 port - finalize single v2 execution path",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/build_package_acquisition_plan.py",
+        "arm64/scripts/build_package_acquisition_plan_v2.py",
+        "arm64/scripts/collect_native_rebuild_results.py",
+        "arm64/scripts/collect_native_rebuild_results_v2.py",
+        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
+        "arm64/scripts/materialize_package_acquisition_plan.py",
+        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
+        "arm64/scripts/prepare_rebuild_release_assets.py",
+        "arm64/scripts/prepare_rebuild_release_assets_v2.py"
       ]
     },
     {
@@ -1687,6 +1714,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-builder-v2-maintenance.yml",
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-native-rebuild-batch.yml",
@@ -1697,13 +1725,16 @@
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-builder-v2-maintenance.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml"
+      ".github/workflows/arm64-dependency-retry.yml",
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan.py": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-package-acquisition-plan.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
     "arm64/scripts/build_stage0_live_iso.sh": [
@@ -1736,19 +1767,23 @@
     ],
     "arm64/scripts/collect_native_rebuild_results.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
     "arm64/scripts/collect_native_rebuild_results_v2.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml"
+      ".github/workflows/arm64-dependency-retry.yml",
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-live-finalizer-maintenance.yml",
       ".github/workflows/arm64-v2-normalization-maintenance.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-v2-normalization-maintenance.yml"
     ],
     "arm64/scripts/inspect_lock_schemas.py": [
@@ -1769,9 +1804,11 @@
     "arm64/scripts/materialize_package_acquisition_plan.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
       ".github/workflows/arm64-exact-rootfs.yml",
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/materialize_rebuild_dependency_repo.py": [
@@ -1793,9 +1830,11 @@
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
     "arm64/scripts/prepare_rebuild_release_assets.py": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/prepare_rebuild_release_assets_v2.py": [
+      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-publish-rebuild-packages.yml"
     ],
     "arm64/scripts/probe_vendor_pool_sources.py": [
@@ -2008,6 +2047,10 @@
       "actions": [
         "actions/download-artifact@v4"
       ]
+    },
+    {
+      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
