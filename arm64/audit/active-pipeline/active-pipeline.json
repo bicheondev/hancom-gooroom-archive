@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 87,
-    "workflow_name_count": 87,
-    "referenced_local_file_count": 120,
-    "error_count": 3,
+    "workflow_count": 88,
+    "workflow_name_count": 88,
+    "referenced_local_file_count": 121,
+    "error_count": 4,
     "warning_count": 30,
     "passed": false
   },
@@ -1085,6 +1085,25 @@
       ]
     },
     {
+      "filename": "arm64-qtbase-apt-source-archive.yml",
+      "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
+      "name": "ARM64 port - recover QtBase archival source candidate",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/resolve_source_apt.py",
+        "arm64/scripts/resolve_source_apt_archival.py"
+      ]
+    },
+    {
       "filename": "arm64-qtbase-apt-source-lock.yml",
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "name": "ARM64 port - recover exact QtBase source from APT",
@@ -1889,6 +1908,7 @@
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
+      ".github/workflows/arm64-qtbase-apt-source-archive.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
@@ -2127,7 +2147,11 @@
     ],
     "arm64/scripts/resolve_source_apt.py": [
       ".github/workflows/arm64-linux-apt-source-lock.yml",
+      ".github/workflows/arm64-qtbase-apt-source-archive.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
+    ],
+    "arm64/scripts/resolve_source_apt_archival.py": [
+      ".github/workflows/arm64-qtbase-apt-source-archive.yml"
     ],
     "arm64/scripts/resolve_source_git_seeded.py": [
       ".github/workflows/arm64-source-lock.yml"
@@ -2301,6 +2325,11 @@
     {
       "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
       "local_path": "arm64/scripts/publish_rebuild_packages_v3.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
+      "local_path": "arm64/scripts/resolve_source_apt_archival.py",
       "reason": "referenced-local-code-missing"
     },
     {
