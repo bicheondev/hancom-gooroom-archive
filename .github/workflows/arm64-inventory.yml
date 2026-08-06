@@ -70,12 +70,23 @@ jobs:
           unsquashfs -ll "$SQUASHFS" > work/evidence/squashfs-file-list.txt
           find work/iso-root -printf '%y\t%s\t%P\n' | sort > work/evidence/iso-tree.tsv
 
-          for path in etc/os-release etc/debian_version etc/issue etc/apt/sources.list; do
+          for path in \
+            etc/os-release \
+            etc/debian_version \
+            etc/issue \
+            etc/apt/sources.list \
+            etc/apt/sources.list.d/.list \
+            etc/apt/sources.list.d/official-package-repositories.list \
+            etc/apt/preferences.d/gooroom.pref; do
             output="work/evidence/${path//\//_}"
             if ! unsquashfs -cat "$SQUASHFS" "$path" > "$output" 2>/dev/null; then
               rm -f "$output"
             fi
           done
+          unsquashfs -ll "$SQUASHFS" var/lib/apt/lists \
+            > work/evidence/apt-list-files.txt 2>&1 || true
+          unsquashfs -ll "$SQUASHFS" var/cache/apt/archives \
+            > work/evidence/apt-cache-files.txt 2>&1 || true
 
           xorriso -indev "work/$ISO_NAME" -report_el_torito plain \
             > work/evidence/el-torito.txt 2>&1 || true
