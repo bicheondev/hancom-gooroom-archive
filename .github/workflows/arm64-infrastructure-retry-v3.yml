@@ -6,6 +6,12 @@ on:
     paths:
       - '.github/workflows/arm64-infrastructure-retry-v3.yml'
       - 'arm64/scripts/select_infrastructure_retry_wave_v3.py'
+      - 'arm64/scripts/build_locked_source_arm64_v6.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v5.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/build_locked_dsc_source_arm64_v2.sh'
+      - 'arm64/scripts/scan_prebuilt_install_payloads.py'
+      - 'arm64/source-recovery-blockers.json'
   workflow_dispatch:
     inputs:
       limit:
@@ -26,6 +32,7 @@ env:
   SOURCE_LOCK: arm64/locks/effective-sources-v3/effective-source-lock.json
   REFERENCE: arm64/locks/reference/amd64-reference.json
   RESULTS_ROOT: arm64/locks/rebuild-results
+  SOURCE_RECOVERY_BLOCKERS: arm64/source-recovery-blockers.json
 
 jobs:
   plan:
@@ -54,14 +61,19 @@ jobs:
           [[ "$limit" =~ ^[0-9]+$ ]]
           test -f "$SOURCE_LOCK"
           test -f "$REFERENCE"
+          test -f "$SOURCE_RECOVERY_BLOCKERS"
+          test -f arm64/scripts/build_locked_source_arm64_v6.sh
           test -f arm64/scripts/build_locked_source_arm64_v5.sh
           test -f arm64/scripts/build_locked_source_arm64_v2.sh
           test -f arm64/scripts/build_locked_dsc_source_arm64_v2.sh
+          test -f arm64/scripts/scan_prebuilt_install_payloads.py
           builder_sha256="$(
             sha256sum \
+              arm64/scripts/build_locked_source_arm64_v6.sh \
               arm64/scripts/build_locked_source_arm64_v5.sh \
               arm64/scripts/build_locked_source_arm64_v2.sh \
               arm64/scripts/build_locked_dsc_source_arm64_v2.sh \
+              arm64/scripts/scan_prebuilt_install_payloads.py \
               | sort -k2 | sha256sum | awk '{print $1}'
           )"
           rm -rf work/infrastructure-retry-plan
@@ -70,6 +82,7 @@ jobs:
             --lock "$SOURCE_LOCK" \
             --reference "$REFERENCE" \
             --results "$RESULTS_ROOT" \
+            --source-recovery-blockers "$SOURCE_RECOVERY_BLOCKERS" \
             --builder-sha256 "$builder_sha256" \
             --limit "$limit" \
             --output work/infrastructure-retry-plan/plan.json
@@ -122,16 +135,21 @@ jobs:
           docker version
           actual="$(
             sha256sum \
+              arm64/scripts/build_locked_source_arm64_v6.sh \
               arm64/scripts/build_locked_source_arm64_v5.sh \
               arm64/scripts/build_locked_source_arm64_v2.sh \
               arm64/scripts/build_locked_dsc_source_arm64_v2.sh \
+              arm64/scripts/scan_prebuilt_install_payloads.py \
               | sort -k2 | sha256sum | awk '{print $1}'
           )"
           test "$actual" = '${{ matrix.builder_sha256 }}'
+          bash -n arm64/scripts/build_locked_source_arm64_v6.sh
           bash -n arm64/scripts/build_locked_source_arm64_v5.sh
           bash -n arm64/scripts/build_locked_source_arm64_v2.sh
           bash -n arm64/scripts/build_locked_dsc_source_arm64_v2.sh
-          python3 -m py_compile arm64/scripts/verify_arm64_rebuild_v3.py
+          python3 -m py_compile \
+            arm64/scripts/scan_prebuilt_install_payloads.py \
+            arm64/scripts/verify_arm64_rebuild_v3.py
 
       - name: Rebuild with the repaired exact-source infrastructure
         id: build
@@ -147,7 +165,7 @@ jobs:
           rm -rf "$output"
           mkdir -p "$output"
           set +e
-          bash arm64/scripts/build_locked_source_arm64_v5.sh \
+          bash arm64/scripts/build_locked_source_arm64_v6.sh \
             "$SOURCE_LOCK" \
             '${{ matrix.source }}' \
             "$output" \
