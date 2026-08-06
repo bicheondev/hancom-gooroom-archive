@@ -1,0 +1,144 @@
+name: ARM64 port - build exact QtBase for ARM64
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-qtbase.yml'
+      - 'arm64/scripts/build_locked_apt_source_arm64.sh'
+      - 'arm64/scripts/build_locked_apt_source_arm64_v2.sh'
+      - 'arm64/scripts/verify_deb_payload_machine.py'
+      - 'arm64/locks/qtbase-apt-source/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-qtbase-build
+  cancel-in-progress: true
+
+env:
+  HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact QtBase source evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Detect a fully verified exact APT source lock
+        id: lock
+        run: |
+          set -euxo pipefail
+          lock=arm64/locks/qtbase-apt-source/apt-source-lock.json
+          available=false
+          if [ -f "$lock" ]; then
+            jq empty "$lock"
+            if [ "$(jq -r '
+              [.sources[]
+               | select(
+                   .source == "qtbase-opensource-src"
+                   and .source_version == "5.15.2+dfsg-9+grm3u1"
+                   and .status == "resolved"
+                   and .selected.type == "apt-source"
+                 )]
+              | length
+            ' "$lock")" = 1 ]; then
+              available=true
+            fi
+          fi
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+          mkdir -p work/qtbase-arm64
+          jq -n \
+            --argjson available "$available" \
+            --arg source qtbase-opensource-src \
+            --arg version '5.15.2+dfsg-9+grm3u1' \
+            '{source_lock_available:$available, source:$source, source_version:$version}' \
+            > work/qtbase-arm64/source-lock-status.json
+
+      - name: Verify native ARM64 builder and install host tools
+        if: steps.lock.outputs.available == 'true'
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This build requires native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file jq python3
+          python3 -m py_compile arm64/scripts/verify_deb_payload_machine.py
+          bash -n \
+            arm64/scripts/build_locked_apt_source_arm64.sh \
+            arm64/scripts/build_locked_apt_source_arm64_v2.sh
+
+      - name: Build exact QtBase source natively for ARM64
+        id: build
+        if: steps.lock.outputs.available == 'true'
+        run: |
+          set -uxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_apt_source_arm64.sh \
+            arm64/scripts/build_locked_apt_source_arm64_v2.sh \
+            arm64/scripts/verify_deb_payload_machine.py
+          rm -rf work/qtbase-arm64
+          mkdir -p work/qtbase-arm64
+          set +e
+          arm64/scripts/build_locked_apt_source_arm64_v2.sh \
+            arm64/locks/qtbase-apt-source/apt-source-lock.json \
+            qtbase-opensource-src \
+            work/qtbase-arm64
+          rc=$?
+          sudo chown -R "$USER:$USER" work/qtbase-arm64 || true
+          set -e
+          find work/qtbase-arm64 -maxdepth 1 -type f \
+            -printf '%f\t%s bytes\n' | sort
+          [ "$rc" -eq 0 ]
+          sha256sum --check work/qtbase-arm64/SHA256SUMS
+          jq . work/qtbase-arm64/build-result.json
+
+      - name: Upload exact QtBase ARM64 packages or lock status
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-5.15.2-dfsg-9-grm3u1-arm64
+          path: work/qtbase-arm64
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Record exact QtBase ARM64 package manifest
+        if: steps.build.outcome == 'success'
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/qtbase-arm64-build
+          mkdir -p arm64/locks/qtbase-arm64-build
+          cp work/qtbase-arm64/build-result.json arm64/locks/qtbase-arm64-build/
+          cp work/qtbase-arm64/SOURCE_FILES.tsv arm64/locks/qtbase-arm64-build/
+          cp work/qtbase-arm64/deb-payload-machine-report.json arm64/locks/qtbase-arm64-build/
+          cp work/qtbase-arm64/apt-builder-wrapper-policy.json arm64/locks/qtbase-arm64-build/
+          while IFS= read -r -d '' deb; do
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              "$(dpkg-deb -f "$deb" Package)" \
+              "$(dpkg-deb -f "$deb" Version)" \
+              "$(dpkg-deb -f "$deb" Architecture)" \
+              "$(sha256sum "$deb" | cut -d' ' -f1)" \
+              "${deb##*/}"
+          done < <(find work/qtbase-arm64 -maxdepth 1 -type f -name '*.deb' -print0) \
+            | sort > arm64/locks/qtbase-arm64-build/package-manifest.tsv
+          sha256sum arm64/locks/qtbase-arm64-build/* | sort -k2 \
+            > arm64/locks/qtbase-arm64-build/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/qtbase-arm64-build
+          git commit -m 'Record exact QtBase 5.15.2 ARM64 build' || exit 0
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
