@@ -1,0 +1,65 @@
+name: ARM64 port - enrich rootfs artifact lock
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-rootfs-artifact-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-rootfs-artifact-maintenance
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add materialization and run identity to rootfs evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-exact-rootfs.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = "          jq -e '.summary.passed == true' work/rootfs-evidence/verification.json\n"
+          insertion = marker + "          cp work/packages/materialization/materialization.json \\\n            work/rootfs-evidence/materialization.json\n          jq -n \\\n            --arg run_id '${{ github.run_id }}' \\\n            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \\\n            --arg artifact_name 'hancom-gooroom-3.3-arm64-exact-rootfs' \\\n            --arg head_sha '${{ github.sha }}' \\\n            '{schema:1,actions_run_id:$run_id,actions_run_url:$run_url,artifact_name:$artifact_name,head_sha:$head_sha}' \\\n            > work/rootfs-evidence/artifact-lock.json\n"
+          if 'work/rootfs-evidence/artifact-lock.json' not in text:
+              if marker not in text:
+                  raise SystemExit('rootfs verification marker not found')
+              text = text.replace(marker, insertion, 1)
+
+          commit_marker = "          cp work/rootfs-evidence/image-sizes.tsv arm64/locks/rootfs/\n"
+          commit_insert = commit_marker + "          cp work/rootfs-evidence/materialization.json arm64/locks/rootfs/\n          cp work/rootfs-evidence/artifact-lock.json arm64/locks/rootfs/\n"
+          if 'cp work/rootfs-evidence/artifact-lock.json arm64/locks/rootfs/' not in text:
+              if commit_marker not in text:
+                  raise SystemExit('rootfs commit marker not found')
+              text = text.replace(commit_marker, commit_insert, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git rm -f .github/workflows/arm64-rootfs-artifact-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-exact-rootfs.yml
+          git commit -m 'Lock rootfs artifact and materialization provenance'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
