@@ -15,7 +15,10 @@ LEGACY_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
   exit 69
 }
 
-PATCHED_WRAPPER="$(mktemp)"
+# Keep the generated wrapper beside the canonical scripts because the wrapper
+# resolves its helpers relative to BASH_SOURCE[0]. A generic /tmp file would
+# incorrectly look for build_locked_source_arm64.sh under /tmp.
+PATCHED_WRAPPER="$(mktemp "$SCRIPT_DIR/.run_locked_source_arm64_v4.XXXXXX")"
 trap 'rm -f "$PATCHED_WRAPPER"' EXIT
 
 # The canonical wrapper was written against the original build-lock field,
