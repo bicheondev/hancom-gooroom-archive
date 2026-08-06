@@ -1,0 +1,54 @@
+name: ARM64 port - fix stage0 v6 checksum verification
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-v6-checksum-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-v6-checksum-maintenance
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify checksum relative to its output directory
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('.github/workflows/arm64-stage0-v6.yml')
+          text=path.read_text(encoding='utf-8')
+          old='          sha256sum --check "work/output/$OUTPUT_ISO_NAME.sha256"\n'
+          new='          (cd work/output && sha256sum --check "$OUTPUT_ISO_NAME.sha256")\n'
+          if old in text:
+              text=text.replace(old,new,1)
+          elif new not in text:
+              raise SystemExit('checksum verification marker not found')
+          path.write_text(text,encoding='utf-8')
+          PY
+          git rm -f .github/workflows/arm64-stage0-v6-checksum-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-stage0-v6.yml
+          git commit -m 'Verify stage0 v6 ISO checksum from output directory'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
