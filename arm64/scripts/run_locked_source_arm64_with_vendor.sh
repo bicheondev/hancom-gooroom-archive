@@ -13,7 +13,8 @@ SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64.sh"
-COMPAT_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
+LEGACY_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
+SCHEMA_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64_v4.sh"
 COMPOSITE_HELPER="${HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER:-$SCRIPT_DIR/prepare_composite_source_chroot.sh}"
 COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-$SCRIPT_DIR/../locks/source-components}"
 VENDOR_LOCK="${HANCOM_GOOROOM_VENDOR_LOCK:-$SCRIPT_DIR/../locks/vendor-binaries/vendor-binary-lock.json}"
@@ -27,7 +28,8 @@ for command in jq curl dpkg-deb dpkg-scanpackages sha256sum gzip python3 stat; d
 done
 [ -f "$LOCK_JSON" ] || { echo "source lock not found: $LOCK_JSON" >&2; exit 69; }
 [ -f "$BASE_BUILDER" ] || { echo "base builder not found: $BASE_BUILDER" >&2; exit 69; }
-[ -f "$COMPAT_WRAPPER" ] || { echo "compatibility wrapper not found: $COMPAT_WRAPPER" >&2; exit 69; }
+[ -f "$LEGACY_WRAPPER" ] || { echo "legacy compatibility wrapper not found: $LEGACY_WRAPPER" >&2; exit 69; }
+[ -f "$SCHEMA_WRAPPER" ] || { echo "schema compatibility wrapper not found: $SCHEMA_WRAPPER" >&2; exit 69; }
 [ -f "$COMPOSITE_HELPER" ] || { echo "composite source helper not found: $COMPOSITE_HELPER" >&2; exit 69; }
 [ -d "$COMPONENT_LOCK_DIR" ] || { echo "source component lock directory not found: $COMPONENT_LOCK_DIR" >&2; exit 69; }
 [ -f "$VENDOR_LOCK" ] || { echo "vendor binary lock not found: $VENDOR_LOCK" >&2; exit 69; }
@@ -151,12 +153,13 @@ done
   sha256sum ./*.deb Packages Packages.gz | LC_ALL=C sort -k2 > REPOSITORY-SHA256SUMS
 )
 
-# Preserve the checked-in generic builder and its compatibility wrapper. Patch
-# only a temporary copy to expose the verified flat APT repository inside the
-# historical Bullseye chroot. Exact source commit/tree/version checks remain in
-# the generic builder and execute unchanged.
+# Preserve the checked-in generic builder and both compatibility layers. The
+# v4 wrapper adapts the legacy asserted transformations to the current
+# build-lock schema; calling the legacy wrapper directly would fail before the
+# exact vendor repository is ever used.
 cp "$BASE_BUILDER" "$BUILDER_DIR/build_locked_source_arm64.sh"
-cp "$COMPAT_WRAPPER" "$BUILDER_DIR/run_locked_source_arm64.sh"
+cp "$LEGACY_WRAPPER" "$BUILDER_DIR/run_locked_source_arm64.sh"
+cp "$SCHEMA_WRAPPER" "$BUILDER_DIR/run_locked_source_arm64_v4.sh"
 chmod +x "$BUILDER_DIR/"*.sh
 
 python3 - "$BUILDER_DIR/build_locked_source_arm64.sh" <<'PY'
@@ -211,7 +214,7 @@ PY
 export HANCOM_GOOROOM_VENDOR_REPO="$VENDOR_REPO"
 export HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR="$COMPONENT_LOCK_DIR"
 export HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER="$COMPOSITE_HELPER"
-"$BUILDER_DIR/run_locked_source_arm64.sh" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
+"$BUILDER_DIR/run_locked_source_arm64_v4.sh" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
 
 jq -s \
   --arg source "$SOURCE_NAME" \
