@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 94,
-    "workflow_name_count": 94,
-    "referenced_local_file_count": 133,
+    "workflow_count": 95,
+    "workflow_name_count": 95,
+    "referenced_local_file_count": 135,
     "error_count": 0,
     "warning_count": 36,
     "passed": true
@@ -1363,6 +1363,24 @@
       ]
     },
     {
+      "filename": "arm64-repair-result-collector-v3.yml",
+      "path": ".github/workflows/arm64-repair-result-collector-v3.yml",
+      "name": "ARM64 port - preserve infrastructure retry identity",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/collect_native_rebuild_results_v3.py",
+        "arm64/scripts/collect_native_rebuild_results_v4.py",
+        "arm64/scripts/repair_result_collector_v3.py"
+      ]
+    },
+    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -2231,9 +2249,13 @@
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
+    "arm64/scripts/collect_native_rebuild_results_v3.py": [
+      ".github/workflows/arm64-repair-result-collector-v3.yml"
+    ],
     "arm64/scripts/collect_native_rebuild_results_v4.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
-      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml",
+      ".github/workflows/arm64-repair-result-collector-v3.yml"
     ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -2316,6 +2338,9 @@
     ],
     "arm64/scripts/repair_dependency_materializer_v3.py": [
       ".github/workflows/arm64-repair-dependency-materializer-v3.yml"
+    ],
+    "arm64/scripts/repair_result_collector_v3.py": [
+      ".github/workflows/arm64-repair-result-collector-v3.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
