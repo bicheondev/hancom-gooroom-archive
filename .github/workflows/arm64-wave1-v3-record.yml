@@ -1,0 +1,219 @@
+name: ARM64 port - record package wave 1 v3 evidence
+
+on:
+  workflow_run:
+    workflows: ['ARM64 port - build exact package wave 1 v3']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Existing wave 1 v3 workflow run ID
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-wave1-v3-record
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.head_branch == 'arm64-port'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve run metadata and download every available artifact
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euxo pipefail
+          if [ "$EVENT_NAME" = workflow_run ]; then
+            run_id="$EVENT_RUN_ID"
+          else
+            run_id="$INPUT_RUN_ID"
+          fi
+          test -n "$run_id"
+          mkdir -p work/wave1-v3-artifacts
+          gh run view "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,headBranch,headSha,createdAt,updatedAt,url \
+            > work/wave1-v3-run.json
+          set +e
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir work/wave1-v3-artifacts
+          download_rc=$?
+          set -e
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "download_rc=$download_rc" >> "$GITHUB_OUTPUT"
+
+      - name: Build a fail-closed evidence summary
+        env:
+          RUN_ID: ${{ steps.metadata.outputs.run_id }}
+          DOWNLOAD_RC: ${{ steps.metadata.outputs.download_rc }}
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/build-wave1-v3
+          mkdir -p arm64/locks/build-wave1-v3
+          cp work/wave1-v3-run.json arm64/locks/build-wave1-v3/workflow-run.json
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import json
+          import os
+          import re
+
+          root = Path('work/wave1-v3-artifacts')
+          destination = Path('arm64/locks/build-wave1-v3')
+          run = json.loads(Path('work/wave1-v3-run.json').read_text(encoding='utf-8'))
+          validation_files = sorted(root.rglob('arm64-source-output-validation-v3.json'))
+          packages = []
+          seen_sources = set()
+          for path in validation_files:
+              value = json.loads(path.read_text(encoding='utf-8'))
+              source = value.get('source') or path.parent.name
+              seen_sources.add(source)
+              packages.append({
+                  'source': source,
+                  'source_version': value.get('source_version'),
+                  'status': value.get('status'),
+                  'artifact_directory': str(path.parent.relative_to(root)),
+                  'required_native_packages': value.get('required_native_packages', []),
+                  'exact_reuse_architecture_all_packages': value.get(
+                      'exact_reuse_architecture_all_packages', []
+                  ),
+                  'legacy_builder_missing_packages': value.get(
+                      'legacy_builder_missing_packages', []
+                  ),
+                  'built_packages': value.get('built_packages', []),
+                  'issues': value.get('issues', []),
+              })
+
+          log_failures = []
+          for log in sorted(root.rglob('legacy-run.log')):
+              source = log.parent.name
+              source = re.sub(r'-arm64-v3$', '', source)
+              if source in seen_sources:
+                  continue
+              text = log.read_text(encoding='utf-8', errors='replace').splitlines()
+              exit_file = log.parent / 'legacy-run.exit-code'
+              exit_code = (
+                  exit_file.read_text(encoding='utf-8').strip()
+                  if exit_file.is_file()
+                  else None
+              )
+              log_failures.append({
+                  'source': source,
+                  'artifact_directory': str(log.parent.relative_to(root)),
+                  'legacy_exit_code': exit_code,
+                  'log_tail': text[-120:],
+              })
+
+          expected_sources = [
+              'accountsservice',
+              'file-roller',
+              'celluloid',
+              'cups-pk-helper',
+              'mousetweaks',
+              'gnome-screenshot',
+              'p7zip',
+          ]
+          recorded_sources = sorted(
+              {item['source'] for item in packages}
+              | {item['source'] for item in log_failures}
+          )
+          missing_sources = sorted(set(expected_sources) - set(recorded_sources))
+          failed_sources = sorted(
+              item['source'] for item in packages if item['status'] != 'passed'
+          )
+          failed_sources.extend(item['source'] for item in log_failures)
+          failed_sources = sorted(set(failed_sources))
+          status = 'passed'
+          if (
+              run.get('conclusion') != 'success'
+              or failed_sources
+              or missing_sources
+              or int(os.environ['DOWNLOAD_RC']) != 0
+          ):
+              status = 'failed'
+
+          result = {
+              'schema': 'hancom-gooroom-arm64-build-wave1-v3-evidence',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace(
+                  '+00:00', 'Z'
+              ),
+              'status': status,
+              'workflow_run': run,
+              'artifact_download_exit_code': int(os.environ['DOWNLOAD_RC']),
+              'expected_sources': expected_sources,
+              'recorded_sources': recorded_sources,
+              'missing_sources': missing_sources,
+              'failed_sources': failed_sources,
+              'packages': sorted(packages, key=lambda item: item['source']),
+              'unvalidated_failures': log_failures,
+          }
+          (destination / 'wave1-v3-summary.json').write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+
+          with (destination / 'wave1-v3-packages.tsv').open(
+              'w', encoding='utf-8'
+          ) as stream:
+              stream.write(
+                  'source\tsource_version\tvalidation_status\tpackage\tversion\tarchitecture\tfilename\n'
+              )
+              for item in sorted(packages, key=lambda row: row['source']):
+                  for package in item['built_packages']:
+                      stream.write(
+                          '\t'.join(
+                              [
+                                  str(item['source']),
+                                  str(item.get('source_version') or ''),
+                                  str(item.get('status') or ''),
+                                  str(package.get('package') or ''),
+                                  str(package.get('version') or ''),
+                                  str(package.get('architecture') or ''),
+                                  str(package.get('filename') or ''),
+                              ]
+                          )
+                          + '\n'
+                      )
+          print(json.dumps(result, indent=2, ensure_ascii=False))
+          PY
+          find arm64/locks/build-wave1-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > arm64/locks/build-wave1-v3/LOCKSUMS.sha256
+
+      - name: Commit evidence even when one package failed
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/build-wave1-v3
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact ARM64 package wave 1 v3 evidence'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Enforce a complete passing wave
+        run: |
+          set -euxo pipefail
+          test "$(jq -r '.status' arm64/locks/build-wave1-v3/wave1-v3-summary.json)" = passed
