@@ -1,0 +1,110 @@
+name: ARM64 port - merge exact source authorities v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-merge-source-authorities-v2.yml'
+      - 'arm64/scripts/merge_source_authorities_v2.py'
+      - 'arm64/locks/apt-source-fallback-v2/**'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-source-authority-v2
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check whether the APT fallback lock is available
+        id: inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          if [ -f arm64/locks/apt-source-fallback-v2/apt-source-fallback-lock.json ]; then
+            ready=true
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Merge exact source authorities
+        if: steps.inputs.outputs.ready == 'true'
+        id: merge
+        shell: bash
+        run: |
+          set -uxo pipefail
+          git_lock=arm64/locks/sources-api-baseline/source-lock.json
+          if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
+            git_lock=arm64/locks/effective-sources/effective-source-lock.json
+          fi
+          rm -rf work/effective-source-v2
+          set +e
+          python3 arm64/scripts/merge_source_authorities_v2.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --git-lock "$git_lock" \
+            --apt-lock arm64/locks/apt-source-fallback-v2/apt-source-fallback-lock.json \
+            --output-dir work/effective-source-v2
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/effective-source-v2 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/effective-source-v2/LOCKSUMS.sha256
+          cat work/effective-source-v2/summary.json
+
+      - name: Upload merged lock and exact blockers
+        if: steps.inputs.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-effective-source-lock-v2
+          path: work/effective-source-v2
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the merged authority
+        if: steps.inputs.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/effective-sources-v2
+          mkdir -p arm64/locks/effective-sources-v2
+          cp -a work/effective-source-v2/. arm64/locks/effective-sources-v2/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/effective-sources-v2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Merge exact Git and signed APT source authorities v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce no unresolved native source
+        if: steps.inputs.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.merge.outputs.exit_code }}' = '0'
+          jq -e '.native_rebuilds_allowed == true and .native_rebuild_blocker_count == 0' \
+            work/effective-source-v2/summary.json
