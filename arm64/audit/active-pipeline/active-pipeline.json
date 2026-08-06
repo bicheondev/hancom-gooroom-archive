@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 94,
-    "workflow_name_count": 94,
-    "referenced_local_file_count": 143,
-    "error_count": 80,
+    "workflow_count": 96,
+    "workflow_name_count": 96,
+    "referenced_local_file_count": 145,
+    "error_count": 81,
     "warning_count": 0,
     "passed": false
   },
@@ -604,6 +604,42 @@
         "arm64/scripts/build_exact_arm64_rootfs.sh",
         "arm64/scripts/materialize_package_acquisition_plan.py",
         "arm64/scripts/verify_arm64_rootfs.py"
+      ]
+    },
+    {
+      "filename": "arm64-export-v2-consolidation.yml",
+      "path": ".github/workflows/arm64-export-v2-consolidation.yml",
+      "name": "ARM64 port - export consolidated v2 patch",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/build_package_acquisition_plan.py",
+        "arm64/scripts/build_package_acquisition_plan_v2.py",
+        "arm64/scripts/collect_native_rebuild_results.py",
+        "arm64/scripts/collect_native_rebuild_results_v2.py",
+        "arm64/scripts/configure_graphical_boot_gate.sh",
+        "arm64/scripts/configure_graphical_boot_gate_v2.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
+        "arm64/scripts/materialize_package_acquisition_plan.py",
+        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
+        "arm64/scripts/prepare_rebuild_release_assets.py",
+        "arm64/scripts/prepare_rebuild_release_assets_v2.py",
+        "arm64/scripts/test_arm64_installed_disk_qemu.sh",
+        "arm64/scripts/test_arm64_iso_qemu.sh",
+        "arm64/scripts/wire_graphical_boot_gate.py",
+        "arm64/scripts/wire_graphical_boot_gate_v2.py",
+        "arm64/scripts/wire_installed_boot_dispatch.py",
+        "arm64/scripts/wire_progress_dispatches.py"
       ]
     },
     {
@@ -1675,6 +1711,26 @@
       ]
     },
     {
+      "filename": "arm64-stage0-minimal-v2.yml",
+      "path": ".github/workflows/arm64-stage0-minimal-v2.yml",
+      "name": "ARM64 port - boot-test minimal stage-0 ISO v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh",
+        "arm64/scripts/build_stage0_minimal_iso.sh",
+        "arm64/scripts/build_stage0_minimal_iso_v2.sh"
+      ]
+    },
+    {
       "filename": "arm64-stage0-minimal.yml",
       "path": ".github/workflows/arm64-stage0-minimal.yml",
       "name": "ARM64 port - build and boot-test minimal stage-0 ISO",
@@ -2070,6 +2126,7 @@
       ".github/workflows/arm64-stage0-live-v4.yml",
       ".github/workflows/arm64-stage0-live-v5.yml",
       ".github/workflows/arm64-stage0-live.yml",
+      ".github/workflows/arm64-stage0-minimal-v2.yml",
       ".github/workflows/arm64-stage0-minimal.yml",
       ".github/workflows/arm64-vendor-binary-lock.yml",
       ".github/workflows/arm64-vendor-pool-source-lock.yml",
@@ -2098,6 +2155,9 @@
     "arm64/locks/sources/source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml"
+    ],
+    "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh": [
+      ".github/workflows/arm64-stage0-minimal-v2.yml"
     ],
     "arm64/locks/stage0-minimal/LOCKSUMS.sh": [
       ".github/workflows/arm64-stage0-minimal.yml"
@@ -2191,6 +2251,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-builder-v2-maintenance.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2205,6 +2266,7 @@
       ".github/workflows/arm64-builder-v2-maintenance.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-dependency-retry.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
@@ -2216,6 +2278,7 @@
       ".github/workflows/arm64-source-authority-v3-maintenance.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2223,6 +2286,7 @@
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2260,7 +2324,11 @@
       ".github/workflows/arm64-minimal-boot-iso-v4.yml"
     ],
     "arm64/scripts/build_stage0_minimal_iso.sh": [
+      ".github/workflows/arm64-stage0-minimal-v2.yml",
       ".github/workflows/arm64-stage0-minimal.yml"
+    ],
+    "arm64/scripts/build_stage0_minimal_iso_v2.sh": [
+      ".github/workflows/arm64-stage0-minimal-v2.yml"
     ],
     "arm64/scripts/classify_native_rebuild_failures.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -2272,6 +2340,7 @@
     ],
     "arm64/scripts/collect_native_rebuild_results.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2281,20 +2350,24 @@
     "arm64/scripts/collect_native_rebuild_results_v2.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-dependency-retry.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/configure_graphical_boot_gate.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/filter_arm64_binary_lock.py": [
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2303,6 +2376,7 @@
       ".github/workflows/arm64-v2-normalization-maintenance.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2326,12 +2400,14 @@
     "arm64/scripts/materialize_package_acquisition_plan.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
       ".github/workflows/arm64-exact-rootfs.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2360,12 +2436,14 @@
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
     "arm64/scripts/prepare_rebuild_release_assets.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
     ],
     "arm64/scripts/prepare_rebuild_release_assets_v2.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
@@ -2519,10 +2597,12 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/test_arm64_installed_disk_qemu.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
@@ -2580,18 +2660,22 @@
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
     "arm64/scripts/wire_graphical_boot_gate.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/wire_graphical_boot_gate_v2.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
     "arm64/scripts/wire_installed_boot_dispatch.py": [
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-wire-installed-boot-maintenance.yml"
     ],
     "arm64/scripts/wire_progress_dispatches.py": [
       ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
+      ".github/workflows/arm64-export-v2-consolidation.yml",
       ".github/workflows/arm64-final-consolidation-maintenance.yml",
       ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
     ],
@@ -2886,6 +2970,11 @@
       "path": ".github/workflows/arm64-stage0-live.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/stage0/LOCKSUMS.sh"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-minimal-v2.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh"
     },
     {
       "path": ".github/workflows/arm64-stage0-minimal.yml",
