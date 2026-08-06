@@ -1,7 +1,7 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-06T11:35:29.096497Z",
-  "status": "failed",
+  "generated_at": "2026-08-06T11:36:38.110050Z",
+  "status": "passed",
   "python": [
     {
       "path": "arm64/scripts/apply_reference_config_overlay.py",
@@ -330,6 +330,10 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/build_locked_apt_source_arm64_v2.sh",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/build_locked_dsc_source_arm64.sh",
       "status": "passed"
     },
@@ -473,6 +477,10 @@
     },
     {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-build-qtbase.yml",
       "status": "passed"
     },
     {
@@ -886,6 +894,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-build-qtbase.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-qtbase.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-build-security-status-tools.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1025,9 +1045,9 @@
     },
     {
       "workflow": ".github/workflows/arm64-build-wave2-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75fa02",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-build-wave2-v3.yml",
@@ -2080,7 +2100,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:35:29.810518Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:36:38.811725Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2090,11 +2110,9 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:35:29.851037Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:36:38.855274Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
-  "issues": [
-    "invalid action reference: .github/workflows/arm64-build-wave2-v2.yml: actions/upload-artifact@ea165f8d65b6e75fa02: action revision is not a 40-hex commit"
-  ]
+  "issues": []
 }
