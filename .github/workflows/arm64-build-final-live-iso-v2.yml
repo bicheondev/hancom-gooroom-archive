@@ -1,0 +1,374 @@
+name: ARM64 port - assemble final exact live ISO v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-final-live-iso-v2.yml'
+      - 'arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh'
+      - 'arm64/scripts/build_final_arm64_live_iso_v2.sh'
+      - 'arm64/scripts/test_final_arm64_iso_qemu_v2.sh'
+      - 'arm64/scripts/apply_reference_config_overlay.py'
+      - 'arm64/scripts/verify_final_arm64_rootfs_v2.py'
+      - 'arm64/locks/final-rootfs-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-final-live-iso-v2
+  cancel-in-progress: true
+
+env:
+  OUTPUT_ISO: Hancom-Gooroom-3.3-arm64.hybrid.iso
+  RELEASE_TAG: v3.3-arm64-rc1
+  REFERENCE_ISO: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  REFERENCE_SIZE: '1566277632'
+  REFERENCE_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  assemble-and-test:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 420
+    steps:
+      - name: Check out exact locks and live-image tooling
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check verified final rootfs artifact gate
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          verification=arm64/locks/final-rootfs-v2/verification.json
+          artifact_lock=arm64/locks/final-rootfs-v2/artifact-lock.json
+          authority=arm64/locks/final-rootfs-v2/final-package-authority.json
+          if [ -f "$verification" ] && [ -f "$artifact_lock" ] && [ -f "$authority" ]; then
+            if jq -e '
+              .summary.passed == true
+              and .summary.x86_elf_count == 0
+              and .summary.foreign_elf_count == 0
+              and .summary.forbidden_extra_count == 0
+            ' "$verification" >/dev/null; then
+              ready=true
+            fi
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if [ "$ready" = true ]; then
+            echo "run_id=$(jq -r '.actions_run_id' "$artifact_lock")" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$(jq -r '.artifact_name' "$artifact_lock")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify native ARM64 host and install ISO/QEMU tools
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 jq git ca-certificates file rsync zstd \
+            xorriso squashfs-tools \
+            grub-common grub-efi-arm64-bin \
+            dosfstools mtools \
+            qemu-system-arm qemu-efi-aarch64
+          bash -n \
+            arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh \
+            arm64/scripts/build_final_arm64_live_iso_v2.sh \
+            arm64/scripts/test_final_arm64_iso_qemu_v2.sh
+          python3 -m py_compile \
+            arm64/scripts/apply_reference_config_overlay.py \
+            arm64/scripts/verify_final_arm64_rootfs_v2.py
+          chmod +x \
+            arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh \
+            arm64/scripts/build_final_arm64_live_iso_v2.sh \
+            arm64/scripts/test_final_arm64_iso_qemu_v2.sh
+          gh --version
+
+      - name: Download and verify the exact final rootfs artifact
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/rootfs-artifact
+          mkdir -p work/rootfs-artifact
+          gh run download '${{ steps.gate.outputs.run_id }}' \
+            --repo '${{ github.repository }}' \
+            --name '${{ steps.gate.outputs.artifact_name }}' \
+            --dir work/rootfs-artifact
+          test -f work/rootfs-artifact/rootfs.tar.zst
+          test -f work/rootfs-artifact/SHA256SUMS
+          test -f work/rootfs-artifact/verification.json
+          test -f work/rootfs-artifact/final-package-authority.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root=Path('work/rootfs-artifact')
+          errors=[]
+          for line in (root/'SHA256SUMS').read_text().splitlines():
+              if not line.strip(): continue
+              digest,name=line.split(None,1); name=name.strip().lstrip('*')
+              path=root/Path(name).name
+              if not path.exists():
+                  errors.append(f'missing {name}'); continue
+              h=hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+              if h.hexdigest()!=digest: errors.append(f'{path.name}: checksum mismatch')
+          if errors: raise SystemExit('\n'.join(errors))
+          PY
+          jq -e '.summary.passed == true' work/rootfs-artifact/verification.json
+          cmp work/rootfs-artifact/final-package-authority.json \
+            arm64/locks/final-rootfs-v2/final-package-authority.json
+
+      - name: Extract the final ARM64 rootfs
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/live-rootfs
+          mkdir -p work/live-rootfs
+          zstd -dc work/rootfs-artifact/rootfs.tar.zst \
+            | sudo tar --xattrs --acls --selinux -xpf - -C work/live-rootfs
+          sudo chown -R root:root work/live-rootfs
+
+      - name: Download and verify the immutable AMD64 reference image
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/reference
+          gh release download v3.3 \
+            --repo '${{ github.repository }}' \
+            --pattern "$REFERENCE_ISO" \
+            --dir work/reference
+          path="work/reference/$REFERENCE_ISO"
+          test "$(stat -c '%s' "$path")" = "$REFERENCE_SIZE"
+          printf '%s  %s\n' "$REFERENCE_SHA256" "$path" \
+            | sha256sum --check --strict
+
+      - name: Apply only architecture-neutral reference branding and live configuration
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/reference-iso-root work/reference-rootfs work/overlay-evidence
+          mkdir -p work/reference-iso-root work/overlay-evidence
+          xorriso -osirrox on \
+            -indev "work/reference/$REFERENCE_ISO" \
+            -extract / work/reference-iso-root \
+            > work/overlay-evidence/xorriso.log 2>&1
+          squashfs="$(find work/reference-iso-root -type f -name filesystem.squashfs -print -quit)"
+          test -n "$squashfs"
+          unsquashfs -d work/reference-rootfs "$squashfs" \
+            > work/overlay-evidence/unsquashfs.log 2>&1
+          sudo python3 arm64/scripts/apply_reference_config_overlay.py \
+            --reference-rootfs work/reference-rootfs \
+            --target-rootfs work/live-rootfs \
+            --output work/overlay-evidence/reference-overlay.json \
+            --root usr/share/backgrounds \
+            --root usr/share/gnome-background-properties \
+            --root usr/share/icons \
+            --root usr/share/pixmaps \
+            --root usr/share/themes \
+            --root usr/share/plymouth \
+            --root usr/share/gooroom \
+            --root usr/share/hancom \
+            --root usr/share/calamares \
+            --root etc/calamares \
+            --root etc/skel \
+            --root etc/xdg \
+            --root etc/lightdm
+          sudo chown -R "$(id -u):$(id -g)" work/overlay-evidence
+
+      - name: Finalize graphical live boot and regenerate initramfs
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/live-finalization
+          mkdir -p work/live-finalization
+          sudo arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh \
+            work/live-rootfs work/live-finalization \
+            2>&1 | tee work/live-finalization/workflow-finalize.log
+          sudo chown -R "$(id -u):$(id -g)" \
+            work/live-rootfs work/live-finalization
+
+      - name: Reverify final package authority and reject x86 after overlay
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_final_arm64_rootfs_v2.py \
+            --rootfs work/live-rootfs \
+            --authority arm64/locks/final-rootfs-v2/final-package-authority.json \
+            --output work/live-finalization/final-rootfs-verification.json
+          jq -e '
+            .summary.passed == true
+            and .summary.x86_elf_count == 0
+            and .summary.foreign_elf_count == 0
+            and .summary.forbidden_extra_count == 0
+          ' work/live-finalization/final-rootfs-verification.json
+
+      - name: Build deterministic AArch64 UEFI ISO
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/iso-evidence work/output
+          mkdir -p work/iso-evidence work/output
+          sudo arm64/scripts/build_final_arm64_live_iso_v2.sh \
+            work/live-rootfs \
+            "work/output/$OUTPUT_ISO" \
+            work/iso-evidence \
+            2>&1 | tee work/iso-evidence/workflow-iso-build.log
+          sudo chown -R "$(id -u):$(id -g)" work/iso-evidence work/output
+          test -s "work/output/$OUTPUT_ISO"
+          test -s "work/output/$OUTPUT_ISO.sha256"
+
+      - name: Require boot and graphical session markers under AArch64 UEFI QEMU
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        env:
+          HANCOM_GOOROOM_QEMU_TIMEOUT: '1800'
+        run: |
+          set -o pipefail
+          rm -rf work/qemu-evidence
+          mkdir -p work/qemu-evidence
+          arm64/scripts/test_final_arm64_iso_qemu_v2.sh \
+            "work/output/$OUTPUT_ISO" work/qemu-evidence \
+            2>&1 | tee work/qemu-evidence/workflow-qemu-test.log
+          jq -e '
+            .passed == true
+            and .boot_marker_found == true
+            and .graphical_marker_found == true
+          ' work/qemu-evidence/qemu-boot-result.json
+
+      - name: Assemble complete immutable release evidence
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/final-evidence
+          mkdir -p work/final-evidence
+          cp work/rootfs-artifact/artifact-lock.json work/final-evidence/rootfs-artifact-lock.json
+          cp work/rootfs-artifact/verification.json work/final-evidence/rootfs-verification.json
+          cp work/rootfs-artifact/final-package-authority.json work/final-evidence/
+          cp work/overlay-evidence/reference-overlay.json work/final-evidence/
+          cp work/live-finalization/live-finalization.json work/final-evidence/
+          cp work/live-finalization/final-rootfs-verification.json work/final-evidence/
+          cp work/iso-evidence/iso-build.json work/final-evidence/
+          cp work/iso-evidence/iso.sha256 work/final-evidence/
+          cp work/iso-evidence/iso-size.tsv work/final-evidence/
+          cp work/iso-evidence/el-torito.txt work/final-evidence/
+          cp work/iso-evidence/system-area.txt work/final-evidence/
+          cp work/qemu-evidence/qemu-boot-result.json work/final-evidence/
+          cp work/qemu-evidence/serial-tail.log work/final-evidence/
+          for source in \
+            arm64/locks/reference/summary.json \
+            arm64/locks/effective-sources-v2/summary.json \
+            arm64/locks/rebuild-result-index-v2/summary.json \
+            arm64/locks/final-package-repository-v2/summary.json; do
+            [ -f "$source" ] && cp "$source" \
+              "work/final-evidence/$(basename "$(dirname "$source")")-summary.json"
+          done
+          find work/final-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/final-evidence/LOCKSUMS.sha256
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -C work/final-evidence -cf - . \
+            | zstd -19 -T0 -o work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst
+          sha256sum work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst \
+            > work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst.sha256
+
+      - name: Upload the real final RC ISO and evidence
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-final-rc1
+          path: |
+            work/output/Hancom-Gooroom-3.3-arm64.hybrid.iso
+            work/output/Hancom-Gooroom-3.3-arm64.hybrid.iso.sha256
+            work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst
+            work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst.sha256
+            work/final-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish only the booted graphical image as an RC prerelease
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          installer_present="$(jq -r '.installer_marker_found' work/qemu-evidence/qemu-boot-result.json)"
+          cat > work/release-notes.md <<EOF
+          Hancom Gooroom 3.3 ARM64 RC1.
+
+          Verified gates:
+          - immutable AMD64 reference package/source inventory
+          - exact Git commit or exact vendor-signed DSC source authority
+          - verified native ARM64 rebuild artifacts
+          - exact package repository and final rootfs transaction
+          - no x86 or unsupported foreign ELF in the final rootfs
+          - AArch64 UEFI QEMU live boot marker
+          - graphical display-manager/X session marker
+          - installer marker observed: ${installer_present}
+
+          This is a prerelease until a complete virtual-disk installation and
+          reboot test, plus real ARM64 hardware coverage, are recorded.
+          EOF
+          if ! gh release view "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo '${{ github.repository }}' \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 RC1' \
+              --notes-file work/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            "work/output/$OUTPUT_ISO" \
+            "work/output/$OUTPUT_ISO.sha256" \
+            work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst \
+            work/output/Hancom-Gooroom-3.3-arm64-evidence.tar.zst.sha256
+
+      - name: Commit final RC lock only after graphical QEMU success
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/final-iso-v2
+          mkdir -p arm64/locks/final-iso-v2
+          cp -a work/final-evidence/. arm64/locks/final-iso-v2/
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg release_tag "$RELEASE_TAG" \
+            --arg iso_asset "$OUTPUT_ISO" \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-final-rc1' \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,release_tag:$release_tag,iso_asset:$iso_asset,artifact_name:$artifact_name,qemu_booted:true,qemu_graphical:true}' \
+            > arm64/locks/final-iso-v2/release-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/final-iso-v2
+          git commit -m 'Lock QEMU-booted graphical Hancom Gooroom ARM64 RC1'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
