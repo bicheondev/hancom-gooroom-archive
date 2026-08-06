@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 121,
-    "workflow_name_count": 121,
-    "referenced_local_file_count": 192,
-    "error_count": 6,
-    "warning_count": 35,
+    "workflow_count": 125,
+    "workflow_name_count": 125,
+    "referenced_local_file_count": 200,
+    "error_count": 10,
+    "warning_count": 39,
     "passed": false
   },
   "workflows": [
@@ -89,6 +89,25 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-arch-replacements.yml",
+      "path": ".github/workflows/arm64-build-arch-replacements.yml",
+      "name": "ARM64 port - build audited architecture replacements",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/arch-replacements/artifact-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/build_arch_replacement_packages.py"
       ]
     },
     {
@@ -273,6 +292,25 @@
         "arm64/scripts/build_locked_dsc_arm64_v2.sh",
         "arm64/scripts/select_dsc_rebuild_matrix_v2.py",
         "arm64/scripts/verify_dsc_arm64_rebuild_v2.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-recovered-exact-rootfs.yml",
+      "path": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
+      "name": "ARM64 port - build rootfs from recovered exact package pool",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_recovered_exact_arm64_rootfs.sh"
       ]
     },
     {
@@ -729,6 +767,50 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json"
+      ]
+    },
+    {
+      "filename": "arm64-final-from-recovered-rootfs.yml",
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "name": "ARM64 port - assemble final ISO from recovered exact rootfs",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/final-recovered-iso/release-lock.json",
+        "arm64/locks/recovered-rootfs/artifact-lock.json",
+        "arm64/locks/recovered-rootfs/rootfs-verification.json",
+        "arm64/scripts/apply_reference_config_overlay.py",
+        "arm64/scripts/build_arm64_live_iso.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/test_arm64_iso_qemu.sh"
+      ]
+    },
+    {
+      "filename": "arm64-final-graphical-gate-maintenance.yml",
+      "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
+      "name": "ARM64 port - upgrade final graphical QEMU gate",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_arm64_live_iso.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
+        "arm64/scripts/test_arm64_iso_qemu.sh",
+        "arm64/scripts/test_arm64_iso_qemu_v2.sh"
       ]
     },
     {
@@ -2476,6 +2558,9 @@
       ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
       ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
     ],
+    "arm64/locks/arch-replacements/artifact-lock.json": [
+      ".github/workflows/arm64-build-arch-replacements.yml"
+    ],
     "arm64/locks/build-dependency-repository-v2/artifact-lock.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml",
       ".github/workflows/arm64-merge-final-package-repository-v2.yml",
@@ -2581,6 +2666,9 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
+    "arm64/locks/final-recovered-iso/release-lock.json": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml"
+    ],
     "arm64/locks/final-rootfs-v2/artifact-lock.json": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
@@ -2644,9 +2732,16 @@
     "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
+    "arm64/locks/recovered-rootfs/artifact-lock.json": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml"
+    ],
+    "arm64/locks/recovered-rootfs/rootfs-verification.json": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml"
+    ],
     "arm64/locks/reference/amd64-reference.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-build-arch-replacements.yml",
       ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
@@ -2779,6 +2874,7 @@
     ],
     "arm64/scripts/apply_reference_config_overlay.py": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
@@ -2802,10 +2898,15 @@
       ".github/workflows/arm64-stage0-live-v5.yml",
       ".github/workflows/arm64-stage0-v5-retest.yml"
     ],
+    "arm64/scripts/build_arch_replacement_packages.py": [
+      ".github/workflows/arm64-build-arch-replacements.yml"
+    ],
     "arm64/scripts/build_arm64_installed_disk.sh": [
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/build_arm64_live_iso.sh": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/build_exact_arm64_rootfs.sh": [
@@ -2874,6 +2975,9 @@
     ],
     "arm64/scripts/build_package_acquisition_plan_v4.py": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
+    ],
+    "arm64/scripts/build_recovered_exact_arm64_rootfs.sh": [
+      ".github/workflows/arm64-build-recovered-exact-rootfs.yml"
     ],
     "arm64/scripts/build_recovery_stage0_v1.sh": [
       ".github/workflows/arm64-recovery-stage0-v1.yml"
@@ -2948,7 +3052,12 @@
     "arm64/scripts/filter_arm64_binary_lock_v2.py": [
       ".github/workflows/arm64-static-audit.yml"
     ],
+    "arm64/scripts/finalize_arm64_live_rootfs.sh": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      ".github/workflows/arm64-final-graphical-gate-maintenance.yml"
+    ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
+      ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh": [
@@ -3214,7 +3323,12 @@
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
+      ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
+    ],
+    "arm64/scripts/test_arm64_iso_qemu_v2.sh": [
+      ".github/workflows/arm64-final-graphical-gate-maintenance.yml"
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
@@ -3304,6 +3418,25 @@
   },
   "errors": [
     {
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "local_path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
+      "local_path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 55, column 1:\n    \"\"\"\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 56, column 16:\n              new=\"\"\"          positive=('arm64','a ... \n                   ^"
+    },
+    {
       "path": ".github/workflows/arm64-pagination-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
     },
@@ -3333,6 +3466,11 @@
   ],
   "warnings": [
     {
+      "path": ".github/workflows/arm64-build-arch-replacements.yml",
+      "local_path": "arm64/locks/arch-replacements/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
       "local_path": "arm64/locks/final-iso-v2/release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -3360,6 +3498,21 @@
     {
       "path": ".github/workflows/arm64-build-qtbase.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "local_path": "arm64/locks/final-recovered-iso/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "local_path": "arm64/locks/recovered-rootfs/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "local_path": "arm64/locks/recovered-rootfs/rootfs-verification.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
