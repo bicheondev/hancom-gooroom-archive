@@ -1,0 +1,114 @@
+name: ARM64 port - exact package acquisition plan v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-package-acquisition-plan-v3.yml'
+      - 'arm64/scripts/build_package_acquisition_plan_v3.py'
+      - 'arm64/scripts/build_package_acquisition_plan_v4.py'
+      - 'arm64/locks/debian-arm64/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/rebuild-release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-package-acquisition-plan
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out all persistent exact package inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Build a source-authority-neutral persistent acquisition plan
+        id: plan
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/acquisition-plan-v3
+          mkdir -p work/acquisition-plan-v3
+          set +e
+          python3 arm64/scripts/build_package_acquisition_plan_v4.py \
+            --normalized-map arm64/locks/debian-arm64/normalized-package-map.json \
+            --vendor-binary-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
+            --rebuild-results arm64/locks/rebuild-results \
+            --rebuild-release-lock arm64/locks/rebuild-release/rebuild-release-lock.json \
+            --output-dir work/acquisition-plan-v3 \
+            2>&1 | tee work/acquisition-plan-v3/workflow-plan.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          ready="$(jq -r '.ready_for_fetch' work/acquisition-plan-v3/summary.json)"
+          blockers="$(jq -r '.blocker_count' work/acquisition-plan-v3/summary.json)"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "blocker_count=$blockers" >> "$GITHUB_OUTPUT"
+          find work/acquisition-plan-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/acquisition-plan-v3/LOCKSUMS.sha256
+          cat work/acquisition-plan-v3/summary.json
+
+      - name: Upload the full plan and exact blockers
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-package-acquisition-plan-v3-${{ github.run_id }}
+          path: work/acquisition-plan-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the exact package acquisition lock
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/acquisition-plan
+          mkdir -p arm64/locks/acquisition-plan
+          cp -a work/acquisition-plan-v3/. arm64/locks/acquisition-plan/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/acquisition-plan
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock persistent exact ARM64 package acquisition plan v3'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch exact rootfs only when every included package is locked
+        if: always() && steps.plan.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-exact-rootfs-v2.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
+
+      - name: Enforce a complete persistent plan after saving blockers
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.plan.outputs.exit_code }}' = '0'
+          jq -e '.ready_for_fetch == true and .blocker_count == 0' \
+            work/acquisition-plan-v3/summary.json
