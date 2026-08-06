@@ -7,6 +7,7 @@ on:
       - '.github/workflows/arm64-package-smoke.yml'
       - 'arm64/scripts/build_locked_source_arm64.sh'
       - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/effective-sources/**'
   workflow_dispatch:
 
 permissions:
@@ -18,27 +19,30 @@ concurrency:
 
 jobs:
   accountsservice:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     steps:
       - name: Check out exact locks and builder
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: arm64-port
 
-      - name: Install host verification tools
+      - name: Verify the native ARM64 build host
         run: |
           set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            curl jq dpkg-dev ca-certificates
-
-      - name: Enable ARM64 userspace execution
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+            git jq dpkg-dev ca-certificates file
 
       - name: Build accountsservice from the exact locked commit
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
         run: |
           set -euxo pipefail
           chmod +x arm64/scripts/build_locked_source_arm64.sh
@@ -48,23 +52,50 @@ jobs:
             accountsservice \
             work/accountsservice-arm64
 
-      - name: Verify package metadata
+      - name: Verify package, source, and machine metadata
         run: |
           set -euxo pipefail
+          jq -e '
+            .source == "accountsservice"
+            and .source_version == "0.6.55-3+grm3u1"
+            and .target_architecture == "arm64"
+            and .debian_snapshot == "20230730T235959Z"
+          ' work/accountsservice-arm64/build-lock.json
+          jq -e '
+            .commit_sha == .verified_commit_sha
+            and .tree_sha == .verified_tree_sha
+          ' work/accountsservice-arm64/source-lock-evidence.json
+
+          found=0
           for deb in work/accountsservice-arm64/*.deb; do
+            found=1
             dpkg-deb -f "$deb" Package Version Architecture
             test "$(dpkg-deb -f "$deb" Version)" = '0.6.55-3+grm3u1'
             case "$(dpkg-deb -f "$deb" Architecture)" in
               arm64|all) ;;
               *) exit 1 ;;
             esac
-          done
 
-      - name: Upload exact ARM64 package evidence
-        uses: actions/upload-artifact@v4
+            root="$(mktemp -d)"
+            dpkg-deb -x "$deb" "$root"
+            find "$root" -type f -print0 \
+              | xargs -0 -r file \
+              > "$deb.file-report.txt"
+            if grep -E 'ELF .* (x86-64|Intel 80386)' "$deb.file-report.txt"; then
+              echo "x86 executable leaked into $deb" >&2
+              exit 1
+            fi
+            rm -rf "$root"
+          done
+          test "$found" = 1
+          sha256sum --check work/accountsservice-arm64/SHA256SUMS
+
+      - name: Upload exact ARM64 package and failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: accountsservice-0.6.55-3-grm3u1-arm64
           path: work/accountsservice-arm64
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
           compression-level: 9
