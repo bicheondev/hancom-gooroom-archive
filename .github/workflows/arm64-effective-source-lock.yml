@@ -1,0 +1,97 @@
+name: ARM64 port - enforce effective exact source lock
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-effective-source-lock.yml'
+      - 'arm64/scripts/merge_exact_source_locks.py'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/vendor-pool-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-effective-source-lock
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check whether both exact source evidence sets exist
+        id: inputs
+        run: |
+          set -euxo pipefail
+          ready=false
+          if [ -f arm64/locks/sources/source-lock.json ] \
+             && [ -f arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json ]; then
+            ready=true
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Merge exact source authorities
+        if: steps.inputs.outputs.ready == 'true'
+        id: merge
+        run: |
+          set -uxo pipefail
+          rm -rf work/effective-source-lock
+          set +e
+          python3 arm64/scripts/merge_exact_source_locks.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --git-lock arm64/locks/sources/source-lock.json \
+            --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json \
+            --output-dir work/effective-source-lock
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/effective-source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/effective-source-lock-sums
+          mv /tmp/effective-source-lock-sums work/effective-source-lock/LOCKSUMS.sha256
+          cat work/effective-source-lock/effective-source-lock-summary.json
+
+      - name: Upload effective source lock evidence
+        if: steps.inputs.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-3.3-effective-source-lock
+          path: work/effective-source-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record effective source lock
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/effective-sources
+          mkdir -p arm64/locks/effective-sources
+          cp -a work/effective-source-lock/. arm64/locks/effective-sources/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/effective-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Enforce effective exact source lock for ARM64 build'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Refuse a build with unresolved ARM64 sources
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          test '${{ steps.merge.outputs.exit_code }}' = '0'
+          test "$(jq -r '.build_allowed' \
+            work/effective-source-lock/effective-source-lock-summary.json)" = true
