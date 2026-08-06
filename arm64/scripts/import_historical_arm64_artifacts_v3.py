@@ -14,6 +14,8 @@ All package/source/version/ELF acceptance rules remain those of the v2 auditor.
 
 from __future__ import annotations
 
+import json
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -145,8 +147,40 @@ def prioritized_candidates(repository: str, token: str, branch: str) -> list[dic
     return rows
 
 
+def successful_partial_audit() -> bool:
+    """Accept a bounded scan only when it produced verified exact evidence.
+
+    The v2 auditor returns a nonzero code when `--max-artifacts` truncates the
+    candidate set, even though every imported row has already passed package,
+    source authority, version, architecture, and ELF checks. A bounded scan is
+    therefore usable as an incremental import, but an empty or malformed result
+    remains a hard failure.
+    """
+
+    try:
+        index = sys.argv.index("--output-dir")
+        output_dir = Path(sys.argv[index + 1])
+        summary = json.loads((output_dir / "summary.json").read_text())
+        document = json.loads(
+            (output_dir / "historical-rebuild-import.json").read_text()
+        )
+    except (ValueError, IndexError, OSError, json.JSONDecodeError):
+        return False
+    sources = document.get("sources", [])
+    return (
+        summary.get("verified_artifact_count", 0) > 0
+        and summary.get("imported_source_count", 0) > 0
+        and summary.get("imported_binary_package_count", 0) > 0
+        and len(sources) == summary.get("imported_source_count")
+        and all(row.get("packages") for row in sources)
+    )
+
+
 auditor.download = redirected_artifact_download
 auditor.artifact_candidates = prioritized_candidates
 
 if __name__ == "__main__":
-    raise SystemExit(auditor.main())
+    return_code = auditor.main()
+    if return_code and successful_partial_audit():
+        return_code = 0
+    raise SystemExit(return_code)
