@@ -1,0 +1,61 @@
+name: ARM64 port - normalize rebuild workflow
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-rebuild-workflow-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-rebuild-workflow-maintenance
+  cancel-in-progress: true
+
+jobs:
+  normalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Keep one rebuild workflow and fix deterministic checksums
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-native-rebuild-batch-v2.yml')
+          text = path.read_text(encoding='utf-8')
+          old = "find work/rebuild-results -type f -print0 \\\n            | sort -z \\\n            | xargs -0 sha256sum \\\n            > work/rebuild-results/LOCKSUMS.sha256"
+          new = "find work/rebuild-results -type f ! -name LOCKSUMS.sha256 -print0 \\\n            | sort -z \\\n            | xargs -0 sha256sum \\\n            > work/rebuild-results/LOCKSUMS.sha256"
+          if old not in text and new not in text:
+              raise SystemExit('expected checksum block was not found')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+          git rm -f .github/workflows/arm64-native-rebuild-batch.yml 2>/dev/null || true
+          git rm -f .github/workflows/arm64-rebuild-workflow-maintenance.yml
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-native-rebuild-batch-v2.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Normalize native ARM64 rebuild workflow'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
