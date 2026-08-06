@@ -18,8 +18,8 @@
     "source": "chromium",
     "version": "111.0.5563.110-1~deb11u1",
     "snapshot": "20230730T235959Z",
-    "snapshot_file_base_url": "https://snapshot.debian.org/file",
-    "retrieval": "content-addressed HTTPS by locked SHA-1; Debian .dsc signature and all locked member hashes must verify before extraction",
+    "content_addressed_base": "https://snapshot.debian.org/file",
+    "retrieval": "content-addressed HTTPS by locked SHA-1; size, SHA-1, SHA-256, DSC Source/Version and DSC member checksums must verify before extraction",
     "files": {
       "dsc": {
         "name": "chromium_111.0.5563.110-1~deb11u1.dsc",
@@ -47,7 +47,8 @@
     ]
   },
   "composition": {
-    "extract": "orig-only-strip-one-component",
+    "extract": "upstream.files.orig only",
+    "strip_components": 1,
     "overlay": "replace debian/ with exact packaging Git tree",
     "do_not_apply": "Debian debian.tar.xz",
     "reason": "the exact Gooroom Git commit is the authoritative downstream packaging delta"
