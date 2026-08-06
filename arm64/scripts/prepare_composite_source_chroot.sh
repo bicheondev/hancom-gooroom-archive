@@ -68,25 +68,69 @@ mkdir -p "$DOWNLOAD_DIR" "$COMPOSITE_ROOT"
 cd "$DOWNLOAD_DIR"
 
 # Suite source indexes retain one current source version per snapshot. A later
-# snapshot can therefore still hold the exact files while no longer advertising
-# the historical version to apt-get source. Fetch immutable Snapshot file
-# objects by the independently locked SHA-1 identity, then enforce SHA-256 and
-# size as a second, stronger gate before any extraction.
+# snapshot can therefore still hold exact files while no longer advertising the
+# historical version to apt-get source. Prefer the immutable content-addressed
+# object. If Snapshot's content object endpoint returns an error, try only the
+# exact versioned pool URL already recorded in the component lock. Every
+# candidate is accepted solely after size, SHA-1 and SHA-256 all match.
 download_member() {
   local key="$1"
-  local filename sha1 url
+  local filename expected_size expected_sha1 expected_sha256 primary_url pool_url selected_url
   filename="$(jq -er --arg key "$key" '.upstream.files[$key].name' "$COMPONENT_LOCK")"
-  sha1="$(jq -er --arg key "$key" '.upstream.files[$key].sha1' "$COMPONENT_LOCK")"
+  expected_size="$(jq -er --arg key "$key" '.upstream.files[$key].size' "$COMPONENT_LOCK")"
+  expected_sha1="$(jq -er --arg key "$key" '.upstream.files[$key].sha1' "$COMPONENT_LOCK")"
+  expected_sha256="$(jq -er --arg key "$key" '.upstream.files[$key].sha256' "$COMPONENT_LOCK")"
+  pool_url="$(jq -er --arg key "$key" '.upstream.files[$key].pool_url // ""' "$COMPONENT_LOCK")"
+
   [[ "$filename" =~ ^[A-Za-z0-9][A-Za-z0-9+_.~:-]*$ ]] || {
     echo "invalid locked source filename: $filename" >&2
     exit 3
   }
-  [[ "$sha1" =~ ^[0-9a-f]{40}$ ]] || {
-    echo "invalid locked source SHA-1: $sha1" >&2
+  [[ "$expected_size" =~ ^[0-9]+$ ]] || {
+    echo "invalid locked source size: $expected_size" >&2
     exit 3
   }
-  url="${SNAPSHOT_FILE_BASE}/${sha1}"
-  python3 - "$url" "$filename" <<'PY_DOWNLOAD'
+  [[ "$expected_sha1" =~ ^[0-9a-f]{40}$ ]] || {
+    echo "invalid locked source SHA-1: $expected_sha1" >&2
+    exit 3
+  }
+  [[ "$expected_sha256" =~ ^[0-9a-f]{64}$ ]] || {
+    echo "invalid locked source SHA-256: $expected_sha256" >&2
+    exit 3
+  }
+
+  primary_url="${SNAPSHOT_FILE_BASE}/${expected_sha1}"
+  if [ -n "$pool_url" ]; then
+    case "$pool_url" in
+      https://snapshot.debian.org/archive/*|http://snapshot.debian.org/archive/*) ;;
+      *)
+        echo "unexpected locked Snapshot pool URL: $pool_url" >&2
+        exit 3
+        ;;
+    esac
+    python3 - "$pool_url" "$filename" <<'PY_POOL_URL'
+import sys
+from urllib.parse import unquote, urlparse
+
+url, expected_name = sys.argv[1:]
+parsed = urlparse(url)
+actual_name = unquote(parsed.path.rsplit("/", 1)[-1])
+if actual_name != expected_name:
+    raise SystemExit(
+        f"locked pool URL filename mismatch: {actual_name!r} != {expected_name!r}"
+    )
+PY_POOL_URL
+  fi
+
+  selected_url="$(
+    python3 - \
+      "$primary_url" \
+      "$pool_url" \
+      "$filename" \
+      "$expected_size" \
+      "$expected_sha1" \
+      "$expected_sha256" <<'PY_DOWNLOAD'
+import hashlib
 import os
 import shutil
 import sys
@@ -95,28 +139,60 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-url, destination = sys.argv[1:]
+primary_url, fallback_url, destination, size_raw, expected_sha1, expected_sha256 = sys.argv[1:]
+expected_size = int(size_raw)
 path = Path(destination)
 temporary = path.with_name(path.name + ".partial")
-headers = {"User-Agent": "hancom-gooroom-arm64-exact-source/1"}
-last_error = None
-for attempt in range(5):
-    try:
-        request = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(request, timeout=180) as response, temporary.open("wb") as output:
-            shutil.copyfileobj(response, output, length=1024 * 1024)
-        os.replace(temporary, path)
-        break
-    except (OSError, urllib.error.URLError) as error:
-        last_error = error
-        temporary.unlink(missing_ok=True)
-        if attempt == 4:
-            raise SystemExit(f"failed to download {url}: {error}")
-        time.sleep(2 ** attempt)
-else:
-    raise SystemExit(f"failed to download {url}: {last_error}")
+headers = {"User-Agent": "hancom-gooroom-arm64-exact-source/2"}
+urls = [primary_url]
+if fallback_url and fallback_url != primary_url:
+    urls.append(fallback_url)
+errors = []
+
+for url in urls:
+    for attempt in range(5):
+        try:
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=180) as response, temporary.open("wb") as output:
+                sha1 = hashlib.sha1()
+                sha256 = hashlib.sha256()
+                size = 0
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    output.write(chunk)
+                    sha1.update(chunk)
+                    sha256.update(chunk)
+                    size += len(chunk)
+            actual_sha1 = sha1.hexdigest()
+            actual_sha256 = sha256.hexdigest()
+            if size != expected_size:
+                raise ValueError(f"size {size} != {expected_size}")
+            if actual_sha1 != expected_sha1:
+                raise ValueError(f"SHA-1 {actual_sha1} != {expected_sha1}")
+            if actual_sha256 != expected_sha256:
+                raise ValueError(f"SHA-256 {actual_sha256} != {expected_sha256}")
+            os.replace(temporary, path)
+            print(url)
+            raise SystemExit(0)
+        except (OSError, urllib.error.URLError, ValueError) as error:
+            temporary.unlink(missing_ok=True)
+            errors.append(f"{url} attempt {attempt + 1}: {error}")
+            if attempt < 4:
+                time.sleep(2 ** attempt)
+            else:
+                break
+
+raise SystemExit("failed exact source download:\n" + "\n".join(errors))
 PY_DOWNLOAD
-  printf '%s\t%s\t%s\n' "$key" "$filename" "$url" \
+  )"
+  [ -n "$selected_url" ] || {
+    echo "exact source downloader did not report a selected URL" >&2
+    exit 3
+  }
+  printf '%s\t%s\t%s\t%s\n' \
+    "$key" "$filename" "$primary_url" "$selected_url" \
     >> "$OUTPUT_DIR/upstream-source-downloads.tsv"
 }
 
@@ -148,8 +224,8 @@ verify_member() {
     echo "source member SHA-256 mismatch for $filename" >&2
     exit 3
   }
-  printf '%s\t%s\t%s\t%s\n' \
-    "$key" "$filename" "$actual_size" "$actual_sha256" \
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$key" "$filename" "$actual_size" "$actual_sha1" "$actual_sha256" \
     >> "$OUTPUT_DIR/upstream-source-members.tsv"
 }
 
@@ -159,6 +235,34 @@ for key in dsc orig debian; do
   download_member "$key"
   verify_member "$key"
 done
+
+python3 - \
+  "$OUTPUT_DIR/upstream-source-downloads.tsv" \
+  "$OUTPUT_DIR/upstream-source-resolved-urls.json" <<'PY_RESOLVED_URLS'
+import json
+import sys
+from pathlib import Path
+
+source, destination = map(Path, sys.argv[1:])
+records = []
+for raw in source.read_text(encoding="utf-8").splitlines():
+    if not raw:
+        continue
+    key, filename, primary_url, selected_url = raw.split("\t")
+    records.append(
+        {
+            "key": key,
+            "filename": filename,
+            "primary_content_url": primary_url,
+            "selected_url": selected_url,
+            "used_locked_pool_fallback": selected_url != primary_url,
+        }
+    )
+destination.write_text(
+    json.dumps(records, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
+PY_RESOLVED_URLS
 
 DSC_FILENAME="$(jq -er '.upstream.files.dsc.name' "$COMPONENT_LOCK")"
 python3 - "$DSC_FILENAME" "$COMPONENT_LOCK" <<'PY_DSC'
@@ -259,6 +363,7 @@ DSC_SHA256="$(jq -er '.upstream.files.dsc.sha256' "$COMPONENT_LOCK")"
 DEBIAN_SHA256="$(jq -er '.upstream.files.debian.sha256' "$COMPONENT_LOCK")"
 
 jq \
+  --slurpfile resolved_downloads "$OUTPUT_DIR/upstream-source-resolved-urls.json" \
   --arg lock_sha256 "$LOCK_SHA256" \
   --arg snapshot "$SNAPSHOT" \
   --arg file_base "$SNAPSHOT_FILE_BASE" \
@@ -268,7 +373,7 @@ jq \
   --arg orig_sha256 "$ORIG_SHA256" \
   --arg debian_sha256 "$DEBIAN_SHA256" '
   {
-    schema: 2,
+    schema: 3,
     policy: .policy,
     source: .source,
     source_version: .source_version,
@@ -281,6 +386,7 @@ jq \
     upstream: .upstream + {
       verified_snapshot: $snapshot,
       verified_content_addressed_base: $file_base,
+      resolved_downloads: $resolved_downloads[0],
       verified_dsc_identity: true,
       verified_files: {
         dsc_sha256: $dsc_sha256,
