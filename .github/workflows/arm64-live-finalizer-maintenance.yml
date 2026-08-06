@@ -1,0 +1,61 @@
+name: ARM64 port - preserve live finalization evidence
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-live-finalizer-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-live-finalizer-maintenance
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Preserve generated evidence until host collection
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('arm64/scripts/finalize_arm64_live_rootfs.sh')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              'rm -rf /tmp/* /var/tmp/*\n',
+              "find /tmp -mindepth 1 -maxdepth 1 \\\n  ! -name final-installed-packages.tsv \\\n  ! -name systemd-unit-files.txt \\\n  -exec rm -rf '{}' +\nrm -rf /var/tmp/*\n",
+          )
+          marker = 'rm -f "$ROOTFS/tmp/finalize-hancom-arm64.sh"\n'
+          replacement = marker + 'rm -f "$ROOTFS/tmp/final-installed-packages.tsv" \\\n  "$ROOTFS/tmp/systemd-unit-files.txt"\n'
+          if '"$ROOTFS/tmp/final-installed-packages.tsv" \\\' not in text:
+              if marker not in text:
+                  raise SystemExit('host cleanup marker not found')
+              text = text.replace(marker, replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git rm -f .github/workflows/arm64-live-finalizer-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/finalize_arm64_live_rootfs.sh
+          git commit -m 'Preserve ARM64 live finalization evidence'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
