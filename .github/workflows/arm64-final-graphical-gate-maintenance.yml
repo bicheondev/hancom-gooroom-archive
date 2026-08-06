@@ -1,0 +1,87 @@
+name: ARM64 port - upgrade final graphical QEMU gate
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-final-graphical-gate-maintenance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-graphical-gate-maintenance
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Use v2 finalizer and QEMU gate everywhere
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          paths=[
+              Path('.github/workflows/arm64-final-live-iso.yml'),
+              Path('.github/workflows/arm64-final-from-recovered-rootfs.yml'),
+          ]
+          changed=[]
+          for path in paths:
+              if not path.exists():continue
+              text=path.read_text(encoding='utf-8')
+              original=text
+              text=text.replace(
+                  "      - 'arm64/scripts/finalize_arm64_live_rootfs.sh'\n",
+                  "      - 'arm64/scripts/finalize_arm64_live_rootfs.sh'\n      - 'arm64/scripts/finalize_arm64_live_rootfs_v2.sh'\n",
+              )
+              text=text.replace(
+                  "      - 'arm64/scripts/test_arm64_iso_qemu.sh'\n",
+                  "      - 'arm64/scripts/test_arm64_iso_qemu.sh'\n      - 'arm64/scripts/test_arm64_iso_qemu_v2.sh'\n",
+              )
+              text=text.replace(
+                  'arm64/scripts/finalize_arm64_live_rootfs.sh \\\n',
+                  'arm64/scripts/finalize_arm64_live_rootfs_v2.sh \\\n',
+              )
+              text=text.replace(
+                  'arm64/scripts/test_arm64_iso_qemu.sh \\\n',
+                  'arm64/scripts/test_arm64_iso_qemu_v2.sh \\\n',
+              )
+              text=text.replace(
+                  'arm64/scripts/finalize_arm64_live_rootfs.sh \\\n            arm64/scripts/build_arm64_live_iso.sh \\\n            arm64/scripts/test_arm64_iso_qemu.sh',
+                  'arm64/scripts/finalize_arm64_live_rootfs_v2.sh \\\n            arm64/scripts/build_arm64_live_iso.sh \\\n            arm64/scripts/test_arm64_iso_qemu_v2.sh',
+              )
+              text=text.replace(
+                  "jq -e '.passed == true and .marker_found == true'",
+                  "jq -e '.passed == true and .boot_marker_found == true and .graphical_marker_found == true'",
+              )
+              if text!=original:
+                  path.write_text(text,encoding='utf-8')
+                  changed.append(str(path))
+          print('\n'.join(changed))
+          PY
+
+          bash -n arm64/scripts/finalize_arm64_live_rootfs_v2.sh
+          bash -n arm64/scripts/test_arm64_iso_qemu_v2.sh
+          git rm -f .github/workflows/arm64-final-graphical-gate-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-final-live-iso.yml \
+            .github/workflows/arm64-final-from-recovered-rootfs.yml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Require final ARM64 graphical QEMU marker'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
