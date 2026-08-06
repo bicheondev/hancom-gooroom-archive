@@ -1,0 +1,171 @@
+name: ARM64 port - audit exact libsecurity binary provenance
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-libsecurity-binary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-libsecurity-binary-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PACKAGING_REPOSITORY: gooroom/gooroom-libsecurity-extensions
+      PACKAGING_COMMIT: 4990bab95ae1dcaa29f38836da83edfa0969ed73
+      PACKAGING_TREE: e1dce97d3cd69331047c01940b2593a0eaf2307a
+      PACKAGED_XSM_BLOB: 416fbb7260c30d5075b1da6dd32aa8d81ef4a49f
+      UPSTREAM_REPOSITORY: ultract/X.org-Security-Module
+      UPSTREAM_COMMIT: fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7
+      UPSTREAM_TREE: aef0ff9c73f625763b3822c7cfa7179799f26637
+    steps:
+      - name: Check out audit workflow
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Install binary inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils file git jq python3
+
+      - name: Fetch and verify exact packaging and recovered source trees
+        run: |
+          set -euxo pipefail
+          rm -rf work/libsecurity-audit
+          mkdir -p work/libsecurity-audit
+
+          git init work/libsecurity-audit/packaging
+          git -C work/libsecurity-audit/packaging remote add origin \
+            "https://github.com/${PACKAGING_REPOSITORY}.git"
+          git -C work/libsecurity-audit/packaging fetch --depth=1 origin \
+            "$PACKAGING_COMMIT"
+          git -C work/libsecurity-audit/packaging checkout --detach FETCH_HEAD
+          test "$(git -C work/libsecurity-audit/packaging rev-parse HEAD)" = \
+            "$PACKAGING_COMMIT"
+          test "$(git -C work/libsecurity-audit/packaging rev-parse 'HEAD^{tree}')" = \
+            "$PACKAGING_TREE"
+          test "$(git -C work/libsecurity-audit/packaging hash-object lib/xsm.so)" = \
+            "$PACKAGED_XSM_BLOB"
+
+          git init work/libsecurity-audit/upstream
+          git -C work/libsecurity-audit/upstream remote add origin \
+            "https://github.com/${UPSTREAM_REPOSITORY}.git"
+          git -C work/libsecurity-audit/upstream fetch --depth=1 origin \
+            "$UPSTREAM_COMMIT"
+          git -C work/libsecurity-audit/upstream checkout --detach FETCH_HEAD
+          test "$(git -C work/libsecurity-audit/upstream rev-parse HEAD)" = \
+            "$UPSTREAM_COMMIT"
+          test "$(git -C work/libsecurity-audit/upstream rev-parse 'HEAD^{tree}')" = \
+            "$UPSTREAM_TREE"
+
+      - name: Record exact x86 payload identity and machine metadata
+        run: |
+          set -euxo pipefail
+          out=work/libsecurity-audit/evidence
+          mkdir -p "$out"
+          binary=work/libsecurity-audit/packaging/lib/xsm.so
+
+          sha256sum "$binary" | tee "$out/packaged-xsm.sha256"
+          stat --printf='size=%s\nmode=%a\n' "$binary" \
+            | tee "$out/packaged-xsm.stat"
+          file -L "$binary" | tee "$out/packaged-xsm.file"
+          readelf -hW "$binary" > "$out/packaged-xsm.elf-header.txt"
+          readelf -dW "$binary" > "$out/packaged-xsm.dynamic.txt"
+          readelf -nW "$binary" > "$out/packaged-xsm.notes.txt"
+          readelf -sW "$binary" > "$out/packaged-xsm.symbols.txt"
+          objdump -p "$binary" > "$out/packaged-xsm.private-headers.txt"
+          objdump -d -M intel "$binary" > "$out/packaged-xsm.disassembly.txt"
+          strings -a -t x "$binary" > "$out/packaged-xsm.strings-offsets.txt"
+          strings -a "$binary" | LC_ALL=C sort -u \
+            > "$out/packaged-xsm.strings.sorted.txt"
+
+      - name: Compare packaged payload strings with the public source anchor
+        run: |
+          set -euxo pipefail
+          out=work/libsecurity-audit/evidence
+          upstream=work/libsecurity-audit/upstream
+          packaging=work/libsecurity-audit/packaging
+
+          cp "$upstream/xsm.c" "$out/public-source-anchor-xsm.c"
+          cp "$upstream/build.sh" "$out/public-source-anchor-build.sh"
+          cp "$packaging/debian/changelog" "$out/exact-packaging-changelog"
+
+          {
+            echo 'packaging_repository='"$PACKAGING_REPOSITORY"
+            echo 'packaging_commit='"$PACKAGING_COMMIT"
+            echo 'packaging_tree='"$PACKAGING_TREE"
+            echo 'packaged_xsm_blob='"$PACKAGED_XSM_BLOB"
+            echo 'upstream_repository='"$UPSTREAM_REPOSITORY"
+            echo 'upstream_commit='"$UPSTREAM_COMMIT"
+            echo 'upstream_tree='"$UPSTREAM_TREE"
+          } > "$out/provenance.env"
+
+          python3 - "$out/packaged-xsm.strings.sorted.txt" "$upstream/xsm.c" \
+            "$out/source-string-comparison.json" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+binary_strings = set(Path(sys.argv[1]).read_text(errors="replace").splitlines())
+source = Path(sys.argv[2]).read_text(encoding="utf-8", errors="strict")
+source_strings = {
+    bytes(value, "utf-8").decode("unicode_escape")
+    for value in re.findall(r'"((?:[^"\\]|\\.)*)"', source)
+}
+interesting_prefixes = (
+    "/usr/", "/lib/", "gnome-", "xfce", "cinnamon", "vmtoolsd",
+    "libjson", "Xsm", "screenshot", "screencast", "clipboard",
+)
+interesting_binary = sorted(
+    item for item in binary_strings
+    if item.startswith(interesting_prefixes) or any(token in item for token in interesting_prefixes)
+)
+result = {
+    "schema": 1,
+    "binary_interesting_strings": interesting_binary,
+    "binary_strings_absent_from_public_source_literals": sorted(
+        item for item in interesting_binary if item not in source_strings
+    ),
+    "public_source_literals_absent_from_binary_strings": sorted(
+        item for item in source_strings
+        if (item.startswith(interesting_prefixes) or any(token in item for token in interesting_prefixes))
+        and item not in binary_strings
+    ),
+}
+Path(sys.argv[3]).write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
+PY
+          cat "$out/source-string-comparison.json"
+
+      - name: Assert the exact payload is not ARM64
+        run: |
+          set -euxo pipefail
+          out=work/libsecurity-audit/evidence
+          grep -Eq 'ELF 64-bit.*x86-64|Machine:[[:space:]]+Advanced Micro Devices X86-64' \
+            "$out/packaged-xsm.file" "$out/packaged-xsm.elf-header.txt"
+          ! grep -Eq 'AArch64|ARM aarch64' \
+            "$out/packaged-xsm.file" "$out/packaged-xsm.elf-header.txt"
+          printf '%s\n' \
+            'status=confirmed-embedded-x86-elf-source-recovery-required' \
+            > "$out/audit-status.txt"
+
+      - name: Upload immutable source-recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-libsecurity-extensions-0.1.7-grm3u1-source-recovery-audit
+          path: work/libsecurity-audit/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
