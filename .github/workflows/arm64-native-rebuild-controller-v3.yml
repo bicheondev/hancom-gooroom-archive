@@ -1,0 +1,348 @@
+name: ARM64 port - native exact-source rebuild controller v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-native-rebuild-controller-v3.yml'
+      - 'arm64/scripts/build_locked_source_arm64_v5.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/build_locked_dsc_source_arm64_v2.sh'
+      - 'arm64/scripts/verify_arm64_rebuild_v3.py'
+      - 'arm64/scripts/collect_native_rebuild_results_v4.py'
+      - 'arm64/scripts/select_native_rebuild_batch_v3.py'
+      - 'arm64/scripts/select_next_native_rebuild_wave_v3.py'
+      - 'arm64/scripts/select_baseline_reverification_v3.py'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/keys/source-signing/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Rebuild selection mode
+        required: true
+        default: backlog
+        type: choice
+        options: [backlog, baseline, batch]
+      batch:
+        description: Curated batch name when mode=batch
+        required: false
+        default: desktop-core
+        type: choice
+        options: [desktop-core, desktop-extra, system-core, multimedia]
+      limit:
+        description: Maximum sources in this wave
+        required: true
+        default: '6'
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-native-controller-v3-${{ inputs.mode || 'backlog' }}-${{ inputs.batch || 'none' }}
+  cancel-in-progress: false
+
+env:
+  SOURCE_LOCK: arm64/locks/effective-sources-v3/effective-source-lock.json
+  REFERENCE: arm64/locks/reference/amd64-reference.json
+  BATCH_PLAN: arm64/rebuild-batches.json
+  RESULTS_ROOT: arm64/locks/rebuild-results
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      batch: ${{ steps.plan.outputs.batch }}
+      limit: ${{ steps.plan.outputs.limit }}
+      selected_count: ${{ steps.plan.outputs.selected_count }}
+      remaining_count: ${{ steps.plan.outputs.remaining_count }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Check out exact authorities and prior results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Select one bounded exact-source wave
+        id: plan
+        env:
+          REQUESTED_MODE: ${{ inputs.mode || 'backlog' }}
+          REQUESTED_BATCH: ${{ inputs.batch || 'desktop-core' }}
+          REQUESTED_LIMIT: ${{ inputs.limit || '6' }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f "$SOURCE_LOCK"
+          test -f "$REFERENCE"
+          test -f "$BATCH_PLAN"
+          mode="$REQUESTED_MODE"
+          batch="$REQUESTED_BATCH"
+          limit="$REQUESTED_LIMIT"
+          [[ "$limit" =~ ^[0-9]+$ ]]
+          rm -rf work/controller-plan
+          mkdir -p work/controller-plan
+          case "$mode" in
+            backlog)
+              python3 arm64/scripts/select_next_native_rebuild_wave_v3.py \
+                --lock "$SOURCE_LOCK" \
+                --reference "$REFERENCE" \
+                --plan "$BATCH_PLAN" \
+                --results "$RESULTS_ROOT" \
+                --limit "$limit" \
+                --output work/controller-plan/plan.json
+              ;;
+            baseline)
+              python3 arm64/scripts/select_baseline_reverification_v3.py \
+                --lock "$SOURCE_LOCK" \
+                --reference "$REFERENCE" \
+                --plan "$BATCH_PLAN" \
+                --results "$RESULTS_ROOT" \
+                --output work/controller-plan/plan.json
+              ;;
+            batch)
+              python3 arm64/scripts/select_native_rebuild_batch_v3.py \
+                --lock "$SOURCE_LOCK" \
+                --reference "$REFERENCE" \
+                --plan "$BATCH_PLAN" \
+                --batch "$batch" \
+                --output work/controller-plan/plan.json
+              ;;
+            *) echo "unsupported mode: $mode" >&2; exit 64 ;;
+          esac
+          selected="$(jq -r '.summary.selected_count // 0' work/controller-plan/plan.json)"
+          remaining="$(jq -r '.summary.remaining_unattempted_count // 0' work/controller-plan/plan.json)"
+          matrix="$(jq -c '.matrix' work/controller-plan/plan.json)"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "batch=$batch" >> "$GITHUB_OUTPUT"
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+          echo "selected_count=$selected" >> "$GITHUB_OUTPUT"
+          echo "remaining_count=$remaining" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          cat work/controller-plan/plan.json
+
+      - name: Upload exact selection evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-controller-v3-plan-${{ github.run_id }}
+          path: work/controller-plan
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.selected_count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 210
+    steps:
+      - name: Check out exact source authority and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Install native source package and verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git curl gnupg gpgv jq dpkg-dev ca-certificates \
+            python3 coreutils binutils file
+          docker version
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v5.sh \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/build_locked_dsc_source_arm64_v2.sh
+          python3 -m py_compile arm64/scripts/verify_arm64_rebuild_v3.py
+
+      - name: Build the exact selected source authority natively
+        id: build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_REQUIRED_PACKAGES: ${{ matrix.required_native_packages_space }}
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ env.REFERENCE }}
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          bash arm64/scripts/build_locked_source_arm64_v5.sh \
+            "$SOURCE_LOCK" \
+            '${{ matrix.source }}' \
+            "$output" \
+            2>&1 | tee "$output/workflow-build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Verify exact version authority and AArch64 payloads
+        id: verify
+        if: steps.build.outputs.exit_code == '0'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 arm64/scripts/verify_arm64_rebuild_v3.py \
+            --lock "$SOURCE_LOCK" \
+            --reference "$REFERENCE" \
+            --source '${{ matrix.source }}' \
+            --source-version '${{ matrix.source_version }}' \
+            --directory 'work/rebuild/${{ matrix.source }}' \
+            --output 'work/rebuild/${{ matrix.source }}/verification.json' \
+            2>&1 | tee 'work/rebuild/${{ matrix.source }}/workflow-verify.log'
+
+      - name: Write source-authority-neutral job result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          mkdir -p "$output"
+          build_passed=false
+          verify_passed=false
+          [ '${{ steps.build.outputs.exit_code }}' = '0' ] && build_passed=true
+          [ '${{ steps.verify.outcome }}' = success ] && verify_passed=true
+          passed=false
+          [ "$build_passed" = true ] && [ "$verify_passed" = true ] && passed=true
+          jq -n \
+            --arg source '${{ matrix.source }}' \
+            --arg source_version '${{ matrix.source_version }}' \
+            --arg source_type '${{ matrix.source_type }}' \
+            --arg authority_provenance '${{ matrix.authority_provenance }}' \
+            --arg repository_full_name '${{ matrix.repository_full_name }}' \
+            --arg commit_sha '${{ matrix.commit_sha }}' \
+            --arg tree_sha '${{ matrix.tree_sha }}' \
+            --arg dsc_filename '${{ matrix.dsc_filename }}' \
+            --arg dsc_sha256 '${{ matrix.dsc_sha256 }}' \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg verify_outcome '${{ steps.verify.outcome }}' \
+            --argjson required_native_packages '${{ toJSON(matrix.required_native_packages) }}' \
+            --argjson reused_all_packages '${{ toJSON(matrix.reused_all_packages) }}' \
+            --argjson passed "$passed" \
+            '{schema:3,source:$source,source_version:$source_version,source_type:$source_type,
+              authority_provenance:$authority_provenance,repository_full_name:$repository_full_name,
+              commit_sha:$commit_sha,tree_sha:$tree_sha,dsc_filename:$dsc_filename,dsc_sha256:$dsc_sha256,
+              build_outcome:$build_outcome,build_exit_code:$build_exit_code,verify_outcome:$verify_outcome,
+              required_native_packages:$required_native_packages,reused_all_packages:$reused_all_packages,
+              passed:$passed}' > "$output/job-result.json"
+          find "$output" -maxdepth 1 -type f ! -name ARTIFACTSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > "$output/ARTIFACTSUMS.sha256"
+
+      - name: Upload complete source build and failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: work/rebuild/${{ matrix.source }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Enforce verified source build after evidence upload
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.build.outputs.exit_code }}' = '0'
+          test '${{ steps.verify.outcome }}' = success
+          jq -e '.passed == true' 'work/rebuild/${{ matrix.source }}/job-result.json'
+
+  collect:
+    needs: [plan, build]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out accumulated compact results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download every current-run rebuild artifact
+        if: needs.plan.outputs.selected_count != '0'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: arm64-rebuild-*
+          path: work/rebuild-artifacts
+          merge-multiple: false
+
+      - name: Collect compact Git-or-DSC result evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/collected-results
+          mkdir -p work/collected-results work/rebuild-artifacts
+          python3 arm64/scripts/collect_native_rebuild_results_v4.py \
+            --artifacts-dir work/rebuild-artifacts \
+            --output-dir work/collected-results \
+            --run-id '${{ github.run_id }}' \
+            --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --batch 'controller-v3:${{ needs.plan.outputs.mode }}:${{ needs.plan.outputs.batch }}'
+          cp work/collected-results/summary.json work/controller-run-summary.json
+
+      - name: Commit compact results without binary packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RESULTS_ROOT/runs/${{ github.run_id }}"
+          cp work/controller-run-summary.json "$RESULTS_ROOT/runs/${{ github.run_id }}/summary.json"
+          find work/collected-results -mindepth 2 -maxdepth 2 -type d -print0 \
+            | while IFS= read -r -d '' directory; do
+                relative="${directory#work/collected-results/}"
+                rm -rf "$RESULTS_ROOT/$relative"
+                mkdir -p "$(dirname "$RESULTS_ROOT/$relative")"
+                cp -a "$directory" "$RESULTS_ROOT/$relative"
+              done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULTS_ROOT"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record native exact-source ARM64 controller results'
+            for attempt in 1 2 3 4; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then break; fi
+              if [ "$attempt" -eq 4 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Advance package failure and coverage gates
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-publish-rebuild-packages.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-rebuild-failure-audit.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-port-coverage.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+
+      - name: Chain the next bounded backlog wave
+        if: needs.plan.outputs.mode == 'backlog' && needs.plan.outputs.remaining_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-native-rebuild-controller-v3.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port \
+            -f mode=backlog \
+            -f limit='${{ needs.plan.outputs.limit }}'
