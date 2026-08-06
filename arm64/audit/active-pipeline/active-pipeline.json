@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 80,
-    "workflow_name_count": 80,
-    "referenced_local_file_count": 125,
-    "error_count": 47,
+    "workflow_count": 82,
+    "workflow_name_count": 82,
+    "referenced_local_file_count": 128,
+    "error_count": 48,
     "warning_count": 0,
     "passed": false
   },
@@ -614,6 +614,27 @@
         "arm64/audit/lock-schemas.json",
         "arm64/audit/lock-schemas.sh",
         "arm64/scripts/inspect_lock_schemas.py"
+      ]
+    },
+    {
+      "filename": "arm64-merge-effective-source-lock.yml",
+      "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "name": "ARM64 port - merge exact Git sources into effective lock",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources/LOCKSUMS.sh",
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/effective-sources/latest-git-merge-report.json",
+        "arm64/locks/sources/source-lock.json",
+        "arm64/scripts/merge_effective_git_source_lock.py"
       ]
     },
     {
@@ -1283,6 +1304,20 @@
       ]
     },
     {
+      "filename": "arm64-source-recovery-monitor.yml",
+      "path": ".github/workflows/arm64-source-recovery-monitor.yml",
+      "name": "ARM64 port - monitor source key and Wayback recovery",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-stage0-live-v2.yml",
       "path": ".github/workflows/arm64-stage0-live-v2.yml",
       "name": "ARM64 port - build and boot-test stage-0 live ISO v2",
@@ -1669,6 +1704,9 @@
     "arm64/locks/debian-arm64/normalized-package-map.json": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
+    "arm64/locks/effective-sources/LOCKSUMS.sh": [
+      ".github/workflows/arm64-merge-effective-source-lock.yml"
+    ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
@@ -1686,6 +1724,7 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
+      ".github/workflows/arm64-merge-effective-source-lock.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-package-repo-wave1.yml",
@@ -1695,6 +1734,9 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-static-audit.yml"
+    ],
+    "arm64/locks/effective-sources/latest-git-merge-report.json": [
+      ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml"
@@ -1808,6 +1850,7 @@
     ],
     "arm64/locks/sources/source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
+      ".github/workflows/arm64-merge-effective-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml"
     ],
@@ -1994,6 +2037,9 @@
     ],
     "arm64/scripts/materialize_rebuild_dependency_repo_v2.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml"
+    ],
+    "arm64/scripts/merge_effective_git_source_lock.py": [
+      ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/scripts/merge_exact_source_authority_v3.py": [
       ".github/workflows/arm64-source-authority-v3.yml",
@@ -2263,6 +2309,11 @@
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/audit/lock-schemas.sh"
+    },
+    {
+      "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/effective-sources/LOCKSUMS.sh"
     },
     {
       "path": ".github/workflows/arm64-minimal-boot-iso-v2.yml",
