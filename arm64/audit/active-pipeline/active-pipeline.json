@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 90,
-    "workflow_name_count": 90,
-    "referenced_local_file_count": 122,
+    "workflow_count": 91,
+    "workflow_name_count": 91,
+    "referenced_local_file_count": 123,
     "error_count": 0,
     "warning_count": 38,
     "passed": true
@@ -1410,6 +1410,24 @@
       ]
     },
     {
+      "filename": "arm64-source-fork-history.yml",
+      "path": ".github/workflows/arm64-source-fork-history.yml",
+      "name": "ARM64 port - recover exact sources from official fork networks",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/resolve_source_fork_history.py"
+      ]
+    },
+    {
       "filename": "arm64-source-keyring-lock.yml",
       "path": ".github/workflows/arm64-source-keyring-lock.yml",
       "name": "ARM64 port - lock trusted vendor source-signing keys",
@@ -1942,6 +1960,7 @@
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
+      ".github/workflows/arm64-source-fork-history.yml",
       ".github/workflows/arm64-source-lock-exhaustive.yml",
       ".github/workflows/arm64-source-lock.yml",
       ".github/workflows/arm64-stage0-live-v3.yml",
@@ -2211,6 +2230,9 @@
     ],
     "arm64/scripts/resolve_source_apt_fast.py": [
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml"
+    ],
+    "arm64/scripts/resolve_source_fork_history.py": [
+      ".github/workflows/arm64-source-fork-history.yml"
     ],
     "arm64/scripts/resolve_source_git_parallel.py": [
       ".github/workflows/arm64-source-lock-exhaustive.yml"
