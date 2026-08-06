@@ -1,0 +1,1902 @@
+{
+  "schema": 1,
+  "root": "arm64/locks",
+  "json_file_count": 29,
+  "error_count": 0,
+  "files": [
+    {
+      "path": "debian-arm64/debian-arm64-map-summary.json",
+      "size": 356,
+      "sha256": "274cf75d7dac274862d1ab4467c99248c4d867183be9e03345428d70423cf8ca",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "snapshots": 1,
+        "package_count": 1,
+        "status_counts": 1,
+        "status_counts.arch-omit": 1,
+        "status_counts.custom-arch-replace": 1,
+        "status_counts.custom-rebuild": 1,
+        "status_counts.exact-arch-replace": 1,
+        "status_counts.exact-arm64": 1,
+        "status_counts.reuse-exact-all": 1,
+        "status_counts.source-exact-binnmu": 1,
+        "strict_unresolved_count": 1
+      },
+      "top_keys": [
+        "package_count",
+        "schema",
+        "snapshots",
+        "status_counts",
+        "strict_unresolved_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "snapshots": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "str"
+        },
+        "package_count": {
+          "type": "int"
+        },
+        "status_counts": {
+          "type": "dict",
+          "keys": [
+            "arch-omit",
+            "custom-arch-replace",
+            "custom-rebuild",
+            "exact-arch-replace",
+            "exact-arm64",
+            "reuse-exact-all",
+            "source-exact-binnmu"
+          ]
+        },
+        "strict_unresolved_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "debian-arm64/debian-arm64-map.json",
+      "size": 462854,
+      "sha256": "527bb539316fa3450d51684a2253cf25166c8de31f8e21d32114240df20a097d",
+      "top_type": "dict",
+      "key_frequency": {
+        "packages[].package": 20,
+        "packages[].amd64_version": 20,
+        "packages[].amd64_architecture": 20,
+        "packages[].source": 20,
+        "packages[].source_version": 20,
+        "packages[].arm64_package": 20,
+        "packages[].arm64_version": 20,
+        "packages[].status": 20,
+        "packages[].reason": 20,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.snapshots": 1,
+        "summary.package_count": 1,
+        "summary.status_counts": 1,
+        "summary.status_counts.arch-omit": 1,
+        "summary.status_counts.custom-arch-replace": 1,
+        "summary.status_counts.custom-rebuild": 1,
+        "summary.status_counts.exact-arch-replace": 1,
+        "summary.status_counts.exact-arm64": 1,
+        "summary.status_counts.reuse-exact-all": 1,
+        "summary.status_counts.source-exact-binnmu": 1,
+        "summary.strict_unresolved_count": 1,
+        "packages": 1
+      },
+      "top_keys": [
+        "packages",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "package_count",
+            "schema",
+            "snapshots",
+            "status_counts",
+            "strict_unresolved_count"
+          ]
+        },
+        "packages": {
+          "type": "list",
+          "length": 1279,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "amd64_architecture",
+            "amd64_version",
+            "arm64_package",
+            "arm64_version",
+            "package",
+            "reason",
+            "source",
+            "source_version",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "path": "debian-arm64/debian-arm64-unresolved.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "effective-sources/effective-source-lock-summary.json",
+      "size": 370,
+      "sha256": "bc3d944069a1077a598e49290caf24e7b6a4ed1fa3c2ee64c7de8b2d6fc55c24",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "git_lock_input_count": 1,
+        "source_target_count": 1,
+        "resolved_count": 1,
+        "git_resolved_count": 1,
+        "vendor_pool_resolved_count": 1,
+        "arch_replace_count": 1,
+        "ambiguous_git_tree_count": 1,
+        "unresolved_count": 1,
+        "rebuild_blocker_count": 1,
+        "build_allowed": 1
+      },
+      "top_keys": [
+        "ambiguous_git_tree_count",
+        "arch_replace_count",
+        "build_allowed",
+        "git_lock_input_count",
+        "git_resolved_count",
+        "policy",
+        "rebuild_blocker_count",
+        "resolved_count",
+        "schema",
+        "source_target_count",
+        "unresolved_count",
+        "vendor_pool_resolved_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "git_lock_input_count": {
+          "type": "int"
+        },
+        "source_target_count": {
+          "type": "int"
+        },
+        "resolved_count": {
+          "type": "int"
+        },
+        "git_resolved_count": {
+          "type": "int"
+        },
+        "vendor_pool_resolved_count": {
+          "type": "int"
+        },
+        "arch_replace_count": {
+          "type": "int"
+        },
+        "ambiguous_git_tree_count": {
+          "type": "int"
+        },
+        "unresolved_count": {
+          "type": "int"
+        },
+        "rebuild_blocker_count": {
+          "type": "int"
+        },
+        "build_allowed": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "effective-sources/effective-source-lock.json",
+      "size": 413311,
+      "sha256": "3e939445d7053738a3ea54b14cca5e88bb0eff08808c5716221d822613e116ab",
+      "top_type": "dict",
+      "key_frequency": {
+        "sources[].git_evidence[].source": 40,
+        "sources[].git_evidence[].source_version": 40,
+        "sources[].git_evidence[].binary_packages": 40,
+        "sources[].git_evidence[].binary_architectures": 40,
+        "sources[].git_evidence[].role": 40,
+        "sources[].git_evidence[].repositories_found": 40,
+        "sources[].git_evidence[].status": 40,
+        "sources[].git_evidence[].selected": 40,
+        "sources[].git_evidence[].exact_matches": 40,
+        "sources[].source": 20,
+        "sources[].source_version": 20,
+        "sources[].binary_packages": 20,
+        "sources[].binary_architectures": 20,
+        "sources[].role": 20,
+        "sources[].status": 20,
+        "sources[].provenance": 20,
+        "sources[].selected": 20,
+        "sources[].git_evidence": 20,
+        "sources[].git_evidence[].searched_repository_names": 20,
+        "sources[].git_evidence[].reason": 20,
+        "sources[].vendor_pool_evidence": 20,
+        "sources[].vendor_pool_evidence[].source": 20,
+        "sources[].vendor_pool_evidence[].source_version": 20,
+        "sources[].vendor_pool_evidence[].role": 20,
+        "sources[].vendor_pool_evidence[].binary_packages": 20,
+        "sources[].vendor_pool_evidence[].binary_versions": 20,
+        "sources[].vendor_pool_evidence[].binary_architectures": 20,
+        "sources[].vendor_pool_evidence[].dsc_name": 20,
+        "sources[].vendor_pool_evidence[].binary_index_evidence": 20,
+        "sources[].vendor_pool_evidence[].pool_candidates": 20,
+        "sources[].vendor_pool_evidence[].exact_candidates": 20,
+        "sources[].vendor_pool_evidence[].probe_errors": 20,
+        "sources[].vendor_pool_evidence[].status": 20,
+        "sources[].vendor_pool_evidence[].selected": 20,
+        "sources[].git_evidence[].probe_errors": 18,
+        "sources[].selected.type": 17,
+        "sources[].selected.repository_full_name": 17,
+        "sources[].selected.commit_sha": 17,
+        "sources[].selected.tree_sha": 17,
+        "sources[].selected.ref_kind": 17,
+        "sources[].selected.ref_name": 17,
+        "sources[].selected.match_scope": 17,
+        "sources[].selected.source_archive": 17,
+        "sources[].selected.declared_source": 17,
+        "sources[].selected.declared_version": 17,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.policy": 1,
+        "summary.git_lock_input_count": 1,
+        "summary.source_target_count": 1,
+        "summary.resolved_count": 1,
+        "summary.git_resolved_count": 1,
+        "summary.vendor_pool_resolved_count": 1,
+        "summary.arch_replace_count": 1,
+        "summary.ambiguous_git_tree_count": 1,
+        "summary.unresolved_count": 1,
+        "summary.rebuild_blocker_count": 1,
+        "summary.build_allowed": 1,
+        "sources": 1
+      },
+      "top_keys": [
+        "sources",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "ambiguous_git_tree_count",
+            "arch_replace_count",
+            "build_allowed",
+            "git_lock_input_count",
+            "git_resolved_count",
+            "policy",
+            "rebuild_blocker_count",
+            "resolved_count",
+            "schema",
+            "source_target_count",
+            "unresolved_count",
+            "vendor_pool_resolved_count"
+          ]
+        },
+        "sources": {
+          "type": "list",
+          "length": 74,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "binary_architectures",
+            "binary_packages",
+            "git_evidence",
+            "provenance",
+            "role",
+            "selected",
+            "source",
+            "source_version",
+            "status",
+            "vendor_pool_evidence"
+          ]
+        }
+      }
+    },
+    {
+      "path": "effective-sources/effective-source-rebuild-blockers.json",
+      "size": 39437,
+      "sha256": "df8b7ef0a4cf8d502023fb614297ffe43bab4c601904884c700b08e25ba50bdb",
+      "top_type": "list",
+      "key_frequency": {
+        "[].git_evidence[].source": 20,
+        "[].git_evidence[].source_version": 20,
+        "[].git_evidence[].binary_packages": 20,
+        "[].git_evidence[].binary_architectures": 20,
+        "[].git_evidence[].role": 20,
+        "[].git_evidence[].repositories_found": 20,
+        "[].git_evidence[].status": 20,
+        "[].git_evidence[].selected": 20,
+        "[].git_evidence[].exact_matches": 20,
+        "[].source": 10,
+        "[].source_version": 10,
+        "[].binary_packages": 10,
+        "[].binary_architectures": 10,
+        "[].role": 10,
+        "[].status": 10,
+        "[].provenance": 10,
+        "[].selected": 10,
+        "[].git_evidence": 10,
+        "[].git_evidence[].searched_repository_names": 10,
+        "[].git_evidence[].reason": 10,
+        "[].vendor_pool_evidence": 10,
+        "[].vendor_pool_evidence[].source": 10,
+        "[].vendor_pool_evidence[].source_version": 10,
+        "[].vendor_pool_evidence[].role": 10,
+        "[].vendor_pool_evidence[].binary_packages": 10,
+        "[].vendor_pool_evidence[].binary_versions": 10,
+        "[].vendor_pool_evidence[].binary_architectures": 10,
+        "[].vendor_pool_evidence[].dsc_name": 10,
+        "[].vendor_pool_evidence[].binary_index_evidence": 10,
+        "[].vendor_pool_evidence[].pool_candidates": 10,
+        "[].vendor_pool_evidence[].exact_candidates": 10,
+        "[].vendor_pool_evidence[].probe_errors": 10,
+        "[].vendor_pool_evidence[].status": 10,
+        "[].vendor_pool_evidence[].selected": 10,
+        "[].git_evidence[].probe_errors": 2,
+        "[].vendor_pool_evidence[].binary_versions.gnome-flashback": 1,
+        "[].vendor_pool_evidence[].binary_versions.gnome-flashback-common": 1,
+        "[].vendor_pool_evidence[].binary_versions.gnome-session-flashback": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-applauncher-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-dockbarx-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-greeter": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-guide": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-integration-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-session-manager": 1,
+        "[].vendor_pool_evidence[].binary_versions.linux-image-5.10.0-23-amd64": 1,
+        "[].vendor_pool_evidence[].binary_versions.libnimf1": 1,
+        "[].vendor_pool_evidence[].binary_versions.nimf": 1,
+        "[].vendor_pool_evidence[].binary_versions.nimf-libhangul": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5core5a": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5dbus5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5gui5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5network5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5printsupport5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5sql5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5test5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5widgets5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5xml5": 1
+      },
+      "length": 10,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_packages",
+        "git_evidence",
+        "provenance",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status",
+        "vendor_pool_evidence"
+      ]
+    },
+    {
+      "path": "effective-sources/effective-source-unresolved.json",
+      "size": 67823,
+      "sha256": "bffd2bf7302046ee9398d20d5253925f1588a69632f89bda52966bedca53cae5",
+      "top_type": "list",
+      "key_frequency": {
+        "[].git_evidence[].source": 36,
+        "[].git_evidence[].source_version": 36,
+        "[].git_evidence[].binary_packages": 36,
+        "[].git_evidence[].binary_architectures": 36,
+        "[].git_evidence[].role": 36,
+        "[].git_evidence[].repositories_found": 36,
+        "[].git_evidence[].status": 36,
+        "[].git_evidence[].selected": 36,
+        "[].git_evidence[].exact_matches": 36,
+        "[].source": 18,
+        "[].source_version": 18,
+        "[].binary_packages": 18,
+        "[].binary_architectures": 18,
+        "[].role": 18,
+        "[].status": 18,
+        "[].provenance": 18,
+        "[].selected": 18,
+        "[].git_evidence": 18,
+        "[].git_evidence[].searched_repository_names": 18,
+        "[].git_evidence[].reason": 18,
+        "[].vendor_pool_evidence": 18,
+        "[].vendor_pool_evidence[].source": 18,
+        "[].vendor_pool_evidence[].source_version": 18,
+        "[].vendor_pool_evidence[].role": 18,
+        "[].vendor_pool_evidence[].binary_packages": 18,
+        "[].vendor_pool_evidence[].binary_versions": 18,
+        "[].vendor_pool_evidence[].binary_architectures": 18,
+        "[].vendor_pool_evidence[].dsc_name": 18,
+        "[].vendor_pool_evidence[].binary_index_evidence": 18,
+        "[].vendor_pool_evidence[].pool_candidates": 18,
+        "[].vendor_pool_evidence[].exact_candidates": 18,
+        "[].vendor_pool_evidence[].probe_errors": 18,
+        "[].vendor_pool_evidence[].status": 18,
+        "[].vendor_pool_evidence[].selected": 18,
+        "[].git_evidence[].probe_errors": 5,
+        "[].vendor_pool_evidence[].binary_versions.arc-theme": 1,
+        "[].vendor_pool_evidence[].binary_versions.gnome-flashback": 1,
+        "[].vendor_pool_evidence[].binary_versions.gnome-flashback-common": 1,
+        "[].vendor_pool_evidence[].binary_versions.gnome-session-flashback": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-agent-service": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-applauncher-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-bootsplash-theme": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-dockbarx-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-greeter": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-guide": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-icon-themes": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-info": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-integration-applet": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-session-manager": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroom-translations": 1,
+        "[].vendor_pool_evidence[].binary_versions.gooroomsystem": 1,
+        "[].vendor_pool_evidence[].binary_versions.linux-image-5.10.0-23-amd64": 1,
+        "[].vendor_pool_evidence[].binary_versions.live-installer": 1,
+        "[].vendor_pool_evidence[].binary_versions.libnimf1": 1,
+        "[].vendor_pool_evidence[].binary_versions.nimf": 1,
+        "[].vendor_pool_evidence[].binary_versions.nimf-libhangul": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5core5a": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5dbus5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5gui5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5network5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5printsupport5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5sql5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5test5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5widgets5": 1,
+        "[].vendor_pool_evidence[].binary_versions.libqt5xml5": 1
+      },
+      "length": 18,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_packages",
+        "git_evidence",
+        "provenance",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status",
+        "vendor_pool_evidence"
+      ]
+    },
+    {
+      "path": "rebuild-results/runs/31091632489/failed.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "rebuild-results/runs/31091632489/summary.json",
+      "size": 324,
+      "sha256": "605a420fe4c1828a920955cae61c1991630c648c20bcdad571783578a66cd902",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "batch": 1,
+        "actions_run_id": 1,
+        "actions_run_url": 1,
+        "result_count": 1,
+        "passed_count": 1,
+        "failed_count": 1,
+        "passed_sources": 1,
+        "failed_sources": 1,
+        "complete_success": 1
+      },
+      "top_keys": [
+        "actions_run_id",
+        "actions_run_url",
+        "batch",
+        "complete_success",
+        "failed_count",
+        "failed_sources",
+        "passed_count",
+        "passed_sources",
+        "result_count",
+        "schema"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "batch": {
+          "type": "str"
+        },
+        "actions_run_id": {
+          "type": "str"
+        },
+        "actions_run_url": {
+          "type": "str"
+        },
+        "result_count": {
+          "type": "int"
+        },
+        "passed_count": {
+          "type": "int"
+        },
+        "failed_count": {
+          "type": "int"
+        },
+        "passed_sources": {
+          "type": "list",
+          "length": 0
+        },
+        "failed_sources": {
+          "type": "list",
+          "length": 0
+        },
+        "complete_success": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "reference/amd64-reference.json",
+      "size": 781009,
+      "sha256": "46e52f94c481c9c975a3970987e158d023117d5d194e22e35e917fc7697aef3b",
+      "top_type": "dict",
+      "key_frequency": {
+        "packages[].package": 20,
+        "packages[].version": 20,
+        "packages[].architecture": 20,
+        "packages[].source": 20,
+        "packages[].source_version": 20,
+        "packages[].multi_arch": 20,
+        "packages[].essential": 20,
+        "packages[].priority": 20,
+        "packages[].section": 20,
+        "packages[].depends": 20,
+        "packages[].pre_depends": 20,
+        "packages[].provides": 20,
+        "packages[].custom_candidate": 20,
+        "sources[].source": 20,
+        "sources[].source_version": 20,
+        "sources[].binary_packages": 20,
+        "sources[].custom_candidate": 20,
+        "schema": 1,
+        "policy": 1,
+        "reference_iso": 1,
+        "reference_iso.name": 1,
+        "reference_iso.size": 1,
+        "reference_iso.sha256": 1,
+        "package_count": 1,
+        "source_count": 1,
+        "architecture_counts": 1,
+        "architecture_counts.all": 1,
+        "architecture_counts.amd64": 1,
+        "packages": 1,
+        "sources": 1
+      },
+      "top_keys": [
+        "architecture_counts",
+        "package_count",
+        "packages",
+        "policy",
+        "reference_iso",
+        "schema",
+        "source_count",
+        "sources"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "reference_iso": {
+          "type": "dict",
+          "keys": [
+            "name",
+            "sha256",
+            "size"
+          ]
+        },
+        "package_count": {
+          "type": "int"
+        },
+        "source_count": {
+          "type": "int"
+        },
+        "architecture_counts": {
+          "type": "dict",
+          "keys": [
+            "all",
+            "amd64"
+          ]
+        },
+        "packages": {
+          "type": "list",
+          "length": 1279,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "architecture",
+            "custom_candidate",
+            "depends",
+            "essential",
+            "multi_arch",
+            "package",
+            "pre_depends",
+            "priority",
+            "provides",
+            "section",
+            "source",
+            "source_version",
+            "version"
+          ]
+        },
+        "sources": {
+          "type": "list",
+          "length": 800,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "binary_packages",
+            "custom_candidate",
+            "source",
+            "source_version"
+          ]
+        }
+      }
+    },
+    {
+      "path": "reference/custom-source-candidates.json",
+      "size": 13908,
+      "sha256": "efaf55197fb2ed4c1801d73d509f629e7a48dc7f3f6cab77cdfb2ca83766b527",
+      "top_type": "list",
+      "key_frequency": {
+        "[].source": 20,
+        "[].source_version": 20,
+        "[].binary_packages": 20,
+        "[].custom_candidate": 20
+      },
+      "length": 74,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_packages",
+        "custom_candidate",
+        "source",
+        "source_version"
+      ]
+    },
+    {
+      "path": "reference/summary.json",
+      "size": 156,
+      "sha256": "62c6d206fc7557fd0aa9b659c8cf8f4b149b2d5927c21e0a43ff465d17657de1",
+      "top_type": "dict",
+      "key_frequency": {
+        "package_count": 1,
+        "source_count": 1,
+        "architecture_counts": 1,
+        "architecture_counts.all": 1,
+        "architecture_counts.amd64": 1,
+        "custom_source_candidate_count": 1
+      },
+      "top_keys": [
+        "architecture_counts",
+        "custom_source_candidate_count",
+        "package_count",
+        "source_count"
+      ],
+      "fields": {
+        "package_count": {
+          "type": "int"
+        },
+        "source_count": {
+          "type": "int"
+        },
+        "architecture_counts": {
+          "type": "dict",
+          "keys": [
+            "all",
+            "amd64"
+          ]
+        },
+        "custom_source_candidate_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "source-components/gooroom-browser.json",
+      "size": 2109,
+      "sha256": "2774d9d7cae9245377f634995f866729a9a75767c78911a8949fb53631a141a1",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "source": 1,
+        "source_version": 1,
+        "packaging": 1,
+        "packaging.repository_full_name": 1,
+        "packaging.commit_sha": 1,
+        "packaging.tree_sha": 1,
+        "packaging.layout": 1,
+        "changelog_anchor": 1,
+        "changelog_anchor.position": 1,
+        "changelog_anchor.source": 1,
+        "changelog_anchor.version": 1,
+        "upstream": 1,
+        "upstream.source": 1,
+        "upstream.version": 1,
+        "upstream.snapshot": 1,
+        "upstream.content_addressed_base": 1,
+        "upstream.retrieval": 1,
+        "upstream.files": 1,
+        "upstream.files.dsc": 1,
+        "upstream.files.dsc.name": 1,
+        "upstream.files.dsc.size": 1,
+        "upstream.files.dsc.sha1": 1,
+        "upstream.files.dsc.sha256": 1,
+        "upstream.files.orig": 1,
+        "upstream.files.orig.name": 1,
+        "upstream.files.orig.size": 1,
+        "upstream.files.orig.sha1": 1,
+        "upstream.files.orig.sha256": 1,
+        "upstream.files.debian": 1,
+        "upstream.files.debian.name": 1,
+        "upstream.files.debian.size": 1,
+        "upstream.files.debian.sha1": 1,
+        "upstream.files.debian.sha256": 1,
+        "upstream.required_paths": 1,
+        "composition": 1,
+        "composition.extract": 1,
+        "composition.strip_components": 1,
+        "composition.overlay": 1,
+        "composition.do_not_apply": 1,
+        "composition.reason": 1
+      },
+      "top_keys": [
+        "changelog_anchor",
+        "composition",
+        "packaging",
+        "policy",
+        "schema",
+        "source",
+        "source_version",
+        "upstream"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "packaging": {
+          "type": "dict",
+          "keys": [
+            "commit_sha",
+            "layout",
+            "repository_full_name",
+            "tree_sha"
+          ]
+        },
+        "changelog_anchor": {
+          "type": "dict",
+          "keys": [
+            "position",
+            "source",
+            "version"
+          ]
+        },
+        "upstream": {
+          "type": "dict",
+          "keys": [
+            "content_addressed_base",
+            "files",
+            "required_paths",
+            "retrieval",
+            "snapshot",
+            "source",
+            "version"
+          ]
+        },
+        "composition": {
+          "type": "dict",
+          "keys": [
+            "do_not_apply",
+            "extract",
+            "overlay",
+            "reason",
+            "strip_components"
+          ]
+        }
+      }
+    },
+    {
+      "path": "sources/blocking-rebuild-sources.json",
+      "size": 4059,
+      "sha256": "2c5114b2ff4da1a5c0f33c287456e32704f1aac20784e746911f3a17c4a97eb8",
+      "top_type": "list",
+      "key_frequency": {
+        "[].source": 9,
+        "[].source_version": 9,
+        "[].binary_packages": 9,
+        "[].binary_architectures": 9,
+        "[].role": 9,
+        "[].status": 9,
+        "[].reason": 9,
+        "[].repositories_found": 9,
+        "[].exact_matches": 9,
+        "[].selected": 9
+      },
+      "length": 9,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_packages",
+        "exact_matches",
+        "reason",
+        "repositories_found",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status"
+      ]
+    },
+    {
+      "path": "sources/source-lock-summary.json",
+      "size": 394,
+      "sha256": "e0c344a47226f30c354f3390685d08ea01a31f5da7acd7db6656c73112bc88b4",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "source_target_count": 1,
+        "resolved_count": 1,
+        "arch_replace_count": 1,
+        "unresolved_count": 1,
+        "rebuild_target_count": 1,
+        "rebuild_unresolved_count": 1,
+        "reuse_all_target_count": 1,
+        "github_api_request_count": 1,
+        "seed_source": 1,
+        "deep_probe_count": 1
+      },
+      "top_keys": [
+        "arch_replace_count",
+        "deep_probe_count",
+        "github_api_request_count",
+        "policy",
+        "rebuild_target_count",
+        "rebuild_unresolved_count",
+        "resolved_count",
+        "reuse_all_target_count",
+        "schema",
+        "seed_source",
+        "source_target_count",
+        "unresolved_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source_target_count": {
+          "type": "int"
+        },
+        "resolved_count": {
+          "type": "int"
+        },
+        "arch_replace_count": {
+          "type": "int"
+        },
+        "unresolved_count": {
+          "type": "int"
+        },
+        "rebuild_target_count": {
+          "type": "int"
+        },
+        "rebuild_unresolved_count": {
+          "type": "int"
+        },
+        "reuse_all_target_count": {
+          "type": "int"
+        },
+        "github_api_request_count": {
+          "type": "int"
+        },
+        "seed_source": {
+          "type": "str"
+        },
+        "deep_probe_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "sources/source-lock.json",
+      "size": 127038,
+      "sha256": "6249a3b699be8abe2acdbb00dd410bde0d0d0e1ac6735446198c516ff614e519",
+      "top_type": "dict",
+      "key_frequency": {
+        "sources[].exact_matches[].owner": 24,
+        "sources[].exact_matches[].repository": 24,
+        "sources[].exact_matches[].repository_full_name": 24,
+        "sources[].exact_matches[].ref_kind": 24,
+        "sources[].exact_matches[].ref_name": 24,
+        "sources[].exact_matches[].commit_sha": 24,
+        "sources[].exact_matches[].tree_sha": 24,
+        "sources[].exact_matches[].committer_date": 24,
+        "sources[].exact_matches[].match_scope": 24,
+        "sources[].exact_matches[].declared_source": 24,
+        "sources[].exact_matches[].declared_version": 24,
+        "sources[].exact_matches[].changelog_path": 24,
+        "sources[].source": 20,
+        "sources[].source_version": 20,
+        "sources[].binary_packages": 20,
+        "sources[].binary_architectures": 20,
+        "sources[].role": 20,
+        "sources[].repositories_found": 20,
+        "sources[].status": 20,
+        "sources[].selected": 20,
+        "sources[].exact_matches": 20,
+        "sources[].searched_repository_names": 18,
+        "sources[].selected.owner": 18,
+        "sources[].selected.repository": 18,
+        "sources[].selected.repository_full_name": 18,
+        "sources[].selected.ref_kind": 18,
+        "sources[].selected.ref_name": 18,
+        "sources[].selected.commit_sha": 18,
+        "sources[].selected.tree_sha": 18,
+        "sources[].selected.committer_date": 18,
+        "sources[].selected.match_scope": 18,
+        "sources[].selected.declared_source": 18,
+        "sources[].selected.declared_version": 18,
+        "sources[].selected.changelog_path": 18,
+        "sources[].selected.source_archive": 18,
+        "sources[].selected.type": 18,
+        "sources[].reason": 3,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.policy": 1,
+        "summary.source_target_count": 1,
+        "summary.resolved_count": 1,
+        "summary.arch_replace_count": 1,
+        "summary.unresolved_count": 1,
+        "summary.rebuild_target_count": 1,
+        "summary.rebuild_unresolved_count": 1,
+        "summary.reuse_all_target_count": 1,
+        "summary.github_api_request_count": 1,
+        "summary.seed_source": 1,
+        "summary.deep_probe_count": 1,
+        "sources": 1,
+        "sources[].exact_matches[].type": 1,
+        "sources[].exact_matches[].source_archive": 1,
+        "sources[].resolution_policy": 1
+      },
+      "top_keys": [
+        "sources",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "arch_replace_count",
+            "deep_probe_count",
+            "github_api_request_count",
+            "policy",
+            "rebuild_target_count",
+            "rebuild_unresolved_count",
+            "resolved_count",
+            "reuse_all_target_count",
+            "schema",
+            "seed_source",
+            "source_target_count",
+            "unresolved_count"
+          ]
+        },
+        "sources": {
+          "type": "list",
+          "length": 74,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "binary_architectures",
+            "binary_packages",
+            "exact_matches",
+            "repositories_found",
+            "role",
+            "searched_repository_names",
+            "selected",
+            "source",
+            "source_version",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "path": "sources/unresolved-sources.json",
+      "size": 6341,
+      "sha256": "f3cc7d7dd21f002b60acd148d1f21ac7ded6bf7c0b7bbc9804313bbdb9485be1",
+      "top_type": "list",
+      "key_frequency": {
+        "[].source": 14,
+        "[].source_version": 14,
+        "[].binary_packages": 14,
+        "[].binary_architectures": 14,
+        "[].role": 14,
+        "[].status": 14,
+        "[].reason": 14,
+        "[].repositories_found": 14,
+        "[].exact_matches": 14,
+        "[].selected": 14
+      },
+      "length": 14,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_packages",
+        "exact_matches",
+        "reason",
+        "repositories_found",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status"
+      ]
+    },
+    {
+      "path": "sources-api-baseline/PROVENANCE.json",
+      "size": 319,
+      "sha256": "a9c7d1e92b5322bedac8dd2016b8d87757d7ba516af4c5199b95127c0aac10ee",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "workflow_run_id": 1,
+        "artifact_id": 1,
+        "artifact_sha256": 1,
+        "reference_branch": 1,
+        "purpose": 1
+      },
+      "top_keys": [
+        "artifact_id",
+        "artifact_sha256",
+        "purpose",
+        "reference_branch",
+        "schema",
+        "workflow_run_id"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "workflow_run_id": {
+          "type": "int"
+        },
+        "artifact_id": {
+          "type": "int"
+        },
+        "artifact_sha256": {
+          "type": "str"
+        },
+        "reference_branch": {
+          "type": "str"
+        },
+        "purpose": {
+          "type": "str"
+        }
+      }
+    },
+    {
+      "path": "sources-api-baseline/source-lock-summary.json",
+      "size": 275,
+      "sha256": "709c3dfd933eb532bdf68c6638dab1eba222005f6930914f78595dedd4501d22",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "source_target_count": 1,
+        "resolved_count": 1,
+        "unresolved_count": 1,
+        "rebuild_target_count": 1,
+        "rebuild_unresolved_count": 1,
+        "reuse_all_target_count": 1,
+        "github_api_request_count": 1
+      },
+      "top_keys": [
+        "github_api_request_count",
+        "policy",
+        "rebuild_target_count",
+        "rebuild_unresolved_count",
+        "resolved_count",
+        "reuse_all_target_count",
+        "schema",
+        "source_target_count",
+        "unresolved_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source_target_count": {
+          "type": "int"
+        },
+        "resolved_count": {
+          "type": "int"
+        },
+        "unresolved_count": {
+          "type": "int"
+        },
+        "rebuild_target_count": {
+          "type": "int"
+        },
+        "rebuild_unresolved_count": {
+          "type": "int"
+        },
+        "reuse_all_target_count": {
+          "type": "int"
+        },
+        "github_api_request_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "sources-api-baseline/source-lock.json",
+      "size": 125378,
+      "sha256": "bf1c0282f552c68f5ace9a90ad47bffca18b0ac037fdb82dac4830a6a096ba71",
+      "top_type": "dict",
+      "key_frequency": {
+        "sources[].exact_matches[].owner": 25,
+        "sources[].exact_matches[].repository": 25,
+        "sources[].exact_matches[].repository_full_name": 25,
+        "sources[].exact_matches[].ref_kind": 25,
+        "sources[].exact_matches[].ref_name": 25,
+        "sources[].exact_matches[].commit_sha": 25,
+        "sources[].exact_matches[].tree_sha": 25,
+        "sources[].exact_matches[].committer_date": 25,
+        "sources[].exact_matches[].match_scope": 25,
+        "sources[].exact_matches[].declared_source": 25,
+        "sources[].exact_matches[].declared_version": 25,
+        "sources[].exact_matches[].changelog_path": 25,
+        "sources[].source": 20,
+        "sources[].source_version": 20,
+        "sources[].binary_packages": 20,
+        "sources[].binary_architectures": 20,
+        "sources[].role": 20,
+        "sources[].searched_repository_names": 20,
+        "sources[].repositories_found": 20,
+        "sources[].status": 20,
+        "sources[].selected": 20,
+        "sources[].exact_matches": 20,
+        "sources[].selected.owner": 17,
+        "sources[].selected.repository": 17,
+        "sources[].selected.repository_full_name": 17,
+        "sources[].selected.ref_kind": 17,
+        "sources[].selected.ref_name": 17,
+        "sources[].selected.commit_sha": 17,
+        "sources[].selected.tree_sha": 17,
+        "sources[].selected.committer_date": 17,
+        "sources[].selected.match_scope": 17,
+        "sources[].selected.declared_source": 17,
+        "sources[].selected.declared_version": 17,
+        "sources[].selected.changelog_path": 17,
+        "sources[].selected.source_archive": 17,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.policy": 1,
+        "summary.source_target_count": 1,
+        "summary.resolved_count": 1,
+        "summary.unresolved_count": 1,
+        "summary.rebuild_target_count": 1,
+        "summary.rebuild_unresolved_count": 1,
+        "summary.reuse_all_target_count": 1,
+        "summary.github_api_request_count": 1,
+        "sources": 1
+      },
+      "top_keys": [
+        "sources",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "github_api_request_count",
+            "policy",
+            "rebuild_target_count",
+            "rebuild_unresolved_count",
+            "resolved_count",
+            "reuse_all_target_count",
+            "schema",
+            "source_target_count",
+            "unresolved_count"
+          ]
+        },
+        "sources": {
+          "type": "list",
+          "length": 74,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "binary_architectures",
+            "binary_packages",
+            "exact_matches",
+            "repositories_found",
+            "role",
+            "searched_repository_names",
+            "selected",
+            "source",
+            "source_version",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "path": "sources-api-baseline/unresolved-sources.json",
+      "size": 14323,
+      "sha256": "6aa52a7ad8c4a33d687547a1542b2ecde50e16f2f553c197fdc2b859db20a2c9",
+      "top_type": "list",
+      "key_frequency": {
+        "[].source": 19,
+        "[].source_version": 19,
+        "[].binary_packages": 19,
+        "[].binary_architectures": 19,
+        "[].role": 19,
+        "[].searched_repository_names": 19,
+        "[].repositories_found": 19,
+        "[].status": 19,
+        "[].selected": 19,
+        "[].exact_matches": 19,
+        "[].exact_matches[].owner": 9,
+        "[].exact_matches[].repository": 9,
+        "[].exact_matches[].repository_full_name": 9,
+        "[].exact_matches[].ref_kind": 9,
+        "[].exact_matches[].ref_name": 9,
+        "[].exact_matches[].commit_sha": 9,
+        "[].exact_matches[].tree_sha": 9,
+        "[].exact_matches[].committer_date": 9,
+        "[].exact_matches[].match_scope": 9,
+        "[].exact_matches[].declared_source": 9,
+        "[].exact_matches[].declared_version": 9,
+        "[].exact_matches[].changelog_path": 9
+      },
+      "length": 19,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_packages",
+        "exact_matches",
+        "repositories_found",
+        "role",
+        "searched_repository_names",
+        "selected",
+        "source",
+        "source_version",
+        "status"
+      ]
+    },
+    {
+      "path": "upstream/summary.json",
+      "size": 7422,
+      "sha256": "dd154467a17c926f529df2f12ddcb886a365f49ec3c2dd6e8a09f8dcadfaec8e",
+      "top_type": "dict",
+      "key_frequency": {
+        "requests[].repository": 16,
+        "requests[].path": 16,
+        "requests[].http_code": 16,
+        "requests[].content_type": 16,
+        "requests[].size_download": 16,
+        "requests[].url_effective": 16,
+        "files[].name": 8,
+        "files[].size": 8,
+        "files[].sha256": 8,
+        "files[].package_stanza_count": 8,
+        "files[].architecture_arm64_mentions": 8,
+        "files[].architecture_amd64_mentions": 8,
+        "files[].source_stanza_count": 8,
+        "schema": 1,
+        "successful_http_200_count": 1,
+        "arm64_index_found": 1,
+        "source_index_found": 1,
+        "requests": 1,
+        "files": 1
+      },
+      "top_keys": [
+        "arm64_index_found",
+        "files",
+        "requests",
+        "schema",
+        "source_index_found",
+        "successful_http_200_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "successful_http_200_count": {
+          "type": "int"
+        },
+        "arm64_index_found": {
+          "type": "bool"
+        },
+        "source_index_found": {
+          "type": "bool"
+        },
+        "requests": {
+          "type": "list",
+          "length": 16,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "content_type",
+            "http_code",
+            "path",
+            "repository",
+            "size_download",
+            "url_effective"
+          ]
+        },
+        "files": {
+          "type": "list",
+          "length": 8,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "architecture_amd64_mentions",
+            "architecture_arm64_mentions",
+            "name",
+            "package_stanza_count",
+            "sha256",
+            "size",
+            "source_stanza_count"
+          ]
+        }
+      }
+    },
+    {
+      "path": "vendor-binaries/vendor-binary-lock-summary.json",
+      "size": 257,
+      "sha256": "bffef167086ee11dfa7299e19d8e9bb7059d088db8177bc511e102492a159ddf",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "target_count": 1,
+        "status_counts": 1,
+        "status_counts.verified": 1,
+        "verified_count": 1,
+        "unresolved_count": 1,
+        "verified_bytes": 1,
+        "index_record_count": 1
+      },
+      "top_keys": [
+        "index_record_count",
+        "policy",
+        "schema",
+        "status_counts",
+        "target_count",
+        "unresolved_count",
+        "verified_bytes",
+        "verified_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "target_count": {
+          "type": "int"
+        },
+        "status_counts": {
+          "type": "dict",
+          "keys": [
+            "verified"
+          ]
+        },
+        "verified_count": {
+          "type": "int"
+        },
+        "unresolved_count": {
+          "type": "int"
+        },
+        "verified_bytes": {
+          "type": "int"
+        },
+        "index_record_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "vendor-binaries/vendor-binary-lock.json",
+      "size": 298899,
+      "sha256": "4d3b61024f9a52a16064c6030f288eea07b76941cefb3bcad6a6f1c03f2a38a6",
+      "top_type": "dict",
+      "key_frequency": {
+        "packages[].package": 20,
+        "packages[].version": 20,
+        "packages[].architecture": 20,
+        "packages[].source": 20,
+        "packages[].source_version": 20,
+        "packages[].status": 20,
+        "packages[].selection_reason": 20,
+        "packages[].selected": 20,
+        "packages[].selected.Package": 20,
+        "packages[].selected.Version": 20,
+        "packages[].selected.Architecture": 20,
+        "packages[].selected.Maintainer": 20,
+        "packages[].selected.Installed-Size": 20,
+        "packages[].selected.Priority": 20,
+        "packages[].selected.Section": 20,
+        "packages[].selected.Filename": 20,
+        "packages[].selected.Size": 20,
+        "packages[].selected.SHA256": 20,
+        "packages[].selected.SHA1": 20,
+        "packages[].selected.MD5sum": 20,
+        "packages[].selected.Description": 20,
+        "packages[].selected.index": 20,
+        "packages[].selected.index.repository": 20,
+        "packages[].selected.index.suite": 20,
+        "packages[].selected.index.base_url": 20,
+        "packages[].selected.index.path": 20,
+        "packages[].candidate_count": 20,
+        "packages[].url": 20,
+        "packages[].local_filename": 20,
+        "packages[].actual_size": 20,
+        "packages[].actual_sha256": 20,
+        "packages[].attempts": 20,
+        "packages[].inspection": 20,
+        "packages[].inspection.control_package": 20,
+        "packages[].inspection.control_version": 20,
+        "packages[].inspection.control_architecture": 20,
+        "packages[].inspection.control_source": 20,
+        "packages[].inspection.payload_entry_count": 20,
+        "packages[].selected.Depends": 18,
+        "packages[].selected.Homepage": 14,
+        "packages[].selected.Recommends": 9,
+        "packages[].selected.Suggests": 8,
+        "packages[].selected.Breaks": 7,
+        "packages[].selected.Source": 5,
+        "packages[].selected.Multi-Arch": 4,
+        "packages[].selected.Original-Maintainer": 2,
+        "packages[].selected.Replaces": 2,
+        "packages[].selected.Provides": 2,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.policy": 1,
+        "summary.target_count": 1,
+        "summary.status_counts": 1,
+        "summary.status_counts.verified": 1,
+        "summary.verified_count": 1,
+        "summary.unresolved_count": 1,
+        "summary.verified_bytes": 1,
+        "summary.index_record_count": 1,
+        "packages": 1,
+        "packages[].selected.Essential": 1,
+        "packages[].selected.Pre-Depends": 1,
+        "packages[].selected.Conflicts": 1
+      },
+      "top_keys": [
+        "packages",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "index_record_count",
+            "policy",
+            "schema",
+            "status_counts",
+            "target_count",
+            "unresolved_count",
+            "verified_bytes",
+            "verified_count"
+          ]
+        },
+        "packages": {
+          "type": "list",
+          "length": 123,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "actual_sha256",
+            "actual_size",
+            "architecture",
+            "attempts",
+            "candidate_count",
+            "inspection",
+            "local_filename",
+            "package",
+            "selected",
+            "selection_reason",
+            "source",
+            "source_version",
+            "status",
+            "url",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "path": "vendor-binaries/vendor-binary-unresolved.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "vendor-pool-sources/vendor-pool-rebuild-blockers.json",
+      "size": 83961,
+      "sha256": "ea7e5457e4ebfabf173c8d79093c9abaccdfd2f43f1a7389021aa354da8720b8",
+      "top_type": "list",
+      "key_frequency": {
+        "[].binary_index_evidence[].repository": 32,
+        "[].binary_index_evidence[].suite": 32,
+        "[].binary_index_evidence[].base_url": 32,
+        "[].binary_index_evidence[].package": 32,
+        "[].binary_index_evidence[].version": 32,
+        "[].binary_index_evidence[].source": 32,
+        "[].binary_index_evidence[].source_version": 32,
+        "[].binary_index_evidence[].filename": 32,
+        "[].binary_index_evidence[].sha256": 32,
+        "[].binary_index_evidence[].size": 32,
+        "[].source": 20,
+        "[].source_version": 20,
+        "[].role": 20,
+        "[].binary_packages": 20,
+        "[].binary_versions": 20,
+        "[].binary_architectures": 20,
+        "[].dsc_name": 20,
+        "[].binary_index_evidence": 20,
+        "[].pool_candidates": 20,
+        "[].pool_candidates[].repository": 20,
+        "[].pool_candidates[].suite": 20,
+        "[].pool_candidates[].base_url": 20,
+        "[].pool_candidates[].directory": 20,
+        "[].exact_candidates": 20,
+        "[].probe_errors": 20,
+        "[].status": 20,
+        "[].selected": 20,
+        "[].binary_versions.accountsservice": 1,
+        "[].binary_versions.libaccountsservice0": 1,
+        "[].binary_versions.celluloid": 1,
+        "[].binary_versions.gnome-mpv": 1,
+        "[].binary_versions.cups-pk-helper": 1,
+        "[].binary_versions.dpkg": 1,
+        "[].binary_versions.libdpkg-perl": 1,
+        "[].binary_versions.eog": 1,
+        "[].binary_versions.file-roller": 1,
+        "[].binary_versions.gedit": 1,
+        "[].binary_versions.gedit-common": 1,
+        "[].binary_versions.gnome-bluetooth": 1,
+        "[].binary_versions.libgnome-bluetooth13": 1,
+        "[].binary_versions.gnome-control-center": 1,
+        "[].binary_versions.gnome-control-center-data": 1,
+        "[].binary_versions.gnome-flashback": 1,
+        "[].binary_versions.gnome-flashback-common": 1,
+        "[].binary_versions.gnome-session-flashback": 1,
+        "[].binary_versions.gnome-panel": 1,
+        "[].binary_versions.gnome-panel-data": 1,
+        "[].binary_versions.libgnome-panel0": 1,
+        "[].binary_versions.gnome-screenshot": 1,
+        "[].binary_versions.gnome-settings-daemon": 1,
+        "[].binary_versions.gnome-settings-daemon-common": 1,
+        "[].binary_versions.gooroom-applauncher-applet": 1,
+        "[].binary_versions.gooroom-browser": 1,
+        "[].binary_versions.gooroom-browser-l10n": 1,
+        "[].binary_versions.gooroom-dockbarx-applet": 1,
+        "[].binary_versions.gooroom-greeter": 1,
+        "[].binary_versions.gooroom-guide": 1,
+        "[].binary_versions.gooroom-indicator-applet": 1,
+        "[].binary_versions.gooroom-integration-applet": 1
+      },
+      "length": 48,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_index_evidence",
+        "binary_packages",
+        "binary_versions",
+        "dsc_name",
+        "exact_candidates",
+        "pool_candidates",
+        "probe_errors",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status"
+      ]
+    },
+    {
+      "path": "vendor-pool-sources/vendor-pool-source-lock-summary.json",
+      "size": 643,
+      "sha256": "10893f1a9dbc68bde90a5197aacda97c987bb2c0eb9de4e4fa674a58e2c823a0",
+      "top_type": "dict",
+      "key_frequency": {
+        "index_evidence[].repository": 2,
+        "index_evidence[].suite": 2,
+        "index_evidence[].base_url": 2,
+        "index_evidence[].path": 2,
+        "index_evidence[].record_count": 2,
+        "schema": 1,
+        "policy": 1,
+        "index_evidence": 1,
+        "source_target_count": 1,
+        "resolved_count": 1,
+        "unresolved_count": 1,
+        "rebuild_unresolved_count": 1
+      },
+      "top_keys": [
+        "index_evidence",
+        "policy",
+        "rebuild_unresolved_count",
+        "resolved_count",
+        "schema",
+        "source_target_count",
+        "unresolved_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "index_evidence": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "base_url",
+            "path",
+            "record_count",
+            "repository",
+            "suite"
+          ]
+        },
+        "source_target_count": {
+          "type": "int"
+        },
+        "resolved_count": {
+          "type": "int"
+        },
+        "unresolved_count": {
+          "type": "int"
+        },
+        "rebuild_unresolved_count": {
+          "type": "int"
+        }
+      }
+    },
+    {
+      "path": "vendor-pool-sources/vendor-pool-source-lock.json",
+      "size": 128866,
+      "sha256": "8f4939899ba82c879fd088a0447146b33be8e12e09497d661f82a363094333c5",
+      "top_type": "dict",
+      "key_frequency": {
+        "sources[].binary_index_evidence[].repository": 32,
+        "sources[].binary_index_evidence[].suite": 32,
+        "sources[].binary_index_evidence[].base_url": 32,
+        "sources[].binary_index_evidence[].package": 32,
+        "sources[].binary_index_evidence[].version": 32,
+        "sources[].binary_index_evidence[].source": 32,
+        "sources[].binary_index_evidence[].source_version": 32,
+        "sources[].binary_index_evidence[].filename": 32,
+        "sources[].binary_index_evidence[].sha256": 32,
+        "sources[].binary_index_evidence[].size": 32,
+        "sources[].source": 20,
+        "sources[].source_version": 20,
+        "sources[].role": 20,
+        "sources[].binary_packages": 20,
+        "sources[].binary_versions": 20,
+        "sources[].binary_architectures": 20,
+        "sources[].dsc_name": 20,
+        "sources[].binary_index_evidence": 20,
+        "sources[].pool_candidates": 20,
+        "sources[].pool_candidates[].repository": 20,
+        "sources[].pool_candidates[].suite": 20,
+        "sources[].pool_candidates[].base_url": 20,
+        "sources[].pool_candidates[].directory": 20,
+        "sources[].exact_candidates": 20,
+        "sources[].probe_errors": 20,
+        "sources[].status": 20,
+        "sources[].selected": 20,
+        "summary.index_evidence[].repository": 2,
+        "summary.index_evidence[].suite": 2,
+        "summary.index_evidence[].base_url": 2,
+        "summary.index_evidence[].path": 2,
+        "summary.index_evidence[].record_count": 2,
+        "summary": 1,
+        "summary.schema": 1,
+        "summary.policy": 1,
+        "summary.index_evidence": 1,
+        "summary.source_target_count": 1,
+        "summary.resolved_count": 1,
+        "summary.unresolved_count": 1,
+        "summary.rebuild_unresolved_count": 1,
+        "sources": 1,
+        "sources[].binary_versions.accountsservice": 1,
+        "sources[].binary_versions.libaccountsservice0": 1,
+        "sources[].binary_versions.adduser": 1,
+        "sources[].binary_versions.arc-icon-theme": 1,
+        "sources[].binary_versions.arc-theme": 1,
+        "sources[].binary_versions.celluloid": 1,
+        "sources[].binary_versions.gnome-mpv": 1,
+        "sources[].binary_versions.cups-pk-helper": 1,
+        "sources[].binary_versions.debian-system-adjustments": 1,
+        "sources[].binary_versions.dpkg": 1,
+        "sources[].binary_versions.libdpkg-perl": 1,
+        "sources[].binary_versions.eog": 1,
+        "sources[].binary_versions.file-roller": 1,
+        "sources[].binary_versions.flat-remix-gtk-theme": 1,
+        "sources[].binary_versions.gdebi": 1,
+        "sources[].binary_versions.gdebi-core": 1,
+        "sources[].binary_versions.gedit": 1,
+        "sources[].binary_versions.gedit-common": 1,
+        "sources[].binary_versions.gnome-bluetooth": 1,
+        "sources[].binary_versions.libgnome-bluetooth13": 1,
+        "sources[].binary_versions.gnome-control-center": 1,
+        "sources[].binary_versions.gnome-control-center-data": 1,
+        "sources[].binary_versions.gnome-flashback": 1,
+        "sources[].binary_versions.gnome-flashback-common": 1,
+        "sources[].binary_versions.gnome-session-flashback": 1,
+        "sources[].binary_versions.gnome-panel": 1,
+        "sources[].binary_versions.gnome-panel-data": 1,
+        "sources[].binary_versions.libgnome-panel0": 1,
+        "sources[].binary_versions.gnome-screenshot": 1,
+        "sources[].binary_versions.gnome-settings-daemon": 1,
+        "sources[].binary_versions.gnome-settings-daemon-common": 1,
+        "sources[].binary_versions.gooroom-agent-service": 1
+      },
+      "top_keys": [
+        "sources",
+        "summary"
+      ],
+      "fields": {
+        "summary": {
+          "type": "dict",
+          "keys": [
+            "index_evidence",
+            "policy",
+            "rebuild_unresolved_count",
+            "resolved_count",
+            "schema",
+            "source_target_count",
+            "unresolved_count"
+          ]
+        },
+        "sources": {
+          "type": "list",
+          "length": 74,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "binary_architectures",
+            "binary_index_evidence",
+            "binary_packages",
+            "binary_versions",
+            "dsc_name",
+            "exact_candidates",
+            "pool_candidates",
+            "probe_errors",
+            "role",
+            "selected",
+            "source",
+            "source_version",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "path": "vendor-pool-sources/vendor-pool-source-unresolved.json",
+      "size": 120676,
+      "sha256": "380cff0d87b2c5612d2d343c5223beda675f965ea9302af54daf76c34e78ce60",
+      "top_type": "list",
+      "key_frequency": {
+        "[].binary_index_evidence[].repository": 32,
+        "[].binary_index_evidence[].suite": 32,
+        "[].binary_index_evidence[].base_url": 32,
+        "[].binary_index_evidence[].package": 32,
+        "[].binary_index_evidence[].version": 32,
+        "[].binary_index_evidence[].source": 32,
+        "[].binary_index_evidence[].source_version": 32,
+        "[].binary_index_evidence[].filename": 32,
+        "[].binary_index_evidence[].sha256": 32,
+        "[].binary_index_evidence[].size": 32,
+        "[].source": 20,
+        "[].source_version": 20,
+        "[].role": 20,
+        "[].binary_packages": 20,
+        "[].binary_versions": 20,
+        "[].binary_architectures": 20,
+        "[].dsc_name": 20,
+        "[].binary_index_evidence": 20,
+        "[].pool_candidates": 20,
+        "[].pool_candidates[].repository": 20,
+        "[].pool_candidates[].suite": 20,
+        "[].pool_candidates[].base_url": 20,
+        "[].pool_candidates[].directory": 20,
+        "[].exact_candidates": 20,
+        "[].probe_errors": 20,
+        "[].status": 20,
+        "[].selected": 20,
+        "[].binary_versions.accountsservice": 1,
+        "[].binary_versions.libaccountsservice0": 1,
+        "[].binary_versions.adduser": 1,
+        "[].binary_versions.arc-icon-theme": 1,
+        "[].binary_versions.arc-theme": 1,
+        "[].binary_versions.celluloid": 1,
+        "[].binary_versions.gnome-mpv": 1,
+        "[].binary_versions.cups-pk-helper": 1,
+        "[].binary_versions.debian-system-adjustments": 1,
+        "[].binary_versions.dpkg": 1,
+        "[].binary_versions.libdpkg-perl": 1,
+        "[].binary_versions.eog": 1,
+        "[].binary_versions.file-roller": 1,
+        "[].binary_versions.flat-remix-gtk-theme": 1,
+        "[].binary_versions.gdebi": 1,
+        "[].binary_versions.gdebi-core": 1,
+        "[].binary_versions.gedit": 1,
+        "[].binary_versions.gedit-common": 1,
+        "[].binary_versions.gnome-bluetooth": 1,
+        "[].binary_versions.libgnome-bluetooth13": 1,
+        "[].binary_versions.gnome-control-center": 1,
+        "[].binary_versions.gnome-control-center-data": 1,
+        "[].binary_versions.gnome-flashback": 1,
+        "[].binary_versions.gnome-flashback-common": 1,
+        "[].binary_versions.gnome-session-flashback": 1,
+        "[].binary_versions.gnome-panel": 1,
+        "[].binary_versions.gnome-panel-data": 1,
+        "[].binary_versions.libgnome-panel0": 1,
+        "[].binary_versions.gnome-screenshot": 1,
+        "[].binary_versions.gnome-settings-daemon": 1,
+        "[].binary_versions.gnome-settings-daemon-common": 1,
+        "[].binary_versions.gooroom-agent-service": 1
+      },
+      "length": 74,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "binary_architectures",
+        "binary_index_evidence",
+        "binary_packages",
+        "binary_versions",
+        "dsc_name",
+        "exact_candidates",
+        "pool_candidates",
+        "probe_errors",
+        "role",
+        "selected",
+        "source",
+        "source_version",
+        "status"
+      ]
+    }
+  ],
+  "errors": []
+}
