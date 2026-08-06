@@ -1,0 +1,99 @@
+name: ARM64 port - classify native rebuild failures
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-rebuild-failure-audit.yml'
+      - 'arm64/scripts/classify_native_rebuild_failures.py'
+      - 'arm64/locks/rebuild-results/**'
+      - 'arm64/locks/rebuild-release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-rebuild-failure-audit
+  cancel-in-progress: true
+
+jobs:
+  classify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out accumulated native rebuild results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Classify only the latest result for each exact source version
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/rebuild-failure-audit
+          python3 arm64/scripts/classify_native_rebuild_failures.py \
+            --results arm64/locks/rebuild-results \
+            --output-dir work/rebuild-failure-audit
+          find work/rebuild-failure-audit -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/rebuild-failure-audit/LOCKSUMS.sha256
+          {
+            echo '## Native ARM64 rebuild failure classification'
+            echo
+            echo '```json'
+            cat work/rebuild-failure-audit/summary.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete classification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-rebuild-failure-audit
+          path: work/rebuild-failure-audit
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the latest source failure state
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/status/rebuild-failures
+          mkdir -p arm64/status/rebuild-failures
+          cp -a work/rebuild-failure-audit/. arm64/status/rebuild-failures/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/rebuild-failures
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Classify latest native ARM64 rebuild failures'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch dependency retries when a verified cache can help
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          failures="$(jq -r '.dependency_resolution_failure_count // 0' \
+            work/rebuild-failure-audit/summary.json)"
+          release=arm64/locks/rebuild-release/rebuild-release-lock.json
+          if [ "$failures" -gt 0 ] \
+             && [ -f "$release" ] \
+             && jq -e '.summary.complete == true' "$release" >/dev/null; then
+            gh workflow run arm64-dependency-retry-v2.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port \
+              -f limit=4
+          fi
