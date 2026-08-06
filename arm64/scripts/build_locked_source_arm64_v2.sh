@@ -418,9 +418,12 @@ cat > "$OUTPUT_DIR_ABS/build-lock.json" <<EOF
 }
 EOF
 
-find "$OUTPUT_DIR_ABS" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
-  | sort -z \
-  | xargs -0 sha256sum \
-  > "$OUTPUT_DIR_ABS/SHA256SUMS"
+(
+  cd "$OUTPUT_DIR_ABS"
+  find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+    | sort -z \
+    | xargs -0 sha256sum \
+    > SHA256SUMS
+)
 
 cat "$OUTPUT_DIR_ABS/build-lock.json"
