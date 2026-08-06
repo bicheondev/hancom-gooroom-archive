@@ -12,8 +12,10 @@ SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REFERENCE_JSON="${HANCOM_GOOROOM_REFERENCE_JSON:-$SCRIPT_DIR/../locks/reference/amd64-reference.json}"
+COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-$SCRIPT_DIR/../locks/source-components}"
+COMPONENT_LOCK="$COMPONENT_LOCK_DIR/$SOURCE_NAME.json"
 
-for command in jq dpkg-deb file sha256sum find grep sort; do
+for command in jq dpkg-deb file sha256sum find grep sort stat; do
   command -v "$command" >/dev/null || {
     echo "required command is missing: $command" >&2
     exit 69
@@ -49,6 +51,7 @@ entry="$(jq -ce --arg source "$SOURCE_NAME" '
 }
 
 SOURCE_VERSION="$(jq -r '.source_version' <<<"$entry")"
+REPOSITORY="$(jq -r '.selected.repository_full_name' <<<"$entry")"
 COMMIT_SHA="$(jq -r '.selected.commit_sha' <<<"$entry")"
 TREE_SHA="$(jq -r '.selected.tree_sha' <<<"$entry")"
 
@@ -83,10 +86,12 @@ jq -e \
 jq -e \
   --arg source "$SOURCE_NAME" \
   --arg version "$SOURCE_VERSION" \
+  --arg repository "$REPOSITORY" \
   --arg commit "$COMMIT_SHA" \
   --arg tree "$TREE_SHA" '
     .source == $source
     and .source_version == $version
+    and .repository == $repository
     and .commit_sha == $commit
     and .verified_commit_sha == $commit
     and .tree_sha == $tree
@@ -98,6 +103,87 @@ jq -e --argjson expected "$expected_json" '
   (.expected_binary_packages | sort) == $expected
   and .binary_package_policy == "AMD64 reference packages whose Architecture is not all"
 ' "$OUTPUT_DIR/build-lock.json" >/dev/null
+
+SOURCE_COMPOSITION_MODE=git-only
+UPSTREAM_SOURCE_JSON=null
+if [ -f "$COMPONENT_LOCK" ]; then
+  SOURCE_COMPOSITION_MODE=packaging-git-plus-exact-debian-orig
+  [ -f "$OUTPUT_DIR/upstream-source-evidence.json" ] || {
+    echo "composite source evidence is missing for $SOURCE_NAME" >&2
+    exit 3
+  }
+  [ -f "$OUTPUT_DIR/upstream-source-members.tsv" ] || {
+    echo "composite source member report is missing for $SOURCE_NAME" >&2
+    exit 3
+  }
+
+  COMPONENT_LOCK_SHA256="$(sha256sum "$COMPONENT_LOCK" | awk '{print $1}')"
+  UPSTREAM_SOURCE="$(jq -er '.upstream.source' "$COMPONENT_LOCK")"
+  UPSTREAM_VERSION="$(jq -er '.upstream.version' "$COMPONENT_LOCK")"
+  UPSTREAM_SNAPSHOT="$(jq -er '.upstream.snapshot' "$COMPONENT_LOCK")"
+  UPSTREAM_SOURCE_JSON="$(jq -cn \
+    --arg source "$UPSTREAM_SOURCE" \
+    --arg version "$UPSTREAM_VERSION" \
+    --arg snapshot "$UPSTREAM_SNAPSHOT" '
+      {source: $source, version: $version, snapshot: $snapshot}
+    ')"
+
+  jq -e \
+    --arg source "$SOURCE_NAME" \
+    --arg version "$SOURCE_VERSION" \
+    --arg repository "$REPOSITORY" \
+    --arg commit "$COMMIT_SHA" \
+    --arg tree "$TREE_SHA" \
+    --arg lock_sha256 "$COMPONENT_LOCK_SHA256" \
+    --arg snapshot "$UPSTREAM_SNAPSHOT" \
+    --slurpfile component "$COMPONENT_LOCK" '
+      .verified == true
+      and .source == $source
+      and .source_version == $version
+      and .source_component_lock_sha256 == $lock_sha256
+      and .packaging.repository_full_name == $repository
+      and .packaging.commit_sha == $commit
+      and .packaging.tree_sha == $tree
+      and .upstream.source == $component[0].upstream.source
+      and .upstream.version == $component[0].upstream.version
+      and .upstream.files == $component[0].upstream.files
+      and .upstream.required_paths == $component[0].upstream.required_paths
+      and .upstream.verified_snapshot == $snapshot
+      and .upstream.required_paths_verified == true
+      and .composition == $component[0].composition
+    ' "$OUTPUT_DIR/upstream-source-evidence.json" >/dev/null
+
+  jq -e \
+    --arg mode "$SOURCE_COMPOSITION_MODE" \
+    --arg lock_sha256 "$COMPONENT_LOCK_SHA256" \
+    --arg upstream_source "$UPSTREAM_SOURCE" \
+    --arg upstream_version "$UPSTREAM_VERSION" '
+      .source_composition.mode == $mode
+      and .source_composition.source_component_lock_sha256 == $lock_sha256
+      and .source_composition.upstream_source == $upstream_source
+      and .source_composition.upstream_version == $upstream_version
+    ' "$OUTPUT_DIR/build-lock.json" >/dev/null
+
+  for key in dsc orig debian; do
+    expected_name="$(jq -er --arg key "$key" '.upstream.files[$key].name' "$COMPONENT_LOCK")"
+    expected_size="$(jq -er --arg key "$key" '.upstream.files[$key].size' "$COMPONENT_LOCK")"
+    expected_sha256="$(jq -er --arg key "$key" '.upstream.files[$key].sha256' "$COMPONENT_LOCK")"
+    awk -F '\t' \
+      -v key="$key" \
+      -v name="$expected_name" \
+      -v size="$expected_size" \
+      -v sha="$expected_sha256" '
+        $1 == key && $2 == name && $3 == size && $4 == sha { found = 1 }
+        END { exit found ? 0 : 1 }
+      ' "$OUTPUT_DIR/upstream-source-members.tsv" || {
+        echo "composite source member evidence mismatch for $key" >&2
+        exit 3
+      }
+  done
+else
+  jq -e '.source_composition.mode == "git-only"' \
+    "$OUTPUT_DIR/build-lock.json" >/dev/null
+fi
 
 shopt -s nullglob
 DEBS=("$OUTPUT_DIR"/*.deb)
@@ -164,11 +250,13 @@ done
 produced_json="$(printf '%s\n' "${produced_packages[@]}" | jq -Rsc 'split("\n")[:-1] | sort')"
 cat > "$OUTPUT_DIR/verification-summary.json" <<EOF
 {
-  "schema": 2,
+  "schema": 3,
   "source": $(jq -Rn --arg value "$SOURCE_NAME" '$value'),
   "source_version": $(jq -Rn --arg value "$SOURCE_VERSION" '$value'),
   "commit_sha": $(jq -Rn --arg value "$COMMIT_SHA" '$value'),
   "tree_sha": $(jq -Rn --arg value "$TREE_SHA" '$value'),
+  "source_composition_mode": $(jq -Rn --arg value "$SOURCE_COMPOSITION_MODE" '$value'),
+  "upstream_source": $UPSTREAM_SOURCE_JSON,
   "expected_architecture_dependent_packages": $expected_json,
   "produced_binary_packages": $produced_json,
   "architecture_all_policy": "reuse exact verified AMD64 Architecture: all binaries",
