@@ -1,0 +1,135 @@
+name: ARM64 port - publish exact rebuild packages v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-publish-rebuild-packages-v3.yml'
+      - 'arm64/scripts/publish_rebuild_packages_v3.py'
+      - 'arm64/locks/rebuild-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-publish-rebuild-packages
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v3.3-arm64-packages
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out all compact verified rebuild results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package and release verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev ca-certificates jq
+          gh --version
+          python3 -m py_compile arm64/scripts/publish_rebuild_packages_v3.py
+
+      - name: Reuse rehashed release assets and upload only missing exact packages
+        id: publish
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/rebuild-release-v3 work/rebuild-publisher-v3
+          mkdir -p work/rebuild-release-v3 work/rebuild-publisher-v3
+          set +e
+          python3 arm64/scripts/publish_rebuild_packages_v3.py \
+            --results-dir arm64/locks/rebuild-results \
+            --repository '${{ github.repository }}' \
+            --release-tag "$RELEASE_TAG" \
+            --target arm64-port \
+            --work-dir work/rebuild-publisher-v3 \
+            --output-dir work/rebuild-release-v3 \
+            2>&1 | tee work/rebuild-release-v3/workflow-publisher.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/rebuild-release-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/rebuild-release-v3/LOCKSUMS.sha256
+          cat work/rebuild-release-v3/summary.json
+
+      - name: Upload persistent release reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-rebuild-release-v3-${{ github.run_id }}
+          path: work/rebuild-release-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit exact persistent package release lock
+        if: always()
+        id: commit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/rebuild-release
+          mkdir -p arm64/locks/rebuild-release
+          cp -a work/rebuild-release-v3/. arm64/locks/rebuild-release/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/rebuild-release
+          if git diff --cached --quiet; then
+            echo 'pushed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m 'Lock persistent exact ARM64 rebuild package release v3'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              echo 'pushed=true' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch consumers of the verified persistent package cache
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if jq -e '.complete == true' work/rebuild-release-v3/summary.json >/dev/null; then
+            gh workflow run arm64-dependency-retry-v2.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port \
+              -f limit=4 || true
+            gh workflow run arm64-package-acquisition-plan-v2.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port || true
+          fi
+          gh workflow run arm64-port-coverage.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port || true
+
+      - name: Enforce complete release representation after evidence commit
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.publish.outputs.exit_code }}' = '0'
+          jq -e '.complete == true and .blocker_count == 0' \
+            work/rebuild-release-v3/summary.json
