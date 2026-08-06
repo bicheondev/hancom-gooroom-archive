@@ -92,11 +92,14 @@ def selected_route(
     selected = row.get("selected") or {}
     if not isinstance(selected, dict):
         return None
-    selected_package = selected.get("package") or row["package"]
-    selected_version = selected.get("version") or row["reference_version"]
-    selected_architecture = selected.get("architecture")
+    target_package = row.get("target_package") or row["package"]
+    target_version = row.get("target_version") or row["reference_version"]
+    target_architecture = row.get("target_architecture")
+    selected_package = selected.get("package") or target_package
+    selected_version = selected.get("version") or target_version
+    selected_architecture = selected.get("architecture") or target_architecture
     if not permit_replacement_identity:
-        if selected_package != row["package"] or selected_version != row["reference_version"]:
+        if selected_package != target_package or selected_version != target_version:
             return None
     if selected_architecture not in {"arm64", "all", None}:
         return None
@@ -339,6 +342,10 @@ def main() -> int:
             "source": row["source"],
             "source_version": row["source_version"],
             "mapping_status": status,
+            "version_policy": row.get("version_policy", "binary-exact"),
+            "target_package": row.get("target_package") or row["package"],
+            "target_version": row.get("target_version") or row["reference_version"],
+            "target_architecture": row.get("target_architecture"),
             "acquisition": acquisition,
             "ready": acquisition is not None,
         }

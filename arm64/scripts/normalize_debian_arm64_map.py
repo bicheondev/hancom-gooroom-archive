@@ -67,6 +67,8 @@ def canonical_status(value: Any) -> str:
         "omit",
     }
     unresolved_aliases = {"unresolved", "missing", "blocked", "unknown", "none", ""}
+    if raw == "source-exact-arch-binnmu":
+        return "arch-replace"
     if raw in exact_aliases or ("arm64" in raw and "exact" in raw):
         return "exact-arm64"
     if raw in all_aliases or ("all" in raw and any(token in raw for token in ("reuse", "arch", "use"))):
@@ -143,6 +145,11 @@ def normalize_selected(row: dict[str, Any]) -> dict[str, Any] | None:
     )
     repository = first_value(containers, ("repository", "archive", "origin"))
     suite = first_value(containers, ("suite", "distribution", "codename"))
+    source = first_value(containers, ("source", "Source", "source_package"))
+    source_version = first_value(
+        containers,
+        ("source_version", "Source-Version", "selected_source_version"),
+    )
     if not any(value not in (None, "") for value in (filename, url, sha256, package, version, architecture)):
         return None
     try:
@@ -160,6 +167,8 @@ def normalize_selected(row: dict[str, Any]) -> dict[str, Any] | None:
         "repository": repository,
         "suite": suite,
         "base_url": base_url,
+        "source": source,
+        "source_version": source_version,
     }
 
 
@@ -228,8 +237,32 @@ def main() -> int:
             continue
 
         raw = exact_candidates[0]
-        status = canonical_status(row_status(raw))
+        raw_mapping_status = str(row_status(raw) or "")
+        raw_status_slug = re.sub(
+            r"[^a-z0-9]+", "-", raw_mapping_status.lower()
+        ).strip("-")
+        status = canonical_status(raw_mapping_status)
         selected = normalize_selected(raw)
+        version_policy = (
+            "source-exact-binnmu"
+            if raw_status_slug == "source-exact-binnmu"
+            else "binary-exact"
+        )
+        target_package = (
+            selected.get("package")
+            if isinstance(selected, dict) and selected.get("package")
+            else package
+        )
+        target_version = (
+            selected.get("version")
+            if isinstance(selected, dict) and selected.get("version")
+            else reference_row["version"]
+        )
+        target_architecture = (
+            selected.get("architecture")
+            if isinstance(selected, dict) and selected.get("architecture")
+            else ("all" if reference_row["architecture"] == "all" else "arm64")
+        )
         replacement = raw.get("replacement")
         if not isinstance(replacement, (dict, str, list, type(None))):
             replacement = repr(replacement)
@@ -242,6 +275,11 @@ def main() -> int:
                 "source_version": reference_row["source_version"],
                 "custom_candidate": bool(reference_row.get("custom_candidate")),
                 "status": status,
+                "mapping_status_raw": raw_mapping_status,
+                "version_policy": version_policy,
+                "target_package": target_package,
+                "target_version": target_version,
+                "target_architecture": target_architecture,
                 "selected": selected,
                 "replacement": replacement,
                 "source_map_file": selected_list["path"],
@@ -254,15 +292,40 @@ def main() -> int:
         status_counts[row["status"]] = status_counts.get(row["status"], 0) + 1
     unknown = [row for row in normalized if row["status"].startswith("unknown:")]
     unresolved = [row for row in normalized if row["status"] == "unresolved"]
-    incomplete_exact = [
-        row
-        for row in normalized
-        if row["status"] in {"exact-arm64", "reuse-all"}
-        and (
-            not row.get("selected")
-            or row["selected"].get("version") not in (None, row["reference_version"])
-        )
-    ]
+    def exact_asset_error(row: dict[str, Any]) -> str | None:
+        if row["status"] not in {"exact-arm64", "reuse-all"}:
+            return None
+        selected = row.get("selected")
+        if row["status"] == "reuse-all" and row.get("custom_candidate"):
+            # Exact vendor Architecture: all assets are acquired through the
+            # separately hash-verified vendor binary lock.
+            return None
+        if not isinstance(selected, dict):
+            return "selected-asset-missing"
+        for field in ("package", "version", "architecture", "filename", "url", "sha256", "size"):
+            if selected.get(field) in (None, ""):
+                return f"selected-asset-field-missing:{field}"
+        if selected.get("package") != row.get("target_package"):
+            return "selected-package-does-not-match-target"
+        if selected.get("version") != row.get("target_version"):
+            return "selected-version-does-not-match-target"
+        if selected.get("architecture") != row.get("target_architecture"):
+            return "selected-architecture-does-not-match-target"
+        if row.get("version_policy") == "binary-exact":
+            if row.get("target_version") != row.get("reference_version"):
+                return "binary-exact-target-version-differs"
+        elif row.get("version_policy") == "source-exact-binnmu":
+            if selected.get("source") != row.get("source"):
+                return "binnmu-source-name-mismatch"
+            if selected.get("source_version") != row.get("source_version"):
+                return "binnmu-source-version-mismatch"
+        return None
+
+    incomplete_exact = []
+    for row in normalized:
+        reason = exact_asset_error(row)
+        if reason:
+            incomplete_exact.append({**row, "incomplete_reason": reason})
     summary = {
         "schema": 1,
         "policy": "one-normalized-row-per-iso-binary-package",
@@ -286,6 +349,7 @@ def main() -> int:
             and not errors
             and not unknown
             and not unresolved
+            and not incomplete_exact
         ),
     }
 

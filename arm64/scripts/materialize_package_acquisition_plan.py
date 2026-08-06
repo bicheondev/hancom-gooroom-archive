@@ -107,18 +107,23 @@ def validate_deb(task: dict[str, Any], path: Path) -> dict[str, Any]:
     package = deb_field(path, "Package")
     version = deb_field(path, "Version")
     architecture = deb_field(path, "Architecture")
-    expected_package = task["package"]
-    expected_version = task["reference_version"]
+    expected_package = task.get("target_package") or task["package"]
+    expected_version = task.get("target_version") or task["reference_version"]
+    expected_target_architecture = task.get("target_architecture")
     mapping = task["mapping_status"]
     if package != expected_package:
         raise RuntimeError(f"{path.name}: package {package} != {expected_package}")
     if version != expected_version:
         raise RuntimeError(f"{path.name}: version {version} != {expected_version}")
-    expected_architectures = {
-        "exact-arm64": {"arm64"},
-        "rebuild-arm64": {"arm64"},
-        "reuse-all": {"all"},
-    }.get(mapping, {"arm64", "all"})
+    expected_architectures = (
+        {expected_target_architecture}
+        if expected_target_architecture in {"arm64", "all"}
+        else {
+            "exact-arm64": {"arm64"},
+            "rebuild-arm64": {"arm64"},
+            "reuse-all": {"all"},
+        }.get(mapping, {"arm64", "all"})
+    )
     if architecture not in expected_architectures:
         raise RuntimeError(
             f"{path.name}: architecture {architecture} not in {sorted(expected_architectures)}"
@@ -237,9 +242,10 @@ def replacement_download(task: dict[str, Any]) -> dict[str, Any] | None:
     replacement_package = route.get("package") or replacement.get("package")
     replacement_version = route.get("version") or replacement.get("version")
     if replacement_package:
-        normalized["package"] = replacement_package
+        normalized["target_package"] = replacement_package
     if replacement_version:
-        normalized["reference_version"] = replacement_version
+        normalized["target_version"] = replacement_version
+    normalized["target_architecture"] = route.get("architecture", "arm64")
     normalized["mapping_status"] = route.get("mapping_status", "architecture-replacement")
     return normalized
 
