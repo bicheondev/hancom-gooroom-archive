@@ -10,12 +10,15 @@ usage() {
 LOCK_JSON="$1"
 SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
+SNAPSHOT="${HANCOM_GOOROOM_DEBIAN_SNAPSHOT:-20230730T235959Z}"
 
 command -v jq >/dev/null
 command -v curl >/dev/null
 command -v docker >/dev/null
+command -v dpkg-parsechangelog >/dev/null
 
 mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR_ABS="$(cd "$OUTPUT_DIR" && pwd)"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -37,10 +40,18 @@ EXPECTED_PACKAGES="$(jq -r '.binary_packages | join(" ")' <<<"$entry")"
 case "$SOURCE_VERSION" in
   *$'\n'*|*$'\r'*) echo "invalid version" >&2; exit 2 ;;
 esac
-case "$COMMIT_SHA" in
-  [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
-  *) echo "invalid commit SHA: $COMMIT_SHA" >&2; exit 2 ;;
-esac
+[[ "$COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "invalid commit SHA: $COMMIT_SHA" >&2
+  exit 2
+}
+[[ "$TREE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "invalid tree SHA: $TREE_SHA" >&2
+  exit 2
+}
+[[ "$SNAPSHOT" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || {
+  echo "invalid Debian snapshot: $SNAPSHOT" >&2
+  exit 2
+}
 
 ARCHIVE="$WORK_DIR/source.tar.gz"
 SOURCE_ROOT="$WORK_DIR/source"
@@ -72,56 +83,118 @@ DECLARED_VERSION="$(dpkg-parsechangelog -l"$SOURCE_ROOT/debian/changelog" -S Ver
 cat > "$WORK_DIR/build-inside.sh" <<'INNER'
 #!/usr/bin/env bash
 set -euo pipefail
+
+: "${SNAPSHOT:?SNAPSHOT is required}"
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
-export DEB_BUILD_OPTIONS="nocheck parallel=2"
-export DEB_BUILD_PROFILES="pkg.nocheck"
 
+# The Docker base tag moves over time. It is therefore used only as a tiny
+# bootstrap host. The actual package is built inside a fresh ARM64 Bullseye
+# rootfs reconstructed from the same dated Debian snapshot used by the package
+# map, so current and historical library revisions never mix.
 apt-get update
 apt-get install -y --no-install-recommends \
-  ca-certificates gnupg dirmngr curl xz-utils \
-  build-essential devscripts equivs fakeroot dpkg-dev debhelper
+  ca-certificates debootstrap xz-utils
 
-cat > /etc/apt/sources.list <<'EOF'
-deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/20240331T235959Z/ bullseye main contrib non-free
-deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/20240331T235959Z/ bullseye-updates main contrib non-free
-deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20240331T235959Z/ bullseye-security main contrib non-free
+ROOT=/snapshot-root
+rm -rf "$ROOT"
+mkdir -p "$ROOT"
+deBootstrapLog=/tmp/debootstrap.log
+if ! debootstrap \
+  --arch=arm64 \
+  --variant=buildd \
+  --no-check-gpg \
+  --include=ca-certificates \
+  bullseye \
+  "$ROOT" \
+  "https://snapshot.debian.org/archive/debian/${SNAPSHOT}/" \
+  >"$deBootstrapLog" 2>&1; then
+  cat "$deBootstrapLog" >&2
+  exit 20
+fi
+cat "$deBootstrapLog"
+
+cat > "$ROOT/etc/apt/sources.list" <<EOF
+deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT}/ bullseye main contrib non-free
+deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT}/ bullseye-updates main contrib non-free
+deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT}/ bullseye-security main contrib non-free
 EOF
-rm -f /etc/apt/sources.list.d/*
-cat > /etc/apt/apt.conf.d/99snapshot <<'EOF'
+rm -f "$ROOT/etc/apt/sources.list.d/"*
+cat > "$ROOT/etc/apt/apt.conf.d/99snapshot" <<'EOF'
 Acquire::Check-Valid-Until "false";
 Acquire::Retries "5";
 APT::Get::Assume-Yes "true";
 Dpkg::Use-Pty "0";
 EOF
-apt-get update
+cp -L /etc/resolv.conf "$ROOT/etc/resolv.conf"
 
-cd /src
+mkdir -p "$ROOT/build/source" "$ROOT/build/output"
+cp -a /src/. "$ROOT/build/source/"
+
+cat > "$ROOT/build/run-build.sh" <<'CHROOT'
+#!/usr/bin/env bash
+set -euo pipefail
+export HOME=/root
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export DEB_BUILD_OPTIONS="nocheck parallel=2"
+export DEB_BUILD_PROFILES="nodoc"
+
+apt-get update
+apt-get install -y --no-install-recommends \
+  build-essential ca-certificates curl debhelper devscripts dpkg-dev \
+  equivs fakeroot gnupg xz-utils
+
+cd /build/source
+
+# Build only architecture-dependent binaries. This deliberately excludes
+# Build-Depends-Indep/documentation and mirrors what is needed to replace the
+# AMD64 executables and shared libraries in the reference rootfs.
 mk-build-deps \
+  --build-dep \
   --install \
   --remove \
-  --tool 'apt-get -y --no-install-recommends -o Dpkg::Use-Pty=0' \
+  --tool 'apt-get -y --no-install-recommends -o Dpkg::Use-Pty=0 -o Debug::pkgProblemResolver=yes' \
   debian/control
 
-dpkg-buildpackage -us -uc -b -j2
-mkdir -p /out
-find .. -maxdepth 1 -type f \( -name '*.deb' -o -name '*.buildinfo' -o -name '*.changes' \) \
-  -exec cp -v '{}' /out/ \;
+dpkg-checkbuilddeps -B
+dpkg-buildpackage -us -uc -B -j2
+find /build -maxdepth 1 -type f \
+  \( -name '*.deb' -o -name '*.buildinfo' -o -name '*.changes' \) \
+  -exec cp -v '{}' /build/output/ \;
+CHROOT
+chmod +x "$ROOT/build/run-build.sh"
+
+cleanup_mounts() {
+  umount -R "$ROOT/dev" 2>/dev/null || true
+  umount "$ROOT/proc" 2>/dev/null || true
+  umount "$ROOT/sys" 2>/dev/null || true
+}
+trap cleanup_mounts EXIT
+mount --rbind /dev "$ROOT/dev"
+mount --make-rslave "$ROOT/dev"
+mount -t proc proc "$ROOT/proc"
+mount -t sysfs sysfs "$ROOT/sys"
+
+chroot "$ROOT" /bin/bash /build/run-build.sh
+cp -av "$ROOT/build/output/." /out/
 INNER
 chmod +x "$WORK_DIR/build-inside.sh"
 
-# The container is natively arm64 from dpkg's point of view and executes through
-# binfmt/QEMU on the amd64 GitHub runner. This avoids unreliable cross-build
-# assumptions in old Debian packaging.
-docker run --rm --platform linux/arm64 \
-  --volume "$SOURCE_ROOT:/src:rw" \
+# The bootstrap container executes as ARM64 through binfmt/QEMU. --privileged is
+# required only to mount proc/sys/dev inside the isolated historical chroot.
+docker run --rm --privileged --platform linux/arm64 \
+  --env "SNAPSHOT=$SNAPSHOT" \
+  --volume "$SOURCE_ROOT:/src:ro" \
   --volume "$WORK_DIR/build-inside.sh:/build-inside.sh:ro" \
-  --volume "$(cd "$OUTPUT_DIR" && pwd):/out:rw" \
+  --volume "$OUTPUT_DIR_ABS:/out:rw" \
   arm64v8/debian:bullseye-slim \
   /bin/bash /build-inside.sh
 
 shopt -s nullglob
-DEBS=("$OUTPUT_DIR"/*.deb)
+DEBS=("$OUTPUT_DIR_ABS"/*.deb)
 [ "${#DEBS[@]}" -gt 0 ] || {
   echo "No .deb output was produced" >&2
   exit 4
@@ -146,7 +219,10 @@ done
 for expected in $EXPECTED_PACKAGES; do
   found=false
   for produced in "${produced_packages[@]}"; do
-    if [ "$produced" = "$expected" ]; then found=true; break; fi
+    if [ "$produced" = "$expected" ]; then
+      found=true
+      break
+    fi
   done
   if [ "$found" != true ]; then
     echo "Expected binary package was not built: $expected" >&2
@@ -154,9 +230,9 @@ for expected in $EXPECTED_PACKAGES; do
   fi
 done
 
-cat > "$OUTPUT_DIR/build-lock.json" <<EOF
+cat > "$OUTPUT_DIR_ABS/build-lock.json" <<EOF
 {
-  "schema": 1,
+  "schema": 2,
   "source": $(jq -Rn --arg v "$SOURCE_NAME" '$v'),
   "source_version": $(jq -Rn --arg v "$SOURCE_VERSION" '$v'),
   "repository": $(jq -Rn --arg v "$REPOSITORY" '$v'),
@@ -164,13 +240,15 @@ cat > "$OUTPUT_DIR/build-lock.json" <<EOF
   "tree_sha": $(jq -Rn --arg v "$TREE_SHA" '$v'),
   "source_archive_sha256": $(jq -Rn --arg v "$ARCHIVE_SHA256" '$v'),
   "target_architecture": "arm64",
+  "debian_snapshot": $(jq -Rn --arg v "$SNAPSHOT" '$v'),
+  "build_mode": "native-arm64-qemu-historical-chroot-binary-arch",
   "expected_binary_packages": $(jq -c '.binary_packages' <<<"$entry")
 }
 EOF
 
-find "$OUTPUT_DIR" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+find "$OUTPUT_DIR_ABS" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
   | sort -z \
   | xargs -0 sha256sum \
-  > "$OUTPUT_DIR/SHA256SUMS"
+  > "$OUTPUT_DIR_ABS/SHA256SUMS"
 
-cat "$OUTPUT_DIR/build-lock.json"
+cat "$OUTPUT_DIR_ABS/build-lock.json"
