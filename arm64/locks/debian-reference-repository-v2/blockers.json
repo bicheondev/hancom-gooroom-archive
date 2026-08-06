@@ -1,0 +1,72 @@
+[
+  {
+    "reason": "apt-download-failed",
+    "specs": [
+      "linux-image-5.10.0-23-amd64:arm64=5.10.179-1+grm3u1"
+    ],
+    "stdout": "",
+    "stderr": "E: Unable to locate package linux-image-5.10.0-23-amd64:arm64\nE: Couldn't find any package by glob 'linux-image-5.10.0-23-amd64'\nE: Couldn't find any package by regex 'linux-image-5.10.0-23-amd64'\n",
+    "returncode": 100,
+    "target": {
+      "reference_package": "linux-image-5.10.0-23-amd64",
+      "reference_version": "5.10.179-1+grm3u1",
+      "reference_architecture": "amd64",
+      "source": "linux",
+      "source_version": "5.10.179-1+grm3u1",
+      "mapping_status": "arch-replace",
+      "target_package": "linux-image-5.10.0-23-amd64",
+      "target_version": "5.10.179-1+grm3u1",
+      "target_architecture": "arm64"
+    }
+  },
+  {
+    "reason": "apt-download-failed",
+    "specs": [
+      "linux-image-amd64:arm64=5.10.179-1+grm3u1"
+    ],
+    "stdout": "",
+    "stderr": "E: Unable to locate package linux-image-amd64:arm64\n",
+    "returncode": 100,
+    "target": {
+      "reference_package": "linux-image-amd64",
+      "reference_version": "5.10.179-1+grm3u1",
+      "reference_architecture": "amd64",
+      "source": "linux-signed-amd64",
+      "source_version": "5.10.179+1+grm3u1",
+      "mapping_status": "arch-replace",
+      "target_package": "linux-image-amd64",
+      "target_version": "5.10.179-1+grm3u1",
+      "target_architecture": "arm64"
+    }
+  },
+  {
+    "reason": "missing-or-ambiguous-downloaded-deb",
+    "target": {
+      "reference_package": "linux-image-5.10.0-23-amd64",
+      "reference_version": "5.10.179-1+grm3u1",
+      "reference_architecture": "amd64",
+      "source": "linux",
+      "source_version": "5.10.179-1+grm3u1",
+      "mapping_status": "arch-replace",
+      "target_package": "linux-image-5.10.0-23-amd64",
+      "target_version": "5.10.179-1+grm3u1",
+      "target_architecture": "arm64"
+    },
+    "observed_count": 0
+  },
+  {
+    "reason": "missing-or-ambiguous-downloaded-deb",
+    "target": {
+      "reference_package": "linux-image-amd64",
+      "reference_version": "5.10.179-1+grm3u1",
+      "reference_architecture": "amd64",
+      "source": "linux-signed-amd64",
+      "source_version": "5.10.179+1+grm3u1",
+      "mapping_status": "arch-replace",
+      "target_package": "linux-image-amd64",
+      "target_version": "5.10.179-1+grm3u1",
+      "target_architecture": "arm64"
+    },
+    "observed_count": 0
+  }
+]
