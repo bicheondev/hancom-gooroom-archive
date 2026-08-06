@@ -31,10 +31,10 @@ jobs:
           rm -rf work/upstream-probe
           mkdir -p work/upstream-probe/files
 
-          cat > work/upstream-probe/targets.tsv <<'EOF'
-          gooroom	http://update.hancomgooroom.com/gooroom	gooroom-3.0
-          hancom	http://update.hancomgooroom.com/hancom	hancom-3.0
-          EOF
+          printf '%s\t%s\t%s\n' \
+            gooroom http://update.hancomgooroom.com/gooroom gooroom-3.0 \
+            hancom http://update.hancomgooroom.com/hancom hancom-3.0 \
+            > work/upstream-probe/targets.tsv
 
           : > work/upstream-probe/http-status.tsv
           printf 'repository\tpath\thttp_code\tcontent_type\tsize_download\turl_effective\n' \
