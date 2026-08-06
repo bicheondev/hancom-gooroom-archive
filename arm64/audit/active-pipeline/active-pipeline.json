@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 80,
-    "workflow_name_count": 80,
-    "referenced_local_file_count": 105,
-    "error_count": 66,
+    "workflow_count": 82,
+    "workflow_name_count": 82,
+    "referenced_local_file_count": 110,
+    "error_count": 70,
     "warning_count": 0,
     "passed": false
   },
@@ -634,6 +634,28 @@
         "arm64/scripts/finalize_arm64_live_rootfs.sh",
         "arm64/scripts/test_arm64_iso_qemu.sh",
         "arm64/scripts/verify_arm64_rootfs.py"
+      ]
+    },
+    {
+      "filename": "arm64-installed-system-boot.yml",
+      "path": ".github/workflows/arm64-installed-system-boot.yml",
+      "name": "ARM64 port - boot-test installed GPT system from final ISO",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/installed-system/release-lock.json",
+        "arm64/locks/iso/iso-build.json",
+        "arm64/locks/iso/release-lock.json",
+        "arm64/scripts/build_arm64_installed_disk.sh",
+        "arm64/scripts/test_arm64_installed_disk_qemu.sh"
       ]
     },
     {
@@ -1600,6 +1622,22 @@
       ]
     },
     {
+      "filename": "arm64-wire-installed-boot-maintenance.yml",
+      "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
+      "name": "ARM64 port - wire installed-system validation after final ISO",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/wire_installed_boot_dispatch.py"
+      ]
+    },
+    {
       "filename": "arm64-workflow-secret-audit.yml",
       "path": ".github/workflows/arm64-workflow-secret-audit.yml",
       "name": "ARM64 port - audit workflows for literal credentials",
@@ -1692,8 +1730,15 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
     ],
+    "arm64/locks/installed-system/release-lock.json": [
+      ".github/workflows/arm64-installed-system-boot.yml"
+    ],
+    "arm64/locks/iso/iso-build.json": [
+      ".github/workflows/arm64-installed-system-boot.yml"
+    ],
     "arm64/locks/iso/release-lock.json": [
-      ".github/workflows/arm64-final-live-iso.yml"
+      ".github/workflows/arm64-final-live-iso.yml",
+      ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/locks/minimal-boot-attempt/LOCKSUMS.sh": [
       ".github/workflows/arm64-minimal-boot-record.yml"
@@ -1828,6 +1873,9 @@
     "arm64/scripts/boot_test_arm64_uefi_iso.sh": [
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
       ".github/workflows/arm64-stage0-live-v5.yml"
+    ],
+    "arm64/scripts/build_arm64_installed_disk.sh": [
+      ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/build_arm64_live_iso.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -2091,6 +2139,9 @@
     "arm64/scripts/targeted_source_archaeology_v2.py": [
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
+    "arm64/scripts/test_arm64_installed_disk_qemu.sh": [
+      ".github/workflows/arm64-installed-system-boot.yml"
+    ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
     ],
@@ -2136,6 +2187,9 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-package-smoke.yml"
+    ],
+    "arm64/scripts/wire_installed_boot_dispatch.py": [
+      ".github/workflows/arm64-wire-installed-boot-maintenance.yml"
     ],
     "arm64/scripts/wire_progress_dispatches.py": [
       ".github/workflows/arm64-chain-progress-maintenance-safe.yml"
@@ -2236,6 +2290,21 @@
       "path": ".github/workflows/arm64-final-live-iso.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/rootfs/verification.json"
+    },
+    {
+      "path": ".github/workflows/arm64-installed-system-boot.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/installed-system/release-lock.json"
+    },
+    {
+      "path": ".github/workflows/arm64-installed-system-boot.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/iso/iso-build.json"
+    },
+    {
+      "path": ".github/workflows/arm64-installed-system-boot.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/iso/release-lock.json"
     },
     {
       "path": ".github/workflows/arm64-inventory.yml",
@@ -2454,6 +2523,10 @@
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json"
+    },
+    {
+      "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
       "path": ".github/workflows/arm64-dependency-retry.yml",
