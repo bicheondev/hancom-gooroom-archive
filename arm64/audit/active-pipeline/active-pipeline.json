@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 75,
-    "workflow_name_count": 75,
-    "referenced_local_file_count": 101,
-    "error_count": 64,
+    "workflow_count": 78,
+    "workflow_name_count": 78,
+    "referenced_local_file_count": 104,
+    "error_count": 65,
     "warning_count": 0,
     "passed": false
   },
@@ -931,6 +931,23 @@
       ]
     },
     {
+      "filename": "arm64-package-plan-audit.yml",
+      "path": ".github/workflows/arm64-package-plan-audit.yml",
+      "name": "ARM64 port - audit final package plan inputs",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_package_plan_inventory.py"
+      ]
+    },
+    {
       "filename": "arm64-package-smoke.yml",
       "path": ".github/workflows/arm64-package-smoke.yml",
       "name": "ARM64 port - compile locked package smoke test",
@@ -1392,6 +1409,22 @@
       ]
     },
     {
+      "filename": "arm64-start-curated-batches.yml",
+      "path": ".github/workflows/arm64-start-curated-batches.yml",
+      "name": "ARM64 port - start all curated exact-source rebuild batches",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/status/curated-batches-launch.json"
+      ]
+    },
+    {
       "filename": "arm64-upstream-probe.yml",
       "path": ".github/workflows/arm64-upstream-probe.yml",
       "name": "ARM64 port - probe archived upstream repositories",
@@ -1529,6 +1562,23 @@
         "arm64/locks/build-wave2-v1/LOCKSUMS.sh",
         "arm64/locks/build-wave2-v1/wave2-v1-summary.json",
         "arm64/locks/build-wave2-v1/workflow-run.json"
+      ]
+    },
+    {
+      "filename": "arm64-workflow-secret-audit.yml",
+      "path": ".github/workflows/arm64-workflow-secret-audit.yml",
+      "name": "ARM64 port - audit workflows for literal credentials",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_workflow_secret_literals.py"
       ]
     },
     {
@@ -1732,6 +1782,12 @@
     "arm64/scripts/audit_arm64_port_state.py": [
       ".github/workflows/arm64-port-state-audit.yml",
       ".github/workflows/arm64-repair-audit-coverage.yml"
+    ],
+    "arm64/scripts/audit_package_plan_inventory.py": [
+      ".github/workflows/arm64-package-plan-audit.yml"
+    ],
+    "arm64/scripts/audit_workflow_secret_literals.py": [
+      ".github/workflows/arm64-workflow-secret-audit.yml"
     ],
     "arm64/scripts/boot_test_arm64_uefi_iso.sh": [
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
@@ -2043,6 +2099,9 @@
     ],
     "arm64/scripts/wire_progress_dispatches.py": [
       ".github/workflows/arm64-chain-progress-maintenance-safe.yml"
+    ],
+    "arm64/status/curated-batches-launch.json": [
+      ".github/workflows/arm64-start-curated-batches.yml"
     ]
   },
   "errors": [
@@ -2279,6 +2338,11 @@
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json"
+    },
+    {
+      "path": ".github/workflows/arm64-start-curated-batches.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/status/curated-batches-launch.json"
     },
     {
       "path": ".github/workflows/arm64-upstream-probe.yml",
