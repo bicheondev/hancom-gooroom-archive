@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 92,
-    "workflow_name_count": 92,
-    "referenced_local_file_count": 128,
+    "workflow_count": 93,
+    "workflow_name_count": 93,
+    "referenced_local_file_count": 132,
     "error_count": 0,
-    "warning_count": 42,
+    "warning_count": 36,
     "passed": true
   },
   "workflows": [
@@ -870,6 +870,34 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_native_rebuild_batch.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-native-rebuild-controller-v3.yml",
+      "path": ".github/workflows/arm64-native-rebuild-controller-v3.yml",
+      "name": "ARM64 port - native exact-source rebuild controller v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/collect_native_rebuild_results_v4.py",
+        "arm64/scripts/select_baseline_reverification_v3.py",
+        "arm64/scripts/select_native_rebuild_batch_v3.py",
+        "arm64/scripts/select_next_native_rebuild_wave_v3.py",
+        "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
     },
     {
@@ -2106,6 +2134,9 @@
     "arm64/scripts/build_locked_apt_source_arm64_v2.sh": [
       ".github/workflows/arm64-build-qtbase.yml"
     ],
+    "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+    ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
@@ -2124,11 +2155,13 @@
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v5.sh": [
-      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
@@ -2182,7 +2215,8 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
     "arm64/scripts/collect_native_rebuild_results_v4.py": [
-      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
@@ -2345,6 +2379,9 @@
     "arm64/scripts/select_baseline_reverification.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml"
     ],
+    "arm64/scripts/select_baseline_reverification_v3.py": [
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+    ],
     "arm64/scripts/select_dependency_retry_wave.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml"
     ],
@@ -2354,8 +2391,14 @@
     "arm64/scripts/select_native_rebuild_batch.py": [
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
+    "arm64/scripts/select_native_rebuild_batch_v3.py": [
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+    ],
     "arm64/scripts/select_next_native_rebuild_wave.py": [
       ".github/workflows/arm64-native-rebuild-backlog.yml"
+    ],
+    "arm64/scripts/select_next_native_rebuild_wave_v3.py": [
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/summarize_arm64_boot_attempt.py": [
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
@@ -2420,7 +2463,8 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
     "arm64/scripts/verify_arm64_rebuild_v3.py": [
-      ".github/workflows/arm64-dependency-retry-controller-v3.yml"
+      ".github/workflows/arm64-dependency-retry-controller-v3.yml",
+      ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/verify_arm64_rootfs.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
@@ -2509,6 +2553,11 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
+      "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "local_path": "arm64/locks/effective-sources/latest-git-merge-report.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
       "path": ".github/workflows/arm64-minimal-boot-record.yml",
       "local_path": "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -2594,21 +2643,6 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-source-authority-v3.yml",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v4.yml",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v5.yml",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
       "local_path": "arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -2636,26 +2670,6 @@
     {
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
-      "local_path": "arm64/locks/wayback-sources/fast-rebuild-blockers.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
-      "local_path": "arm64/locks/wayback-sources/fast-summary.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
-      "local_path": "arm64/locks/wayback-sources/fast-wayback-source-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     }
   ]
