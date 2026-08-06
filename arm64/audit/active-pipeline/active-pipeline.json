@@ -5,9 +5,9 @@
     "workflow_count": 93,
     "workflow_name_count": 93,
     "referenced_local_file_count": 132,
-    "error_count": 0,
+    "error_count": 1,
     "warning_count": 36,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -2490,7 +2490,13 @@
       ".github/workflows/arm64-build-wave1-v2.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-repair-git-builder-v2.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 50, column 1:\n    '''\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 53, column 30:\n                  bootstrap + '''REFERENCE_JSON=\"${HANCOM_GOOROOM ... \n                                 ^"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
