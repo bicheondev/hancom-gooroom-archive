@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 94,
-    "workflow_name_count": 94,
-    "referenced_local_file_count": 133,
+    "workflow_count": 95,
+    "workflow_name_count": 95,
+    "referenced_local_file_count": 134,
     "error_count": 0,
-    "warning_count": 36,
+    "warning_count": 27,
     "passed": true
   },
   "workflows": [
@@ -41,6 +41,26 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-audit-vendor-payload-repacks.yml",
+      "path": ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
+      "name": "ARM64 port - audit exact vendor payload repacks",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/vendor-binaries/vendor-binary-lock.json",
+        "arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py"
+      ]
     },
     {
       "filename": "arm64-baseline-rebuild-evidence.yml",
@@ -1941,6 +1961,7 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
+      ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
@@ -2019,6 +2040,7 @@
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
     "arm64/locks/reference/amd64-reference.json": [
+      ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
       ".github/workflows/arm64-build-wave2-v1.yml",
@@ -2093,6 +2115,7 @@
       ".github/workflows/arm64-build-qtbase-targeted.yml"
     ],
     "arm64/locks/vendor-binaries/vendor-binary-lock.json": [
+      ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
@@ -2130,6 +2153,9 @@
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
       ".github/workflows/arm64-active-pipeline-audit.yml"
+    ],
+    "arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py": [
+      ".github/workflows/arm64-audit-vendor-payload-repacks.yml"
     ],
     "arm64/scripts/audit_arm64_port_state.py": [
       ".github/workflows/arm64-port-state-audit.yml",
@@ -2537,21 +2563,6 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "local_path": "arm64/locks/acquisition-plan/summary.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-final-live-iso.yml",
       "local_path": "arm64/locks/iso/release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -2612,23 +2623,8 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       "local_path": "arm64/locks/debian-arm64/normalized-package-map.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-port-coverage-v2.yml",
-      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
@@ -2648,11 +2644,6 @@
     },
     {
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
@@ -2664,16 +2655,6 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
