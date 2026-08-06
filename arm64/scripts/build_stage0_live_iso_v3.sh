@@ -35,43 +35,99 @@ import sys
 source = Path(sys.argv[1])
 destination = Path(sys.argv[2])
 text = source.read_text(encoding="utf-8")
-old = "http://snapshot.debian.org"
-count = text.count(old)
-if count < 2:
-    raise SystemExit(
-        f"refusing to patch an unexpected stage-0 builder: "
-        f"snapshot URL count={count}"
-    )
-text = text.replace(old, "https://snapshot.debian.org")
-needle = 'Acquire::Retries "5";'
-if needle in text:
-    text = text.replace(
-        needle,
-        'Acquire::Retries "10";\n'
-        'Acquire::https::Timeout "45";\n'
-        'Acquire::http::Timeout "45";',
-        1,
-    )
 
-# arc-icon-theme is not present in the dated Debian ARM64 archive. The exact
-# Architecture: all vendor DEB has already been hash/control/ELF-checked above
-# and is applied through OVERLAY_ROOT after the Debian desktop transaction.
-# Asking APT for the same vendor-only package makes the otherwise valid build
-# fail before that verified overlay can be installed.
+snapshot_url = "http://snapshot.debian.org"
+snapshot_count = text.count(snapshot_url)
+if snapshot_count < 2:
+    raise SystemExit(
+        "refusing to patch an unexpected stage-0 builder: "
+        f"snapshot URL count={snapshot_count}"
+    )
+text = text.replace(snapshot_url, "https://snapshot.debian.org")
+
+retry_needle = 'Acquire::Retries "5";'
+if text.count(retry_needle) != 1:
+    raise SystemExit("unexpected snapshot retry configuration")
+text = text.replace(
+    retry_needle,
+    'Acquire::Retries "10";\n'
+    'Acquire::https::Timeout "45";\n'
+    'Acquire::http::Timeout "45";',
+    1,
+)
+
+# arc-icon-theme is absent from the dated Debian ARM64 archive. Its exact
+# Architecture: all vendor DEB is already hash/control/ELF checked and is
+# applied through OVERLAY_ROOT after the Debian desktop transaction.
 apt_vendor_line = (
     "  arc-icon-theme dconf-cli eog evince file-roller fonts-nanum "
     "fonts-noto-cjk \\\n"
 )
-replacement_line = (
+apt_replacement_line = (
     "  dconf-cli eog evince file-roller fonts-nanum fonts-noto-cjk \\\n"
 )
-line_count = text.count(apt_vendor_line)
-if line_count != 1:
-    raise SystemExit(
-        "refusing to patch an unexpected stage-0 desktop package list: "
-        f"arc-icon-theme line count={line_count}"
-    )
-text = text.replace(apt_vendor_line, replacement_line, 1)
+if text.count(apt_vendor_line) != 1:
+    raise SystemExit("unexpected arc-icon-theme desktop package line")
+text = text.replace(apt_vendor_line, apt_replacement_line, 1)
+
+# Debian Bullseye's debootstrap root is merged-/usr: /bin, /sbin and /lib are
+# receiver-side directory symlinks. A plain rsync of an overlay containing a
+# physical lib/ directory replaces /lib -> usr/lib, hiding the ARM64 dynamic
+# loader and making every dynamically linked program appear absent. Preserve
+# those receiver symlinks and gate shell/loader execution on both sides of the
+# overlay merge.
+overlay_merge = 'rsync -aHAX "$OVERLAY_ROOT/" "$ROOTFS/"'
+if text.count(overlay_merge) != 1:
+    raise SystemExit("unexpected stage-0 overlay merge command")
+overlay_merge_replacement = r'''MERGED_USR_AUDIT="$OUTPUT_DIR/stage0-merged-usr-overlay.tsv"
+printf 'phase\tpath\ttype\ttarget\n' > "$MERGED_USR_AUDIT"
+verify_merged_usr_overlay_boundary() {
+  local phase="$1" merged_path path target
+  for merged_path in bin sbin lib; do
+    path="$ROOTFS/$merged_path"
+    if [ ! -L "$path" ]; then
+      printf '%s\t/%s\t%s\t%s\n' \
+        "$phase" "$merged_path" "$(stat -c %F "$path" 2>/dev/null || printf missing)" "" \
+        >> "$MERGED_USR_AUDIT"
+      echo "merged-/usr invariant failed: /$merged_path is not a symlink during $phase" >&2
+      return 23
+    fi
+    target="$(readlink "$path")"
+    printf '%s\t/%s\tsymlink\t%s\n' \
+      "$phase" "$merged_path" "$target" >> "$MERGED_USR_AUDIT"
+    if [ "$target" != "usr/$merged_path" ]; then
+      echo "merged-/usr invariant failed: /$merged_path -> $target during $phase" >&2
+      return 23
+    fi
+  done
+  if [ ! -x "$ROOTFS/bin/bash" ]; then
+    echo "ARM64 bash is not executable during $phase" >&2
+    return 23
+  fi
+  if [ ! -e "$ROOTFS/lib/ld-linux-aarch64.so.1" ]; then
+    echo "ARM64 dynamic loader is missing during $phase" >&2
+    return 23
+  fi
+  if ! chroot "$ROOTFS" /bin/bash -c 'exit 0'; then
+    echo "ARM64 bash/loader execution gate failed during $phase" >&2
+    return 23
+  fi
+  printf '%s\t/bin/bash\tchroot-executable\tok\n' \
+    "$phase" >> "$MERGED_USR_AUDIT"
+  printf '%s\t/lib/ld-linux-aarch64.so.1\tloader-visible\tok\n' \
+    "$phase" >> "$MERGED_USR_AUDIT"
+}
+
+verify_merged_usr_overlay_boundary before-overlay
+rsync -aHAX --keep-dirlinks "$OVERLAY_ROOT/" "$ROOTFS/"
+verify_merged_usr_overlay_boundary after-overlay
+if [ ! -f "$ROOTFS/lib/udev/rules.d/61-gnome-settings-daemon-rfkill.rules" ]; then
+  echo "verified vendor /lib payload did not land through merged-/usr" >&2
+  exit 23
+fi
+printf 'after-overlay\t/lib/udev/rules.d/61-gnome-settings-daemon-rfkill.rules\tpayload-visible\tok\n' \
+  >> "$MERGED_USR_AUDIT"'''
+text = text.replace(overlay_merge, overlay_merge_replacement, 1)
 
 destination.write_text(text, encoding="utf-8")
 PY
@@ -156,6 +212,8 @@ result = {
     "vendor_overlay_policy": {
         "arc_icon_theme": "verified-architecture-all-overlay",
         "apt_vendor_package_request_removed": True,
+        "merged_usr_receiver_symlinks": "preserved-and-gated",
+        "rsync_keep_dirlinks": True,
     },
     "output_files": files,
     "diagnostic_matches": error_lines,
