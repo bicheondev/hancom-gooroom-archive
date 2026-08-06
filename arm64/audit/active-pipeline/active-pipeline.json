@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 96,
-    "workflow_name_count": 96,
-    "referenced_local_file_count": 147,
+    "workflow_count": 97,
+    "workflow_name_count": 97,
+    "referenced_local_file_count": 151,
     "error_count": 0,
     "warning_count": 29,
     "passed": true
@@ -157,6 +157,31 @@
         "arm64/scripts/build_locked_apt_source_arm64.sh",
         "arm64/scripts/build_locked_apt_source_arm64_v2.sh",
         "arm64/scripts/verify_deb_payload_machine.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-recovered-dsc-sources-v2.yml",
+      "path": ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      "name": "ARM64 port - build recovered exact DSC sources v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v2/effective-source-lock-v2.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/build_locked_dsc_arm64_v2.sh",
+        "arm64/scripts/select_dsc_rebuild_matrix_v2.py",
+        "arm64/scripts/verify_dsc_arm64_rebuild_v2.py"
       ]
     },
     {
@@ -2000,6 +2025,9 @@
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
+    "arm64/locks/effective-sources-v2/effective-source-lock-v2.json": [
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
+    ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
       ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-port-coverage.yml"
@@ -2088,6 +2116,7 @@
     "arm64/locks/reference/amd64-reference.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
       ".github/workflows/arm64-build-wave2-v1.yml",
       ".github/workflows/arm64-debian-map.yml",
@@ -2238,6 +2267,9 @@
     ],
     "arm64/scripts/build_locked_apt_source_arm64_v2.sh": [
       ".github/workflows/arm64-build-qtbase.yml"
+    ],
+    "arm64/scripts/build_locked_dsc_arm64_v2.sh": [
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
     ],
     "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
@@ -2512,6 +2544,9 @@
     "arm64/scripts/select_dependency_retry_wave_v3.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml"
     ],
+    "arm64/scripts/select_dsc_rebuild_matrix_v2.py": [
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
+    ],
     "arm64/scripts/select_infrastructure_retry_wave_v3.py": [
       ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
@@ -2603,6 +2638,9 @@
     ],
     "arm64/scripts/verify_deb_payload_machine_v2.py": [
       ".github/workflows/arm64-package-repo-incremental.yml"
+    ],
+    "arm64/scripts/verify_dsc_arm64_rebuild_v2.py": [
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
