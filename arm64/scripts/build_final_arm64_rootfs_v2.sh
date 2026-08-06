@@ -87,7 +87,7 @@ debootstrap \
   --keyring=/usr/share/keyrings/debian-archive-keyring.gpg \
   --include=ca-certificates,debian-archive-keyring \
   bullseye "$ROOTFS" \
-  "http://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/" \
+  "https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/" \
   2>&1 | tee "$OUTPUT_DIR/debootstrap.log"
 
 mkdir -p \
@@ -102,17 +102,19 @@ cp -L /etc/resolv.conf "$ROOTFS/etc/resolv.conf"
 
 cat > "$ROOTFS/etc/apt/sources.list" <<EOF
 deb [trusted=yes] file:/mnt/final-repository ./
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye main contrib non-free
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye-updates main contrib non-free
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/${SNAPSHOT_BASE}/ bullseye-security main contrib non-free
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye main contrib non-free
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye-updates main contrib non-free
-deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/${SNAPSHOT_UPDATES}/ bullseye-security main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye-updates main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_BASE}/ bullseye-security main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye-updates main contrib non-free
+deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_UPDATES}/ bullseye-security main contrib non-free
 EOF
 rm -f "$ROOTFS/etc/apt/sources.list.d/"*
 cat > "$ROOTFS/etc/apt/apt.conf.d/99hancom-gooroom-arm64-build" <<'EOF'
 Acquire::Check-Valid-Until "false";
-Acquire::Retries "5";
+Acquire::Retries "10";
+Acquire::https::Timeout "45";
+Acquire::http::Timeout "45";
 APT::Get::Assume-Yes "true";
 Dpkg::Use-Pty "0";
 EOF
