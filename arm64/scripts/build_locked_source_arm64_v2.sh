@@ -186,6 +186,8 @@ cat > "$WORK_DIR/build-inside.sh" <<'INNER'
 set -Eeuo pipefail
 
 : "${SNAPSHOT:?SNAPSHOT is required}"
+: "${HOST_UID:?HOST_UID is required}"
+: "${HOST_GID:?HOST_GID is required}"
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 mkdir -p /out
@@ -342,6 +344,7 @@ chroot "$ROOT" /bin/bash /build/run-build.sh \
 BUILD_RC=$?
 set -e
 cp -av "$ROOT/build/output/." /out/ || true
+chown -R "$HOST_UID:$HOST_GID" /out || true
 exit "$BUILD_RC"
 INNER
 chmod +x "$WORK_DIR/build-inside.sh"
@@ -350,6 +353,8 @@ chmod +x "$WORK_DIR/build-inside.sh"
 # mode is used only for proc/sys/dev mounts inside the dated build chroot.
 docker run --rm --privileged --platform linux/arm64 \
   --env "SNAPSHOT=$SNAPSHOT" \
+  --env "HOST_UID=$(id -u)" \
+  --env "HOST_GID=$(id -g)" \
   --volume "$SOURCE_ROOT:/src:ro" \
   --volume "$DEPENDENCY_REPOSITORY_COPY:/dependency-repository:ro" \
   --volume "$WORK_DIR/build-inside.sh:/build-inside.sh:ro" \
