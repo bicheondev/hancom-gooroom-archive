@@ -11,11 +11,9 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
-import os
 import shutil
 import subprocess
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Iterable
@@ -118,20 +116,31 @@ def download_one(task: dict[str, Any], download_dir: Path, attempts: int) -> dic
     return task
 
 
+def control_field(path: Path, field: str, *, optional: bool = False) -> str:
+    """Read one field at a time so dpkg-deb does not add `Field:` labels."""
+    try:
+        return subprocess.check_output(
+            ["dpkg-deb", "-f", str(path), field],
+            text=True,
+            stderr=subprocess.STDOUT,
+        ).strip()
+    except subprocess.CalledProcessError:
+        if optional:
+            return ""
+        raise
+
+
 def inspect_deb(path: Path) -> dict[str, Any]:
-    fields = subprocess.check_output(
-        ["dpkg-deb", "-f", str(path), "Package", "Version", "Architecture", "Source"],
+    listing = subprocess.check_output(
+        ["dpkg-deb", "-c", str(path)],
         text=True,
         stderr=subprocess.STDOUT,
-    ).splitlines()
-    while len(fields) < 4:
-        fields.append("")
-    listing = subprocess.check_output(["dpkg-deb", "-c", str(path)], text=True, stderr=subprocess.STDOUT)
+    )
     return {
-        "control_package": fields[0],
-        "control_version": fields[1],
-        "control_architecture": fields[2],
-        "control_source": fields[3],
+        "control_package": control_field(path, "Package"),
+        "control_version": control_field(path, "Version"),
+        "control_architecture": control_field(path, "Architecture"),
+        "control_source": control_field(path, "Source", optional=True),
         "payload_entry_count": len([line for line in listing.splitlines() if line.strip()]),
     }
 
@@ -211,7 +220,7 @@ def main() -> int:
     for task in tasks:
         status_counts[task["status"]] = status_counts.get(task["status"], 0) + 1
     summary = {
-        "schema": 1,
+        "schema": 2,
         "policy": "exact-binary-from-iso-preserved-vendor-index",
         "target_count": len(tasks),
         "status_counts": dict(sorted(status_counts.items())),
