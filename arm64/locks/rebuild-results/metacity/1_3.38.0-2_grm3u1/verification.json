@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "metacity",
+  "source_version": "1:3.38.0-2+grm3u1",
+  "repository_full_name": "gooroom/metacity",
+  "commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
+  "tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
+  "expected_native_binary_versions": {
+    "libmetacity3": "1:3.38.0-2+grm3u1",
+    "metacity": "1:3.38.0-2+grm3u1"
+  },
+  "produced_package_count": 5,
+  "packages": [
+    {
+      "filename": "libmetacity-dev_3.38.0-2+grm3u1_arm64.deb",
+      "sha256": "21a03341e27360a45a9750a56a3c1a92aec98b595b55a594181f849d666e5493",
+      "size": 173716,
+      "package": "libmetacity-dev",
+      "version": "1:3.38.0-2+grm3u1",
+      "architecture": "arm64",
+      "source_field": "metacity",
+      "parsed_source": "metacity",
+      "parsed_source_version": "1:3.38.0-2+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 10,
+      "elf_machine_counts": {},
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "libmetacity3-dbgsym_3.38.0-2+grm3u1_arm64.deb",
+      "sha256": "e34418417e702e3f1ad7763a6750aaaf38d661a96981b6d5754aef4ac55676cf",
+      "size": 177868,
+      "package": "libmetacity3-dbgsym",
+      "version": "1:3.38.0-2+grm3u1",
+      "architecture": "arm64",
+      "source_field": "metacity",
+      "parsed_source": "metacity",
+      "parsed_source_version": "1:3.38.0-2+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "libmetacity3_3.38.0-2+grm3u1_arm64.deb",
+      "sha256": "bef542edefd8c8488f693290524953c28abead9abad2481fd0004caa9553a551",
+      "size": 220700,
+      "package": "libmetacity3",
+      "version": "1:3.38.0-2+grm3u1",
+      "architecture": "arm64",
+      "source_field": "metacity",
+      "parsed_source": "metacity",
+      "parsed_source_version": "1:3.38.0-2+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 5,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "metacity-dbgsym_3.38.0-2+grm3u1_arm64.deb",
+      "sha256": "f9f5e0583981401f62f228755062bc4fd4e18a2d4d7705ca0c795c3afc97c518",
+      "size": 677892,
+      "package": "metacity-dbgsym",
+      "version": "1:3.38.0-2+grm3u1",
+      "architecture": "arm64",
+      "source_field": "metacity",
+      "parsed_source": "metacity",
+      "parsed_source_version": "1:3.38.0-2+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 5,
+      "elf_machine_counts": {
+        "aarch64": 4
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "metacity_3.38.0-2+grm3u1_arm64.deb",
+      "sha256": "b9d644a494b1a7683e5968a65472287342baff11c4f481b6d1a33386e9081aa2",
+      "size": 355676,
+      "package": "metacity",
+      "version": "1:3.38.0-2+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "metacity",
+      "parsed_source_version": "1:3.38.0-2+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 11,
+      "elf_machine_counts": {
+        "aarch64": 3
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "metacity",
+    "source_version": "1:3.38.0-2+grm3u1",
+    "repository": "gooroom/metacity",
+    "commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
+    "tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
+    "source_archive_sha256": "d08e8c6c0b906bd378418ca8499feb271cce4babebbabdd5334393acdcf423db",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "libmetacity3",
+      "metacity"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "libmetacity-dev",
+      "libmetacity3",
+      "libmetacity3-dbgsym",
+      "metacity",
+      "metacity-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "metacity",
+    "source_version": "1:3.38.0-2+grm3u1",
+    "repository": "gooroom/metacity",
+    "commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
+    "tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
+    "verified_commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
+    "verified_tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
+    "deterministic_source_archive_sha256": "d08e8c6c0b906bd378418ca8499feb271cce4babebbabdd5334393acdcf423db"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
