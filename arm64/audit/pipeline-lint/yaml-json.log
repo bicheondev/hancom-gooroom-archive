@@ -1,1 +1,32 @@
-parsed 109 workflows and all arm64 JSON files
+.github/workflows/arm64-package-pool-v2-maintenance.yml: ScannerError: while scanning a simple key
+  in "<unicode string>", line 55, column 1:
+    """
+    ^
+could not find expected ':'
+  in "<unicode string>", line 56, column 16:
+              new="""          positive=('arm64','a ... 
+                   ^
+.github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError: while scanning a simple key
+  in "<unicode string>", line 119, column 1:
+    mkdir -p /etc/gdm3
+    ^
+could not find expected ':'
+  in "<unicode string>", line 120, column 1:
+    cat >/etc/gdm3/daemon.conf <<'EOF'
+    ^
+.github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError: while scanning a simple key
+  in "<unicode string>", line 60, column 9:
+            reference_rootfs,
+            ^
+could not find expected ':'
+  in "<unicode string>", line 61, column 9:
+            rootfs,
+            ^
+.github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError: while scanning a simple key
+  in "<unicode string>", line 37, column 3:
+      /etc/systemd/system/graphical.ta ... 
+      ^
+could not find expected ':'
+  in "<unicode string>", line 38, column 1:
+    systemctl set-default graphical. ... 
+    ^
