@@ -14,7 +14,9 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def latest_rebuild_results(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
+def latest_rebuild_results(
+    root: Path,
+) -> dict[tuple[str, str], dict[str, Any]]:
     results: dict[tuple[str, str], dict[str, Any]] = {}
     if not root.exists():
         return results
@@ -34,7 +36,11 @@ def latest_rebuild_results(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
         except ValueError:
             run_id = 0
         try:
-            previous_run_id = int(str(previous.get("actions_run_id", "0"))) if previous else -1
+            previous_run_id = (
+                int(str(previous.get("actions_run_id", "0")))
+                if previous
+                else -1
+            )
         except ValueError:
             previous_run_id = -1
         if previous is None or run_id >= previous_run_id:
@@ -43,12 +49,41 @@ def latest_rebuild_results(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
     return results
 
 
+def source_recovery_index(
+    path: Path | None,
+) -> dict[tuple[str, str], dict[str, Any]]:
+    if path is None:
+        return {}
+    if not path.exists():
+        raise SystemExit(f"source-recovery blocker file not found: {path}")
+    document = load_json(path)
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in document.get("sources", []):
+        source = row.get("source")
+        version = row.get("source_version")
+        if not source or not version:
+            raise SystemExit(
+                f"malformed source-recovery blocker without identity: {row!r}"
+            )
+        key = (str(source), str(version))
+        if key in rows and rows[key] != row:
+            raise SystemExit(f"conflicting source-recovery blockers for {key}")
+        rows[key] = row
+    declared_count = document.get("blocker_count")
+    if declared_count is not None and int(declared_count) != len(rows):
+        raise SystemExit(
+            "source-recovery blocker_count does not match the number of rows"
+        )
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--source-lock", type=Path, required=True)
     parser.add_argument("--rebuild-plan", type=Path, required=True)
     parser.add_argument("--rebuild-results", type=Path, required=True)
+    parser.add_argument("--source-recovery-blockers", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
 
@@ -56,6 +91,7 @@ def main() -> int:
     source_lock = load_json(args.source_lock)
     plan = load_json(args.rebuild_plan)
     result_evidence = latest_rebuild_results(args.rebuild_results)
+    source_recovery = source_recovery_index(args.source_recovery_blockers)
 
     packages_by_source: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for package in reference.get("packages", []):
@@ -75,14 +111,25 @@ def main() -> int:
     ]
     rows: list[dict[str, Any]] = []
 
-    for target in sorted(targets, key=lambda row: (row["source"], row["source_version"])):
+    for target in sorted(
+        targets,
+        key=lambda row: (row["source"], row["source_version"]),
+    ):
         key = (target["source"], target["source_version"])
         packages = packages_by_source.get(key, [])
         amd64_packages = sorted(
-            {package["package"] for package in packages if package["architecture"] == "amd64"}
+            {
+                package["package"]
+                for package in packages
+                if package["architecture"] == "amd64"
+            }
         )
         all_packages = sorted(
-            {package["package"] for package in packages if package["architecture"] == "all"}
+            {
+                package["package"]
+                for package in packages
+                if package["architecture"] == "all"
+            }
         )
         role = "rebuild-arm64" if amd64_packages else "reuse-all"
 
@@ -92,12 +139,18 @@ def main() -> int:
             for row in candidates
             if row.get("status") == "resolved"
             and row.get("selected")
-            and row["selected"].get("declared_source", target["source"])
+            and row["selected"].get(
+                "declared_source", target["source"]
+            )
             == target["source"]
-            and row["selected"].get("declared_version", target["source_version"])
+            and row["selected"].get(
+                "declared_version", target["source_version"]
+            )
             == target["source_version"]
         ]
-        arch_replace = any(row.get("status") == "arch-replace" for row in candidates)
+        arch_replace = any(
+            row.get("status") == "arch-replace" for row in candidates
+        )
         distinct_git = {
             (
                 row["selected"].get("repository_full_name"),
@@ -106,30 +159,51 @@ def main() -> int:
             )
             for row in exact
         }
-        source_status = "unresolved"
+        packaging_source_status = "unresolved"
         selected: dict[str, Any] | None = None
         if arch_replace:
-            source_status = "arch-replace"
+            packaging_source_status = "arch-replace"
         elif len(distinct_git) == 1:
-            source_status = "exact-locked"
+            packaging_source_status = "exact-locked"
             selected = exact[0]["selected"]
         elif len(distinct_git) > 1:
-            source_status = "ambiguous-exact-lock"
+            packaging_source_status = "ambiguous-exact-lock"
+
+        recovery_blocker = source_recovery.get(key)
+        source_status = packaging_source_status
+        if recovery_blocker is not None:
+            source_status = "source-recovery-required"
 
         evidence = result_evidence.get(key)
         known = known_success.get(target["source"])
         build_status = "not-required" if role == "reuse-all" else "pending"
-        build_evidence = None
+        build_evidence: Any = None
         if role == "rebuild-arm64":
-            if evidence:
+            if recovery_blocker is not None:
+                build_status = "source-recovery-required"
+                build_evidence = {
+                    "blocker_file": str(args.source_recovery_blockers),
+                    "reason": recovery_blocker.get("reason"),
+                    "audit_evidence": recovery_blocker.get("audit_evidence"),
+                    "acceptance_gate": recovery_blocker.get(
+                        "acceptance_gate"
+                    ),
+                }
+            elif evidence:
                 build_evidence = evidence.get("evidence_path")
-                build_status = "passed" if evidence.get("passed") else "failed"
+                build_status = (
+                    "passed" if evidence.get("passed") else "failed"
+                )
             elif known == "native-arm64-build-passed":
                 build_status = "passed-recorded"
-                build_evidence = "arm64/rebuild-batches.json#known_success"
+                build_evidence = (
+                    "arm64/rebuild-batches.json#known_success"
+                )
             elif known:
                 build_status = "compile-only"
-                build_evidence = "arm64/rebuild-batches.json#known_success"
+                build_evidence = (
+                    "arm64/rebuild-batches.json#known_success"
+                )
             elif source_status not in {"exact-locked", "arch-replace"}:
                 build_status = "source-blocked"
         elif known:
@@ -143,22 +217,33 @@ def main() -> int:
                 "role": role,
                 "amd64_binary_packages": amd64_packages,
                 "reused_all_packages": all_packages,
+                "packaging_source_status": packaging_source_status,
                 "source_status": source_status,
-                "repository_full_name": selected.get("repository_full_name") if selected else None,
-                "commit_sha": selected.get("commit_sha") if selected else None,
+                "repository_full_name": (
+                    selected.get("repository_full_name") if selected else None
+                ),
+                "commit_sha": (
+                    selected.get("commit_sha") if selected else None
+                ),
                 "tree_sha": selected.get("tree_sha") if selected else None,
                 "build_status": build_status,
                 "build_evidence": build_evidence,
+                "source_recovery_blocker": recovery_blocker,
             }
         )
 
     def count(**conditions: str) -> int:
         return sum(
-            all(row.get(field) == value for field, value in conditions.items())
+            all(
+                row.get(field) == value
+                for field, value in conditions.items()
+            )
             for row in rows
         )
 
-    native_rows = [row for row in rows if row["role"] == "rebuild-arm64"]
+    native_rows = [
+        row for row in rows if row["role"] == "rebuild-arm64"
+    ]
     source_blockers = [
         row
         for row in native_rows
@@ -169,21 +254,44 @@ def main() -> int:
         for row in native_rows
         if row["build_status"] not in {"passed", "passed-recorded"}
     ]
-    failed = [row for row in native_rows if row["build_status"] == "failed"]
-    pending = [row for row in native_rows if row["build_status"] == "pending"]
-    compile_only = [row for row in native_rows if row["build_status"] == "compile-only"]
+    source_recovery_rows = [
+        row
+        for row in native_rows
+        if row["source_status"] == "source-recovery-required"
+    ]
+    failed = [
+        row for row in native_rows if row["build_status"] == "failed"
+    ]
+    pending = [
+        row for row in native_rows if row["build_status"] == "pending"
+    ]
+    compile_only = [
+        row
+        for row in native_rows
+        if row["build_status"] == "compile-only"
+    ]
 
     summary = {
-        "schema": 1,
-        "policy": "exact-source-and-verified-native-arm64-before-iso-assembly",
+        "schema": 2,
+        "policy": (
+            "exact-source-and-verified-native-arm64-before-iso-assembly-"
+            "including-source-recovery-gates"
+        ),
         "custom_source_count": len(rows),
         "reuse_all_source_count": count(role="reuse-all"),
         "native_rebuild_source_count": len(native_rows),
-        "exact_source_locked_count": count(source_status="exact-locked"),
+        "exact_packaging_source_locked_count": count(
+            packaging_source_status="exact-locked"
+        ),
+        "exact_buildable_source_locked_count": count(
+            source_status="exact-locked"
+        ),
         "arch_replace_count": count(source_status="arch-replace"),
+        "source_recovery_required_count": len(source_recovery_rows),
         "source_blocker_count": len(source_blockers),
         "native_build_passed_count": sum(
-            row["build_status"] in {"passed", "passed-recorded"} for row in native_rows
+            row["build_status"] in {"passed", "passed-recorded"}
+            for row in native_rows
         ),
         "native_build_failed_count": len(failed),
         "native_build_pending_count": len(pending),
@@ -195,12 +303,17 @@ def main() -> int:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "coverage.json").write_text(
-        json.dumps({"summary": summary, "sources": rows}, ensure_ascii=False, indent=2)
+        json.dumps(
+            {"summary": summary, "sources": rows},
+            ensure_ascii=False,
+            indent=2,
+        )
         + "\n",
         encoding="utf-8",
     )
     (args.output_dir / "summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
     (args.output_dir / "source-blockers.json").write_text(
         json.dumps(source_blockers, ensure_ascii=False, indent=2) + "\n",
@@ -208,6 +321,11 @@ def main() -> int:
     )
     (args.output_dir / "build-blockers.json").write_text(
         json.dumps(build_blockers, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (args.output_dir / "source-recovery-required.json").write_text(
+        json.dumps(source_recovery_rows, ensure_ascii=False, indent=2)
+        + "\n",
         encoding="utf-8",
     )
 
@@ -218,6 +336,7 @@ def main() -> int:
             "source",
             "source_version",
             "role",
+            "packaging_source_status",
             "source_status",
             "build_status",
             "repository_full_name",
@@ -225,15 +344,32 @@ def main() -> int:
             "tree_sha",
             "amd64_binary_packages",
             "reused_all_packages",
+            "source_recovery_reason",
             "build_evidence",
         ]
-        writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
+        writer = csv.DictWriter(
+            handle, fieldnames=fields, delimiter="\t"
+        )
         writer.writeheader()
         for row in rows:
             serial = dict(row)
-            serial["amd64_binary_packages"] = ",".join(row["amd64_binary_packages"])
-            serial["reused_all_packages"] = ",".join(row["reused_all_packages"])
-            writer.writerow({field: serial.get(field, "") for field in fields})
+            serial["amd64_binary_packages"] = ",".join(
+                row["amd64_binary_packages"]
+            )
+            serial["reused_all_packages"] = ",".join(
+                row["reused_all_packages"]
+            )
+            blocker = row.get("source_recovery_blocker") or {}
+            serial["source_recovery_reason"] = blocker.get("reason", "")
+            if not isinstance(serial.get("build_evidence"), str):
+                serial["build_evidence"] = json.dumps(
+                    serial.get("build_evidence"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            writer.writerow(
+                {field: serial.get(field, "") for field in fields}
+            )
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
