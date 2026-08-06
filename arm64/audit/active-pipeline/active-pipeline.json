@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 100,
-    "workflow_name_count": 100,
-    "referenced_local_file_count": 156,
+    "workflow_count": 101,
+    "workflow_name_count": 101,
+    "referenced_local_file_count": 160,
     "error_count": 0,
     "warning_count": 30,
     "passed": true
@@ -1536,6 +1536,35 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-retry-failed-dsc-sources-v3.yml",
+      "path": ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
+      "name": "ARM64 port - retry exact DSC sources with local dependencies v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/build-dependency-repository-v2/artifact-lock.json",
+        "arm64/locks/build-dependency-repository-v2/summary.json",
+        "arm64/locks/effective-sources-v2/effective-source-lock-v2.json",
+        "arm64/locks/rebuild-result-index-v2/rebuild-result-index.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/build_locked_dsc_arm64_v2.sh",
+        "arm64/scripts/build_locked_dsc_arm64_with_repo_v3.sh",
+        "arm64/scripts/select_failed_dsc_rebuilds_v3.py",
+        "arm64/scripts/verify_dsc_arm64_rebuild_v2.py"
+      ]
+    },
+    {
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
@@ -2065,7 +2094,11 @@
       ".github/workflows/arm64-merge-source-authorities-v2.yml"
     ],
     "arm64/locks/build-dependency-repository-v2/artifact-lock.json": [
-      ".github/workflows/arm64-build-dependency-repository-v2.yml"
+      ".github/workflows/arm64-build-dependency-repository-v2.yml",
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
+    ],
+    "arm64/locks/build-dependency-repository-v2/summary.json": [
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/locks/build-wave1-v3/wave1-v3-summary.json": [
       ".github/workflows/arm64-wave1-v3-record.yml"
@@ -2084,7 +2117,8 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/effective-sources-v2/effective-source-lock-v2.json": [
-      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
       ".github/workflows/arm64-port-coverage-v2.yml",
@@ -2171,6 +2205,9 @@
       ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
+    "arm64/locks/rebuild-result-index-v2/rebuild-result-index.json": [
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
+    ],
     "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
@@ -2198,6 +2235,7 @@
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
@@ -2332,7 +2370,11 @@
       ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/scripts/build_locked_dsc_arm64_v2.sh": [
-      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
+    ],
+    "arm64/scripts/build_locked_dsc_arm64_with_repo_v3.sh": [
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
@@ -2619,6 +2661,9 @@
     "arm64/scripts/select_dsc_rebuild_matrix_v2.py": [
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
     ],
+    "arm64/scripts/select_failed_dsc_rebuilds_v3.py": [
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
+    ],
     "arm64/scripts/select_infrastructure_retry_wave_v3.py": [
       ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
@@ -2712,7 +2757,8 @@
       ".github/workflows/arm64-package-repo-incremental.yml"
     ],
     "arm64/scripts/verify_dsc_arm64_rebuild_v2.py": [
-      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml"
+      ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
