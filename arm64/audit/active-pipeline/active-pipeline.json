@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 101,
-    "workflow_name_count": 101,
-    "referenced_local_file_count": 160,
+    "workflow_count": 102,
+    "workflow_name_count": 102,
+    "referenced_local_file_count": 162,
     "error_count": 0,
-    "warning_count": 30,
+    "warning_count": 29,
     "passed": true
   },
   "workflows": [
@@ -1565,6 +1565,28 @@
       ]
     },
     {
+      "filename": "arm64-retry-wave1-full-binary.yml",
+      "path": ".github/workflows/arm64-retry-wave1-full-binary.yml",
+      "name": "ARM64 port - retry wave1 full binary packaging",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/run_locked_source_arm64_full_binary.sh",
+        "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
@@ -2157,6 +2179,7 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      ".github/workflows/arm64-retry-wave1-full-binary.yml",
       ".github/workflows/arm64-static-audit.yml"
     ],
     "arm64/locks/effective-sources/latest-git-merge-report.json": [
@@ -2236,6 +2259,7 @@
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
+      ".github/workflows/arm64-retry-wave1-full-binary.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
@@ -2273,6 +2297,7 @@
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      ".github/workflows/arm64-retry-wave1-full-binary.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-lock.yml"
@@ -2379,6 +2404,9 @@
     "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
+    ],
+    "arm64/scripts/build_locked_source_arm64.sh": [
+      ".github/workflows/arm64-retry-wave1-full-binary.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2614,6 +2642,9 @@
     "arm64/scripts/run_locked_source_arm64_component_compat.sh": [
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
+    "arm64/scripts/run_locked_source_arm64_full_binary.sh": [
+      ".github/workflows/arm64-retry-wave1-full-binary.yml"
+    ],
     "arm64/scripts/run_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
@@ -2739,7 +2770,8 @@
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
-      ".github/workflows/arm64-native-rebuild-batch-v2.yml"
+      ".github/workflows/arm64-native-rebuild-batch-v2.yml",
+      ".github/workflows/arm64-retry-wave1-full-binary.yml"
     ],
     "arm64/scripts/verify_arm64_rebuild_v3.py": [
       ".github/workflows/arm64-dependency-retry-controller-v3.yml",
@@ -2938,10 +2970,6 @@
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
       "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": "arm64/scripts/build_locked_source_arm64.sh",
-      "reason": "required-script-not-referenced-by-workflow-run-block"
     }
   ]
 }
