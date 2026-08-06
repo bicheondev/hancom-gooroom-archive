@@ -1,0 +1,275 @@
+name: ARM64 port - recover and build exact QtBase source archive v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-qtbase-source-archive-build-v1.yml'
+      - 'arm64/scripts/resolve_vendor_source_archive.py'
+      - 'arm64/scripts/promote_source_archive_lock.py'
+      - 'arm64/scripts/run_dsc_source_arm64.sh'
+      - 'arm64/scripts/run_dsc_source_arm64_v2.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/scripts/validate_arm64_source_outputs_v4.py'
+      - 'arm64/scripts/summarize_arm64_build_wave.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/effective-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-qtbase-source-archive-v1
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  SOURCE_VERSION: 5.15.2+dfsg-9+grm3u1
+  SNAPSHOT: 20230730T235959Z
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      resolved: ${{ steps.recover.outputs.resolved }}
+    steps:
+      - name: Check out every preserved repository clue
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Recover and checksum the exact Debian source archive
+        id: recover
+        run: |
+          set -uxo pipefail
+          rm -rf work/qtbase-source-archive-v1
+          mkdir -p work/qtbase-source-archive-v1
+          set +e
+          python3 arm64/scripts/resolve_vendor_source_archive.py \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --search-root arm64/locks \
+            --output-dir work/qtbase-source-archive-v1 \
+            --timeout 45
+          rc=$?
+          set -e
+          echo "$rc" > work/qtbase-source-archive-v1/resolver.exit-code
+          if [ "$rc" = 0 ] && \
+             [ -f work/qtbase-source-archive-v1/source-archive-lock.json ] && \
+             [ "$(jq -r '.status' \
+               work/qtbase-source-archive-v1/source-archive-lock.json)" = resolved ]; then
+            echo 'resolved=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'resolved=false' >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Upload full source files or complete negative evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-source-archive-v1
+          path: work/qtbase-source-archive-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit bounded source archive evidence
+        if: always()
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/source-archives-v2/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          find work/qtbase-source-archive-v1 -maxdepth 1 -type f \
+            \( -name '*.json' -o -name '*.dsc' -o -name '*.sha256' \
+               -o -name '*.exit-code' \) \
+            -exec cp '{}' "$destination/" ';'
+          find "$destination" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$destination/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact QtBase source archive recovery v1'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+  build:
+    needs: recover
+    if: needs.recover.outputs.resolved == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact reference and build policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download the fully checksummed source archive from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: qtbase-source-archive-v1
+          path: work/qtbase-source-archive-v1
+
+      - name: Promote the archive into a temporary effective source lock
+        run: |
+          set -euxo pipefail
+          mkdir -p work/qtbase-archive-promoted-v1
+          python3 arm64/scripts/promote_source_archive_lock.py \
+            --effective-lock arm64/locks/effective-sources/effective-source-lock.json \
+            --archive-lock work/qtbase-source-archive-v1/source-archive-lock.json \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-lock work/qtbase-archive-promoted-v1/effective-source-lock.json \
+            --evidence work/qtbase-archive-promoted-v1/promotion.json
+
+      - name: Verify the native ARM64 build host
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file jq python3
+
+      - name: Build and validate the exact source archive
+        id: native_build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: ${{ env.SNAPSHOT }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/run_dsc_source_arm64.sh \
+            arm64/scripts/run_dsc_source_arm64_v2.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py \
+            arm64/scripts/validate_arm64_source_outputs_v4.py
+          rm -rf work/qtbase-archive-build-v1
+          arm64/scripts/run_dsc_source_arm64_v2.sh \
+            work/qtbase-source-archive-v1 \
+            "$SOURCE_NAME" \
+            "$SOURCE_VERSION" \
+            work/qtbase-archive-build-v1
+          python3 arm64/scripts/validate_arm64_source_outputs_v4.py \
+            --lock work/qtbase-archive-promoted-v1/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source "$SOURCE_NAME" \
+            --output-dir work/qtbase-archive-build-v1
+          jq -e '.status == "passed"' \
+            work/qtbase-archive-build-v1/arm64-source-output-validation-v4.json
+          find work/qtbase-archive-build-v1 -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > work/qtbase-archive-build-v1/SHA256SUMS
+
+      - name: Preserve source and failure log markers
+        if: always()
+        run: |
+          set -euxo pipefail
+          mkdir -p work/qtbase-archive-build-v1
+          printf '%s\n' "$SOURCE_NAME" \
+            > work/qtbase-archive-build-v1/source-name.txt
+          if [ ! -f work/qtbase-archive-build-v1/arm64-source-output-validation-v4.json ] && \
+             [ -f work/qtbase-archive-build-v1/dsc-build-console.log ]; then
+            cp work/qtbase-archive-build-v1/dsc-build-console.log \
+              work/qtbase-archive-build-v1/legacy-run.log
+            if [ -f work/qtbase-archive-build-v1/dsc-builder.exit-code ]; then
+              cp work/qtbase-archive-build-v1/dsc-builder.exit-code \
+                work/qtbase-archive-build-v1/legacy-run.exit-code
+            fi
+          fi
+
+      - name: Summarize the exact archive build attempt
+        if: always()
+        run: |
+          set -uxo pipefail
+          rm -rf work/qtbase-archive-evidence-v1
+          mkdir -p work/qtbase-archive-evidence-v1
+          set +e
+          python3 arm64/scripts/summarize_arm64_build_wave.py \
+            --artifacts-root work/qtbase-archive-build-v1 \
+            --output-dir work/qtbase-archive-evidence-v1 \
+            --schema hancom-gooroom-arm64-qtbase-source-archive-build-v1 \
+            --expected-source "$SOURCE_NAME" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$GITHUB_SHA" \
+            --head-branch "$GITHUB_REF_NAME" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --repository "$GITHUB_REPOSITORY" \
+            --server-url "$GITHUB_SERVER_URL" \
+            --download-status success
+          summary_rc=$?
+          set -e
+          echo "$summary_rc" > work/qtbase-archive-evidence-v1/summarizer.exit-code
+          cp work/qtbase-source-archive-v1/source-archive-lock.json \
+            work/qtbase-archive-evidence-v1/
+          cp work/qtbase-archive-promoted-v1/promotion.json \
+            work/qtbase-archive-evidence-v1/
+          find work/qtbase-archive-evidence-v1 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/qtbase-archive-evidence-v1/LOCKSUMS.sha256
+          jq . work/qtbase-archive-evidence-v1/summary.json
+
+      - name: Upload exact ARM64 packages and all diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-source-archive-arm64-v1
+          path: |
+            work/qtbase-archive-build-v1
+            work/qtbase-archive-evidence-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit archive build evidence before enforcing it
+        if: always()
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/build-qtbase-source-archive-v1
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/qtbase-archive-evidence-v1/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact QtBase source archive ARM64 build v1'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce exact native archive output
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.native_build.outcome }}' = success
+          test "$(jq -r '.status' work/qtbase-archive-evidence-v1/summary.json)" = passed
+
+  gate:
+    needs: [recover, build]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Enforce exact archive recovery and ARM64 build
+        run: |
+          set -euxo pipefail
+          test '${{ needs.recover.outputs.resolved }}' = true
+          test '${{ needs.build.result }}' = success
