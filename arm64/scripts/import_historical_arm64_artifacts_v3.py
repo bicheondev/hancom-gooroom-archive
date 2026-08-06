@@ -8,8 +8,8 @@ the authenticated GitHub request without automatic redirects, then downloads
 the temporary object without GitHub credentials.
 
 It also prioritizes artifacts for currently unresolved package-layer sources so
-an audit limit does not spend its entire budget on newer unrelated retries.
-All package/source/version/ELF acceptance rules remain those of the v2 auditor.
+audit limits do not spend their budget on unrelated retries. All package/source/
+version/ELF acceptance rules remain those of the v2 auditor.
 """
 
 from __future__ import annotations
@@ -25,16 +25,35 @@ from typing import Any
 import import_historical_arm64_artifacts_v2 as auditor
 
 
+# Include every source family still represented in the final repository
+# blockers, in addition to previously recovered desktop packages. Matching is
+# deliberately by lower-case artifact name only; package acceptance continues
+# to require exact control fields, source authority, SHA-256 and ELF audit.
 PRIORITY_NAMES = (
+    "accountsservice",
+    "binutils",
+    "dpkg",
     "gnome-control-center",
+    "gnome-flashback",
     "gnome-settings-daemon",
-    "nautilus",
-    "policykit-1",
-    "yelp",
-    "p7zip",
+    "gooroom-applauncher-applet",
     "gooroom-browser",
+    "gooroom-dockbarx-applet",
+    "gooroom-greeter",
+    "gooroom-guide",
+    "gooroom-integration-applet",
     "gooroom-libsecurity-extensions",
     "gooroom-security-status-tools",
+    "gooroom-session-manager",
+    "grub",
+    "linux-image",
+    "linux",
+    "nautilus",
+    "p7zip",
+    "policykit-1",
+    "qtbase-opensource-src",
+    "qtbase",
+    "yelp",
 )
 
 
