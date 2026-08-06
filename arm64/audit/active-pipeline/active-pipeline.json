@@ -2,9 +2,9 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 79,
-    "workflow_name_count": 79,
-    "referenced_local_file_count": 104,
+    "workflow_count": 80,
+    "workflow_name_count": 80,
+    "referenced_local_file_count": 105,
     "error_count": 66,
     "warning_count": 0,
     "passed": false
@@ -403,6 +403,23 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/wire_progress_dispatches.py"
+      ]
+    },
+    {
+      "filename": "arm64-ci-state-snapshot.yml",
+      "path": ".github/workflows/arm64-ci-state-snapshot.yml",
+      "name": "ARM64 port - snapshot CI and phase-gate state",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/summarize_arm64_ci_state.py"
       ]
     },
     {
@@ -2063,6 +2080,9 @@
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
+    ],
+    "arm64/scripts/summarize_arm64_ci_state.py": [
+      ".github/workflows/arm64-ci-state-snapshot.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
