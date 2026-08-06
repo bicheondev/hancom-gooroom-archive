@@ -1,0 +1,57 @@
+name: ARM64 port - restore exact composite base builder
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-restore-composite-base-builder.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-restore-composite-base-builder
+  cancel-in-progress: true
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Restore and verify the exact historical base builder blob
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/scripts/build_locked_source_arm64.sh
+          source_url='https://raw.githubusercontent.com/bicheondev/hancom-gooroom-archive/9b2a051a0b42c564909b1b3e9f8a6afc41f12760/arm64/scripts/build_locked_source_arm64.sh'
+          expected_blob=604133a685b136be95a7d3859c204c8935f6bcdf
+
+          curl --fail --location --silent --show-error \
+            --retry 5 --retry-all-errors \
+            "$source_url" \
+            --output "$destination"
+          actual_blob="$(git hash-object "$destination")"
+          test "$actual_blob" = "$expected_blob"
+          chmod 0755 "$destination"
+          bash -n "$destination"
+
+          git rm -f .github/workflows/arm64-restore-composite-base-builder.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Restore exact base builder for composite ARM64 sources'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
