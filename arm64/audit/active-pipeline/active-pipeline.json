@@ -2,8 +2,8 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 89,
-    "workflow_name_count": 89,
+    "workflow_count": 90,
+    "workflow_name_count": 90,
     "referenced_local_file_count": 124,
     "error_count": 76,
     "warning_count": 0,
@@ -1464,6 +1464,21 @@
       "job_count": 1,
       "uses": [
         "actions/checkout@v4"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-source-keyring-lock.yml",
+      "path": ".github/workflows/arm64-source-keyring-lock.yml",
+      "name": "ARM64 port - lock trusted vendor source-signing keys",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
     },
