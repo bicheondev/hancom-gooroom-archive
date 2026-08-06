@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 109,
     "workflow_name_count": 109,
-    "referenced_local_file_count": 185,
+    "referenced_local_file_count": 186,
     "error_count": 0,
     "warning_count": 40,
     "passed": true
@@ -922,7 +922,8 @@
         "arm64/locks/debian-reference-repository-v2/artifact-lock.json",
         "arm64/locks/package-plan/debian-arm64-map-normalized.json",
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py"
+        "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py",
+        "arm64/scripts/materialize_debian_arm64_reference_repo_v3.py"
       ]
     },
     {
@@ -2772,6 +2773,9 @@
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
     "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py": [
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
+    ],
+    "arm64/scripts/materialize_debian_arm64_reference_repo_v3.py": [
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
     ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
