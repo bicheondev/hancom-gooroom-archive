@@ -1,13 +1,13 @@
 {
   "summary": {
-    "schema": 2,
-    "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
+    "schema": 3,
+    "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 94,
     "workflow_name_count": 94,
     "referenced_local_file_count": 144,
-    "error_count": 1,
-    "warning_count": 28,
-    "passed": false
+    "error_count": 0,
+    "warning_count": 29,
+    "passed": true
   },
   "workflows": [
     {
@@ -2580,12 +2580,7 @@
       ".github/workflows/arm64-port-coverage.yml"
     ]
   },
-  "errors": [
-    {
-      "path": "arm64/scripts/build_locked_source_arm64.sh",
-      "reason": "superseded-script-still-present"
-    }
-  ],
+  "errors": [],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
@@ -2726,6 +2721,10 @@
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
       "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": "arm64/scripts/build_locked_source_arm64.sh",
+      "reason": "required-script-not-referenced-by-workflow-run-block"
     }
   ]
 }
