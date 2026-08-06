@@ -1,0 +1,68 @@
+{
+  "schema": 3,
+  "source": "libnma",
+  "source_version": "1.8.30-1+grm3u2",
+  "source_type": "git",
+  "repository_full_name": "gooroom/libnma",
+  "commit_sha": "7ea056fd93525e344559ebc2e38b90ce5937ecc8",
+  "tree_sha": "2ada6a3ee3ba66b0768ef666baba32e4998a6eff",
+  "dsc_filename": null,
+  "dsc_sha256": null,
+  "authority_provenance": "github-exact-commit",
+  "actions_run_id": "31102922971",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
+  "batch": "infrastructure-retry-v3",
+  "artifact_name": "arm64-rebuild-libnma-1.8.30-1-grm3u2",
+  "build_outcome": "failure",
+  "build_exit_code": "125",
+  "verify_outcome": "skipped",
+  "retry_reason": "builder-infrastructure-changed",
+  "builder_sha256": "99c152b307a0f3c7a5d6b2e6ef9d9c1b14406890c5d3743ef7453a353511a869",
+  "previous_builder_sha256": "",
+  "infrastructure_evidence": [
+    "build-exit-code:69",
+    "diagnostic:base builder is missing:"
+  ],
+  "dependency_repository_packages_sha256": null,
+  "dependency_release_lock_sha256": null,
+  "previous_dependency_repository_packages_sha256": null,
+  "previous_actions_run_id": "31097724529",
+  "required_native_packages": [
+    "libnma0"
+  ],
+  "reused_all_packages": [
+    "libnma-common"
+  ],
+  "job_passed": false,
+  "verification_passed": false,
+  "passed": false,
+  "deb_artifacts": [],
+  "verification_errors": [],
+  "verification_warnings": [],
+  "build_lock": {},
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "libnma",
+    "source_version": "1.8.30-1+grm3u2",
+    "repository": "gooroom/libnma",
+    "commit_sha": "7ea056fd93525e344559ebc2e38b90ce5937ecc8",
+    "tree_sha": "2ada6a3ee3ba66b0768ef666baba32e4998a6eff",
+    "verified_commit_sha": "7ea056fd93525e344559ebc2e38b90ce5937ecc8",
+    "verified_tree_sha": "2ada6a3ee3ba66b0768ef666baba32e4998a6eff",
+    "deterministic_source_archive_sha256": "869175f94674dd2369b21ae40dbad78f27e9ef750cb8c3802b5cc16f49d450d8"
+  },
+  "diagnostics": [
+    {
+      "filename": "bootstrap-image.txt",
+      "size": 101,
+      "sha256": "66cb9fdc1b97ac4b80f3f663c719647e468bd356955db5f925cdb2a6de205cf8",
+      "tail": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e\n"
+    },
+    {
+      "filename": "workflow-build.log",
+      "size": 409,
+      "sha256": "6a621e6bf06d03866ebdcc9177b31e0688393190825bd09b188460d30b9e116e",
+      "tail": "Unable to find image 'arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e' locally\ndocker: Error response from daemon: Get \"https://registry-1.docker.io/v2/arm64v8/debian/manifests/sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e\": received unexpected HTTP status: 500 Internal Server Error\n\nRun 'docker run --help' for more information\n"
+    }
+  ]
+}

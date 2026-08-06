@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "hancom-toolkit",
+  "source_version": "0.3.3+han3u1",
+  "repository_full_name": "hancomgooroom/hancom-toolkit",
+  "commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
+  "tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
+  "expected_native_binary_versions": {
+    "hancom-toolkit": "0.3.3+han3u1"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "hancom-toolkit-dbgsym_0.3.3+han3u1_arm64.deb",
+      "sha256": "1c3e812205c410854e03cbca5d720a88615713233859c00ceb4db91fc81c6842",
+      "size": 104600,
+      "package": "hancom-toolkit-dbgsym",
+      "version": "0.3.3+han3u1",
+      "architecture": "arm64",
+      "source_field": "hancom-toolkit",
+      "parsed_source": "hancom-toolkit",
+      "parsed_source_version": "0.3.3+han3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "hancom-toolkit_0.3.3+han3u1_arm64.deb",
+      "sha256": "3025249447aa1f01e1b777e1851cb70921fcd162a1f64aa933444ce241d42d8f",
+      "size": 28672,
+      "package": "hancom-toolkit",
+      "version": "0.3.3+han3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "hancom-toolkit",
+      "parsed_source_version": "0.3.3+han3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 12,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "hancom-toolkit",
+    "source_version": "0.3.3+han3u1",
+    "repository": "hancomgooroom/hancom-toolkit",
+    "commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
+    "tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
+    "source_archive_sha256": "239efa93ba6a71273e8f85221441baaedf2ccc1b8492f4db669b1b63300a496b",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "hancom-toolkit"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "hancom-toolkit",
+      "hancom-toolkit-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "hancom-toolkit",
+    "source_version": "0.3.3+han3u1",
+    "repository": "hancomgooroom/hancom-toolkit",
+    "commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
+    "tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
+    "verified_commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
+    "verified_tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
+    "deterministic_source_archive_sha256": "239efa93ba6a71273e8f85221441baaedf2ccc1b8492f4db669b1b63300a496b"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
