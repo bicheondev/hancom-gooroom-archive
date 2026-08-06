@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 91,
-    "workflow_name_count": 91,
-    "referenced_local_file_count": 126,
-    "error_count": 77,
+    "workflow_count": 92,
+    "workflow_name_count": 92,
+    "referenced_local_file_count": 128,
+    "error_count": 78,
     "warning_count": 0,
     "passed": false
   },
@@ -1627,6 +1627,25 @@
       ]
     },
     {
+      "filename": "arm64-stage0-minimal.yml",
+      "path": ".github/workflows/arm64-stage0-minimal.yml",
+      "name": "ARM64 port - build and boot-test minimal stage-0 ISO",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/stage0-minimal/LOCKSUMS.sh",
+        "arm64/scripts/build_stage0_minimal_iso.sh"
+      ]
+    },
+    {
       "filename": "arm64-stage0-v3-record.yml",
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
       "name": "ARM64 port - record stage-0 v3 attempt",
@@ -2003,6 +2022,7 @@
       ".github/workflows/arm64-stage0-live-v4.yml",
       ".github/workflows/arm64-stage0-live-v5.yml",
       ".github/workflows/arm64-stage0-live.yml",
+      ".github/workflows/arm64-stage0-minimal.yml",
       ".github/workflows/arm64-vendor-binary-lock.yml",
       ".github/workflows/arm64-vendor-pool-source-lock.yml",
       ".github/workflows/arm64-vendor-source-archive-lock.yml",
@@ -2030,6 +2050,9 @@
     "arm64/locks/sources/source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml"
+    ],
+    "arm64/locks/stage0-minimal/LOCKSUMS.sh": [
+      ".github/workflows/arm64-stage0-minimal.yml"
     ],
     "arm64/locks/stage0-v2/LOCKSUMS.sh": [
       ".github/workflows/arm64-stage0-live-v2.yml"
@@ -2175,6 +2198,9 @@
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
       ".github/workflows/arm64-minimal-boot-iso-v4.yml"
+    ],
+    "arm64/scripts/build_stage0_minimal_iso.sh": [
+      ".github/workflows/arm64-stage0-minimal.yml"
     ],
     "arm64/scripts/classify_native_rebuild_failures.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -2756,6 +2782,11 @@
       "path": ".github/workflows/arm64-stage0-live.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/stage0/LOCKSUMS.sh"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-minimal.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/stage0-minimal/LOCKSUMS.sh"
     },
     {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
