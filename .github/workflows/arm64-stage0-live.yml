@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-stage0-live.yml'
       - 'arm64/scripts/build_stage0_live_iso.sh'
+      - 'arm64/scripts/run_stage0_live_iso.sh'
       - 'arm64/locks/reference/**'
       - 'arm64/locks/vendor-binaries/**'
   workflow_dispatch:
@@ -80,10 +81,10 @@ jobs:
           HANCOM_GOOROOM_STAGE0_ISO_NAME: ${{ env.ISO_NAME }}
         run: |
           set -euxo pipefail
-          chmod +x arm64/scripts/build_stage0_live_iso.sh
+          chmod +x arm64/scripts/run_stage0_live_iso.sh
           rm -rf work/stage0
           mkdir -p work/stage0
-          sudo -E arm64/scripts/build_stage0_live_iso.sh \
+          sudo -E arm64/scripts/run_stage0_live_iso.sh \
             arm64/locks/reference/amd64-reference.json \
             work/vendor/vendor-binary-lock/vendor-binary-lock.json \
             work/vendor/vendor-debs \
