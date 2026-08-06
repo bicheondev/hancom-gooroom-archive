@@ -300,8 +300,18 @@ def main() -> int:
     (args.output_dir / "dependency-repository-lock.json").write_text(
         json.dumps(lock, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    # Preserve the original top-level summary fields for workflow shell
+    # consumers while also exposing the complete lock shape expected by the
+    # dependency retry selector. This is intentionally redundant and hashed.
+    summary_document = {
+        **summary,
+        "summary": summary,
+        "packages": package_rows,
+        "blockers": blockers,
+    }
     (args.output_dir / "summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        json.dumps(summary_document, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
     (args.output_dir / "blockers.json").write_text(
         json.dumps(blockers, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
