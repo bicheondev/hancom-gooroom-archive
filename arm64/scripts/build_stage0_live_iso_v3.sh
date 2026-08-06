@@ -52,6 +52,27 @@ if needle in text:
         'Acquire::http::Timeout "45";',
         1,
     )
+
+# arc-icon-theme is not present in the dated Debian ARM64 archive. The exact
+# Architecture: all vendor DEB has already been hash/control/ELF-checked above
+# and is applied through OVERLAY_ROOT after the Debian desktop transaction.
+# Asking APT for the same vendor-only package makes the otherwise valid build
+# fail before that verified overlay can be installed.
+apt_vendor_line = (
+    "  arc-icon-theme dconf-cli eog evince file-roller fonts-nanum "
+    "fonts-noto-cjk \\\n"
+)
+replacement_line = (
+    "  dconf-cli eog evince file-roller fonts-nanum fonts-noto-cjk \\\n"
+)
+line_count = text.count(apt_vendor_line)
+if line_count != 1:
+    raise SystemExit(
+        "refusing to patch an unexpected stage-0 desktop package list: "
+        f"arc-icon-theme line count={line_count}"
+    )
+text = text.replace(apt_vendor_line, replacement_line, 1)
+
 destination.write_text(text, encoding="utf-8")
 PY
 chmod +x "$PATCHED_SCRIPT"
@@ -131,6 +152,10 @@ result = {
         "check_valid_until": False,
         "archive_signature_verification": "enabled",
         "retries": 10,
+    },
+    "vendor_overlay_policy": {
+        "arc_icon_theme": "verified-architecture-all-overlay",
+        "apt_vendor_package_request_removed": True,
     },
     "output_files": files,
     "diagnostic_matches": error_lines,
