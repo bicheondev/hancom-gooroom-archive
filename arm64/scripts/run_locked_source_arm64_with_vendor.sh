@@ -14,6 +14,8 @@ OUTPUT_DIR="$3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64.sh"
 COMPAT_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
+COMPOSITE_HELPER="${HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER:-$SCRIPT_DIR/prepare_composite_source_chroot.sh}"
+COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-$SCRIPT_DIR/../locks/source-components}"
 VENDOR_LOCK="${HANCOM_GOOROOM_VENDOR_LOCK:-$SCRIPT_DIR/../locks/vendor-binaries/vendor-binary-lock.json}"
 VENDOR_PACKAGES_RAW="${HANCOM_GOOROOM_VENDOR_PACKAGES:-}"
 
@@ -26,9 +28,13 @@ done
 [ -f "$LOCK_JSON" ] || { echo "source lock not found: $LOCK_JSON" >&2; exit 69; }
 [ -f "$BASE_BUILDER" ] || { echo "base builder not found: $BASE_BUILDER" >&2; exit 69; }
 [ -f "$COMPAT_WRAPPER" ] || { echo "compatibility wrapper not found: $COMPAT_WRAPPER" >&2; exit 69; }
+[ -f "$COMPOSITE_HELPER" ] || { echo "composite source helper not found: $COMPOSITE_HELPER" >&2; exit 69; }
+[ -d "$COMPONENT_LOCK_DIR" ] || { echo "source component lock directory not found: $COMPONENT_LOCK_DIR" >&2; exit 69; }
 [ -f "$VENDOR_LOCK" ] || { echo "vendor binary lock not found: $VENDOR_LOCK" >&2; exit 69; }
 [ -n "$VENDOR_PACKAGES_RAW" ] || usage
 
+COMPOSITE_HELPER="$(readlink -f "$COMPOSITE_HELPER")"
+COMPONENT_LOCK_DIR="$(readlink -f "$COMPONENT_LOCK_DIR")"
 OUTPUT_DIR_ABS="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -203,6 +209,8 @@ path.write_text(source, encoding="utf-8")
 PY
 
 export HANCOM_GOOROOM_VENDOR_REPO="$VENDOR_REPO"
+export HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR="$COMPONENT_LOCK_DIR"
+export HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER="$COMPOSITE_HELPER"
 "$BUILDER_DIR/run_locked_source_arm64.sh" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
 
 jq -s \
