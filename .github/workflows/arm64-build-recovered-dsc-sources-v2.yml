@@ -1,0 +1,260 @@
+name: ARM64 port - build recovered exact DSC sources v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-recovered-dsc-sources-v2.yml'
+      - 'arm64/scripts/select_dsc_rebuild_matrix_v2.py'
+      - 'arm64/scripts/build_locked_dsc_arm64_v2.sh'
+      - 'arm64/scripts/verify_dsc_arm64_rebuild_v2.py'
+      - 'arm64/locks/effective-sources-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-recovered-dsc-build-v2
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - name: Check out merged exact source authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Select exact signed DSC native rebuilds
+        id: plan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work
+          if [ ! -f arm64/locks/effective-sources-v2/effective-source-lock-v2.json ]; then
+            printf '%s\n' '{"schema":1,"selected_count":0,"selected":[],"skipped":[],"matrix":{"include":[]}}' \
+              > work/dsc-rebuild-plan.json
+          else
+            python3 arm64/scripts/select_dsc_rebuild_matrix_v2.py \
+              --lock arm64/locks/effective-sources-v2/effective-source-lock-v2.json \
+              --output work/dsc-rebuild-plan.json
+          fi
+          echo "matrix=$(jq -c '.matrix' work/dsc-rebuild-plan.json)" >> "$GITHUB_OUTPUT"
+          echo "count=$(jq -r '.selected_count' work/dsc-rebuild-plan.json)" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Exact signed DSC ARM64 rebuild plan'
+            echo
+            echo '```json'
+            cat work/dsc-rebuild-plan.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload immutable rebuild plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-recovered-dsc-rebuild-plan-v2
+          path: work/dsc-rebuild-plan.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Check out exact lock and native builder
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install verifier tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          docker version
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git jq dpkg-dev devscripts ca-certificates python3 file
+          bash -n arm64/scripts/build_locked_dsc_arm64_v2.sh
+          python3 -m py_compile arm64/scripts/verify_dsc_arm64_rebuild_v2.py
+          chmod +x arm64/scripts/build_locked_dsc_arm64_v2.sh
+
+      - name: Build exact signed source natively for ARM64
+        id: build
+        continue-on-error: true
+        shell: bash
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: arm64/locks/reference/amd64-reference.json
+        run: |
+          set -o pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          timeout --signal=TERM --kill-after=120 17400 \
+            arm64/scripts/build_locked_dsc_arm64_v2.sh \
+              arm64/locks/effective-sources-v2/effective-source-lock-v2.json \
+              '${{ matrix.source }}' \
+              "$output" \
+            2>&1 | tee "$output/workflow-build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Verify version, architecture, DSC identity, and ELF payloads
+        id: verify
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_dsc_arm64_rebuild_v2.py \
+            --lock arm64/locks/effective-sources-v2/effective-source-lock-v2.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source '${{ matrix.source }}' \
+            --source-version '${{ matrix.source_version }}' \
+            --directory 'work/rebuild/${{ matrix.source }}' \
+            --output 'work/rebuild/${{ matrix.source }}/verification.json'
+
+      - name: Write structured success or failure result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          mkdir -p "$output"
+          jq -n \
+            --arg source '${{ matrix.source }}' \
+            --arg source_version '${{ matrix.source_version }}' \
+            --arg dsc_url '${{ matrix.dsc_url }}' \
+            --arg dsc_sha256 '${{ matrix.dsc_sha256 }}' \
+            --arg repository '${{ matrix.repository }}' \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg verify_outcome '${{ steps.verify.outcome }}' \
+            --argjson required_native_packages '${{ toJSON(matrix.required_native_packages) }}' \
+            '{
+              schema:1,
+              source:$source,
+              source_version:$source_version,
+              provenance:"vendor-apt-exact-signed-dsc",
+              dsc_url:$dsc_url,
+              dsc_sha256:$dsc_sha256,
+              repository:$repository,
+              build_outcome:$build_outcome,
+              build_exit_code:$build_exit_code,
+              verify_outcome:$verify_outcome,
+              required_native_packages:$required_native_packages,
+              reused_all_packages:[],
+              passed:($build_outcome == "success" and $verify_outcome == "success")
+            }' > "$output/job-result.json"
+
+      - name: Upload complete package or failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: work/rebuild/${{ matrix.source }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce verified native rebuild after preserving evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.build.outcome }}' = success
+          test '${{ steps.verify.outcome }}' = success
+          jq -e '.passed == true' 'work/rebuild/${{ matrix.source }}/job-result.json'
+
+  collect:
+    needs: [plan, build]
+    if: always() && needs.plan.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download this run's DSC rebuild artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: arm64-dsc-rebuild-*
+          path: work/artifacts
+          merge-multiple: false
+
+      - name: Commit compact results without committing DEBs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_root="arm64/locks/dsc-rebuild-results/runs/${{ github.run_id }}"
+          mkdir -p "$run_root"
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          artifacts=Path('work/artifacts')
+          output=Path('arm64/locks/dsc-rebuild-results/runs/${{ github.run_id }}')
+          output.mkdir(parents=True,exist_ok=True)
+          rows=[]
+          for result_path in sorted(artifacts.rglob('job-result.json')):
+              directory=result_path.parent
+              row=json.loads(result_path.read_text())
+              verification_path=directory/'verification.json'
+              verification=json.loads(verification_path.read_text()) if verification_path.exists() else None
+              debs=[]
+              for deb in sorted(directory.glob('*.deb')):
+                  h=hashlib.sha256(deb.read_bytes()).hexdigest()
+                  debs.append({'filename':deb.name,'size':deb.stat().st_size,'sha256':h})
+              row['actions_run_id']='${{ github.run_id }}'
+              row['actions_run_url']='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              row['artifact_name']=result_path.parents[0].name
+              row['debs']=debs
+              row['verification']=verification
+              rows.append(row)
+              source_dir=Path('arm64/locks/dsc-rebuild-results')/row['source']/row['source_version'].replace('/','_')
+              source_dir.mkdir(parents=True,exist_ok=True)
+              (source_dir/'result.json').write_text(json.dumps(row,ensure_ascii=False,indent=2)+'\n')
+          summary={
+              'schema':1,
+              'run_id':'${{ github.run_id }}',
+              'result_count':len(rows),
+              'passed_count':sum(bool(row.get('passed')) for row in rows),
+              'failed_count':sum(not bool(row.get('passed')) for row in rows),
+              'passed_sources':[row['source'] for row in rows if row.get('passed')],
+              'failed_sources':[row['source'] for row in rows if not row.get('passed')],
+          }
+          (output/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
+          (output/'results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps(summary,indent=2))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/dsc-rebuild-results
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact signed DSC ARM64 rebuild results'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
