@@ -1,0 +1,69 @@
+name: ARM64 port - safely wire explicit progress dispatch chain
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-chain-progress-maintenance-safe.yml'
+      - 'arm64/scripts/wire_progress_dispatches.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-progress-chain-maintenance
+  cancel-in-progress: true
+
+jobs:
+  wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out all active workflows and the external patcher
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply secret-safe progress wiring
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/wire_progress_dispatches.py
+          python3 arm64/scripts/wire_progress_dispatches.py \
+            --workflow-dir .github/workflows
+
+          git rm -f .github/workflows/arm64-chain-progress-maintenance.yml \
+            2>/dev/null || true
+          git rm -f .github/workflows/arm64-chain-progress-maintenance-safe.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows arm64/scripts/wire_progress_dispatches.py
+          git commit -m 'Safely wire explicit Hancom Gooroom ARM64 progress chain'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 3))
+          done
+
+      - name: Reaudit and resume the safely wired pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-active-pipeline-audit.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-pipeline-lint.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-effective-source-lock.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-native-rebuild-backlog.yml \
+            --repo '${{ github.repository }}' --ref arm64-port -f limit=6 || true
