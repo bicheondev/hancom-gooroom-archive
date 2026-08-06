@@ -33,6 +33,10 @@ replacements = {
         'export DEB_BUILD_OPTIONS="nocheck parallel=2"',
     'export DEB_BUILD_PROFILES="pkg.nocheck nodoc"':
         'export DEB_BUILD_PROFILES="pkg.nocheck"',
+    'rm -f ./*-build-deps_*.deb':
+        'rm -f ./*-build-deps*.deb',
+    "find . -maxdepth 1 -type f -name '*-build-deps_*.deb' -print -quit":
+        "find . -maxdepth 1 -type f -name '*-build-deps*.deb' -print -quit",
     'dpkg-checkbuilddeps -B':
         'dpkg-checkbuilddeps',
     'dpkg-buildpackage -us -uc -B -j2':
@@ -53,4 +57,4 @@ destination.write_text(text, encoding="utf-8")
 PY
 
 chmod 0755 "$PATCHED_BUILDER"
-exec "$PATCHED_BUILDER" "$@"
+"$PATCHED_BUILDER" "$@"
