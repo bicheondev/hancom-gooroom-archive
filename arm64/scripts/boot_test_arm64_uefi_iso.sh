@@ -73,6 +73,11 @@ if [ -c /dev/kvm ]; then
   accel=kvm
   cpu=host
 fi
+
+# Use virtio-mmio devices rather than virtio-pci. Ubuntu's AArch64 QEMU package
+# does not ship efi-virtio.rom, and some versions still try to load that default
+# PCI option ROM even when an empty romfile property is supplied. AAVMF has
+# VirtioMmioDxe, so this path boots the same ISO without any PCI option ROM.
 qemu=(
   qemu-system-aarch64
   -machine "virt,gic-version=3,accel=$accel"
@@ -82,12 +87,9 @@ qemu=(
   -nographic
   -monitor none
   -serial stdio
-  # AAVMF already contains the virtio drivers. Ubuntu's QEMU package does not
-  # ship efi-virtio.rom, so explicitly disable optional PCI expansion ROMs
-  # instead of failing before firmware can inspect the ISO.
-  -device virtio-rng-pci,romfile=
+  -device virtio-rng-device
   -drive "if=none,id=cdrom,media=cdrom,format=raw,readonly=on,file=$ISO"
-  -device virtio-scsi-pci,id=scsi0,romfile=
+  -device virtio-scsi-device,id=scsi0
   -device scsi-cd,drive=cdrom,bus=scsi0.0,bootindex=0
   -boot order=d,menu=off,strict=on
   -no-reboot
@@ -108,7 +110,7 @@ fi
 # QEMU exits before writing guest serial output.
 printf '%q ' "${qemu[@]}" > "$OUTPUT_LOG.command.txt"
 printf '\n' >> "$OUTPUT_LOG.command.txt"
-printf 'code=%s\nvars=%s\naccel=%s\ncpu=%s\n' \
+printf 'code=%s\nvars=%s\naccel=%s\ncpu=%s\ndevice_transport=virtio-mmio\n' \
   "$CODE" "${VARS:-}" "$accel" "$cpu" > "$OUTPUT_LOG.firmware.txt"
 
 cleanup() {
