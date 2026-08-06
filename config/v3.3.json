@@ -1,0 +1,30 @@
+{
+  "product": "Hancom Gooroom",
+  "version": "3.3",
+  "base_architecture": "amd64",
+  "target_architecture": "arm64",
+  "release": {
+    "repository": "bicheondev/hancom-gooroom-archive",
+    "tag": "v3.3",
+    "asset": "Hancom-Gooroom-3.3-amd64.hybrid.iso",
+    "size_bytes": 1566277632,
+    "sha256": "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a"
+  },
+  "source_organizations": [
+    "hancomgooroom",
+    "hancom-io",
+    "gooroom"
+  ],
+  "source_version_policy": {
+    "mode": "exact",
+    "comparison_key": "debian_source_package_version",
+    "allow_newer_source": false,
+    "allow_older_source": false,
+    "on_missing_or_mismatch": "fail"
+  },
+  "target": {
+    "boot_firmware": "UEFI",
+    "image_type": "hybrid-live-installer",
+    "machine_class": "generic-arm64"
+  }
+}
