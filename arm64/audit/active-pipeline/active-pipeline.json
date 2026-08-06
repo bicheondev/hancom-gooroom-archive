@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 93,
-    "workflow_name_count": 93,
+    "workflow_count": 94,
+    "workflow_name_count": 94,
     "referenced_local_file_count": 127,
     "error_count": 5,
-    "warning_count": 37,
+    "warning_count": 38,
     "passed": false
   },
   "workflows": [
@@ -1462,6 +1462,26 @@
       ]
     },
     {
+      "filename": "arm64-source-authority-v5.yml",
+      "path": ".github/workflows/arm64-source-authority-v5.yml",
+      "name": "ARM64 port - exact source authority controller v5",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
+        "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+        "arm64/scripts/merge_exact_source_authority_v3.py"
+      ]
+    },
+    {
       "filename": "arm64-source-keyring-lock.yml",
       "path": ".github/workflows/arm64-source-keyring-lock.yml",
       "name": "ARM64 port - lock trusted vendor source-signing keys",
@@ -1993,6 +2013,7 @@
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
+      ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-source-lock-exhaustive.yml",
       ".github/workflows/arm64-source-lock.yml",
       ".github/workflows/arm64-stage0-live-v3.yml",
@@ -2052,11 +2073,13 @@
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
+      ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
     ],
     "arm64/locks/wayback-sources/wayback-source-release-lock.json": [
       ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml"
+      ".github/workflows/arm64-source-authority-v4.yml",
+      ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/rebuild-batches.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2228,7 +2251,8 @@
     ],
     "arm64/scripts/merge_exact_source_authority_v3.py": [
       ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml"
+      ".github/workflows/arm64-source-authority-v4.yml",
+      ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/scripts/merge_exact_source_locks.py": [
       ".github/workflows/arm64-effective-source-lock.yml"
@@ -2628,6 +2652,11 @@
     },
     {
       "path": ".github/workflows/arm64-source-authority-v4.yml",
+      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-source-authority-v5.yml",
       "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
