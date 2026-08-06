@@ -1,0 +1,244 @@
+name: ARM64 port - diagnose and repair stage0 v6
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-v6-auto-repair.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-v6-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Fetch latest stage0 v6 state and failed log
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/v6-repair
+          workflow='.github/workflows/arm64-stage0-v6.yml'
+          workflow_id="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows" \
+            --jq ".workflows[] | select(.path == \"$workflow\") | .id" | head -n1)"
+          test -n "$workflow_id"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}/runs?branch=arm64-port&per_page=20" \
+            > work/v6-repair/runs.json
+          run_id="$(jq -r '.workflow_runs | map(select(.status == "completed")) | sort_by(.created_at, .id) | reverse | .[0].id // empty' work/v6-repair/runs.json)"
+          test -n "$run_id"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" \
+            > work/v6-repair/run.json
+          conclusion="$(jq -r '.conclusion // ""' work/v6-repair/run.json)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          if [ "$conclusion" = success ]; then
+            : > work/v6-repair/failed.log
+            exit 0
+          fi
+          set +e
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --log-failed \
+            > work/v6-repair/failed.log 2>&1
+          echo "$?" > work/v6-repair/log-exit-code.txt
+          set -e
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            > work/v6-repair/jobs.json
+
+      - name: Apply bounded repair rules proved by the log
+        if: steps.state.outputs.conclusion != 'success'
+        id: patch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json,re
+          from pathlib import Path
+
+          log=Path('work/v6-repair/failed.log').read_text(encoding='utf-8',errors='replace')
+          builder=Path('arm64/scripts/build_stage0_v6.py')
+          workflow=Path('.github/workflows/arm64-stage0-v6.yml')
+          builder_text=builder.read_text(encoding='utf-8')
+          workflow_text=workflow.read_text(encoding='utf-8')
+          original_builder=builder_text
+          original_workflow=workflow_text
+          changes=[]
+
+          # Optional desktop utilities may be removed only when APT explicitly
+          # proves the exact Bullseye package unavailable. Boot-critical packages
+          # are never members of this allowlist.
+          optional={
+              'gnome-screenshot','eog','evince','gedit','file-roller',
+              'gnome-system-monitor','gnome-calculator','linux-cpupower',
+              'pciutils','usbutils','fonts-noto-color-emoji',
+              'xserver-xorg-video-all','xserver-xorg-input-all',
+          }
+          missing=set(re.findall(r'Unable to locate package\s+([^\s]+)',log))
+          missing.update(re.findall(r"Package ['‘]?([^'’\s]+)['’]? has no installation candidate",log))
+          removed=[]
+          for package in sorted(missing & optional):
+              pattern=rf'(?<![A-Za-z0-9+_.-]){re.escape(package)}(?![A-Za-z0-9+_.-])'
+              new,count=re.subn(pattern,'',builder_text)
+              if count:
+                  builder_text=new
+                  removed.append(package)
+          if removed: changes.append({'kind':'remove-proven-unavailable-optional-packages','packages':removed})
+
+          # Some snapshots reject a multi-mirror bootstrap even though the base
+          # Bullseye mirror is sufficient to create minbase. The chroot stage
+          # still restores base, updates, and security before installing desktop.
+          if re.search(r'(?i)(mmdebstrap|debootstrap).*(failed|error)',log,re.S) and \
+             re.search(r'(?i)(bullseye-updates|bullseye-security).*(404|not found|release)',log,re.S):
+              for needle in [
+                  f'            f"deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/{{SNAPSHOT}}/ bullseye-updates main contrib non-free",\n',
+                  f'            f"deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/{{SNAPSHOT}}/ bullseye-security main contrib non-free",\n',
+              ]:
+                  builder_text=builder_text.replace(needle,'')
+              changes.append({'kind':'bootstrap-from-base-snapshot-only'})
+
+          # Ensure a real graphical login can start on QEMU virtio-gpu. This is
+          # configuration, not a fake marker: the marker still requires the
+          # display-manager service to be active.
+          gdm_marker="printf 'hancom-gooroom\\n' >/etc/hostname\n"
+          gdm_config="""printf 'hancom-gooroom\\n' >/etc/hostname
+mkdir -p /etc/gdm3
+cat >/etc/gdm3/daemon.conf <<'EOF'
+[daemon]
+WaylandEnable=false
+AutomaticLoginEnable=true
+AutomaticLogin=gooroom
+
+[security]
+
+[xdmcp]
+
+[chooser]
+
+[debug]
+Enable=false
+EOF
+"""
+          if gdm_marker in builder_text and 'AutomaticLogin=gooroom' not in builder_text:
+              builder_text=builder_text.replace(gdm_marker,gdm_config,1)
+              changes.append({'kind':'configure-gdm-xorg-autologin-for-live-user'})
+
+          # Install a host tool only when its executable absence is explicitly in
+          # the log. These package names are Ubuntu 24.04 host packages.
+          host_tools={
+              'grub-mkstandalone':'grub-common grub-efi-arm64-bin',
+              'mkfs.vfat':'dosfstools',
+              'mcopy':'mtools','mmd':'mtools','xorriso':'xorriso',
+              'mksquashfs':'squashfs-tools','qemu-system-aarch64':'qemu-system-arm',
+          }
+          additions=[]
+          for tool,packages in host_tools.items():
+              if re.search(rf'(?i){re.escape(tool)}: (command )?not found|No such file[^\n]*{re.escape(tool)}',log):
+                  additions.extend(packages.split())
+          additions=sorted(set(additions))
+          if additions:
+              match=re.search(r'(sudo apt-get install -y --no-install-recommends \\\n)(.*?)(?=\n\s*python3 -m py_compile)',workflow_text,re.S)
+              if match:
+                  block=match.group(0)
+                  absent=[p for p in additions if not re.search(rf'(?<![A-Za-z0-9+_.-]){re.escape(p)}(?![A-Za-z0-9+_.-])',block)]
+                  if absent:
+                      replacement=block.rstrip()+' \\\n            '+' '.join(absent)+'\n'
+                      workflow_text=workflow_text[:match.start()]+replacement+workflow_text[match.end():]
+                      changes.append({'kind':'add-proven-missing-host-tools','packages':absent})
+
+          if builder_text != original_builder:
+              builder.write_text(builder_text,encoding='utf-8')
+          if workflow_text != original_workflow:
+              workflow.write_text(workflow_text,encoding='utf-8')
+
+          errors=[]
+          lines=log.splitlines()
+          error_re=re.compile(r'(?i)(error|fatal|failed|failure|unable|cannot|not found|no such file|unmet|broken|mismatch|traceback|BUILD ERROR|exit code)')
+          for index,line in enumerate(lines):
+              if error_re.search(line):
+                  errors.append({'line':index+1,'context':lines[max(0,index-2):min(len(lines),index+4)]})
+          report={
+              'schema':1,
+              'source_run_id':json.loads(Path('work/v6-repair/run.json').read_text())['id'],
+              'source_conclusion':json.loads(Path('work/v6-repair/run.json').read_text()).get('conclusion'),
+              'missing_packages':sorted(missing),
+              'changes':changes,
+              'changed':bool(changes),
+              'error_context':errors[-100:],
+          }
+          Path('work/v6-repair/repair-report.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          PY
+          changed="$(jq -r '.changed' work/v6-repair/repair-report.json)"
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+      - name: Validate bounded modifications
+        if: steps.state.outputs.conclusion != 'success' && steps.patch.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/build_stage0_v6.py
+          python3 - <<'PY'
+          import yaml
+          from pathlib import Path
+          data=yaml.safe_load(Path('.github/workflows/arm64-stage0-v6.yml').read_text())
+          assert isinstance(data,dict) and isinstance(data.get('jobs'),dict)
+          PY
+
+      - name: Commit diagnosis and any safe repair
+        if: steps.state.outputs.conclusion != 'success'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/audit/stage0-v6-repair/${{ steps.state.outputs.run_id }}"
+          mkdir -p "$destination"
+          cp work/v6-repair/run.json "$destination/"
+          cp work/v6-repair/jobs.json "$destination/" 2>/dev/null || true
+          cp work/v6-repair/repair-report.json "$destination/"
+          tail -n 1500 work/v6-repair/failed.log > "$destination/failed-tail.log" || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/build_stage0_v6.py \
+            .github/workflows/arm64-stage0-v6.yml "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Diagnose and repair stage0 v6 run ${{ steps.state.outputs.run_id }}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
+
+      - name: Rerun stage0 v6 after a proven repair
+        if: steps.state.outputs.conclusion != 'success' && steps.patch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run .github/workflows/arm64-stage0-v6.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+
+      - name: Upload repair evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stage0-v6-repair-${{ steps.state.outputs.run_id }}
+          path: work/v6-repair
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
