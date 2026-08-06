@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "synaptic",
+  "source_version": "0.90.2+grm3u3",
+  "repository_full_name": "gooroom/synaptic",
+  "commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
+  "tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
+  "expected_native_binary_versions": {
+    "synaptic": "0.90.2+grm3u3"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "synaptic-dbgsym_0.90.2+grm3u3_arm64.deb",
+      "sha256": "ae946e67004afcd7b90d6eac55d58e3d2ae4bb5ece8ac90b9cd49501db8068fa",
+      "size": 4269980,
+      "package": "synaptic-dbgsym",
+      "version": "0.90.2+grm3u3",
+      "architecture": "arm64",
+      "source_field": "synaptic",
+      "parsed_source": "synaptic",
+      "parsed_source_version": "0.90.2+grm3u3",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "synaptic_0.90.2+grm3u3_arm64.deb",
+      "sha256": "966a670bdbf06b43fe2cd2880a3a400cb4b54c090e5225834a5f38b8f34c166c",
+      "size": 2042948,
+      "package": "synaptic",
+      "version": "0.90.2+grm3u3",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "synaptic",
+      "parsed_source_version": "0.90.2+grm3u3",
+      "expected_from_iso": true,
+      "payload_entry_count": 249,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "synaptic",
+    "source_version": "0.90.2+grm3u3",
+    "repository": "gooroom/synaptic",
+    "commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
+    "tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
+    "source_archive_sha256": "85660edd35983aa61e3009cb99ad75800626a626b8022d0517692bfd01b0a183",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "synaptic"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "synaptic",
+      "synaptic-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "synaptic",
+    "source_version": "0.90.2+grm3u3",
+    "repository": "gooroom/synaptic",
+    "commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
+    "tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
+    "verified_commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
+    "verified_tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
+    "deterministic_source_archive_sha256": "85660edd35983aa61e3009cb99ad75800626a626b8022d0517692bfd01b0a183"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
