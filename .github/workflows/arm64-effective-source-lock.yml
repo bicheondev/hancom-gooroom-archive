@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-effective-source-lock.yml'
       - 'arm64/scripts/merge_exact_source_locks.py'
+      - 'arm64/locks/sources-api-baseline/**'
       - 'arm64/locks/sources/**'
       - 'arm64/locks/vendor-pool-sources/**'
   workflow_dispatch:
@@ -28,37 +29,41 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Check whether both exact source evidence sets exist
+      - name: Check exact source evidence inputs
         id: inputs
         run: |
           set -euxo pipefail
           ready=false
-          if [ -f arm64/locks/sources/source-lock.json ] \
+          if [ -f arm64/locks/sources-api-baseline/source-lock.json ] \
              && [ -f arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json ]; then
             ready=true
           fi
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
 
-      - name: Merge exact source authorities
+      - name: Merge every exact source authority
         if: steps.inputs.outputs.ready == 'true'
         id: merge
         run: |
           set -uxo pipefail
           rm -rf work/effective-source-lock
+          git_args=(
+            --git-lock arm64/locks/sources-api-baseline/source-lock.json
+          )
+          if [ -f arm64/locks/sources/source-lock.json ]; then
+            git_args+=(--git-lock arm64/locks/sources/source-lock.json)
+          fi
           set +e
           python3 arm64/scripts/merge_exact_source_locks.py \
             --reference arm64/locks/reference/amd64-reference.json \
-            --git-lock arm64/locks/sources/source-lock.json \
+            "${git_args[@]}" \
             --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json \
             --output-dir work/effective-source-lock
           rc=$?
           set -e
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           find work/effective-source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
-            | sort -z \
-            | xargs -0 sha256sum \
-            > /tmp/effective-source-lock-sums
-          mv /tmp/effective-source-lock-sums work/effective-source-lock/LOCKSUMS.sha256
+            | sort -z | xargs -0 sha256sum \
+            > work/effective-source-lock/LOCKSUMS.sha256
           cat work/effective-source-lock/effective-source-lock-summary.json
 
       - name: Upload effective source lock evidence
@@ -88,10 +93,12 @@ jobs:
           git pull --rebase origin arm64-port
           git push origin HEAD:arm64-port
 
-      - name: Refuse a build with unresolved ARM64 sources
+      - name: Refuse final release with unresolved ARM64 sources
         if: steps.inputs.outputs.ready == 'true'
         run: |
           set -euxo pipefail
+          jq . work/effective-source-lock/effective-source-lock-summary.json
+          # A partial package-build workflow may consume resolved entries, but
+          # the final ISO release remains forbidden until this gate is true.
           test '${{ steps.merge.outputs.exit_code }}' = '0'
-          test "$(jq -r '.build_allowed' \
-            work/effective-source-lock/effective-source-lock-summary.json)" = true
+          test "$(jq -r '.build_allowed' work/effective-source-lock/effective-source-lock-summary.json)" = true
