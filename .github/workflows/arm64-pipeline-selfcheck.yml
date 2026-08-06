@@ -1,0 +1,241 @@
+name: ARM64 port - pipeline self-check
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-pipeline-selfcheck.yml'
+      - '.github/workflows/arm64-*.yml'
+      - 'arm64/scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-pipeline-selfcheck
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install static validation tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-yaml shellcheck
+
+      - name: Validate Python shell YAML and action references
+        id: validate
+        run: |
+          set -uxo pipefail
+          rm -rf work/pipeline-selfcheck
+          mkdir -p work/pipeline-selfcheck
+          set +e
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import json
+          import py_compile
+          import re
+          import subprocess
+          import yaml
+
+          root = Path('.')
+          result = {
+              'schema': 'hancom-gooroom-arm64-pipeline-selfcheck-v1',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace(
+                  '+00:00', 'Z'
+              ),
+              'status': 'passed',
+              'python': [],
+              'shell': [],
+              'yaml': [],
+              'action_references': [],
+              'functional': [],
+              'issues': [],
+          }
+
+          python_files = sorted((root / 'arm64/scripts').glob('*.py'))
+          for path in python_files:
+              try:
+                  py_compile.compile(str(path), doraise=True)
+                  result['python'].append({'path': str(path), 'status': 'passed'})
+              except Exception as error:
+                  result['python'].append({
+                      'path': str(path), 'status': 'failed', 'error': repr(error)
+                  })
+                  result['issues'].append(f'python compile failed: {path}: {error!r}')
+
+          shell_files = sorted((root / 'arm64/scripts').glob('*.sh'))
+          for path in shell_files:
+              process = subprocess.run(
+                  ['bash', '-n', str(path)], text=True,
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE
+              )
+              entry = {'path': str(path), 'status': 'passed' if process.returncode == 0 else 'failed'}
+              if process.returncode:
+                  entry['stderr'] = process.stderr[-4000:]
+                  result['issues'].append(f'bash syntax failed: {path}')
+              result['shell'].append(entry)
+
+          workflow_files = sorted((root / '.github/workflows').glob('arm64-*.yml'))
+          use_re = re.compile(r'^\s*uses:\s*([^\s#]+)', re.MULTILINE)
+          allowed_moving_refs = {'actions/download-artifact@v4'}
+          for path in workflow_files:
+              text = path.read_text(encoding='utf-8')
+              try:
+                  yaml.safe_load(text)
+                  result['yaml'].append({'path': str(path), 'status': 'passed'})
+              except Exception as error:
+                  result['yaml'].append({
+                      'path': str(path), 'status': 'failed', 'error': repr(error)
+                  })
+                  result['issues'].append(f'YAML parse failed: {path}: {error!r}')
+              for reference in use_re.findall(text):
+                  status = 'passed'
+                  reason = None
+                  if reference.startswith('./'):
+                      pass
+                  elif reference in allowed_moving_refs:
+                      reason = 'explicitly allowed v4 download action ref'
+                  elif '@' not in reference:
+                      status = 'failed'
+                      reason = 'action ref lacks @ revision'
+                  else:
+                      revision = reference.rsplit('@', 1)[1]
+                      if not re.fullmatch(r'[0-9a-f]{40}', revision):
+                          status = 'failed'
+                          reason = 'action revision is not a 40-hex commit'
+                  result['action_references'].append({
+                      'workflow': str(path),
+                      'reference': reference,
+                      'status': status,
+                      'reason': reason,
+                  })
+                  if status == 'failed':
+                      result['issues'].append(
+                          f'invalid action reference: {path}: {reference}: {reason}'
+                      )
+
+          functional_commands = [
+              (
+                  'bounded wave selection',
+                  [
+                      'python3', 'arm64/scripts/select_arm64_build_wave.py',
+                      '--lock', 'arm64/locks/effective-sources/effective-source-lock.json',
+                      '--output', 'work/pipeline-selfcheck/selection.json',
+                      '--exclude-source', 'accountsservice',
+                      '--maximum-selected-sources', '3',
+                      '--maximum-native-binaries', '4',
+                      '--maximum-total-binaries', '8',
+                  ],
+                  {0},
+              ),
+              (
+                  'build-wave summarizer fails closed on missing artifacts',
+                  [
+                      'python3', 'arm64/scripts/summarize_arm64_build_wave.py',
+                      '--artifacts-root', 'work/pipeline-selfcheck/empty-artifacts',
+                      '--output-dir', 'work/pipeline-selfcheck/empty-wave-summary',
+                      '--schema', 'selfcheck-empty-wave',
+                      '--expected-source', 'accountsservice',
+                      '--download-status', 'failure',
+                  ],
+                  {8},
+              ),
+              (
+                  'boot summarizer fails closed on missing image',
+                  [
+                      'python3', 'arm64/scripts/summarize_arm64_boot_attempt.py',
+                      '--attempt-root', 'work/pipeline-selfcheck/empty-boot',
+                      '--evidence-dir', 'work/pipeline-selfcheck/empty-boot-summary',
+                      '--schema', 'selfcheck-empty-boot',
+                      '--readiness-marker', 'SELF_CHECK_READY',
+                      '--assembly-exit-code', '98',
+                      '--boot-outcome', 'skipped',
+                      '--build-result-name', 'missing.json',
+                      '--qemu-log-name', 'missing.log',
+                  ],
+                  {9},
+              ),
+          ]
+          (root / 'work/pipeline-selfcheck/empty-artifacts').mkdir(parents=True, exist_ok=True)
+          (root / 'work/pipeline-selfcheck/empty-boot').mkdir(parents=True, exist_ok=True)
+          for name, command, accepted in functional_commands:
+              process = subprocess.run(
+                  command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+              )
+              status = 'passed' if process.returncode in accepted else 'failed'
+              result['functional'].append({
+                  'name': name,
+                  'status': status,
+                  'return_code': process.returncode,
+                  'accepted_return_codes': sorted(accepted),
+                  'stdout_tail': process.stdout[-4000:],
+                  'stderr_tail': process.stderr[-4000:],
+              })
+              if status == 'failed':
+                  result['issues'].append(
+                      f'functional self-check failed: {name}: rc={process.returncode}'
+                  )
+
+          if result['issues']:
+              result['status'] = 'failed'
+          Path('work/pipeline-selfcheck/selfcheck.json').write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(result, indent=2, ensure_ascii=False))
+          raise SystemExit(0 if result['status'] == 'passed' else 1)
+          PY
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/pipeline-selfcheck -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/pipeline-selfcheck/LOCKSUMS.sha256
+          exit 0
+
+      - name: Commit self-check evidence before enforcing it
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/pipeline-selfcheck
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/pipeline-selfcheck/selfcheck.json "$destination/"
+          cp work/pipeline-selfcheck/LOCKSUMS.sha256 "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record ARM64 port pipeline self-check'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload complete self-check output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-arm64-pipeline-selfcheck
+          path: work/pipeline-selfcheck
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce the self-check
+        run: |
+          set -euxo pipefail
+          test '${{ steps.validate.outputs.exit_code }}' = '0'
+          test "$(jq -r '.status' work/pipeline-selfcheck/selfcheck.json)" = passed
