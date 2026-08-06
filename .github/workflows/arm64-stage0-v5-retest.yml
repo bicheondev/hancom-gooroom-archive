@@ -28,7 +28,7 @@ env:
 jobs:
   retest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 55
     steps:
       - name: Check out the current boot gate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -36,16 +36,19 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Install AArch64 UEFI/QEMU tools
+      - name: Install AArch64 UEFI, QEMU, and its EFI virtio ROM
         run: |
           set -euxo pipefail
           test "$(uname -m)" = x86_64
-          # The ISO remains AArch64. This job uses QEMU TCG only for the boot
-          # gate, leaving native ARM64 runners available for package builds.
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            jq qemu-efi-aarch64 qemu-system-arm
+            jq qemu-efi-aarch64 qemu-system-arm ipxe-qemu
           gh --version
+          qemu-system-aarch64 --version
+          rom="$(find /usr/share/qemu /usr/lib/ipxe/qemu \
+            -type f -name efi-virtio.rom -print -quit 2>/dev/null)"
+          test -n "$rom"
+          printf '%s\n' "$rom" > /tmp/efi-virtio-rom-path.txt
 
       - name: Download and prove the exact previously assembled ISO
         env:
@@ -66,6 +69,7 @@ jobs:
           cp "$iso" "work/$ISO_NAME"
           printf '%s  %s\n' "$ISO_SHA256" "$ISO_NAME" \
             > "work/$ISO_NAME.sha256"
+          cp /tmp/efi-virtio-rom-path.txt work/evidence/
           jq -n \
             --arg source_run_id "$SOURCE_RUN_ID" \
             --arg source_artifact "$SOURCE_ARTIFACT" \
@@ -83,17 +87,34 @@ jobs:
             }' > work/evidence/source-iso-lock.json
 
       - name: Boot the exact ISO through AArch64 UEFI
+        id: boot
+        continue-on-error: true
         run: |
-          set -euxo pipefail
+          set -o pipefail
           chmod +x arm64/scripts/boot_test_arm64_uefi_iso.sh
+          set +e
           arm64/scripts/boot_test_arm64_uefi_iso.sh \
             "work/$ISO_NAME" \
             work/evidence/qemu-stage0-v5-retest.log \
             "$MARKER" \
             1200 \
             4096 \
-            4
-          grep -Fq "$MARKER" work/evidence/qemu-stage0-v5-retest.log
+            4 \
+            2>&1 | tee work/evidence/workflow-boot-test.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Write the immutable boot result even after failure
+        if: always()
+        run: |
+          set -euxo pipefail
+          marker_found=false
+          if [ -f work/evidence/qemu-stage0-v5-retest.log ] \
+             && grep -Fq "$MARKER" work/evidence/qemu-stage0-v5-retest.log; then
+            marker_found=true
+          fi
           jq -n \
             --arg marker "$MARKER" \
             --arg iso "$ISO_NAME" \
@@ -101,26 +122,40 @@ jobs:
             --arg source_run_id "$SOURCE_RUN_ID" \
             --arg actions_run_id "$GITHUB_RUN_ID" \
             --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg boot_outcome '${{ steps.boot.outcome }}' \
+            --arg boot_exit_code '${{ steps.boot.outputs.exit_code }}' \
+            --argjson marker_found "$marker_found" \
             '{
-              schema: 1,
-              status: "passed",
+              schema: 2,
+              status: (if $marker_found then "passed" else "failed" end),
               architecture: "arm64",
               firmware: "AArch64 UEFI",
               machine: "QEMU virt via TCG",
               iso: $iso,
               iso_sha256: $sha256,
               readiness_marker: $marker,
-              readiness_marker_found: true,
+              readiness_marker_found: $marker_found,
+              boot_step_outcome: $boot_outcome,
+              boot_exit_code: $boot_exit_code,
               source_run_id: $source_run_id,
               actions_run_id: $actions_run_id,
-              actions_run_url: $actions_run_url
+              actions_run_url: $actions_run_url,
+              passed: $marker_found
             }' > work/evidence/qemu-boot-result.json
+          for path in \
+            work/evidence/qemu-stage0-v5-retest.log \
+            work/evidence/workflow-boot-test.log; do
+            [ -f "$path" ] || continue
+            tail -n 500 "$path" > "$path.tail"
+          done
           find work/evidence -type f ! -name LOCKSUMS.sha256 -print0 \
             | sort -z \
             | xargs -0 sha256sum \
             > work/evidence/LOCKSUMS.sha256
+          cat work/evidence/qemu-boot-result.json
 
-      - name: Upload compact boot evidence
+      - name: Upload compact success or failure evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: hancom-gooroom-3.3-arm64-stage0-v5-retest-evidence
@@ -130,10 +165,12 @@ jobs:
           compression-level: 9
 
       - name: Publish only the boot-tested stage-0 ISO as a prerelease
+        if: steps.boot.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
+          jq -e '.passed == true' work/evidence/qemu-boot-result.json
           cat > work/stage0-release-notes.md <<'EOF'
           Hancom Gooroom 3.3 ARM64 stage-0 bring-up image.
 
@@ -159,6 +196,7 @@ jobs:
             work/evidence/LOCKSUMS.sha256
 
       - name: Record the boot-tested stage-0 release lock
+        if: steps.boot.outcome == 'success'
         run: |
           set -euxo pipefail
           target=arm64/locks/stage0-v5-retest
@@ -194,3 +232,11 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Enforce observed ARM64 readiness after preserving evidence
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.boot.outcome }}' = success
+          jq -e '.passed == true and .readiness_marker_found == true' \
+            work/evidence/qemu-boot-result.json
