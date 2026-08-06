@@ -7,6 +7,7 @@ on:
       - '.github/workflows/arm64-source-lock.yml'
       - 'arm64/scripts/resolve_source_git.py'
       - 'arm64/scripts/resolve_source_git_public.py'
+      - 'arm64/scripts/resolve_source_git_parallel.py'
       - 'arm64/locks/reference/**'
   workflow_dispatch:
 
@@ -36,15 +37,20 @@ jobs:
           set -uxo pipefail
           rm -rf work/source-lock work/source-probes
           set +e
-          python3 arm64/scripts/resolve_source_git_public.py \
+          python3 arm64/scripts/resolve_source_git_parallel.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --output-dir work/source-lock \
             --work-dir work/source-probes \
-            --max-depth 2000
+            --max-depth 2000 \
+            --workers 8
           rc=$?
           set -e
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
-          sha256sum work/source-lock/* | sort -k2 > work/source-lock/LOCKSUMS.sha256
+          find work/source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/source-lock-sums
+          mv /tmp/source-lock-sums work/source-lock/LOCKSUMS.sha256
           cat work/source-lock/source-lock-summary.json
 
       - name: Upload source resolution evidence
