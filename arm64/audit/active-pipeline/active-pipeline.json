@@ -1,12 +1,12 @@
 {
   "summary": {
-    "schema": 1,
+    "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
     "workflow_count": 86,
     "workflow_name_count": 86,
-    "referenced_local_file_count": 138,
-    "error_count": 50,
-    "warning_count": 0,
+    "referenced_local_file_count": 120,
+    "error_count": 2,
+    "warning_count": 30,
     "passed": false
   },
   "workflows": [
@@ -134,7 +134,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/qtbase-apt-source/apt-source-lock.json",
-        "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh",
         "arm64/scripts/build_locked_apt_source_arm64.sh",
         "arm64/scripts/build_locked_apt_source_arm64_v2.sh",
         "arm64/scripts/verify_deb_payload_machine.py"
@@ -640,7 +639,6 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/linux-apt-source/LOCKSUMS.sh",
         "arm64/locks/linux-apt-source/apt-source-lock.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/scripts/resolve_source_apt.py"
@@ -661,7 +659,6 @@
       ],
       "referenced_local_files": [
         "arm64/audit/lock-schemas.json",
-        "arm64/audit/lock-schemas.sh",
         "arm64/scripts/inspect_lock_schemas.py"
       ]
     },
@@ -679,7 +676,6 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/effective-sources/LOCKSUMS.sh",
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/effective-sources/latest-git-merge-report.json",
         "arm64/locks/sources/source-lock.json",
@@ -700,7 +696,6 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/minimal-boot-v2/LOCKSUMS.sh",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/build_stage0_minimal_boot_iso.sh",
         "arm64/scripts/build_stage0_minimal_boot_iso_v3.sh"
@@ -763,7 +758,6 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/minimal-boot/LOCKSUMS.sh",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/build_stage0_minimal_boot_iso.sh",
         "arm64/scripts/build_stage0_minimal_boot_iso_v2.sh"
@@ -782,7 +776,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": [
-        "arm64/locks/minimal-boot-attempt/LOCKSUMS.sh",
         "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json",
         "arm64/locks/minimal-boot-attempt/workflow-run.json"
       ]
@@ -800,7 +793,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": [
-        "arm64/locks/minimal-boot-v2-attempt/LOCKSUMS.sh",
         "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json",
         "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
       ]
@@ -953,7 +945,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/locks/package-repository-wave1/LOCKSUMS.sh",
         "arm64/locks/reference/amd64-reference.json"
       ]
     },
@@ -1093,7 +1084,6 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/qtbase-apt-source/LOCKSUMS.sh",
         "arm64/locks/qtbase-apt-source/apt-source-lock.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/scripts/resolve_source_apt.py"
@@ -1413,7 +1403,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/stage0-v2/LOCKSUMS.sh",
         "arm64/scripts/build_stage0_live_iso.sh",
         "arm64/scripts/build_stage0_live_iso_v2.sh",
         "arm64/scripts/stage0_retry_patch.py"
@@ -1434,7 +1423,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/stage0-v3/LOCKSUMS.sh",
         "arm64/scripts/build_stage0_live_iso.sh",
         "arm64/scripts/build_stage0_live_iso_v3.sh"
       ]
@@ -1497,7 +1485,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/stage0/LOCKSUMS.sh",
         "arm64/scripts/run_stage0_live_iso.sh"
       ]
     },
@@ -1516,7 +1503,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh",
         "arm64/scripts/build_stage0_minimal_iso.sh",
         "arm64/scripts/build_stage0_minimal_iso_v2.sh"
       ]
@@ -1536,7 +1522,6 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/stage0-minimal/LOCKSUMS.sh",
         "arm64/scripts/build_stage0_minimal_iso.sh"
       ]
     },
@@ -1553,7 +1538,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": [
-        "arm64/locks/stage0-v3-attempt/LOCKSUMS.sh",
         "arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json",
         "arm64/locks/stage0-v3-attempt/workflow-run.json"
       ]
@@ -1677,7 +1661,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": [
-        "arm64/locks/build-wave1-v3/LOCKSUMS.sh",
         "arm64/locks/build-wave1-v3/wave1-v3-summary.json",
         "arm64/locks/build-wave1-v3/workflow-run.json"
       ]
@@ -1695,7 +1678,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": [
-        "arm64/locks/build-wave2-v1/LOCKSUMS.sh",
         "arm64/locks/build-wave2-v1/wave2-v1-summary.json",
         "arm64/locks/build-wave2-v1/workflow-run.json"
       ]
@@ -1755,26 +1737,17 @@
     "arm64/audit/lock-schemas.json": [
       ".github/workflows/arm64-lock-schema-audit.yml"
     ],
-    "arm64/audit/lock-schemas.sh": [
-      ".github/workflows/arm64-lock-schema-audit.yml"
-    ],
     "arm64/locks/acquisition-plan/package-acquisition-plan.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
     "arm64/locks/acquisition-plan/summary.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
-    "arm64/locks/build-wave1-v3/LOCKSUMS.sh": [
-      ".github/workflows/arm64-wave1-v3-record.yml"
-    ],
     "arm64/locks/build-wave1-v3/wave1-v3-summary.json": [
       ".github/workflows/arm64-wave1-v3-record.yml"
     ],
     "arm64/locks/build-wave1-v3/workflow-run.json": [
       ".github/workflows/arm64-wave1-v3-record.yml"
-    ],
-    "arm64/locks/build-wave2-v1/LOCKSUMS.sh": [
-      ".github/workflows/arm64-wave2-v1-record.yml"
     ],
     "arm64/locks/build-wave2-v1/wave2-v1-summary.json": [
       ".github/workflows/arm64-wave2-v1-record.yml"
@@ -1784,9 +1757,6 @@
     ],
     "arm64/locks/debian-arm64/normalized-package-map.json": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
-    ],
-    "arm64/locks/effective-sources/LOCKSUMS.sh": [
-      ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -1829,14 +1799,8 @@
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
-    "arm64/locks/linux-apt-source/LOCKSUMS.sh": [
-      ".github/workflows/arm64-linux-apt-source-lock.yml"
-    ],
     "arm64/locks/linux-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-linux-apt-source-lock.yml"
-    ],
-    "arm64/locks/minimal-boot-attempt/LOCKSUMS.sh": [
-      ".github/workflows/arm64-minimal-boot-record.yml"
     ],
     "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json": [
       ".github/workflows/arm64-minimal-boot-record.yml"
@@ -1844,36 +1808,18 @@
     "arm64/locks/minimal-boot-attempt/workflow-run.json": [
       ".github/workflows/arm64-minimal-boot-record.yml"
     ],
-    "arm64/locks/minimal-boot-v2-attempt/LOCKSUMS.sh": [
-      ".github/workflows/arm64-minimal-boot-v2-record.yml"
-    ],
     "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json": [
       ".github/workflows/arm64-minimal-boot-v2-record.yml"
     ],
     "arm64/locks/minimal-boot-v2-attempt/workflow-run.json": [
       ".github/workflows/arm64-minimal-boot-v2-record.yml"
     ],
-    "arm64/locks/minimal-boot-v2/LOCKSUMS.sh": [
-      ".github/workflows/arm64-minimal-boot-iso-v2.yml"
-    ],
-    "arm64/locks/minimal-boot/LOCKSUMS.sh": [
-      ".github/workflows/arm64-minimal-boot-iso.yml"
-    ],
     "arm64/locks/package-plan/debian-arm64-map-normalized.json": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
-    ],
-    "arm64/locks/package-repository-wave1/LOCKSUMS.sh": [
-      ".github/workflows/arm64-package-repo-wave1.yml"
-    ],
-    "arm64/locks/qtbase-apt-source/LOCKSUMS.sh": [
-      ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-build-qtbase.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
-    ],
-    "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh": [
-      ".github/workflows/arm64-build-qtbase.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -1940,29 +1886,11 @@
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml"
     ],
-    "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-minimal-v2.yml"
-    ],
-    "arm64/locks/stage0-minimal/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-minimal.yml"
-    ],
-    "arm64/locks/stage0-v2/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-live-v2.yml"
-    ],
-    "arm64/locks/stage0-v3-attempt/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-v3-record.yml"
-    ],
     "arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json": [
       ".github/workflows/arm64-stage0-v3-record.yml"
     ],
     "arm64/locks/stage0-v3-attempt/workflow-run.json": [
       ".github/workflows/arm64-stage0-v3-record.yml"
-    ],
-    "arm64/locks/stage0-v3/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-live-v3.yml"
-    ],
-    "arm64/locks/stage0/LOCKSUMS.sh": [
-      ".github/workflows/arm64-stage0-live.yml"
     ],
     "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json": [
       ".github/workflows/arm64-build-qtbase-targeted.yml"
@@ -2353,255 +2281,166 @@
   },
   "errors": [
     {
+      "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
+      "local_path": "arm64/scripts/publish_rebuild_packages_v3.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-live-v2.yml",
+      "local_path": "arm64/scripts/build_stage0_live_iso_v2.sh",
+      "reason": "referenced-local-code-missing"
+    }
+  ],
+  "warnings": [
+    {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json"
+      "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-build-qtbase.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
-    },
-    {
-      "path": ".github/workflows/arm64-build-qtbase.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/qtbase-arm64-build/LOCKSUMS.sh"
+      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json"
+      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/acquisition-plan/summary.json"
+      "local_path": "arm64/locks/acquisition-plan/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/iso/release-lock.json"
+      "local_path": "arm64/locks/iso/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rootfs/artifact-lock.json"
+      "local_path": "arm64/locks/rootfs/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rootfs/verification.json"
+      "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-installed-system-boot.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/installed-system/release-lock.json"
+      "local_path": "arm64/locks/installed-system/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-installed-system-boot.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/iso/iso-build.json"
+      "local_path": "arm64/locks/iso/iso-build.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-installed-system-boot.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/iso/release-lock.json"
+      "local_path": "arm64/locks/iso/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/linux-apt-source/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/linux-apt-source/apt-source-lock.json"
-    },
-    {
-      "path": ".github/workflows/arm64-lock-schema-audit.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/audit/lock-schemas.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/effective-sources/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-minimal-boot-iso-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-v2/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-minimal-boot-iso.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot/LOCKSUMS.sh"
+      "local_path": "arm64/locks/linux-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-minimal-boot-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-attempt/LOCKSUMS.sh"
+      "local_path": "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-minimal-boot-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json"
-    },
-    {
-      "path": ".github/workflows/arm64-minimal-boot-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-attempt/workflow-run.json"
+      "local_path": "arm64/locks/minimal-boot-attempt/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-minimal-boot-v2-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-v2-attempt/LOCKSUMS.sh"
+      "local_path": "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-minimal-boot-v2-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json"
-    },
-    {
-      "path": ".github/workflows/arm64-minimal-boot-v2-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
+      "local_path": "arm64/locks/minimal-boot-v2-attempt/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/debian-arm64/normalized-package-map.json"
+      "local_path": "arm64/locks/debian-arm64/normalized-package-map.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
-    },
-    {
-      "path": ".github/workflows/arm64-package-repo-wave1.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/package-repository-wave1/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/qtbase-apt-source/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
+      "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-source-authority-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
+      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-source-authority-v4.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-live-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-v2/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-live-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/scripts/build_stage0_live_iso_v2.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-live-v3.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-v3/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-live.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-minimal-v2.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-minimal.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-minimal/LOCKSUMS.sh"
+      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-v3-attempt/LOCKSUMS.sh"
+      "local_path": "arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json"
+      "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave1-v3/LOCKSUMS.sh"
+      "local_path": "arm64/locks/build-wave1-v3/wave1-v3-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave1-v3/wave1-v3-summary.json"
-    },
-    {
-      "path": ".github/workflows/arm64-wave1-v3-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave1-v3/workflow-run.json"
+      "local_path": "arm64/locks/build-wave1-v3/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave2-v1/LOCKSUMS.sh"
+      "local_path": "arm64/locks/build-wave2-v1/wave2-v1-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave2-v1/wave2-v1-summary.json"
-    },
-    {
-      "path": ".github/workflows/arm64-wave2-v1-record.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/build-wave2-v1/workflow-run.json"
+      "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
     }
-  ],
-  "warnings": []
+  ]
 }
