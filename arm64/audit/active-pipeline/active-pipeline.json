@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 110,
-    "workflow_name_count": 110,
-    "referenced_local_file_count": 186,
-    "error_count": 0,
+    "workflow_count": 121,
+    "workflow_name_count": 121,
+    "referenced_local_file_count": 192,
+    "error_count": 6,
     "warning_count": 35,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -697,6 +697,24 @@
       ]
     },
     {
+      "filename": "arm64-extract-blocker-binary-evidence.yml",
+      "path": ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
+      "name": "ARM64 port - extract exact blocker binary provenance",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/apt-source-fallback-v2/unresolved.json",
+        "arm64/scripts/extract_blocker_binary_evidence.py"
+      ]
+    },
+    {
       "filename": "arm64-extract-repository-keys.yml",
       "path": ".github/workflows/arm64-extract-repository-keys.yml",
       "name": "ARM64 port - extract original repository signing keys",
@@ -1304,6 +1322,20 @@
       ]
     },
     {
+      "filename": "arm64-pagination-maintenance.yml",
+      "path": ".github/workflows/arm64-pagination-maintenance.yml",
+      "name": "ARM64 port - fix paginated API evidence collection",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-pipeline-lint.yml",
       "path": ".github/workflows/arm64-pipeline-lint.yml",
       "name": "ARM64 port - lint and audit pipeline",
@@ -1421,6 +1453,24 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/audit_arm64_port_state.py"
+      ]
+    },
+    {
+      "filename": "arm64-probe-wayback-blocker-dsc.yml",
+      "path": ".github/workflows/arm64-probe-wayback-blocker-dsc.yml",
+      "name": "ARM64 port - probe Wayback for exact blocker dsc",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/apt-source-fallback-v2/unresolved.json",
+        "arm64/scripts/probe_wayback_blocker_dsc.py"
       ]
     },
     {
@@ -1615,6 +1665,24 @@
       ]
     },
     {
+      "filename": "arm64-recover-exact-package-pool.yml",
+      "path": ".github/workflows/arm64-recover-exact-package-pool.yml",
+      "name": "ARM64 port - recover exact package pool from artifacts",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/recover_exact_arm64_package_pool.py"
+      ]
+    },
+    {
       "filename": "arm64-recover-exact-vendor-sources-v2.yml",
       "path": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       "name": "ARM64 port - recover exact signed vendor sources v2",
@@ -1633,6 +1701,21 @@
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/scripts/recover_exact_vendor_sources_v2.py"
       ]
+    },
+    {
+      "filename": "arm64-recover-existing-iso.yml",
+      "path": ".github/workflows/arm64-recover-existing-iso.yml",
+      "name": "ARM64 port - recover and verify existing ISO artifacts",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-recovery-stage0-v1.yml",
@@ -1896,6 +1979,21 @@
       ]
     },
     {
+      "filename": "arm64-stage0-auto-repair.yml",
+      "path": ".github/workflows/arm64-stage0-auto-repair.yml",
+      "name": "ARM64 port - diagnose and repair latest stage0 failure",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-stage0-live-v3.yml",
       "path": ".github/workflows/arm64-stage0-live-v3.yml",
       "name": "ARM64 port - build and boot-test stage-0 live ISO v3",
@@ -2062,6 +2160,87 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/boot_test_arm64_uefi_iso.sh"
+      ]
+    },
+    {
+      "filename": "arm64-stage0-v6-checksum-maintenance.yml",
+      "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
+      "name": "ARM64 port - fix stage0 v6 checksum verification",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-stage0-v6-converge-v2.yml",
+      "path": ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      "name": "ARM64 port - converge stage0 v6 through bounded repairs v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_stage0_v6.py",
+        "arm64/scripts/repair_stage0_v6.py"
+      ]
+    },
+    {
+      "filename": "arm64-stage0-v6-converge.yml",
+      "path": ".github/workflows/arm64-stage0-v6-converge.yml",
+      "name": "ARM64 port - converge stage0 v6 through bounded repairs",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_stage0_v6.py",
+        "arm64/scripts/repair_stage0_v6.py"
+      ]
+    },
+    {
+      "filename": "arm64-stage0-v6-display-maintenance.yml",
+      "path": ".github/workflows/arm64-stage0-v6-display-maintenance.yml",
+      "name": "ARM64 port - provide stage0 v6 headless graphical display",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-stage0-v6.yml",
+      "path": ".github/workflows/arm64-stage0-v6.yml",
+      "name": "ARM64 port - build and boot-test stage0 v6 ISO",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_stage0_v6.py"
       ]
     },
     {
@@ -2293,6 +2472,10 @@
     "arm64/locks/apt-source-fallback-v2/apt-source-fallback-lock.json": [
       ".github/workflows/arm64-merge-source-authorities-v2.yml"
     ],
+    "arm64/locks/apt-source-fallback-v2/unresolved.json": [
+      ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
+      ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
+    ],
     "arm64/locks/build-dependency-repository-v2/artifact-lock.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml",
       ".github/workflows/arm64-merge-final-package-repository-v2.yml",
@@ -2489,6 +2672,7 @@
       ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
+      ".github/workflows/arm64-recover-exact-package-pool.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
       ".github/workflows/arm64-retry-wave1-full-binary.yml",
@@ -2728,6 +2912,11 @@
     "arm64/scripts/build_stage0_recovery_v1.sh": [
       ".github/workflows/arm64-stage0-recovery-v1.yml"
     ],
+    "arm64/scripts/build_stage0_v6.py": [
+      ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      ".github/workflows/arm64-stage0-v6-converge.yml",
+      ".github/workflows/arm64-stage0-v6.yml"
+    ],
     "arm64/scripts/classify_native_rebuild_failures.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
@@ -2749,6 +2938,9 @@
     ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
+    ],
+    "arm64/scripts/extract_blocker_binary_evidence.py": [
+      ".github/workflows/arm64-extract-blocker-binary-evidence.yml"
     ],
     "arm64/scripts/filter_arm64_binary_lock.py": [
       ".github/workflows/arm64-build-wave1-v2.yml"
@@ -2838,6 +3030,9 @@
     "arm64/scripts/probe_vendor_pool_sources.py": [
       ".github/workflows/arm64-vendor-pool-source-lock.yml"
     ],
+    "arm64/scripts/probe_wayback_blocker_dsc.py": [
+      ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
+    ],
     "arm64/scripts/promote_source_archive_lock.py": [
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
     ],
@@ -2845,6 +3040,9 @@
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
+    ],
+    "arm64/scripts/recover_exact_arm64_package_pool.py": [
+      ".github/workflows/arm64-recover-exact-package-pool.yml"
     ],
     "arm64/scripts/recover_exact_vendor_sources_v2.py": [
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml"
@@ -2855,6 +3053,10 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
+    ],
+    "arm64/scripts/repair_stage0_v6.py": [
+      ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      ".github/workflows/arm64-stage0-v6-converge.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
@@ -3100,7 +3302,35 @@
       ".github/workflows/arm64-port-coverage.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-pagination-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 119, column 1:\n    mkdir -p /etc/gdm3\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 120, column 1:\n    cat >/etc/gdm3/daemon.conf <<'EOF'\n    ^"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-display-maintenance.yml",
+      "reason": "one-shot-maintenance-workflow-still-active"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 60, column 9:\n            reference_rootfs,\n            ^\ncould not find expected ':'\n  in \"<unicode string>\", line 61, column 9:\n            rootfs,\n            ^"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 37, column 3:\n      /etc/systemd/system/graphical.ta ... \n      ^\ncould not find expected ':'\n  in \"<unicode string>\", line 38, column 1:\n    systemctl set-default graphical. ... \n    ^"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
