@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-06T11:29:37.346567Z",
+  "generated_at": "2026-08-06T11:32:37.670481Z",
   "status": "failed",
   "python": [
     {
@@ -21,10 +21,6 @@
     },
     {
       "path": "arm64/scripts/audit_workflow_secret_literals.py",
-      "status": "passed"
-    },
-    {
-      "path": "arm64/scripts/build_package_acquisition_plan.py",
       "status": "passed"
     },
     {
@@ -49,10 +45,6 @@
     },
     {
       "path": "arm64/scripts/classify_native_rebuild_failures_v3.py",
-      "status": "passed"
-    },
-    {
-      "path": "arm64/scripts/collect_native_rebuild_results.py",
       "status": "passed"
     },
     {
@@ -112,6 +104,10 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/merge_effective_git_source_lock.py",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/merge_exact_source_authority_v3.py",
       "status": "passed"
     },
@@ -121,10 +117,6 @@
     },
     {
       "path": "arm64/scripts/normalize_debian_arm64_map.py",
-      "status": "passed"
-    },
-    {
-      "path": "arm64/scripts/prepare_rebuild_release_assets.py",
       "status": "passed"
     },
     {
@@ -272,10 +264,6 @@
       "status": "passed"
     },
     {
-      "path": "arm64/scripts/wire_graphical_boot_gate.py",
-      "status": "passed"
-    },
-    {
       "path": "arm64/scripts/wire_graphical_boot_gate_v2.py",
       "status": "passed"
     },
@@ -342,10 +330,6 @@
       "status": "passed"
     },
     {
-      "path": "arm64/scripts/build_locked_source_arm64.sh",
-      "status": "passed"
-    },
-    {
       "path": "arm64/scripts/build_locked_source_arm64_v2.sh",
       "status": "passed"
     },
@@ -390,15 +374,7 @@
       "status": "passed"
     },
     {
-      "path": "arm64/scripts/configure_graphical_boot_gate.sh",
-      "status": "passed"
-    },
-    {
       "path": "arm64/scripts/configure_graphical_boot_gate_v2.sh",
-      "status": "passed"
-    },
-    {
-      "path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
       "status": "passed"
     },
     {
@@ -541,14 +517,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "status": "passed"
     },
@@ -561,35 +529,11 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-dependency-retry.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-effective-source-lock.yml",
       "status": "passed"
     },
     {
       "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-exact-rootfs.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-export-v2-consolidation.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       "status": "passed"
     },
     {
@@ -606,10 +550,6 @@
     },
     {
       "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
       "status": "passed"
     },
     {
@@ -649,10 +589,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-normalize-package-map.yml",
       "status": "passed"
     },
@@ -661,7 +597,7 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-package-acquisition-plan.yml",
+      "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       "status": "passed"
     },
     {
@@ -670,18 +606,6 @@
     },
     {
       "path": ".github/workflows/arm64-package-repo-wave1.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-package-smoke.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
       "status": "passed"
     },
     {
@@ -737,14 +661,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-repair-audit-coverage.yml",
       "status": "passed"
     },
@@ -757,15 +673,7 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-rootfs-artifact-maintenance.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-seed-source-lock.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
       "status": "passed"
     },
     {
@@ -773,19 +681,7 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v7-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v8-maintenance.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v9-maintenance.yml",
+      "path": ".github/workflows/arm64-source-authority-v4.yml",
       "status": "passed"
     },
     {
@@ -829,19 +725,11 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-start-curated-batches.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-static-audit.yml",
       "status": "passed"
     },
     {
       "path": ".github/workflows/arm64-upstream-probe.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-v2-normalization-maintenance.yml",
       "status": "passed"
     },
     {
@@ -870,10 +758,6 @@
     },
     {
       "path": ".github/workflows/arm64-wayback-source-recovery.yml",
-      "status": "passed"
-    },
-    {
-      "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
       "status": "passed"
     },
     {
@@ -944,7 +828,7 @@
       "workflow": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
-      "reason": null
+      "reason": "explicitly allowed v4 download action ref"
     },
     {
       "workflow": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -1038,7 +922,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-build-wave1-v4.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -1116,7 +1000,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-build-wave2-v2.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -1158,7 +1042,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-build-wave2-v3.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -1217,18 +1101,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-builder-v2-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-ci-state-snapshot.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1242,15 +1114,15 @@
     },
     {
       "workflow": ".github/workflows/arm64-debian-map.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-debian-map.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -1273,234 +1145,102 @@
     {
       "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
       "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-dependency-retry.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-effective-source-lock.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
-    },
-    {
-      "workflow": ".github/workflows/arm64-effective-source-lock.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
-      "reference": "actions/download-artifact@v4",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
     {
-      "workflow": ".github/workflows/arm64-exact-rootfs.yml",
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-export-v2-consolidation.yml",
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-export-v2-consolidation.yml",
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-final-consolidation-maintenance.yml",
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-dependency-retry-v2.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-effective-source-lock.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
+      "workflow": ".github/workflows/arm64-effective-source-lock.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
     },
@@ -1542,15 +1282,15 @@
     },
     {
       "workflow": ".github/workflows/arm64-inventory.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-inventory.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-linux-apt-source-lock.yml",
@@ -1561,12 +1301,6 @@
     {
       "workflow": ".github/workflows/arm64-linux-apt-source-lock.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -1686,7 +1420,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-native-rebuild-backlog.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -1728,7 +1462,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -1739,30 +1473,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-normalize-package-map.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1787,13 +1497,13 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-package-acquisition-plan.yml",
+      "workflow": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-package-acquisition-plan.yml",
+      "workflow": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
@@ -1819,30 +1529,6 @@
     {
       "workflow": ".github/workflows/arm64-package-repo-wave1.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-package-smoke.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-package-smoke.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-pin-actions-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -1962,7 +1648,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -2010,7 +1696,7 @@
     },
     {
       "workflow": ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
-      "reference": "actions/download-artifact@v4",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
     },
@@ -2041,18 +1727,6 @@
     {
       "workflow": ".github/workflows/arm64-rebuild-failure-audit.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -2075,18 +1749,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-rootfs-artifact-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-source-authority-v3.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2099,26 +1761,14 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+      "workflow": ".github/workflows/arm64-source-authority-v4.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-source-authority-v7-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-source-authority-v8-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-source-authority-v9-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "workflow": ".github/workflows/arm64-source-authority-v4.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
     },
@@ -2249,12 +1899,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-start-curated-batches.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-static-audit.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2268,45 +1912,39 @@
     },
     {
       "workflow": ".github/workflows/arm64-upstream-probe.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-upstream-probe.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-v2-normalization-maintenance.yml",
+      "workflow": ".github/workflows/arm64-vendor-binary-lock.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-vendor-binary-lock.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
-    },
-    {
-      "workflow": ".github/workflows/arm64-vendor-binary-lock.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-vendor-pool-source-lock.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-vendor-pool-source-lock.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-vendor-source-archive-lock.yml",
@@ -2322,15 +1960,15 @@
     },
     {
       "workflow": ".github/workflows/arm64-vendor-source-lock.yml",
-      "reference": "actions/checkout@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-vendor-source-lock.yml",
-      "reference": "actions/upload-artifact@v4",
-      "status": "failed",
-      "reason": "action revision is not a 40-hex commit"
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-wave1-v3-record.yml",
@@ -2353,12 +1991,6 @@
     {
       "workflow": ".github/workflows/arm64-wayback-source-recovery.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -2405,7 +2037,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:29:38.135310Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:32:38.301617Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2415,26 +2047,12 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:29:38.175928Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:32:38.338704Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
   "issues": [
     "bash syntax failed: arm64/scripts/run_locked_source_arm64_with_local_repo.sh",
-    "invalid action reference: .github/workflows/arm64-build-wave2-v2.yml: actions/upload-artifact@ea165f8d65b6e75fa02: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-debian-map.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-debian-map.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-effective-source-lock.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-effective-source-lock.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-inventory.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-inventory.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-upstream-probe.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-upstream-probe.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-binary-lock.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-binary-lock.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-pool-source-lock.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-pool-source-lock.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-source-lock.yml: actions/checkout@v4: action revision is not a 40-hex commit",
-    "invalid action reference: .github/workflows/arm64-vendor-source-lock.yml: actions/upload-artifact@v4: action revision is not a 40-hex commit"
+    "invalid action reference: .github/workflows/arm64-build-wave2-v2.yml: actions/upload-artifact@ea165f8d65b6e75fa02: action revision is not a 40-hex commit"
   ]
 }
