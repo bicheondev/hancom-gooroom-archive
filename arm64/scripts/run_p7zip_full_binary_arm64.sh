@@ -43,6 +43,18 @@ replacements = {
         'dpkg-buildpackage -us -uc -b -j2',
     '"build_mode": "native-arm64-historical-chroot-binary-arch"':
         '"build_mode": "native-arm64-historical-chroot-full-binary-with-docs"',
+    '  /bin/bash /build-inside.sh\n\nshopt -s nullglob':
+        '  /bin/bash /build-inside.sh\n\n'
+        '# cp -a in the privileged container can transfer root ownership to the\n'
+        '# bind-mounted output directory. Restore only host ownership before the\n'
+        '# immutable build-lock and checksum manifests are written.\n'
+        'if command -v sudo >/dev/null 2>&1; then\n'
+        '  sudo chown -R "$(id -u):$(id -g)" "$OUTPUT_DIR_ABS"\n'
+        'else\n'
+        '  echo "sudo is required to restore container output ownership" >&2\n'
+        '  exit 79\n'
+        'fi\n\n'
+        'shopt -s nullglob',
 }
 
 for old, new in replacements.items():
