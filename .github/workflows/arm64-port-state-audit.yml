@@ -1,0 +1,79 @@
+name: ARM64 port - aggregate committed state evidence
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-port-state-audit.yml'
+      - 'arm64/scripts/audit_arm64_port_state.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/build-wave1-v4/**'
+      - 'arm64/locks/build-wave2-v3/**'
+      - 'arm64/locks/minimal-boot-v3-attempt/**'
+      - 'arm64/locks/stage0-v4-attempt/**'
+      - 'arm64/locks/source-archives/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-port-state-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out all committed evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Aggregate the exact port state
+        run: |
+          set -euxo pipefail
+          rm -rf work/port-state-audit
+          python3 arm64/scripts/audit_arm64_port_state.py \
+            --repo-root . \
+            --output-dir work/port-state-audit
+          find work/port-state-audit -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/port-state-audit/LOCKSUMS.sha256
+          jq '{status, reference, vendor_binary_lock, effective_source_lock, native_builds: {
+                passed_source_count: .native_builds.passed_source_count,
+                failed_source_count: .native_builds.failed_source_count,
+                resolved_unbuilt_source_count: .native_builds.resolved_unbuilt_source_count
+              }, boot_gates, blockers}' \
+            work/port-state-audit/state.json
+
+      - name: Commit the current dashboard
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/port-state-audit
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/port-state-audit/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update Hancom Gooroom 3.3 ARM64 port state audit'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload the dashboard
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-port-state
+          path: work/port-state-audit
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
