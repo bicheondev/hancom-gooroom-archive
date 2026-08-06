@@ -666,7 +666,9 @@
         "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
         "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/build_locked_source_arm64_v5.sh",
+        "arm64/scripts/build_locked_source_arm64_v6.sh",
         "arm64/scripts/collect_native_rebuild_results_v4.py",
+        "arm64/scripts/scan_prebuilt_install_payloads.py",
         "arm64/scripts/select_infrastructure_retry_wave_v3.py",
         "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
@@ -2233,7 +2235,8 @@
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
     "arm64/scripts/build_locked_source_arm64_v6.sh": [
-      ".github/workflows/arm64-enable-v6-builder-maintenance.yml"
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
@@ -2449,7 +2452,8 @@
       ".github/workflows/arm64-stage0-live.yml"
     ],
     "arm64/scripts/scan_prebuilt_install_payloads.py": [
-      ".github/workflows/arm64-enable-v6-builder-maintenance.yml"
+      ".github/workflows/arm64-enable-v6-builder-maintenance.yml",
+      ".github/workflows/arm64-infrastructure-retry-v3.yml"
     ],
     "arm64/scripts/select_arm64_build_wave.py": [
       ".github/workflows/arm64-build-wave2-v2.yml",
