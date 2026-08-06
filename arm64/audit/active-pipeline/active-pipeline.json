@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 104,
-    "workflow_name_count": 104,
-    "referenced_local_file_count": 166,
+    "workflow_count": 105,
+    "workflow_name_count": 105,
+    "referenced_local_file_count": 169,
     "error_count": 0,
-    "warning_count": 31,
+    "warning_count": 34,
     "passed": true
   },
   "workflows": [
@@ -849,6 +849,30 @@
         "arm64/locks/effective-sources/latest-git-merge-report.json",
         "arm64/locks/sources/source-lock.json",
         "arm64/scripts/merge_effective_git_source_lock.py"
+      ]
+    },
+    {
+      "filename": "arm64-merge-final-package-repository-v2.yml",
+      "path": ".github/workflows/arm64-merge-final-package-repository-v2.yml",
+      "name": "ARM64 port - merge final exact package repository v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/build-dependency-repository-v2/artifact-lock.json",
+        "arm64/locks/build-dependency-repository-v2/summary.json",
+        "arm64/locks/debian-reference-repository-v2/artifact-lock.json",
+        "arm64/locks/debian-reference-repository-v2/summary.json",
+        "arm64/locks/final-package-repository-v2/artifact-lock.json",
+        "arm64/locks/package-plan/debian-arm64-map-normalized.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/merge_final_package_repositories_v2.py"
       ]
     },
     {
@@ -2159,9 +2183,11 @@
     ],
     "arm64/locks/build-dependency-repository-v2/artifact-lock.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml",
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/locks/build-dependency-repository-v2/summary.json": [
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml"
     ],
     "arm64/locks/build-wave1-v3/wave1-v3-summary.json": [
@@ -2181,7 +2207,11 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/locks/debian-reference-repository-v2/artifact-lock.json": [
-      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
+      ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml"
+    ],
+    "arm64/locks/debian-reference-repository-v2/summary.json": [
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml"
     ],
     "arm64/locks/effective-sources-v2/effective-source-lock-v2.json": [
       ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
@@ -2235,6 +2265,9 @@
     "arm64/locks/effective-sources/source-lock.json": [
       ".github/workflows/arm64-import-historical-artifacts-v2.yml"
     ],
+    "arm64/locks/final-package-repository-v2/artifact-lock.json": [
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml"
+    ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml",
       ".github/workflows/arm64-port-coverage-v2.yml"
@@ -2264,6 +2297,7 @@
     ],
     "arm64/locks/package-plan/debian-arm64-map-normalized.json": [
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
     "arm64/locks/qtbase-apt-source/apt-source-lock.json": [
@@ -2297,6 +2331,7 @@
       ".github/workflows/arm64-extract-repository-keys.yml",
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       ".github/workflows/arm64-merge-source-authorities-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
@@ -2616,6 +2651,9 @@
     ],
     "arm64/scripts/merge_exact_source_locks.py": [
       ".github/workflows/arm64-effective-source-lock.yml"
+    ],
+    "arm64/scripts/merge_final_package_repositories_v2.py": [
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml"
     ],
     "arm64/scripts/merge_source_authorities_v2.py": [
       ".github/workflows/arm64-merge-source-authorities-v2.yml"
@@ -2944,6 +2982,21 @@
     {
       "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
       "local_path": "arm64/locks/effective-sources/latest-git-merge-report.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-merge-final-package-repository-v2.yml",
+      "local_path": "arm64/locks/debian-reference-repository-v2/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-merge-final-package-repository-v2.yml",
+      "local_path": "arm64/locks/debian-reference-repository-v2/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-merge-final-package-repository-v2.yml",
+      "local_path": "arm64/locks/final-package-repository-v2/artifact-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
