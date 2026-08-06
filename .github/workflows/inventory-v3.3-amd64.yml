@@ -8,12 +8,18 @@ on:
     paths:
       - .github/workflows/inventory-v3.3-amd64.yml
       - tools/inventory-amd64.sh
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/inventory-v3.3-amd64.yml
+      - tools/inventory-amd64.sh
 
 permissions:
   contents: read
 
 concurrency:
-  group: inventory-hancom-gooroom-3.3-amd64
+  group: inventory-hancom-gooroom-3.3-amd64-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
