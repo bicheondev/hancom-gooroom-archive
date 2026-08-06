@@ -2,9 +2,9 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 96,
-    "workflow_name_count": 96,
-    "referenced_local_file_count": 135,
+    "workflow_count": 95,
+    "workflow_name_count": 95,
+    "referenced_local_file_count": 134,
     "error_count": 0,
     "warning_count": 27,
     "passed": true
@@ -1392,23 +1392,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-normalized-binnmu-status.yml",
-      "path": ".github/workflows/arm64-repair-normalized-binnmu-status.yml",
-      "name": "ARM64 port - repair normalized source-exact binNMU status",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/normalize_debian_arm64_map.py",
-        "arm64/scripts/repair_normalized_binnmu_status.py"
-      ]
-    },
-    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -2342,8 +2325,7 @@
       ".github/workflows/arm64-effective-source-lock.yml"
     ],
     "arm64/scripts/normalize_debian_arm64_map.py": [
-      ".github/workflows/arm64-normalize-package-map.yml",
-      ".github/workflows/arm64-repair-normalized-binnmu-status.yml"
+      ".github/workflows/arm64-normalize-package-map.yml"
     ],
     "arm64/scripts/prepare_composite_source_chroot.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
@@ -2369,9 +2351,6 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
-    ],
-    "arm64/scripts/repair_normalized_binnmu_status.py": [
-      ".github/workflows/arm64-repair-normalized-binnmu-status.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
