@@ -1,0 +1,272 @@
+name: ARM64 port - recover and verify existing ISO artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-existing-iso.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-recover-existing-iso
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 jq unzip file xorriso squashfs-tools mtools
+
+      - name: Enumerate and download non-expired candidate artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/candidates work/downloaded work/audit
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            > work/audit/artifact-pages.json
+
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          pages=json.loads(Path('work/audit/artifact-pages.json').read_text())
+          if isinstance(pages,dict): pages=[pages]
+          artifacts=[]
+          for page in pages: artifacts.extend(page.get('artifacts',[]))
+          candidates=[]
+          for artifact in artifacts:
+              if artifact.get('expired'): continue
+              name=(artifact.get('name') or '').lower()
+              size=int(artifact.get('size_in_bytes') or 0)
+              # Include broad stage0/final candidates, but reject tiny diagnostic bundles.
+              if not any(token in name for token in ('iso','stage0','live','rootfs','release')): continue
+              if size < 10*1024*1024: continue
+              candidates.append({
+                  'id': artifact['id'],
+                  'name': artifact.get('name'),
+                  'size_in_bytes': size,
+                  'created_at': artifact.get('created_at'),
+                  'workflow_run': artifact.get('workflow_run'),
+              })
+          candidates.sort(key=lambda x:(x.get('created_at') or '',x['id']),reverse=True)
+          Path('work/audit/candidate-artifacts.json').write_text(json.dumps(candidates,indent=2)+'\n')
+          print(json.dumps(candidates,indent=2))
+          PY
+
+          jq -c '.[]' work/audit/candidate-artifacts.json | while IFS= read -r row; do
+            id="$(jq -r '.id' <<<"$row")"
+            name="$(jq -r '.name' <<<"$row")"
+            safe="$(printf '%s' "$name" | tr -cs 'A-Za-z0-9._-' '_')"
+            set +e
+            gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" \
+              > "work/downloaded/${id}-${safe}.zip"
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ]; then
+              rm -f "work/downloaded/${id}-${safe}.zip"
+            fi
+          done
+
+      - name: Extract real ISO files and reject mislabeled logs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib, json, shutil, zipfile
+          from pathlib import Path
+
+          output=Path('work/candidates')
+          records=[]
+          for archive in sorted(Path('work/downloaded').glob('*.zip')):
+              record={'artifact_zip':archive.name,'zip_size':archive.stat().st_size,'iso_files':[],'errors':[]}
+              try:
+                  with zipfile.ZipFile(archive) as bundle:
+                      members=[m for m in bundle.infolist() if not m.is_dir() and m.filename.lower().endswith('.iso')]
+                      for index,member in enumerate(members):
+                          name=Path(member.filename).name
+                          destination=output/f'{archive.stem}-{index}-{name}'
+                          with bundle.open(member) as source,destination.open('wb') as target:
+                              shutil.copyfileobj(source,target,1024*1024)
+                          digest=hashlib.sha256()
+                          with destination.open('rb') as handle:
+                              for chunk in iter(lambda:handle.read(1024*1024),b''):digest.update(chunk)
+                          record['iso_files'].append({
+                              'member':member.filename,
+                              'local_path':str(destination),
+                              'size':destination.stat().st_size,
+                              'sha256':digest.hexdigest(),
+                          })
+              except Exception as error:
+                  record['errors'].append(f'{type(error).__name__}: {error}')
+              records.append(record)
+          Path('work/audit/extracted-isos.json').write_text(json.dumps(records,indent=2)+'\n')
+          print(json.dumps(records,indent=2))
+          PY
+
+          find work/candidates -type f -name '*.iso' -size +100M -print0 \
+            | sort -z > work/audit/iso-paths.nul
+          test -s work/audit/iso-paths.nul || {
+            echo 'No real ISO larger than 100 MiB exists in the candidate artifacts.' >&2
+            exit 2
+          }
+
+      - name: Verify AArch64 EFI, live filesystem, and absence of x86 boot binaries
+        id: verify
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/verified work/inspection
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess,tempfile
+          from pathlib import Path
+
+          paths=[Path(p.decode()) for p in Path('work/audit/iso-paths.nul').read_bytes().split(b'\0') if p]
+          reports=[]
+          for iso in paths:
+              report={'path':str(iso),'size':iso.stat().st_size,'sha256':None,'passed':False,'errors':[]}
+              h=hashlib.sha256()
+              with iso.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+              report['sha256']=h.hexdigest()
+              with tempfile.TemporaryDirectory(prefix='arm64-iso-audit-') as td:
+                  root=Path(td)/'iso'
+                  root.mkdir()
+                  x=subprocess.run(['xorriso','-osirrox','on','-indev',str(iso),'-extract','/',str(root)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                  report['xorriso_tail']=x.stdout.splitlines()[-80:]
+                  if x.returncode:
+                      report['errors'].append('xorriso extraction failed')
+                      reports.append(report);continue
+                  efi=list(root.rglob('BOOTAA64.EFI'))
+                  if not efi: report['errors'].append('EFI/BOOT/BOOTAA64.EFI missing')
+                  else:
+                      out=subprocess.run(['file','-b',str(efi[0])],text=True,stdout=subprocess.PIPE).stdout.strip()
+                      report['bootaa64_file']=out
+                      if not any(token in out.lower() for token in ('aarch64','arm64')):
+                          report['errors'].append('BOOTAA64.EFI is not identified as AArch64')
+                  squash=list(root.rglob('filesystem.squashfs'))
+                  if not squash: report['errors'].append('filesystem.squashfs missing')
+                  else:
+                      report['squashfs_size']=squash[0].stat().st_size
+                      listing=subprocess.run(['unsquashfs','-ll',str(squash[0])],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                      report['squashfs_list_exit']=listing.returncode
+                      if listing.returncode: report['errors'].append('SquashFS listing failed')
+                  boot_candidates=[]
+                  for p in root.rglob('*'):
+                      if not p.is_file():continue
+                      lowered=str(p.relative_to(root)).lower()
+                      if any(token in lowered for token in ('efi','boot','vmlinuz','kernel')):
+                          boot_candidates.append(p)
+                  x86=[]
+                  for p in boot_candidates:
+                      out=subprocess.run(['file','-b',str(p)],text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL).stdout.strip()
+                      if 'x86-64' in out or 'intel 80386' in out.lower():x86.append({'path':str(p.relative_to(root)),'file':out})
+                  report['x86_boot_files']=x86
+                  if x86: report['errors'].append('x86 boot executable remains')
+              report['passed']=not report['errors']
+              reports.append(report)
+          Path('work/audit/iso-verification.json').write_text(json.dumps(reports,indent=2)+'\n')
+          passed=[r for r in reports if r['passed']]
+          if passed:
+              passed.sort(key=lambda r:(r['size'],r['sha256']),reverse=True)
+              Path('work/audit/selected.json').write_text(json.dumps(passed[0],indent=2)+'\n')
+              Path('work/audit/selected-path.txt').write_text(passed[0]['path']+'\n')
+          print(json.dumps(reports,indent=2))
+          PY
+
+          test -s work/audit/selected-path.txt
+          selected="$(cat work/audit/selected-path.txt)"
+          cp "$selected" work/verified/Hancom-Gooroom-3.3-arm64-recovered.iso
+          sha256sum work/verified/Hancom-Gooroom-3.3-arm64-recovered.iso \
+            > work/verified/Hancom-Gooroom-3.3-arm64-recovered.iso.sha256
+          echo 'passed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Upload only structurally verified ISO and complete audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovered-real-arm64-iso-audit-${{ github.run_id }}
+          path: |
+            work/audit
+            work/verified
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish recovered ISO as an explicitly unboot-tested prerelease
+        if: steps.verify.outputs.passed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          tag=v3.3-arm64-recovered-stage0
+          cat > work/release-notes.md <<'EOF'
+          Recovered ARM64 stage0 candidate from an existing Actions artifact.
+
+          The asset was accepted only after verifying that the artifact really
+          contained an ISO larger than 100 MiB, included an AArch64
+          EFI/BOOT/BOOTAA64.EFI, contained a readable live SquashFS, and had no
+          x86 executable in its boot paths.
+
+          This recovery workflow does not by itself prove a successful QEMU or
+          hardware boot. It is deliberately published as a prerelease and must
+          not be represented as the final Hancom Gooroom ARM64 release.
+          EOF
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --target arm64-port --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 recovered stage0' \
+              --notes-file work/release-notes.md
+          fi
+          gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber \
+            work/verified/Hancom-Gooroom-3.3-arm64-recovered.iso \
+            work/verified/Hancom-Gooroom-3.3-arm64-recovered.iso.sha256 \
+            work/audit/iso-verification.json \
+            work/audit/selected.json
+
+      - name: Commit immutable recovery audit
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/audit/recovered-iso/${GITHUB_RUN_ID}"
+          mkdir -p "$destination"
+          cp work/audit/candidate-artifacts.json "$destination/" 2>/dev/null || true
+          cp work/audit/extracted-isos.json "$destination/" 2>/dev/null || true
+          cp work/audit/iso-verification.json "$destination/" 2>/dev/null || true
+          cp work/audit/selected.json "$destination/" 2>/dev/null || true
+          cp work/verified/*.sha256 "$destination/" 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Audit existing ARM64 ISO artifacts ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
