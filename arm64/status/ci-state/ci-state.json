@@ -1,19 +1,20 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-06T13:39:51Z",
+    "generated_at": "2026-08-06T13:40:54Z",
     "branch": "arm64-port",
-    "head_sha": "2490d2573a15b87502d35f18fe5c4ec6161ef8b3",
+    "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 16,
-      "in_progress": 2,
-      "no-run": 82
+      "completed": 12,
+      "in_progress": 5,
+      "no-run": 82,
+      "pending": 1
     },
     "latest_run_conclusion_counts": {
-      "failure": 3,
-      "none": 84,
-      "success": 13
+      "failure": 2,
+      "none": 88,
+      "success": 10
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -76,16 +77,16 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31106486872,
-        "run_number": 194,
+        "id": 31107048432,
+        "run_number": 196,
         "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
-        "created_at": "2026-08-06T13:33:37Z",
-        "updated_at": "2026-08-06T13:34:02Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106486872",
-        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
+        "created_at": "2026-08-06T13:40:35Z",
+        "updated_at": "2026-08-06T13:40:39Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048432",
+        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
       }
     },
     {
@@ -165,16 +166,16 @@
       "path": ".github/workflows/arm64-build-wave5-browser.yml",
       "state": "active",
       "latest_run": {
-        "id": 31106976244,
-        "run_number": 13,
+        "id": 31107059548,
+        "run_number": 14,
         "event": "push",
-        "status": "in_progress",
+        "status": "pending",
         "conclusion": null,
-        "head_sha": "2490d2573a15b87502d35f18fe5c4ec6161ef8b3",
-        "created_at": "2026-08-06T13:39:43Z",
-        "updated_at": "2026-08-06T13:39:46Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106976244",
-        "display_title": "Correct Chromium 111 source member identity and lock exact retrieval …"
+        "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
+        "created_at": "2026-08-06T13:40:44Z",
+        "updated_at": "2026-08-06T13:40:44Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107059548",
+        "display_title": "Route Chromium 111 source recovery through exact hash-locked Snapshot…"
       }
     },
     {
@@ -298,18 +299,7 @@
       "name": "ARM64 port - build verified recovery stage-0 ISO",
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31105592369,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "db834e61abdb28066d186d7686e2a5cb5b499844",
-        "created_at": "2026-08-06T13:22:15Z",
-        "updated_at": "2026-08-06T13:25:06Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105592369",
-        "display_title": "Build and boot-test a real ARM64 recovery stage-0 ISO"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328565048,
@@ -487,16 +477,16 @@
       "path": ".github/workflows/arm64-pipeline-lint.yml",
       "state": "active",
       "latest_run": {
-        "id": 31106487847,
-        "run_number": 251,
+        "id": 31107048482,
+        "run_number": 253,
         "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
-        "created_at": "2026-08-06T13:33:37Z",
-        "updated_at": "2026-08-06T13:33:59Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106487847",
-        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
+        "created_at": "2026-08-06T13:40:35Z",
+        "updated_at": "2026-08-06T13:40:45Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048482",
+        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
       }
     },
     {
@@ -621,16 +611,16 @@
       "path": ".github/workflows/arm64-pipeline-selfcheck.yml",
       "state": "active",
       "latest_run": {
-        "id": 31106488159,
-        "run_number": 235,
+        "id": 31107048851,
+        "run_number": 237,
         "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "38404ce394ceecd761a484eb74f2232fe15e7551",
-        "created_at": "2026-08-06T13:33:37Z",
-        "updated_at": "2026-08-06T13:33:55Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106488159",
-        "display_title": "Preserve verified same-authority ARM64 results across failed retries"
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
+        "created_at": "2026-08-06T13:40:36Z",
+        "updated_at": "2026-08-06T13:40:45Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048851",
+        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
       }
     },
     {
@@ -743,6 +733,24 @@
       "latest_run": null
     },
     {
+      "workflow_id": 328646208,
+      "name": "ARM64 port - recover exact signed vendor sources v2",
+      "path": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31107048226,
+        "run_number": 1,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
+        "created_at": "2026-08-06T13:40:35Z",
+        "updated_at": "2026-08-06T13:40:38Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048226",
+        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
+      }
+    },
+    {
       "workflow_id": 328613885,
       "name": "ARM64 port - repair Debian epoch asset URI validation",
       "path": ".github/workflows/arm64-repair-debian-asset-epoch-uri.yml",
@@ -774,13 +782,6 @@
       "workflow_id": 328607840,
       "name": "ARM64 port - repair normalized source-exact binNMU status",
       "path": ".github/workflows/arm64-repair-normalized-binnmu-status.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328600703,
-      "name": "ARM64 port - repair portable builder checksums",
-      "path": ".github/workflows/arm64-repair-portable-builder-checksums.yml",
       "state": "active",
       "latest_run": null
     },
@@ -886,16 +887,16 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 31106976107,
-        "run_number": 8,
+        "id": 31107058139,
+        "run_number": 9,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "2490d2573a15b87502d35f18fe5c4ec6161ef8b3",
-        "created_at": "2026-08-06T13:39:43Z",
-        "updated_at": "2026-08-06T13:39:47Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106976107",
-        "display_title": "Correct Chromium 111 source member identity and lock exact retrieval …"
+        "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
+        "created_at": "2026-08-06T13:40:42Z",
+        "updated_at": "2026-08-06T13:40:46Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107058139",
+        "display_title": "Route Chromium 111 source recovery through exact hash-locked Snapshot…"
       }
     },
     {
