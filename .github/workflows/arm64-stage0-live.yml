@@ -1,0 +1,199 @@
+name: ARM64 port - build and boot-test stage-0 live ISO
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-live.yml'
+      - 'arm64/scripts/build_stage0_live_iso.sh'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-stage0-live
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT: 20230730T235959Z
+  ISO_NAME: Hancom-Gooroom-3.3-arm64-stage0.iso
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 host and install image tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'A native ARM64 runner is required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap debian-archive-keyring dosfstools file grub-common \
+            grub-efi-arm64-bin jq mtools qemu-efi-aarch64 qemu-system-arm \
+            rsync squashfs-tools xorriso
+
+      - name: Download the latest fully verified historical vendor package set
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor
+          mkdir -p work/vendor
+          run_id="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow arm64-vendor-binary-lock.yml \
+            --branch arm64-port \
+            --status success \
+            --limit 20 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          test -n "$run_id"
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-exact-vendor-debs \
+            --dir work/vendor
+          test "$(jq -r '.summary.verified_count' work/vendor/vendor-binary-lock/vendor-binary-lock.json)" = 123
+          test "$(jq -r '.summary.unresolved_count' work/vendor/vendor-binary-lock/vendor-binary-lock.json)" = 0
+          sha256sum --check work/vendor/vendor-binary-lock/DEBSUMS.sha256
+
+      - name: Assemble the exact-branded ARM64 UEFI live ISO
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: ${{ env.SNAPSHOT }}
+          HANCOM_GOOROOM_STAGE0_ISO_NAME: ${{ env.ISO_NAME }}
+        run: |
+          set -euxo pipefail
+          chmod +x arm64/scripts/build_stage0_live_iso.sh
+          rm -rf work/stage0
+          mkdir -p work/stage0
+          sudo -E arm64/scripts/build_stage0_live_iso.sh \
+            arm64/locks/reference/amd64-reference.json \
+            work/vendor/vendor-binary-lock/vendor-binary-lock.json \
+            work/vendor/vendor-debs \
+            work/stage0
+          sudo chown -R "$USER:$USER" work/stage0
+          jq . work/stage0/stage0-build-result.json
+          sha256sum --check "work/stage0/$ISO_NAME.sha256"
+
+      - name: Boot the ISO through ARM64 UEFI and require the readiness marker
+        id: boot
+        run: |
+          set -euxo pipefail
+          ISO="$PWD/work/stage0/$ISO_NAME"
+          CODE="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+            -type f \( -iname 'AAVMF_CODE*.fd' -o -iname 'QEMU_EFI*.fd' \) \
+            2>/dev/null | head -n1)"
+          VARS="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+            -type f -iname 'AAVMF_VARS*.fd' 2>/dev/null | head -n1)"
+          test -n "$CODE"
+
+          accel=tcg
+          cpu=max
+          if [ -c /dev/kvm ]; then
+            accel=kvm
+            cpu=host
+          fi
+          qemu=(
+            qemu-system-aarch64
+            -machine "virt,accel=$accel"
+            -cpu "$cpu"
+            -smp 4
+            -m 4096
+            -nographic
+            -monitor none
+            -serial stdio
+            -device virtio-rng-pci
+            -drive "if=none,id=cdrom,media=cdrom,format=raw,file=$ISO"
+            -device virtio-scsi-pci,id=scsi0
+            -device scsi-cd,drive=cdrom,bus=scsi0.0
+            -no-reboot
+          )
+          if [ -n "$VARS" ]; then
+            cp "$VARS" work/stage0/AAVMF_VARS.fd
+            qemu+=(
+              -drive "if=pflash,format=raw,readonly=on,file=$CODE"
+              -drive "if=pflash,format=raw,file=$PWD/work/stage0/AAVMF_VARS.fd"
+            )
+          else
+            qemu+=( -bios "$CODE" )
+          fi
+
+          : > work/stage0/qemu-stage0-boot.log
+          setsid "${qemu[@]}" \
+            > work/stage0/qemu-stage0-boot.log 2>&1 &
+          qemu_pid=$!
+          found=false
+          for _ in $(seq 1 420); do
+            if grep -q 'HANCOM_GOOROOM_ARM64_STAGE0_READY' \
+              work/stage0/qemu-stage0-boot.log; then
+              found=true
+              break
+            fi
+            if ! kill -0 "$qemu_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill -- "-$qemu_pid" 2>/dev/null || true
+          wait "$qemu_pid" 2>/dev/null || true
+          tail -n 300 work/stage0/qemu-stage0-boot.log
+          test "$found" = true
+
+          jq '.status = "boot-tested"
+              | .boot_test = {
+                  firmware: "ARM64 UEFI",
+                  machine: "QEMU virt",
+                  readiness_marker: "HANCOM_GOOROOM_ARM64_STAGE0_READY",
+                  result: "passed"
+                }' \
+            work/stage0/stage0-build-result.json \
+            > work/stage0/stage0-build-result.json.tmp
+          mv work/stage0/stage0-build-result.json.tmp \
+            work/stage0/stage0-build-result.json
+
+      - name: Upload the boot-tested ARM64 stage-0 image
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-stage0
+          path: work/stage0
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Record reproducible stage-0 evidence
+        if: steps.boot.outcome == 'success'
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/stage0
+          mkdir -p arm64/locks/stage0
+          cp work/stage0/stage0-build-result.json arm64/locks/stage0/
+          cp work/stage0/stage0-manifest.json arm64/locks/stage0/
+          cp work/stage0/stage0-exact-overlay-packages.tsv arm64/locks/stage0/
+          cp "work/stage0/$ISO_NAME.sha256" arm64/locks/stage0/
+          cp "work/stage0/$ISO_NAME.size" arm64/locks/stage0/
+          cp work/stage0/stage0-kernel-version.txt arm64/locks/stage0/
+          sha256sum arm64/locks/stage0/* | sort -k2 \
+            > arm64/locks/stage0/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/stage0
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record boot-tested Hancom Gooroom 3.3 ARM64 stage-0 image'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
