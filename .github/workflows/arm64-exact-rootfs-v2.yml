@@ -5,7 +5,7 @@ on:
     branches: [arm64-port]
     paths:
       - '.github/workflows/arm64-exact-rootfs-v2.yml'
-      - 'arm64/scripts/materialize_package_acquisition_plan.py'
+      - 'arm64/scripts/materialize_package_acquisition_plan_v2.py'
       - 'arm64/scripts/build_exact_arm64_rootfs.sh'
       - 'arm64/scripts/verify_arm64_rootfs.py'
       - 'arm64/locks/acquisition-plan/**'
@@ -13,7 +13,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-exact-rootfs
@@ -85,7 +85,7 @@ jobs:
           set -euxo pipefail
           rm -rf work/materialization work/package-repository
           mkdir -p work/materialization work/package-repository
-          python3 arm64/scripts/materialize_package_acquisition_plan.py \
+          python3 arm64/scripts/materialize_package_acquisition_plan_v2.py \
             --plan arm64/locks/acquisition-plan/package-acquisition-plan.json \
             --output-dir work/materialization \
             --repository-dir work/package-repository \
@@ -244,3 +244,27 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Dispatch final ISO construction explicitly after rootfs lock
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          jq -e '.summary.passed == true' work/rootfs-evidence/verification.json
+          test -f work/rootfs-evidence/artifact-lock.json
+          dispatch arm64-final-live-iso.yml

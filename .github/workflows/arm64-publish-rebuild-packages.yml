@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-publish-rebuild-packages
@@ -222,3 +222,30 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Dispatch package-cache consumers explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/rebuild-release/summary.json ] \
+             && jq -e '.complete == true' work/rebuild-release/summary.json >/dev/null; then
+            dispatch arm64-dependency-retry-v2.yml -f limit=4
+            dispatch arm64-package-acquisition-plan-v2.yml
+          fi
+          dispatch arm64-port-coverage.yml || true

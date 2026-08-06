@@ -7,7 +7,7 @@ on:
       - '.github/workflows/arm64-qtbase-resolve-and-build-v2.yml'
       - 'arm64/scripts/targeted_source_archaeology.py'
       - 'arm64/scripts/promote_targeted_source_lock.py'
-      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64_v4.sh'
       - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
@@ -112,7 +112,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download the exact source resolution from this run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: qtbase-resolution-v2
           path: work/qtbase-resolution-v2
@@ -150,7 +150,7 @@ jobs:
         run: |
           set -euxo pipefail
           chmod +x \
-            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
             arm64/scripts/run_locked_source_arm64.sh \
             arm64/scripts/run_locked_source_arm64_v4.sh \
             arm64/scripts/validate_arm64_source_outputs_v3.py \

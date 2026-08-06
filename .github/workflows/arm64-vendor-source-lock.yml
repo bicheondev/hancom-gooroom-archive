@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out the port branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: arm64-port
           fetch-depth: 0
@@ -117,7 +117,7 @@ jobs:
           cat work/vendor-lock/vendor-source-lock-summary.json
 
       - name: Upload repository and source-lock evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: hancom-gooroom-3.3-vendor-source-lock
           path: |

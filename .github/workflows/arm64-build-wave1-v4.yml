@@ -5,7 +5,7 @@ on:
     branches: [arm64-port]
     paths:
       - '.github/workflows/arm64-build-wave1-v4.yml'
-      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64_v4.sh'
       - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euxo pipefail
           chmod +x \
-            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
             arm64/scripts/run_locked_source_arm64.sh \
             arm64/scripts/run_locked_source_arm64_v4.sh \
             arm64/scripts/validate_arm64_source_outputs_v3.py \
@@ -110,7 +110,7 @@ jobs:
       - name: Download all artifacts from this workflow run
         id: download
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: '*-exact-arm64-wave1-v4'
           path: work/wave1-v4-artifacts

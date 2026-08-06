@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-package-acquisition-plan
@@ -132,3 +133,28 @@ jobs:
           set -euxo pipefail
           test '${{ steps.plan.outputs.exit_code }}' = '0'
           jq -e '.ready_for_fetch == true' work/acquisition-plan/summary.json
+
+      - name: Dispatch exact rootfs construction explicitly when ready
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/acquisition-plan/summary.json ] \
+             && jq -e '.ready_for_fetch == true' work/acquisition-plan/summary.json >/dev/null; then
+            dispatch arm64-exact-rootfs-v2.yml
+          fi

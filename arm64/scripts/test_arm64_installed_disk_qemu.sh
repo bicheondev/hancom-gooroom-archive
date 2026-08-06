@@ -88,6 +88,10 @@ qemu_command=(
   -device scsi-hd,drive=disk0,bootindex=1
   -netdev user,id=net0
   -device virtio-net-pci,netdev=net0
+  -device virtio-gpu-pci
+  -device qemu-xhci,id=xhci
+  -device usb-kbd,bus=xhci.0
+  -device usb-tablet,bus=xhci.0
   -boot order=c,menu=off
   -display none
   -monitor none

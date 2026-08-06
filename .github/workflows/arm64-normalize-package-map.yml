@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-normalized-package-map
@@ -89,3 +90,28 @@ jobs:
           set -euxo pipefail
           test '${{ steps.normalize.outputs.exit_code }}' = '0'
           jq -e '.complete == true' work/normalized-package-map/summary.json
+
+      - name: Dispatch acquisition planning after map normalization
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/normalized-package-map/summary.json ] \
+             && jq -e '.complete == true' work/normalized-package-map/summary.json >/dev/null; then
+            dispatch arm64-package-acquisition-plan-v2.yml
+          fi

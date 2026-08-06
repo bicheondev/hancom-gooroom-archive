@@ -6,9 +6,9 @@ on:
     paths:
       - '.github/workflows/arm64-baseline-rebuild-evidence.yml'
       - 'arm64/scripts/select_baseline_reverification.py'
-      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/verify_arm64_rebuild.py'
-      - 'arm64/scripts/collect_native_rebuild_results.py'
+      - 'arm64/scripts/collect_native_rebuild_results_v2.py'
       - 'arm64/rebuild-batches.json'
       - 'arm64/locks/sources-api-baseline/**'
       - 'arm64/locks/effective-sources/**'
@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-baseline-rebuild-evidence
@@ -117,10 +117,10 @@ jobs:
           output='work/rebuild/${{ matrix.source }}'
           rm -rf "$output"
           mkdir -p "$output"
-          chmod +x arm64/scripts/build_locked_source_arm64.sh
+          chmod +x arm64/scripts/build_locked_source_arm64_v2.sh
           set +e
           timeout --signal=TERM --kill-after=120 9600 \
-            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
               '${{ needs.plan.outputs.lock_path }}' \
               '${{ matrix.source }}' \
               "$output" \
@@ -220,7 +220,7 @@ jobs:
         run: |
           set -euxo pipefail
           rm -rf work/rebuild-results
-          python3 arm64/scripts/collect_native_rebuild_results.py \
+          python3 arm64/scripts/collect_native_rebuild_results_v2.py \
             --artifacts-dir work/rebuild-artifacts \
             --output-dir work/rebuild-results \
             --run-id '${{ github.run_id }}' \
@@ -268,3 +268,29 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Publish newly reverified baseline packages explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/rebuild-results/summary.json ] \
+             && [ "$(jq -r '.passed_count // 0' work/rebuild-results/summary.json)" -gt 0 ]; then
+            dispatch arm64-publish-rebuild-packages.yml
+          fi
+          dispatch arm64-port-coverage.yml || true

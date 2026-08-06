@@ -89,7 +89,7 @@ jobs:
 
           workflow_files = sorted((root / '.github/workflows').glob('arm64-*.yml'))
           use_re = re.compile(r'^\s*uses:\s*([^\s#]+)', re.MULTILINE)
-          allowed_moving_refs = {'actions/download-artifact@v4'}
+          allowed_moving_refs = {'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093'}
           for path in workflow_files:
               text = path.read_text(encoding='utf-8')
               try:

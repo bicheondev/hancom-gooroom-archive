@@ -6,7 +6,8 @@ on:
     paths:
       - '.github/workflows/arm64-final-live-iso.yml'
       - 'arm64/scripts/apply_reference_config_overlay.py'
-      - 'arm64/scripts/finalize_arm64_live_rootfs.sh'
+      - 'arm64/scripts/finalize_arm64_live_rootfs_v2.sh'
+      - 'arm64/scripts/configure_graphical_boot_gate_v2.sh'
       - 'arm64/scripts/build_arm64_live_iso.sh'
       - 'arm64/scripts/test_arm64_iso_qemu.sh'
       - 'arm64/scripts/verify_arm64_rootfs.py'
@@ -15,7 +16,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-final-live-iso
@@ -100,7 +101,7 @@ jobs:
             qemu-system-arm qemu-efi-aarch64
           gh --version
           chmod +x \
-            arm64/scripts/finalize_arm64_live_rootfs.sh \
+            arm64/scripts/finalize_arm64_live_rootfs_v2.sh \
             arm64/scripts/build_arm64_live_iso.sh \
             arm64/scripts/test_arm64_iso_qemu.sh
           python3 -m py_compile \
@@ -196,10 +197,21 @@ jobs:
           set -o pipefail
           rm -rf work/live-finalization
           mkdir -p work/live-finalization
-          sudo arm64/scripts/finalize_arm64_live_rootfs.sh \
+          sudo arm64/scripts/finalize_arm64_live_rootfs_v2.sh \
             work/live-rootfs \
             work/live-finalization \
             2>&1 | tee work/live-finalization/workflow-finalize.log
+          sudo chown -R "$(id -u):$(id -g)" \
+            work/live-rootfs work/live-finalization
+
+      - name: Configure Korean graphical boot validation
+        shell: bash
+        run: |
+          set -o pipefail
+          sudo arm64/scripts/configure_graphical_boot_gate_v2.sh \
+            work/live-rootfs \
+            work/live-finalization/graphical-boot-gate.json \
+            2>&1 | tee work/live-finalization/workflow-graphical-boot-gate.log
           sudo chown -R "$(id -u):$(id -g)" \
             work/live-rootfs work/live-finalization
 
@@ -256,6 +268,7 @@ jobs:
           cp work/rootfs-artifact/verification.json work/final-evidence/package-layer-verification.json
           cp work/overlay-evidence/reference-overlay.json work/final-evidence/
           cp work/live-finalization/live-finalization.json work/final-evidence/
+          cp work/live-finalization/graphical-boot-gate.json work/final-evidence/
           cp work/live-finalization/final-rootfs-verification.json work/final-evidence/
           cp work/iso-evidence/iso-build.json work/final-evidence/
           cp work/iso-evidence/iso.sha256 work/final-evidence/
@@ -356,3 +369,24 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Dispatch installed-system boot validation explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ -f work/qemu-evidence/qemu-boot-result.json ] \
+             && jq -e '.passed == true and .marker_found == true' \
+               work/qemu-evidence/qemu-boot-result.json >/dev/null; then
+            for attempt in 1 2 3 4; do
+              if gh workflow run arm64-installed-system-boot.yml \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port; then
+                exit 0
+              fi
+              sleep $((attempt * 5))
+            done
+            exit 1
+          fi

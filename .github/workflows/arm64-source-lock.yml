@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-source-lock
@@ -85,3 +86,27 @@ jobs:
           set -euxo pipefail
           test '${{ steps.resolve.outputs.exit_code }}' = '0'
           test "$(jq -r '.rebuild_unresolved_count' work/source-lock/source-lock-summary.json)" = '0'
+
+      - name: Dispatch effective source authority merge explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/source-lock/source-lock.json ]; then
+            dispatch arm64-effective-source-lock.yml
+          fi

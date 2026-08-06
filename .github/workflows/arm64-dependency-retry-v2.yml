@@ -443,3 +443,29 @@ jobs:
               --ref arm64-port \
               -f limit=4
           fi
+
+      - name: Publish packages recovered by dependency retries explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/rebuild-results/summary.json ] \
+             && [ "$(jq -r '.passed_count // 0' work/rebuild-results/summary.json)" -gt 0 ]; then
+            dispatch arm64-publish-rebuild-packages.yml
+          fi
+          dispatch arm64-port-coverage.yml || true
