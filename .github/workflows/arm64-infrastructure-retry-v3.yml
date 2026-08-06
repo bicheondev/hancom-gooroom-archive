@@ -1,0 +1,343 @@
+name: ARM64 port - retry exact sources after builder infrastructure repair
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-infrastructure-retry-v3.yml'
+      - 'arm64/scripts/select_infrastructure_retry_wave_v3.py'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Maximum infrastructure-failed sources in this wave
+        required: true
+        default: '6'
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-infrastructure-retry-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE_LOCK: arm64/locks/effective-sources-v3/effective-source-lock.json
+  REFERENCE: arm64/locks/reference/amd64-reference.json
+  RESULTS_ROOT: arm64/locks/rebuild-results
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      selected_count: ${{ steps.select.outputs.selected_count }}
+      remaining_count: ${{ steps.select.outputs.remaining_count }}
+      matrix: ${{ steps.select.outputs.matrix }}
+      limit: ${{ steps.select.outputs.limit }}
+      builder_sha256: ${{ steps.select.outputs.builder_sha256 }}
+    steps:
+      - name: Check out exact authorities, repaired builders, and prior failures
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Select only prior infrastructure failures on a new builder identity
+        id: select
+        env:
+          REQUESTED_LIMIT: ${{ inputs.limit || '6' }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          limit="$REQUESTED_LIMIT"
+          [[ "$limit" =~ ^[0-9]+$ ]]
+          test -f "$SOURCE_LOCK"
+          test -f "$REFERENCE"
+          test -f arm64/scripts/build_locked_source_arm64_v5.sh
+          test -f arm64/scripts/build_locked_source_arm64_v2.sh
+          test -f arm64/scripts/build_locked_dsc_source_arm64_v2.sh
+          builder_sha256="$(
+            sha256sum \
+              arm64/scripts/build_locked_source_arm64_v5.sh \
+              arm64/scripts/build_locked_source_arm64_v2.sh \
+              arm64/scripts/build_locked_dsc_source_arm64_v2.sh \
+              | sort -k2 | sha256sum | awk '{print $1}'
+          )"
+          rm -rf work/infrastructure-retry-plan
+          mkdir -p work/infrastructure-retry-plan
+          python3 arm64/scripts/select_infrastructure_retry_wave_v3.py \
+            --lock "$SOURCE_LOCK" \
+            --reference "$REFERENCE" \
+            --results "$RESULTS_ROOT" \
+            --builder-sha256 "$builder_sha256" \
+            --limit "$limit" \
+            --output work/infrastructure-retry-plan/plan.json
+          selected="$(jq -r '.summary.selected_count' work/infrastructure-retry-plan/plan.json)"
+          remaining="$(jq -r '.summary.remaining_eligible_count' work/infrastructure-retry-plan/plan.json)"
+          matrix="$(jq -c '.matrix' work/infrastructure-retry-plan/plan.json)"
+          echo "selected_count=$selected" >> "$GITHUB_OUTPUT"
+          echo "remaining_count=$remaining" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+          echo "builder_sha256=$builder_sha256" >> "$GITHUB_OUTPUT"
+          cat work/infrastructure-retry-plan/plan.json
+
+      - name: Upload immutable infrastructure retry selection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: infrastructure-retry-v3-plan-${{ github.run_id }}
+          path: work/infrastructure-retry-plan
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.selected_count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 210
+    steps:
+      - name: Check out exact authority and repaired builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and exact builder identity
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git curl gnupg gpgv jq dpkg-dev ca-certificates \
+            python3 coreutils binutils file
+          docker version
+          actual="$(
+            sha256sum \
+              arm64/scripts/build_locked_source_arm64_v5.sh \
+              arm64/scripts/build_locked_source_arm64_v2.sh \
+              arm64/scripts/build_locked_dsc_source_arm64_v2.sh \
+              | sort -k2 | sha256sum | awk '{print $1}'
+          )"
+          test "$actual" = '${{ matrix.builder_sha256 }}'
+          bash -n arm64/scripts/build_locked_source_arm64_v5.sh
+          bash -n arm64/scripts/build_locked_source_arm64_v2.sh
+          bash -n arm64/scripts/build_locked_dsc_source_arm64_v2.sh
+          python3 -m py_compile arm64/scripts/verify_arm64_rebuild_v3.py
+
+      - name: Rebuild with the repaired exact-source infrastructure
+        id: build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_REQUIRED_PACKAGES: ${{ matrix.required_native_packages_space }}
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ env.REFERENCE }}
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          bash arm64/scripts/build_locked_source_arm64_v5.sh \
+            "$SOURCE_LOCK" \
+            '${{ matrix.source }}' \
+            "$output" \
+            2>&1 | tee "$output/workflow-build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Verify exact authority, version, and AArch64 payloads
+        id: verify
+        if: steps.build.outputs.exit_code == '0'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 arm64/scripts/verify_arm64_rebuild_v3.py \
+            --lock "$SOURCE_LOCK" \
+            --reference "$REFERENCE" \
+            --source '${{ matrix.source }}' \
+            --source-version '${{ matrix.source_version }}' \
+            --directory 'work/rebuild/${{ matrix.source }}' \
+            --output 'work/rebuild/${{ matrix.source }}/verification.json' \
+            2>&1 | tee 'work/rebuild/${{ matrix.source }}/workflow-verify.log'
+
+      - name: Write builder-identity-aware job result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output='work/rebuild/${{ matrix.source }}'
+          mkdir -p "$output"
+          passed=false
+          if [ '${{ steps.build.outputs.exit_code }}' = '0' ] \
+             && [ '${{ steps.verify.outcome }}' = success ]; then
+            passed=true
+          fi
+          jq -n \
+            --arg source '${{ matrix.source }}' \
+            --arg source_version '${{ matrix.source_version }}' \
+            --arg source_type '${{ matrix.source_type }}' \
+            --arg authority_provenance '${{ matrix.authority_provenance }}' \
+            --arg repository_full_name '${{ matrix.repository_full_name }}' \
+            --arg commit_sha '${{ matrix.commit_sha }}' \
+            --arg tree_sha '${{ matrix.tree_sha }}' \
+            --arg dsc_filename '${{ matrix.dsc_filename }}' \
+            --arg dsc_sha256 '${{ matrix.dsc_sha256 }}' \
+            --arg build_outcome '${{ steps.build.outcome }}' \
+            --arg build_exit_code '${{ steps.build.outputs.exit_code }}' \
+            --arg verify_outcome '${{ steps.verify.outcome }}' \
+            --arg retry_reason '${{ matrix.retry_reason }}' \
+            --arg builder_sha256 '${{ matrix.builder_sha256 }}' \
+            --arg previous_builder_sha256 '${{ matrix.previous_builder_sha256 }}' \
+            --arg previous_actions_run_id '${{ matrix.previous_actions_run_id }}' \
+            --argjson infrastructure_evidence '${{ toJSON(matrix.infrastructure_evidence) }}' \
+            --argjson required_native_packages '${{ toJSON(matrix.required_native_packages) }}' \
+            --argjson reused_all_packages '${{ toJSON(matrix.reused_all_packages) }}' \
+            --argjson passed "$passed" \
+            '{
+              schema:3,
+              source:$source,
+              source_version:$source_version,
+              source_type:$source_type,
+              authority_provenance:$authority_provenance,
+              repository_full_name:$repository_full_name,
+              commit_sha:$commit_sha,
+              tree_sha:$tree_sha,
+              dsc_filename:$dsc_filename,
+              dsc_sha256:$dsc_sha256,
+              build_outcome:$build_outcome,
+              build_exit_code:$build_exit_code,
+              verify_outcome:$verify_outcome,
+              retry_reason:$retry_reason,
+              builder_sha256:$builder_sha256,
+              previous_builder_sha256:$previous_builder_sha256,
+              previous_actions_run_id:$previous_actions_run_id,
+              infrastructure_evidence:$infrastructure_evidence,
+              required_native_packages:$required_native_packages,
+              reused_all_packages:$reused_all_packages,
+              passed:$passed
+            }' > "$output/job-result.json"
+          find "$output" -maxdepth 1 -type f ! -name ARTIFACTSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > "$output/ARTIFACTSUMS.sha256"
+
+      - name: Upload complete retry build and failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: work/rebuild/${{ matrix.source }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Enforce verified build after evidence upload
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.build.outputs.exit_code }}' = '0'
+          test '${{ steps.verify.outcome }}' = success
+          jq -e '.passed == true' 'work/rebuild/${{ matrix.source }}/job-result.json'
+
+  collect:
+    needs: [plan, build]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.selected_count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out accumulated compact results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download every current retry artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: arm64-rebuild-*
+          path: work/rebuild-artifacts
+          merge-multiple: false
+
+      - name: Collect compact builder-aware results
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/collected-results
+          python3 arm64/scripts/collect_native_rebuild_results_v4.py \
+            --artifacts-dir work/rebuild-artifacts \
+            --output-dir work/collected-results \
+            --run-id '${{ github.run_id }}' \
+            --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --batch infrastructure-retry-v3
+          cat work/collected-results/summary.json
+
+      - name: Commit compact success and failure records
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RESULTS_ROOT/runs/${{ github.run_id }}"
+          cp work/collected-results/summary.json \
+            "$RESULTS_ROOT/runs/${{ github.run_id }}/summary.json"
+          cp work/collected-results/failed.json \
+            "$RESULTS_ROOT/runs/${{ github.run_id }}/failed.json"
+          find work/collected-results -mindepth 2 -maxdepth 2 -type d -print0 \
+            | while IFS= read -r -d '' directory; do
+                relative="${directory#work/collected-results/}"
+                rm -rf "$RESULTS_ROOT/$relative"
+                mkdir -p "$(dirname "$RESULTS_ROOT/$relative")"
+                cp -a "$directory" "$RESULTS_ROOT/$relative"
+              done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RESULTS_ROOT"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record repaired-builder ARM64 infrastructure retries'
+            for attempt in 1 2 3 4; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                break
+              fi
+              if [ "$attempt" -eq 4 ]; then
+                exit 1
+              fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Advance package publication and failure classification
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-publish-rebuild-packages.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-rebuild-failure-audit.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+          gh workflow run arm64-port-coverage.yml \
+            --repo '${{ github.repository }}' --ref arm64-port || true
+
+      - name: Chain the next bounded infrastructure retry wave
+        if: needs.plan.outputs.remaining_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-infrastructure-retry-v3.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port \
+            -f limit='${{ needs.plan.outputs.limit }}'
