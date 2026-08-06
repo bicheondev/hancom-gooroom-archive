@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-06T11:32:37.670481Z",
+  "generated_at": "2026-08-06T11:33:09.392825Z",
   "status": "failed",
   "python": [
     {
@@ -557,6 +557,10 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "status": "passed"
+    },
+    {
       "path": ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       "status": "passed"
     },
@@ -690,6 +694,10 @@
     },
     {
       "path": ".github/workflows/arm64-source-lock.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-source-recovery-monitor.yml",
       "status": "passed"
     },
     {
@@ -1317,6 +1325,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1797,6 +1817,12 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-source-recovery-monitor.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-stage0-live-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2027,7 +2053,7 @@
       "accepted_return_codes": [
         0
       ],
-      "stdout_tail": "ha\": \"d3b2a8e8599902b40da81867f85c2ac81fe4d984\"\n    },\n    {\n      \"source\": \"system-config-printer\",\n      \"source_version\": \"1.5.14-1+grm3u1\",\n      \"native_binary_count\": 3,\n      \"architecture_all_binary_count\": 0,\n      \"total_binary_count\": 3,\n      \"native_binary_packages\": [\n        {\n          \"package\": \"python3-cupshelpers\",\n          \"architecture\": \"python3-cupshelpers\"\n        },\n        {\n          \"package\": \"system-config-printer\",\n          \"architecture\": \"system-config-printer\"\n        },\n        {\n          \"package\": \"system-config-printer-common\",\n          \"architecture\": \"system-config-printer-common\"\n        }\n      ],\n      \"architecture_all_binary_packages\": [],\n      \"repository\": \"gooroom/system-config-printer\",\n      \"commit_sha\": \"451f170fa30eed547da91b8716cfac0b0998ba83\",\n      \"tree_sha\": \"46ec00e143769ca20b0d6fc52859824285122883\"\n    },\n    {\n      \"source\": \"policykit-1\",\n      \"source_version\": \"0.105-31+nDeb11u1+grm3u1\",\n      \"native_binary_count\": 4,\n      \"architecture_all_binary_count\": 0,\n      \"total_binary_count\": 4,\n      \"native_binary_packages\": [\n        {\n          \"package\": \"gir1.2-polkit-1.0\",\n          \"architecture\": \"gir1.2-polkit-1.0\"\n        },\n        {\n          \"package\": \"libpolkit-agent-1-0\",\n          \"architecture\": \"libpolkit-agent-1-0\"\n        },\n        {\n          \"package\": \"libpolkit-gobject-1-0\",\n          \"architecture\": \"libpolkit-gobject-1-0\"\n        },\n        {\n          \"package\": \"policykit-1\",\n          \"architecture\": \"policykit-1\"\n        }\n      ],\n      \"architecture_all_binary_packages\": [],\n      \"repository\": \"gooroom/policykit-1\",\n      \"commit_sha\": \"0563a8a6e1276df34e70c52029b0d8e3a2314520\",\n      \"tree_sha\": \"c636768dd74927fb948b0c4527966a110de5516b\"\n    }\n  ],\n  \"rejected\": [\n    {\n      \"source\": \"accountsservice\",\n      \"reason\": \"explicitly excluded\"\n    },\n    {\n      \"source\": \"arc-theme\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gnome-flashback\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-agent-service\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-applauncher-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-bootsplash-theme\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-dockbarx-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-greeter\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-guide\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-icon-themes\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-info\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-integration-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-session-manager\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-translations\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroomsystem\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gtk+3.0\",\n      \"reason\": \"native binary count exceeds bounded wave policy\",\n      \"native_binary_count\": 5\n    },\n    {\n      \"source\": \"linux\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"linux-signed-amd64\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"live-installer\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"nimf\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"qtbase-opensource-src\",\n      \"reason\": \"exact source commit is not resolved\"\n    }\n  ]\n}\n",
+      "stdout_tail": "       \"architecture\": \"libnimf1\"\n        },\n        {\n          \"package\": \"nimf\",\n          \"architecture\": \"nimf\"\n        },\n        {\n          \"package\": \"nimf-libhangul\",\n          \"architecture\": \"nimf-libhangul\"\n        }\n      ],\n      \"architecture_all_binary_packages\": [],\n      \"repository\": \"gooroom/nimf\",\n      \"commit_sha\": \"583ad8b183db06a84c6b85a80fe132583566909d\",\n      \"tree_sha\": \"a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d\"\n    },\n    {\n      \"source\": \"system-config-printer\",\n      \"source_version\": \"1.5.14-1+grm3u1\",\n      \"native_binary_count\": 3,\n      \"architecture_all_binary_count\": 0,\n      \"total_binary_count\": 3,\n      \"native_binary_packages\": [\n        {\n          \"package\": \"python3-cupshelpers\",\n          \"architecture\": \"python3-cupshelpers\"\n        },\n        {\n          \"package\": \"system-config-printer\",\n          \"architecture\": \"system-config-printer\"\n        },\n        {\n          \"package\": \"system-config-printer-common\",\n          \"architecture\": \"system-config-printer-common\"\n        }\n      ],\n      \"architecture_all_binary_packages\": [],\n      \"repository\": \"gooroom/system-config-printer\",\n      \"commit_sha\": \"451f170fa30eed547da91b8716cfac0b0998ba83\",\n      \"tree_sha\": \"46ec00e143769ca20b0d6fc52859824285122883\"\n    },\n    {\n      \"source\": \"policykit-1\",\n      \"source_version\": \"0.105-31+nDeb11u1+grm3u1\",\n      \"native_binary_count\": 4,\n      \"architecture_all_binary_count\": 0,\n      \"total_binary_count\": 4,\n      \"native_binary_packages\": [\n        {\n          \"package\": \"gir1.2-polkit-1.0\",\n          \"architecture\": \"gir1.2-polkit-1.0\"\n        },\n        {\n          \"package\": \"libpolkit-agent-1-0\",\n          \"architecture\": \"libpolkit-agent-1-0\"\n        },\n        {\n          \"package\": \"libpolkit-gobject-1-0\",\n          \"architecture\": \"libpolkit-gobject-1-0\"\n        },\n        {\n          \"package\": \"policykit-1\",\n          \"architecture\": \"policykit-1\"\n        }\n      ],\n      \"architecture_all_binary_packages\": [],\n      \"repository\": \"gooroom/policykit-1\",\n      \"commit_sha\": \"0563a8a6e1276df34e70c52029b0d8e3a2314520\",\n      \"tree_sha\": \"c636768dd74927fb948b0c4527966a110de5516b\"\n    }\n  ],\n  \"rejected\": [\n    {\n      \"source\": \"accountsservice\",\n      \"reason\": \"explicitly excluded\"\n    },\n    {\n      \"source\": \"arc-theme\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gnome-flashback\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-applauncher-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-bootsplash-theme\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-dockbarx-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-greeter\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-guide\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-icon-themes\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-integration-applet\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-session-manager\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gooroom-translations\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"gtk+3.0\",\n      \"reason\": \"native binary count exceeds bounded wave policy\",\n      \"native_binary_count\": 5\n    },\n    {\n      \"source\": \"linux\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"linux-signed-amd64\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"live-installer\",\n      \"reason\": \"exact source commit is not resolved\"\n    },\n    {\n      \"source\": \"qtbase-opensource-src\",\n      \"reason\": \"exact source commit is not resolved\"\n    }\n  ]\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2037,7 +2063,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:32:38.301617Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T11:33:10.084475Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2047,7 +2073,7 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:32:38.338704Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T11:33:10.128019Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
