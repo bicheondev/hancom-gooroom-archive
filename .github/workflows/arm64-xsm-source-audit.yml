@@ -84,12 +84,17 @@ jobs:
                   literals.add(value)
 
           interesting = sorted(
-              value for value in binary_strings
-              if any(key in value.lower() for key in (
-                  'gnome', 'flashback', 'terminal', 'json', 'xsm', 'policy',
-                  'vmware', 'cinnamon', 'xfce', 'clipboard', 'screen',
-                  '/usr/', '.so'
-              ))
+              value
+              for value in binary_strings
+              if any(
+                  key in value.lower()
+                  for key in (
+                      'gnome', 'flashback', 'terminal', 'json', 'xsm', 'policy',
+                      'vmware', 'cinnamon', 'xfce', 'clipboard', 'screen',
+                      '/usr/', '.so'
+                  )
+              )
+          )
           missing_from_published_literals = sorted(
               value for value in interesting if value not in literals
           )
@@ -110,10 +115,11 @@ jobs:
           cat work/audit/source-delta.json
 
       - name: Upload immutable XSM audit evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: gooroom-xsm-source-audit
           path: work/audit
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
           compression-level: 9
