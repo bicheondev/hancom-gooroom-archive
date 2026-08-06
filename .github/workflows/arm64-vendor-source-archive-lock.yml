@@ -1,0 +1,156 @@
+name: ARM64 port - recover exact vendor source archive
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-vendor-source-archive-lock.yml'
+      - 'arm64/scripts/resolve_vendor_source_archive.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/effective-sources/**'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact Debian source package name
+        required: true
+        default: qtbase-opensource-src
+        type: string
+      version:
+        description: Exact AMD64 reference source version
+        required: true
+        default: 5.15.2+dfsg-9+grm3u1
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-vendor-source-archive
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      SOURCE_NAME: ${{ inputs.source || 'qtbase-opensource-src' }}
+      SOURCE_VERSION: ${{ inputs.version || '5.15.2+dfsg-9+grm3u1' }}
+
+    steps:
+      - name: Check out every preserved source of repository evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify requested source and version against the AMD64 reference
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import os
+          import re
+
+          source = os.environ['SOURCE_NAME']
+          version = os.environ['SOURCE_VERSION']
+          reference = json.loads(
+              Path('arm64/locks/reference/amd64-reference.json')
+              .read_text(encoding='utf-8')
+          )
+          found = False
+          for row in reference.get('packages', []):
+              raw = row.get('source') or row.get('source_package') or row.get('source_name')
+              declared_source = None
+              embedded_version = None
+              if isinstance(raw, dict):
+                  declared_source = raw.get('name') or raw.get('source')
+                  embedded_version = raw.get('version') or raw.get('source_version')
+              elif isinstance(raw, str):
+                  match = re.match(r'^([^ ]+)(?: \((?:= )?([^)]+)\))?$', raw)
+                  if match:
+                      declared_source, embedded_version = match.groups()
+                  else:
+                      declared_source = raw.split(' ', 1)[0]
+              declared_source = declared_source or row.get('package')
+              declared_version = (
+                  row.get('source_version')
+                  or row.get('source-version')
+                  or embedded_version
+                  or (row.get('version') if declared_source == row.get('package') else None)
+              )
+              if declared_source == source and str(declared_version or '') == version:
+                  found = True
+                  break
+          if not found:
+              raise SystemExit(
+                  f'{source} {version} is not present in the AMD64 reference inventory'
+              )
+          PY
+
+      - name: Probe only repository roots preserved by the original evidence
+        id: recover
+        run: |
+          set -uxo pipefail
+          safe_source="$(printf '%s' "$SOURCE_NAME" | sed 's/[^A-Za-z0-9_.+-]/_/g')"
+          safe_version="$(printf '%s' "$SOURCE_VERSION" | sed 's/[^A-Za-z0-9_.+-]/_/g')"
+          output="work/source-archives/${safe_source}/${safe_version}"
+          rm -rf "$output"
+          mkdir -p "$output"
+          set +e
+          python3 arm64/scripts/resolve_vendor_source_archive.py \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --search-root arm64/locks \
+            --output-dir "$output" \
+            --timeout 45
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          echo "output=$output" >> "$GITHUB_OUTPUT"
+          find "$output" -maxdepth 1 -type f -printf '%f\t%s bytes\n' | sort
+          exit 0
+
+      - name: Upload exact source files or complete negative evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.SOURCE_NAME }}-${{ env.SOURCE_VERSION }}-source-archive-probe
+          path: ${{ steps.recover.outputs.output }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit the immutable source archive lock or probe result
+        run: |
+          set -euxo pipefail
+          safe_source="$(printf '%s' "$SOURCE_NAME" | sed 's/[^A-Za-z0-9_.+-]/_/g')"
+          safe_version="$(printf '%s' "$SOURCE_VERSION" | sed 's/[^A-Za-z0-9_.+-]/_/g')"
+          source_dir="${{ steps.recover.outputs.output }}"
+          destination="arm64/locks/source-archives/${safe_source}/${safe_version}"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          find "$source_dir" -maxdepth 1 -type f \
+            \( -name '*.json' -o -name '*.dsc' -o -name 'SOURCESUMS.sha256' \) \
+            -exec cp '{}' "$destination/" ';'
+          test "$(find "$destination" -maxdepth 1 -type f | wc -l)" -gt 0
+          find "$destination" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$destination/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record exact source archive probe for $SOURCE_NAME $SOURCE_VERSION"
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce exact source archive recovery
+        run: |
+          set -euxo pipefail
+          test '${{ steps.recover.outputs.exit_code }}' = '0'
+          test -f '${{ steps.recover.outputs.output }}/source-archive-lock.json'
