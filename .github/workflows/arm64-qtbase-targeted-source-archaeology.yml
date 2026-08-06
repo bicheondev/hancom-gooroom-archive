@@ -1,0 +1,97 @@
+name: ARM64 port - targeted exact QtBase source archaeology
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-qtbase-targeted-source-archaeology.yml'
+      - 'arm64/scripts/targeted_source_archaeology.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-qtbase-targeted-source-archaeology
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  SOURCE_VERSION: 5.15.2+dfsg-9+grm3u1
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out all preserved evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact Debian changelog parsing prerequisites
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ca-certificates git jq python3
+
+      - name: Search complete Git histories for the exact QtBase version
+        id: search
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -uxo pipefail
+          rm -rf work/qtbase-targeted-source
+          mkdir -p work/qtbase-targeted-source
+          set +e
+          python3 arm64/scripts/targeted_source_archaeology.py \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-dir work/qtbase-targeted-source \
+            --maximum-repositories 30
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/qtbase-targeted-source -maxdepth 1 -type f \
+            -printf '%f\t%s bytes\n' | sort
+          exit 0
+
+      - name: Upload exact lock or complete negative search evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-5.15.2-dfsg-9-grm3u1-targeted-search
+          path: work/qtbase-targeted-source
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the targeted search before enforcing it
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/qtbase-targeted-source/. "$destination/"
+          find "$destination" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$destination/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record targeted exact QtBase source archaeology'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce one immutable exact QtBase source tree
+        run: |
+          set -euxo pipefail
+          test '${{ steps.search.outputs.exit_code }}' = '0'
+          test -f work/qtbase-targeted-source/targeted-source-lock.json
+          test "$(jq -r '.status' work/qtbase-targeted-source/targeted-source-lock.json)" = resolved
