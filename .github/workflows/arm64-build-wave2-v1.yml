@@ -1,0 +1,269 @@
+name: ARM64 port - build exact package wave 2 v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-wave2-v1.yml'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v3.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-wave2-v1
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      selected: ${{ steps.select.outputs.selected }}
+    steps:
+      - name: Check out exact locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Select the next bounded native rebuild set
+        id: select
+        run: |
+          set -euxo pipefail
+          mkdir -p work/wave2-selection
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import json
+          import re
+
+          locks = json.loads(
+              Path('arm64/locks/effective-sources/effective-source-lock.json')
+              .read_text(encoding='utf-8')
+          )
+          reference = json.loads(
+              Path('arm64/locks/reference/amd64-reference.json')
+              .read_text(encoding='utf-8')
+          )
+          already = {
+              'accountsservice',
+              'file-roller',
+              'celluloid',
+              'cups-pk-helper',
+              'mousetweaks',
+              'gnome-screenshot',
+              'p7zip',
+          }
+          heavyweight = re.compile(
+              r'(?:chromium|firefox|webkit|qtbase|qtwebengine|libreoffice|'
+              r'^linux(?:$|-)|gcc|llvm|clang|mesa|systemd|glibc|binutils|'
+              r'xorg-server|virtualbox)',
+              re.IGNORECASE,
+          )
+
+          def source_name(row):
+              raw = row.get('source') or row.get('source_package')
+              if isinstance(raw, dict):
+                  return raw.get('name') or raw.get('source')
+              if isinstance(raw, str):
+                  return raw.split(' (', 1)[0]
+              return row.get('package')
+
+          def source_version(row):
+              value = row.get('source_version') or row.get('source-version')
+              if value:
+                  return str(value)
+              raw = row.get('source')
+              if isinstance(raw, str) and ' (' in raw and raw.endswith(')'):
+                  return raw.rsplit(' (', 1)[1][:-1].removeprefix('= ')
+              return row.get('version')
+
+          package_rows = reference.get('packages', [])
+          candidates = []
+          rejected = []
+          for row in locks.get('sources', []):
+              source = row.get('source')
+              version = str(row.get('source_version') or '')
+              if not source or not version:
+                  continue
+              if source in already:
+                  rejected.append({'source': source, 'reason': 'already in wave 1'})
+                  continue
+              if row.get('status') != 'resolved' or not row.get('selected'):
+                  rejected.append({'source': source, 'reason': 'source commit is not resolved'})
+                  continue
+              if heavyweight.search(source):
+                  rejected.append({'source': source, 'reason': 'reserved heavyweight source'})
+                  continue
+              matching = []
+              for package in package_rows:
+                  if not isinstance(package, dict):
+                      continue
+                  if source_name(package) != source:
+                      continue
+                  package_source_version = source_version(package)
+                  if package_source_version and str(package_source_version) != version:
+                      continue
+                  matching.append(package)
+              native = [
+                  package
+                  for package in matching
+                  if str(package.get('architecture') or package.get('arch') or '') != 'all'
+              ]
+              if not native:
+                  rejected.append({'source': source, 'reason': 'no native reference binary'})
+                  continue
+              if len(native) > 4 or len(matching) > 8:
+                  rejected.append({
+                      'source': source,
+                      'reason': 'reserved for a larger binary-set wave',
+                      'native_binary_count': len(native),
+                      'reference_binary_count': len(matching),
+                  })
+                  continue
+              candidates.append({
+                  'source': source,
+                  'source_version': version,
+                  'native_binary_count': len(native),
+                  'reference_binary_count': len(matching),
+                  'repository': row.get('selected', {}).get('repository_full_name'),
+                  'commit_sha': row.get('selected', {}).get('commit_sha'),
+              })
+
+          candidates.sort(
+              key=lambda item: (
+                  item['native_binary_count'],
+                  item['reference_binary_count'],
+                  item['source'],
+              )
+          )
+          selected = candidates[:8]
+          if not selected:
+              raise SystemExit('no bounded wave 2 candidates were selected')
+          result = {
+              'schema': 'hancom-gooroom-arm64-wave2-selection-v1',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace(
+                  '+00:00', 'Z'
+              ),
+              'selection_policy': {
+                  'exact_source_lock_required': True,
+                  'native_reference_binary_required': True,
+                  'maximum_native_binaries': 4,
+                  'maximum_reference_binaries': 8,
+                  'maximum_selected_sources': 8,
+                  'heavyweight_sources_deferred': True,
+              },
+              'selected': selected,
+              'remaining_candidates': candidates[8:],
+              'rejected': rejected,
+          }
+          Path('work/wave2-selection/selection.json').write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          matrix = json.dumps(
+              {'source': [item['source'] for item in selected]},
+              separators=(',', ':'),
+          )
+          print(f'matrix={matrix}')
+          print(
+              'selected=' + ','.join(item['source'] for item in selected)
+          )
+          with open(Path(__import__('os').environ['GITHUB_OUTPUT']), 'a', encoding='utf-8') as output:
+              output.write(f'matrix={matrix}\n')
+              output.write(
+                  'selected=' + ','.join(item['source'] for item in selected) + '\n'
+              )
+          print(json.dumps(result, indent=2, ensure_ascii=False))
+          PY
+
+      - name: Upload immutable wave selection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wave2-v1-selection
+          path: work/wave2-selection
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  build:
+    needs: prepare
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install verification tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Build exact locked source for ARM64
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v3.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py
+          output="work/${SOURCE_NAME}-arm64-wave2-v1"
+          rm -rf "$output"
+          arm64/scripts/run_locked_source_arm64_v3.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            "$output"
+
+      - name: Recheck exact versions, architectures, and payload machines
+        if: success()
+        env:
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          output="work/${SOURCE_NAME}-arm64-wave2-v1"
+          python3 arm64/scripts/validate_arm64_source_outputs_v3.py \
+            --lock arm64/locks/effective-sources/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source "$SOURCE_NAME" \
+            --output-dir "$output"
+          jq -e '.status == "passed"' \
+            "$output/arm64-source-output-validation-v3.json"
+          find "$output" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > "$output/SHA256SUMS"
+
+      - name: Upload exact ARM64 DEBs and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.source }}-exact-arm64-wave2-v1
+          path: work/${{ matrix.source }}-arm64-wave2-v1
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
