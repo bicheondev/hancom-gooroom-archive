@@ -2,11 +2,11 @@
   "summary": {
     "schema": 2,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 91,
-    "workflow_name_count": 91,
-    "referenced_local_file_count": 123,
+    "workflow_count": 92,
+    "workflow_name_count": 92,
+    "referenced_local_file_count": 128,
     "error_count": 0,
-    "warning_count": 38,
+    "warning_count": 42,
     "passed": true
   },
   "workflows": [
@@ -1782,6 +1782,30 @@
       ]
     },
     {
+      "filename": "arm64-wayback-source-recovery-fast.yml",
+      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
+      "name": "ARM64 port - fast exact Wayback recovery for current blockers",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json",
+        "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
+        "arm64/locks/wayback-sources/fast-rebuild-blockers.json",
+        "arm64/locks/wayback-sources/fast-summary.json",
+        "arm64/locks/wayback-sources/fast-wayback-source-lock.json",
+        "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+        "arm64/scripts/recover_vendor_sources_wayback.py",
+        "arm64/scripts/recover_vendor_sources_wayback_fast.py"
+      ]
+    },
+    {
       "filename": "arm64-wayback-source-recovery.yml",
       "path": ".github/workflows/arm64-wayback-source-recovery.yml",
       "name": "ARM64 port - recover exact signed vendor sources from Wayback",
@@ -1861,6 +1885,9 @@
     ],
     "arm64/locks/effective-sources-v3/effective-source-lock.json": [
       ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
+    "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2020,12 +2047,23 @@
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
+    ],
+    "arm64/locks/wayback-sources/fast-rebuild-blockers.json": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
+    ],
+    "arm64/locks/wayback-sources/fast-summary.json": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
+    ],
+    "arm64/locks/wayback-sources/fast-wayback-source-lock.json": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/locks/wayback-sources/wayback-source-release-lock.json": [
       ".github/workflows/arm64-source-authority-v3.yml",
       ".github/workflows/arm64-source-authority-v4.yml",
-      ".github/workflows/arm64-source-authority-v5.yml"
+      ".github/workflows/arm64-source-authority-v5.yml",
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/rebuild-batches.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -2218,7 +2256,11 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/recover_vendor_sources_wayback.py": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
+    ],
+    "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
+      ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
@@ -2594,6 +2636,26 @@
     {
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
+      "local_path": "arm64/locks/wayback-sources/fast-rebuild-blockers.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
+      "local_path": "arm64/locks/wayback-sources/fast-summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
+      "local_path": "arm64/locks/wayback-sources/fast-wayback-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-wayback-source-recovery-fast.yml",
+      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     }
   ]
