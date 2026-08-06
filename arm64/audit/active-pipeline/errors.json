@@ -5,41 +5,10 @@
     "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-build-wave1-v4.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
     "path": ".github/workflows/arm64-build-wave2-v2.yml",
     "reason": "moving-or-non-sha-action-reference",
     "actions": [
-      "actions/download-artifact@v4",
       "actions/upload-artifact@ea165f8d65b6e75fa02"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-build-wave2-v3.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-debian-map.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
     ]
   },
   {
@@ -48,36 +17,14 @@
     "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-dependency-retry.yml",
+    "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
     "reason": "referenced-local-file-missing",
-    "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+    "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json"
   },
   {
-    "path": ".github/workflows/arm64-effective-source-lock.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-exact-rootfs.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-final-consolidation-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
+    "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/acquisition-plan/summary.json"
   },
   {
     "path": ".github/workflows/arm64-final-live-iso.yml",
@@ -110,16 +57,14 @@
     "local_path": "arm64/locks/iso/release-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-inventory.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
+    "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/linux-apt-source/LOCKSUMS.sh"
   },
   {
-    "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
+    "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/linux-apt-source/apt-source-lock.json"
   },
   {
     "path": ".github/workflows/arm64-lock-schema-audit.yml",
@@ -167,31 +112,24 @@
     "local_path": "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
   },
   {
-    "path": ".github/workflows/arm64-native-rebuild-backlog.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
     "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
     "reason": "referenced-local-file-missing",
     "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
+    "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/debian-arm64/normalized-package-map.json"
   },
   {
-    "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
+    "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+  },
+  {
+    "path": ".github/workflows/arm64-package-repo-wave1.yml",
+    "reason": "referenced-local-file-missing",
+    "local_path": "arm64/locks/package-repository-wave1/LOCKSUMS.sh"
   },
   {
     "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
@@ -209,51 +147,9 @@
     "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/download-artifact@v4"
-    ]
-  },
-  {
     "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
     "reason": "referenced-local-file-missing",
     "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
-  },
-  {
-    "path": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-rootfs-artifact-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-seed-source-lock.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-    "reason": "referenced-local-file-missing",
-    "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
-  },
-  {
-    "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
   },
   {
     "path": ".github/workflows/arm64-source-authority-v3.yml",
@@ -261,13 +157,9 @@
     "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
   },
   {
-    "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+    "path": ".github/workflows/arm64-source-authority-v4.yml",
     "reason": "referenced-local-file-missing",
-    "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
-  },
-  {
-    "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
+    "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
   },
   {
     "path": ".github/workflows/arm64-stage0-live-v2.yml",
@@ -315,47 +207,6 @@
     "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json"
   },
   {
-    "path": ".github/workflows/arm64-start-curated-batches.yml",
-    "reason": "referenced-local-file-missing",
-    "local_path": "arm64/status/curated-batches-launch.json"
-  },
-  {
-    "path": ".github/workflows/arm64-upstream-probe.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-v2-normalization-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-vendor-binary-lock.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-vendor-pool-source-lock.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
-  },
-  {
-    "path": ".github/workflows/arm64-vendor-source-lock.yml",
-    "reason": "moving-or-non-sha-action-reference",
-    "actions": [
-      "actions/checkout@v4",
-      "actions/upload-artifact@v4"
-    ]
-  },
-  {
     "path": ".github/workflows/arm64-wave1-v3-record.yml",
     "reason": "referenced-local-file-missing",
     "local_path": "arm64/locks/build-wave1-v3/LOCKSUMS.sh"
@@ -384,49 +235,5 @@
     "path": ".github/workflows/arm64-wave2-v1-record.yml",
     "reason": "referenced-local-file-missing",
     "local_path": "arm64/locks/build-wave2-v1/workflow-run.json"
-  },
-  {
-    "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
-    "reason": "one-shot-maintenance-workflow-still-active"
-  },
-  {
-    "path": ".github/workflows/arm64-dependency-retry.yml",
-    "reason": "superseded-workflow-still-present"
-  },
-  {
-    "path": ".github/workflows/arm64-exact-rootfs.yml",
-    "reason": "superseded-workflow-still-present"
-  },
-  {
-    "path": ".github/workflows/arm64-native-rebuild-batch.yml",
-    "reason": "superseded-workflow-still-present"
-  },
-  {
-    "path": ".github/workflows/arm64-package-acquisition-plan.yml",
-    "reason": "superseded-workflow-still-present"
-  },
-  {
-    "path": ".github/workflows/arm64-package-smoke.yml",
-    "reason": "superseded-workflow-still-present"
-  },
-  {
-    "path": "arm64/scripts/build_locked_source_arm64.sh",
-    "reason": "superseded-script-still-present"
-  },
-  {
-    "path": "arm64/scripts/build_package_acquisition_plan.py",
-    "reason": "superseded-script-still-present"
-  },
-  {
-    "path": "arm64/scripts/collect_native_rebuild_results.py",
-    "reason": "superseded-script-still-present"
-  },
-  {
-    "path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
-    "reason": "superseded-script-still-present"
-  },
-  {
-    "path": "arm64/scripts/prepare_rebuild_release_assets.py",
-    "reason": "superseded-script-still-present"
   }
 ]

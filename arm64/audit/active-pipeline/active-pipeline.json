@@ -2,10 +2,10 @@
   "summary": {
     "schema": 1,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows",
-    "workflow_count": 97,
-    "workflow_name_count": 97,
-    "referenced_local_file_count": 149,
-    "error_count": 83,
+    "workflow_count": 80,
+    "workflow_name_count": 80,
+    "referenced_local_file_count": 125,
+    "error_count": 47,
     "warning_count": 0,
     "passed": false
   },
@@ -65,8 +65,8 @@
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/collect_native_rebuild_results.py",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
       ]
@@ -86,7 +86,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/prepare_composite_source_chroot.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_with_local_repo.sh",
@@ -110,7 +110,7 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/promote_targeted_source_lock.py",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
@@ -134,7 +134,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_with_vendor.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
@@ -178,7 +178,7 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v3.sh",
         "arm64/scripts/validate_arm64_source_outputs_v3.py"
@@ -197,12 +197,12 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
         "arm64/scripts/summarize_arm64_build_wave.py",
@@ -225,7 +225,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
@@ -248,7 +248,7 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v3.sh",
         "arm64/scripts/validate_arm64_source_outputs_v3.py"
@@ -269,12 +269,12 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
         "arm64/scripts/select_arm64_build_wave.py",
@@ -298,12 +298,12 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
         "arm64/scripts/select_arm64_build_wave.py",
@@ -327,7 +327,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
@@ -347,7 +347,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
@@ -367,7 +367,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
@@ -387,44 +387,11 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/prepare_composite_source_chroot.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_component_compat.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
-      ]
-    },
-    {
-      "filename": "arm64-builder-v2-maintenance.yml",
-      "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
-      "name": "ARM64 port - normalize exact source builder v2",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v2.sh"
-      ]
-    },
-    {
-      "filename": "arm64-chain-progress-maintenance-safe.yml",
-      "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-      "name": "ARM64 port - safely wire explicit progress dispatch chain",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/wire_progress_dispatches.py"
       ]
     },
     {
@@ -454,8 +421,8 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
@@ -500,42 +467,6 @@
       ]
     },
     {
-      "filename": "arm64-dependency-retry.yml",
-      "path": ".github/workflows/arm64-dependency-retry.yml",
-      "name": "ARM64 port - retry dependency failures on verified package-cache changes",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 4,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/locks/rebuild-release/rebuild-release-lock.json",
-        "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/sources-api-baseline/source-lock.json",
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/classify_native_rebuild_failures.py",
-        "arm64/scripts/collect_native_rebuild_results_v2.py",
-        "arm64/scripts/materialize_rebuild_dependency_repo.py",
-        "arm64/scripts/materialize_rebuild_dependency_repo_v2.py",
-        "arm64/scripts/select_dependency_retry_wave.py",
-        "arm64/scripts/verify_arm64_rebuild.py"
-      ]
-    },
-    {
       "filename": "arm64-effective-source-lock.yml",
       "path": ".github/workflows/arm64-effective-source-lock.yml",
       "name": "ARM64 port - enforce effective exact source lock",
@@ -545,8 +476,8 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
@@ -577,160 +508,8 @@
         "arm64/locks/acquisition-plan/package-acquisition-plan.json",
         "arm64/locks/acquisition-plan/summary.json",
         "arm64/scripts/build_exact_arm64_rootfs.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
+        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
         "arm64/scripts/verify_arm64_rootfs.py"
-      ]
-    },
-    {
-      "filename": "arm64-exact-rootfs.yml",
-      "path": ".github/workflows/arm64-exact-rootfs.yml",
-      "name": "ARM64 port - build exact verified rootfs",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 3,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/acquisition-plan/package-acquisition-plan.json",
-        "arm64/locks/acquisition-plan/summary.json",
-        "arm64/scripts/build_exact_arm64_rootfs.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/verify_arm64_rootfs.py"
-      ]
-    },
-    {
-      "filename": "arm64-export-v2-consolidation.yml",
-      "path": ".github/workflows/arm64-export-v2-consolidation.yml",
-      "name": "ARM64 port - export consolidated v2 patch",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/build_package_acquisition_plan.py",
-        "arm64/scripts/build_package_acquisition_plan_v2.py",
-        "arm64/scripts/collect_native_rebuild_results.py",
-        "arm64/scripts/collect_native_rebuild_results_v2.py",
-        "arm64/scripts/configure_graphical_boot_gate.sh",
-        "arm64/scripts/configure_graphical_boot_gate_v2.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
-        "arm64/scripts/prepare_rebuild_release_assets.py",
-        "arm64/scripts/prepare_rebuild_release_assets_v2.py",
-        "arm64/scripts/test_arm64_installed_disk_qemu.sh",
-        "arm64/scripts/test_arm64_iso_qemu.sh",
-        "arm64/scripts/wire_graphical_boot_gate.py",
-        "arm64/scripts/wire_graphical_boot_gate_v2.py",
-        "arm64/scripts/wire_installed_boot_dispatch.py",
-        "arm64/scripts/wire_progress_dispatches.py"
-      ]
-    },
-    {
-      "filename": "arm64-final-cleanup-maintenance-v3.yml",
-      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      "name": "ARM64 port - finalize single v2 execution path",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/build_package_acquisition_plan.py",
-        "arm64/scripts/build_package_acquisition_plan_v2.py",
-        "arm64/scripts/collect_native_rebuild_results.py",
-        "arm64/scripts/collect_native_rebuild_results_v2.py",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
-        "arm64/scripts/prepare_rebuild_release_assets.py",
-        "arm64/scripts/prepare_rebuild_release_assets_v2.py"
-      ]
-    },
-    {
-      "filename": "arm64-final-consolidation-maintenance.yml",
-      "path": ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      "name": "ARM64 port - final idempotent v2 pipeline consolidation",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/build_package_acquisition_plan.py",
-        "arm64/scripts/build_package_acquisition_plan_v2.py",
-        "arm64/scripts/collect_native_rebuild_results.py",
-        "arm64/scripts/collect_native_rebuild_results_v2.py",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
-        "arm64/scripts/prepare_rebuild_release_assets.py",
-        "arm64/scripts/prepare_rebuild_release_assets_v2.py",
-        "arm64/scripts/wire_installed_boot_dispatch.py",
-        "arm64/scripts/wire_progress_dispatches.py"
-      ]
-    },
-    {
-      "filename": "arm64-final-consolidation-v2-maintenance.yml",
-      "path": ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      "name": "ARM64 port - final v2 consolidation including graphical boot gate",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v2.sh",
-        "arm64/scripts/build_package_acquisition_plan.py",
-        "arm64/scripts/build_package_acquisition_plan_v2.py",
-        "arm64/scripts/collect_native_rebuild_results.py",
-        "arm64/scripts/collect_native_rebuild_results_v2.py",
-        "arm64/scripts/configure_graphical_boot_gate.sh",
-        "arm64/scripts/configure_graphical_boot_gate_v2.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
-        "arm64/scripts/prepare_rebuild_release_assets.py",
-        "arm64/scripts/prepare_rebuild_release_assets_v2.py",
-        "arm64/scripts/test_arm64_installed_disk_qemu.sh",
-        "arm64/scripts/test_arm64_iso_qemu.sh",
-        "arm64/scripts/wire_graphical_boot_gate.py",
-        "arm64/scripts/wire_graphical_boot_gate_v2.py",
-        "arm64/scripts/wire_installed_boot_dispatch.py",
-        "arm64/scripts/wire_progress_dispatches.py"
       ]
     },
     {
@@ -753,7 +532,8 @@
         "arm64/locks/rootfs/verification.json",
         "arm64/scripts/apply_reference_config_overlay.py",
         "arm64/scripts/build_arm64_live_iso.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/configure_graphical_boot_gate_v2.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
         "arm64/scripts/test_arm64_iso_qemu.sh",
         "arm64/scripts/verify_arm64_rootfs.py"
       ]
@@ -790,27 +570,31 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/scripts/inventory_iso.py"
       ]
     },
     {
-      "filename": "arm64-live-finalizer-maintenance.yml",
-      "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      "name": "ARM64 port - preserve live finalization evidence",
+      "filename": "arm64-linux-apt-source-lock.yml",
+      "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
+      "name": "ARM64 port - recover exact Linux 5.10.179 source",
       "events": [
         "push",
         "workflow_dispatch"
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/scripts/finalize_arm64_live_rootfs.sh"
+        "arm64/locks/linux-apt-source/LOCKSUMS.sh",
+        "arm64/locks/linux-apt-source/apt-source-lock.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/scripts/resolve_source_apt.py"
       ]
     },
     {
@@ -966,7 +750,7 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
@@ -974,8 +758,8 @@
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/collect_native_rebuild_results.py",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_next_native_rebuild_wave.py",
         "arm64/scripts/verify_arm64_rebuild.py"
       ]
@@ -995,7 +779,7 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
@@ -1003,33 +787,8 @@
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/collect_native_rebuild_results.py",
-        "arm64/scripts/select_native_rebuild_batch.py",
-        "arm64/scripts/verify_arm64_rebuild.py"
-      ]
-    },
-    {
-      "filename": "arm64-native-rebuild-batch.yml",
-      "path": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "name": "ARM64 port - native exact-source rebuild batch",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 2,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/sources-api-baseline/source-lock.json",
-        "arm64/rebuild-batches.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_native_rebuild_batch.py",
         "arm64/scripts/verify_arm64_rebuild.py"
       ]
@@ -1073,9 +832,9 @@
       ]
     },
     {
-      "filename": "arm64-package-acquisition-plan.yml",
-      "path": ".github/workflows/arm64-package-acquisition-plan.yml",
-      "name": "ARM64 port - build exact package acquisition plan",
+      "filename": "arm64-package-acquisition-plan-v3.yml",
+      "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      "name": "ARM64 port - exact package acquisition plan v3",
       "events": [
         "push",
         "workflow_dispatch"
@@ -1086,9 +845,10 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/locks/package-plan/debian-arm64-map-normalized.json",
+        "arm64/locks/debian-arm64/normalized-package-map.json",
+        "arm64/locks/rebuild-release/rebuild-release-lock.json",
         "arm64/locks/vendor-binaries/vendor-binary-lock.json",
-        "arm64/scripts/build_package_acquisition_plan.py"
+        "arm64/scripts/build_package_acquisition_plan_v4.py"
       ]
     },
     {
@@ -1109,12 +869,12 @@
       ]
     },
     {
-      "filename": "arm64-package-smoke.yml",
-      "path": ".github/workflows/arm64-package-smoke.yml",
-      "name": "ARM64 port - compile locked package smoke test",
+      "filename": "arm64-package-repo-wave1.yml",
+      "path": ".github/workflows/arm64-package-repo-wave1.yml",
+      "name": "ARM64 port - assemble verified package repository wave 1",
       "events": [
-        "push",
-        "workflow_dispatch"
+        "workflow_dispatch",
+        "workflow_run"
       ],
       "job_count": 1,
       "uses": [
@@ -1123,43 +883,9 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
-        "arm64/scripts/run_locked_source_arm64.sh",
-        "arm64/scripts/verify_locked_arm64_build.sh"
+        "arm64/locks/package-repository-wave1/LOCKSUMS.sh",
+        "arm64/locks/reference/amd64-reference.json"
       ]
-    },
-    {
-      "filename": "arm64-persistent-acquisition-maintenance.yml",
-      "path": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-      "name": "ARM64 port - normalize persistent acquisition v2 path",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan.py",
-        "arm64/scripts/materialize_package_acquisition_plan_v2.py",
-        "arm64/scripts/prepare_rebuild_release_assets.py"
-      ]
-    },
-    {
-      "filename": "arm64-pin-actions-maintenance.yml",
-      "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
-      "name": "ARM64 port - pin all workflow actions",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
     },
     {
       "filename": "arm64-pipeline-lint.yml",
@@ -1316,13 +1042,13 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/promote_targeted_source_lock.py",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
@@ -1347,7 +1073,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
-        "arm64/scripts/build_locked_source_arm64.sh",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/promote_targeted_source_lock.py",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_v4.sh",
@@ -1370,7 +1096,7 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/download-artifact@v4",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
@@ -1421,34 +1147,6 @@
       ]
     },
     {
-      "filename": "arm64-rebuild-workflow-maintenance-v2.yml",
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
-      "name": "ARM64 port - finalize rebuild workflow normalization",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-rebuild-workflow-maintenance.yml",
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-      "name": "ARM64 port - normalize rebuild workflow",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-repair-audit-coverage.yml",
       "path": ".github/workflows/arm64-repair-audit-coverage.yml",
       "name": "ARM64 port - extend state audit to targeted source builds",
@@ -1493,20 +1191,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-rootfs-artifact-maintenance.yml",
-      "path": ".github/workflows/arm64-rootfs-artifact-maintenance.yml",
-      "name": "ARM64 port - enrich rootfs artifact lock",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
@@ -1516,40 +1200,9 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4"
-      ],
-      "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-source-authority-v3-maintenance.yml",
-      "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      "name": "ARM64 port - integrate signed DSC source authority v3 everywhere",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
-      "referenced_local_files": [
-        "arm64/scripts/build_locked_dsc_source_arm64.sh",
-        "arm64/scripts/build_locked_source_arm64_v3.sh",
-        "arm64/scripts/build_locked_source_arm64_v4.sh",
-        "arm64/scripts/build_package_acquisition_plan_v3.py",
-        "arm64/scripts/classify_native_rebuild_failures_v2.py",
-        "arm64/scripts/merge_exact_source_authority_v3.py",
-        "arm64/scripts/publish_rebuild_packages_v3.py",
-        "arm64/scripts/select_baseline_reverification_v3.py",
-        "arm64/scripts/select_dependency_retry_wave_v3.py",
-        "arm64/scripts/select_native_rebuild_batch_v3.py",
-        "arm64/scripts/select_next_native_rebuild_wave_v3.py",
-        "arm64/scripts/source_authority_v3.py",
-        "arm64/scripts/verify_arm64_dsc_rebuild.py",
-        "arm64/scripts/verify_arm64_rebuild_v3.py",
-        "arm64/scripts/wire_source_authority_v3.py",
-        "arm64/scripts/wire_source_authority_v4.py"
-      ]
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-source-authority-v3.yml",
@@ -1574,28 +1227,25 @@
       ]
     },
     {
-      "filename": "arm64-source-authority-v5-maintenance.yml",
-      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
-      "name": "ARM64 port - finalize hardened Git and signed-DSC authority path",
+      "filename": "arm64-source-authority-v4.yml",
+      "path": ".github/workflows/arm64-source-authority-v4.yml",
+      "name": "ARM64 port - exact source authority controller v4",
       "events": [
         "push",
         "workflow_dispatch"
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/scripts/build_locked_dsc_source_arm64.sh",
-        "arm64/scripts/build_locked_dsc_source_arm64_v2.sh",
-        "arm64/scripts/build_locked_source_arm64_v3.sh",
-        "arm64/scripts/build_locked_source_arm64_v4.sh",
-        "arm64/scripts/build_locked_source_arm64_v5.sh",
-        "arm64/scripts/publish_rebuild_packages_v3.py",
-        "arm64/scripts/publish_rebuild_packages_v4.py",
-        "arm64/scripts/wire_source_authority_v3.py",
-        "arm64/scripts/wire_source_authority_v4.py",
-        "arm64/scripts/wire_source_authority_v5.py"
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/sources-api-baseline/source-lock.json",
+        "arm64/locks/sources/source-lock.json",
+        "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
+        "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+        "arm64/scripts/merge_exact_source_authority_v3.py"
       ]
     },
     {
@@ -1793,19 +1443,22 @@
       ]
     },
     {
-      "filename": "arm64-start-curated-batches.yml",
-      "path": ".github/workflows/arm64-start-curated-batches.yml",
-      "name": "ARM64 port - start all curated exact-source rebuild batches",
+      "filename": "arm64-static-audit.yml",
+      "path": ".github/workflows/arm64-static-audit.yml",
+      "name": "ARM64 port - static lock and workflow audit",
       "events": [
         "push",
         "workflow_dispatch"
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/status/curated-batches-launch.json"
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/filter_arm64_binary_lock_v2.py"
       ]
     },
     {
@@ -1818,27 +1471,10 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-v2-normalization-maintenance.yml",
-      "path": ".github/workflows/arm64-v2-normalization-maintenance.yml",
-      "name": "ARM64 port - normalize v2 rootfs and ISO path",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh"
-      ]
     },
     {
       "filename": "arm64-vendor-binary-lock.yml",
@@ -1850,8 +1486,8 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
@@ -1868,8 +1504,8 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
@@ -1904,8 +1540,8 @@
       ],
       "job_count": 1,
       "uses": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
@@ -1967,22 +1603,6 @@
       ]
     },
     {
-      "filename": "arm64-wire-installed-boot-maintenance.yml",
-      "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
-      "name": "ARM64 port - wire installed-system validation after final ISO",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/wire_installed_boot_dispatch.py"
-      ]
-    },
-    {
       "filename": "arm64-workflow-secret-audit.yml",
       "path": ".github/workflows/arm64-workflow-secret-audit.yml",
       "name": "ARM64 port - audit workflows for literal credentials",
@@ -2023,12 +1643,10 @@
       ".github/workflows/arm64-lock-schema-audit.yml"
     ],
     "arm64/locks/acquisition-plan/package-acquisition-plan.json": [
-      ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-exact-rootfs.yml"
+      ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
     "arm64/locks/acquisition-plan/summary.json": [
-      ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-exact-rootfs.yml"
+      ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
     "arm64/locks/build-wave1-v3/LOCKSUMS.sh": [
       ".github/workflows/arm64-wave1-v3-record.yml"
@@ -2048,6 +1666,9 @@
     "arm64/locks/build-wave2-v1/workflow-run.json": [
       ".github/workflows/arm64-wave2-v1-record.yml"
     ],
+    "arm64/locks/debian-arm64/normalized-package-map.json": [
+      ".github/workflows/arm64-package-acquisition-plan-v3.yml"
+    ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
@@ -2065,16 +1686,15 @@
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml",
-      ".github/workflows/arm64-package-smoke.yml",
+      ".github/workflows/arm64-package-repo-wave1.yml",
       ".github/workflows/arm64-pipeline-selfcheck.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
-      ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
+      ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
+      ".github/workflows/arm64-static-audit.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml"
@@ -2085,6 +1705,12 @@
     "arm64/locks/iso/release-lock.json": [
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-installed-system-boot.yml"
+    ],
+    "arm64/locks/linux-apt-source/LOCKSUMS.sh": [
+      ".github/workflows/arm64-linux-apt-source-lock.yml"
+    ],
+    "arm64/locks/linux-apt-source/apt-source-lock.json": [
+      ".github/workflows/arm64-linux-apt-source-lock.yml"
     ],
     "arm64/locks/minimal-boot-attempt/LOCKSUMS.sh": [
       ".github/workflows/arm64-minimal-boot-record.yml"
@@ -2111,8 +1737,10 @@
       ".github/workflows/arm64-minimal-boot-iso.yml"
     ],
     "arm64/locks/package-plan/debian-arm64-map-normalized.json": [
-      ".github/workflows/arm64-package-acquisition-plan-v2.yml",
-      ".github/workflows/arm64-package-acquisition-plan.yml"
+      ".github/workflows/arm64-package-acquisition-plan-v2.yml"
+    ],
+    "arm64/locks/package-repository-wave1/LOCKSUMS.sh": [
+      ".github/workflows/arm64-package-repo-wave1.yml"
     ],
     "arm64/locks/qtbase-apt-source/LOCKSUMS.sh": [
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
@@ -2122,8 +1750,8 @@
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
+      ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
     "arm64/locks/reference/amd64-reference.json": [
@@ -2132,7 +1760,6 @@
       ".github/workflows/arm64-build-wave2-v1.yml",
       ".github/workflows/arm64-debian-map.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
@@ -2140,11 +1767,12 @@
       ".github/workflows/arm64-minimal-boot-iso.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml",
       ".github/workflows/arm64-normalize-package-map.yml",
+      ".github/workflows/arm64-package-repo-wave1.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-lock.yml",
       ".github/workflows/arm64-stage0-live-v2.yml",
       ".github/workflows/arm64-stage0-live-v3.yml",
@@ -2153,6 +1781,7 @@
       ".github/workflows/arm64-stage0-live.yml",
       ".github/workflows/arm64-stage0-minimal-v2.yml",
       ".github/workflows/arm64-stage0-minimal.yml",
+      ".github/workflows/arm64-static-audit.yml",
       ".github/workflows/arm64-vendor-binary-lock.yml",
       ".github/workflows/arm64-vendor-pool-source-lock.yml",
       ".github/workflows/arm64-vendor-source-archive-lock.yml",
@@ -2167,19 +1796,20 @@
     "arm64/locks/sources-api-baseline/source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-effective-source-lock.yml",
+      ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-lock.yml"
     ],
     "arm64/locks/sources/source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
-      ".github/workflows/arm64-source-authority-v3.yml"
+      ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml"
     ],
     "arm64/locks/stage0-minimal-v2/LOCKSUMS.sh": [
       ".github/workflows/arm64-stage0-minimal-v2.yml"
@@ -2210,21 +1840,22 @@
     ],
     "arm64/locks/vendor-binaries/vendor-binary-lock.json": [
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
-      ".github/workflows/arm64-package-acquisition-plan.yml"
+      ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
     "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
       ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
     ],
     "arm64/locks/wayback-sources/wayback-source-release-lock.json": [
-      ".github/workflows/arm64-source-authority-v3.yml"
+      ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml"
     ],
     "arm64/rebuild-batches.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml",
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/scripts/apply_reference_config_overlay.py": [
@@ -2254,17 +1885,9 @@
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/build_exact_arm64_rootfs.sh": [
-      ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-exact-rootfs.yml"
+      ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
-    "arm64/scripts/build_locked_dsc_source_arm64.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/build_locked_dsc_source_arm64_v2.sh": [
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/build_locked_source_arm64.sh": [
+    "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
       ".github/workflows/arm64-build-qtbase-targeted.yml",
@@ -2279,55 +1902,17 @@
       ".github/workflows/arm64-build-wave3.yml",
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
-      ".github/workflows/arm64-builder-v2-maintenance.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
+      ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml",
-      ".github/workflows/arm64-package-smoke.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
-    "arm64/scripts/build_locked_source_arm64_v2.sh": [
-      ".github/workflows/arm64-builder-v2-maintenance.yml",
-      ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
-    "arm64/scripts/build_locked_source_arm64_v3.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/build_locked_source_arm64_v4.sh": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/build_locked_source_arm64_v5.sh": [
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/build_package_acquisition_plan.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-package-acquisition-plan.yml",
-      ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
-    ],
     "arm64/scripts/build_package_acquisition_plan_v2.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml"
     ],
-    "arm64/scripts/build_package_acquisition_plan_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+    "arm64/scripts/build_package_acquisition_plan_v4.py": [
+      ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
     "arm64/scripts/build_stage0_live_iso.sh": [
       ".github/workflows/arm64-stage0-live-v2.yml",
@@ -2366,55 +1951,25 @@
     ],
     "arm64/scripts/classify_native_rebuild_failures.py": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
-    "arm64/scripts/classify_native_rebuild_failures_v2.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
-    ],
-    "arm64/scripts/collect_native_rebuild_results.py": [
+    "arm64/scripts/collect_native_rebuild_results_v2.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
+      ".github/workflows/arm64-dependency-retry-v2.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
-    "arm64/scripts/collect_native_rebuild_results_v2.py": [
-      ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
-    "arm64/scripts/configure_graphical_boot_gate.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
+      ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/filter_arm64_binary_lock.py": [
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
-    "arm64/scripts/finalize_arm64_live_rootfs.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-final-live-iso.yml",
-      ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      ".github/workflows/arm64-v2-normalization-maintenance.yml"
+    "arm64/scripts/filter_arm64_binary_lock_v2.py": [
+      ".github/workflows/arm64-static-audit.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-v2-normalization-maintenance.yml"
+      ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/inspect_lock_schemas.py": [
       ".github/workflows/arm64-lock-schema-audit.yml"
@@ -2431,33 +1986,18 @@
     "arm64/scripts/map_debian_arm64.py": [
       ".github/workflows/arm64-debian-map.yml"
     ],
-    "arm64/scripts/materialize_package_acquisition_plan.py": [
-      ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-exact-rootfs.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
-    ],
     "arm64/scripts/materialize_package_acquisition_plan_v2.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
+      ".github/workflows/arm64-exact-rootfs-v2.yml"
     ],
     "arm64/scripts/materialize_rebuild_dependency_repo.py": [
-      ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml"
+      ".github/workflows/arm64-dependency-retry-v2.yml"
     ],
     "arm64/scripts/materialize_rebuild_dependency_repo_v2.py": [
-      ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml"
+      ".github/workflows/arm64-dependency-retry-v2.yml"
     ],
     "arm64/scripts/merge_exact_source_authority_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v3.yml"
+      ".github/workflows/arm64-source-authority-v3.yml",
+      ".github/workflows/arm64-source-authority-v4.yml"
     ],
     "arm64/scripts/merge_exact_source_locks.py": [
       ".github/workflows/arm64-effective-source-lock.yml"
@@ -2469,18 +2009,7 @@
       ".github/workflows/arm64-build-gnome-control-center.yml",
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
-    "arm64/scripts/prepare_rebuild_release_assets.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-persistent-acquisition-maintenance.yml"
-    ],
     "arm64/scripts/prepare_rebuild_release_assets_v2.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-publish-rebuild-packages.yml"
     ],
     "arm64/scripts/probe_vendor_pool_sources.py": [
@@ -2495,12 +2024,7 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/publish_rebuild_packages_v3.py": [
-      ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/publish_rebuild_packages_v4.py": [
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
+      ".github/workflows/arm64-publish-rebuild-packages-v3.yml"
     ],
     "arm64/scripts/recover_vendor_sources_wayback.py": [
       ".github/workflows/arm64-wayback-source-recovery.yml"
@@ -2509,6 +2033,7 @@
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/scripts/resolve_source_apt.py": [
+      ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/scripts/resolve_source_git_seeded.py": [
@@ -2539,7 +2064,6 @@
       ".github/workflows/arm64-build-wave3.yml",
       ".github/workflows/arm64-build-wave4.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
-      ".github/workflows/arm64-package-smoke.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
@@ -2578,31 +2102,14 @@
     "arm64/scripts/select_baseline_reverification.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml"
     ],
-    "arm64/scripts/select_baseline_reverification_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
-    ],
     "arm64/scripts/select_dependency_retry_wave.py": [
-      ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml"
-    ],
-    "arm64/scripts/select_dependency_retry_wave_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-dependency-retry-v2.yml"
     ],
     "arm64/scripts/select_native_rebuild_batch.py": [
-      ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml"
-    ],
-    "arm64/scripts/select_native_rebuild_batch_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
     "arm64/scripts/select_next_native_rebuild_wave.py": [
       ".github/workflows/arm64-native-rebuild-backlog.yml"
-    ],
-    "arm64/scripts/select_next_native_rebuild_wave_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
-    ],
-    "arm64/scripts/source_authority_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
     ],
     "arm64/scripts/stage0_retry_patch.py": [
       ".github/workflows/arm64-stage0-live-v2.yml"
@@ -2635,13 +2142,9 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/test_arm64_installed_disk_qemu.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/validate_arm64_source_outputs_v3.py": [
@@ -2664,23 +2167,14 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
     ],
-    "arm64/scripts/verify_arm64_dsc_rebuild.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
-    ],
     "arm64/scripts/verify_arm64_rebuild.py": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-dependency-retry-v2.yml",
-      ".github/workflows/arm64-dependency-retry.yml",
       ".github/workflows/arm64-native-rebuild-backlog.yml",
-      ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      ".github/workflows/arm64-native-rebuild-batch.yml"
-    ],
-    "arm64/scripts/verify_arm64_rebuild_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml"
+      ".github/workflows/arm64-native-rebuild-batch-v2.yml"
     ],
     "arm64/scripts/verify_arm64_rootfs.py": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-exact-rootfs.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
@@ -2691,45 +2185,10 @@
       ".github/workflows/arm64-build-wave2.yml",
       ".github/workflows/arm64-build-wave3.yml",
       ".github/workflows/arm64-build-wave4.yml",
-      ".github/workflows/arm64-build-wave5-browser.yml",
-      ".github/workflows/arm64-package-smoke.yml"
+      ".github/workflows/arm64-build-wave5-browser.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
-    ],
-    "arm64/scripts/wire_graphical_boot_gate.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
-    "arm64/scripts/wire_graphical_boot_gate_v2.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
-    "arm64/scripts/wire_installed_boot_dispatch.py": [
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      ".github/workflows/arm64-wire-installed-boot-maintenance.yml"
-    ],
-    "arm64/scripts/wire_progress_dispatches.py": [
-      ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-      ".github/workflows/arm64-export-v2-consolidation.yml",
-      ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      ".github/workflows/arm64-final-consolidation-v2-maintenance.yml"
-    ],
-    "arm64/scripts/wire_source_authority_v3.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/wire_source_authority_v4.py": [
-      ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/scripts/wire_source_authority_v5.py": [
-      ".github/workflows/arm64-source-authority-v5-maintenance.yml"
-    ],
-    "arm64/status/curated-batches-launch.json": [
-      ".github/workflows/arm64-start-curated-batches.yml"
     ]
   },
   "errors": [
@@ -2739,41 +2198,10 @@
       "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-build-wave1-v4.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
       "path": ".github/workflows/arm64-build-wave2-v2.yml",
       "reason": "moving-or-non-sha-action-reference",
       "actions": [
-        "actions/download-artifact@v4",
         "actions/upload-artifact@ea165f8d65b6e75fa02"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-build-wave2-v3.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-chain-progress-maintenance-safe.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-debian-map.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
       ]
     },
     {
@@ -2782,36 +2210,14 @@
       "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-dependency-retry.yml",
+      "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
       "reason": "referenced-local-file-missing",
-      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+      "local_path": "arm64/locks/acquisition-plan/package-acquisition-plan.json"
     },
     {
-      "path": ".github/workflows/arm64-effective-source-lock.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-exact-rootfs.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-final-consolidation-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-final-consolidation-v2-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
+      "path": ".github/workflows/arm64-exact-rootfs-v2.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/acquisition-plan/summary.json"
     },
     {
       "path": ".github/workflows/arm64-final-live-iso.yml",
@@ -2844,16 +2250,14 @@
       "local_path": "arm64/locks/iso/release-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-inventory.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
+      "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/linux-apt-source/LOCKSUMS.sh"
     },
     {
-      "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
+      "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/linux-apt-source/apt-source-lock.json"
     },
     {
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
@@ -2901,31 +2305,24 @@
       "local_path": "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
     },
     {
-      "path": ".github/workflows/arm64-native-rebuild-backlog.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-native-rebuild-batch-v2.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
       "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
+      "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/debian-arm64/normalized-package-map.json"
     },
     {
-      "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
+      "path": ".github/workflows/arm64-package-acquisition-plan-v3.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
+    },
+    {
+      "path": ".github/workflows/arm64-package-repo-wave1.yml",
+      "reason": "referenced-local-file-missing",
+      "local_path": "arm64/locks/package-repository-wave1/LOCKSUMS.sh"
     },
     {
       "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
@@ -2943,51 +2340,9 @@
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/download-artifact@v4"
-      ]
-    },
-    {
       "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/rebuild-release/rebuild-release-lock.json"
-    },
-    {
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-rootfs-artifact-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-seed-source-lock.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v3-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
       "path": ".github/workflows/arm64-source-authority-v3.yml",
@@ -2995,13 +2350,9 @@
       "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
     },
     {
-      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
+      "path": ".github/workflows/arm64-source-authority-v4.yml",
       "reason": "referenced-local-file-missing",
-      "local_path": "arm64/scripts/publish_rebuild_packages_v3.py"
-    },
-    {
-      "path": ".github/workflows/arm64-source-authority-v5-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
+      "local_path": "arm64/locks/wayback-sources/wayback-source-release-lock.json"
     },
     {
       "path": ".github/workflows/arm64-stage0-live-v2.yml",
@@ -3049,47 +2400,6 @@
       "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json"
     },
     {
-      "path": ".github/workflows/arm64-start-curated-batches.yml",
-      "reason": "referenced-local-file-missing",
-      "local_path": "arm64/status/curated-batches-launch.json"
-    },
-    {
-      "path": ".github/workflows/arm64-upstream-probe.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-v2-normalization-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-vendor-binary-lock.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-vendor-pool-source-lock.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
-    },
-    {
-      "path": ".github/workflows/arm64-vendor-source-lock.yml",
-      "reason": "moving-or-non-sha-action-reference",
-      "actions": [
-        "actions/checkout@v4",
-        "actions/upload-artifact@v4"
-      ]
-    },
-    {
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/build-wave1-v3/LOCKSUMS.sh"
@@ -3118,50 +2428,6 @@
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "reason": "referenced-local-file-missing",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json"
-    },
-    {
-      "path": ".github/workflows/arm64-wire-installed-boot-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-dependency-retry.yml",
-      "reason": "superseded-workflow-still-present"
-    },
-    {
-      "path": ".github/workflows/arm64-exact-rootfs.yml",
-      "reason": "superseded-workflow-still-present"
-    },
-    {
-      "path": ".github/workflows/arm64-native-rebuild-batch.yml",
-      "reason": "superseded-workflow-still-present"
-    },
-    {
-      "path": ".github/workflows/arm64-package-acquisition-plan.yml",
-      "reason": "superseded-workflow-still-present"
-    },
-    {
-      "path": ".github/workflows/arm64-package-smoke.yml",
-      "reason": "superseded-workflow-still-present"
-    },
-    {
-      "path": "arm64/scripts/build_locked_source_arm64.sh",
-      "reason": "superseded-script-still-present"
-    },
-    {
-      "path": "arm64/scripts/build_package_acquisition_plan.py",
-      "reason": "superseded-script-still-present"
-    },
-    {
-      "path": "arm64/scripts/collect_native_rebuild_results.py",
-      "reason": "superseded-script-still-present"
-    },
-    {
-      "path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
-      "reason": "superseded-script-still-present"
-    },
-    {
-      "path": "arm64/scripts/prepare_rebuild_release_assets.py",
-      "reason": "superseded-script-still-present"
     }
   ],
   "warnings": []
