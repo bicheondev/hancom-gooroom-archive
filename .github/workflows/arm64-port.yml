@@ -10,13 +10,14 @@ on:
       - config/v3.3.json
       - scripts/inventory-amd64.sh
       - tools/parse-dpkg-status.py
+      - tools/resolve-source-lock.py
 
 permissions:
   contents: read
 
 concurrency:
   group: hancom-gooroom-v3.3-arm64-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   inventory-amd64:
@@ -46,3 +47,60 @@ jobs:
           path: build/inventory-v3.3-amd64
           if-no-files-found: error
           retention-days: 30
+
+  source-lock:
+    name: Match every vendor source to an exact GitHub commit
+    needs: inventory-amd64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+
+      - name: Download the authoritative AMD64 inventory
+        uses: actions/download-artifact@v4
+        with:
+          name: hancom-gooroom-v3.3-amd64-inventory
+          path: build/reference-amd64
+
+      - name: Resolve exact changelog versions across all source owners
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -m py_compile tools/resolve-source-lock.py
+          python3 tools/resolve-source-lock.py \
+            --config config/v3.3.json \
+            --sources build/reference-amd64/sources.amd64.tsv \
+            --output build/source-lock-v3.3
+
+      - name: Publish source audit summary
+        if: always()
+        run: |
+          if [[ -f build/source-lock-v3.3/source-audit-summary.json ]]; then
+            {
+              echo '## Exact source-version audit'
+              echo
+              echo '```json'
+              cat build/source-lock-v3.3/source-audit-summary.json
+              echo '```'
+              echo
+              echo '### Unresolved sources'
+              echo '```tsv'
+              cat build/source-lock-v3.3/unresolved-sources.tsv
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the immutable source lock and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-v3.3-source-lock
+          path: build/source-lock-v3.3
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Refuse ARM64 build when any source version is unverified
+        run: |
+          jq -e '.complete == true and .unresolved_source_count == 0' \
+            build/source-lock-v3.3/source-lock.json
