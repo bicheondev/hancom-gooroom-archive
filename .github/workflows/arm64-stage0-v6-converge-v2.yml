@@ -1,0 +1,264 @@
+name: ARM64 port - converge stage0 v6 through bounded repairs v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-v6-converge-v2.yml'
+      - 'arm64/scripts/repair_stage0_v6.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-v6-converge
+  cancel-in-progress: true
+
+jobs:
+  converge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install orchestration tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 jq
+          gh --version
+          python3 -m py_compile arm64/scripts/repair_stage0_v6.py
+
+      - name: Run bounded diagnose-repair-build loop
+        id: loop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/converge
+          stage0_path='.github/workflows/arm64-stage0-v6.yml'
+          max_attempts=4
+          success=false
+          successful_run=''
+
+          all_stage0_runs() {
+            gh api --paginate \
+              "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=arm64-port&per_page=100" \
+              --jq ".workflow_runs[] | select(.path == \"${stage0_path}\")"
+          }
+
+          latest_stage0_run() {
+            all_stage0_runs | jq -s 'sort_by(.created_at, .id) | reverse | .[0]'
+          }
+
+          wait_until_completed() {
+            local run_id="$1"
+            local destination="$2"
+            for _ in $(seq 1 720); do
+              gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" > "$destination"
+              if [ "$(jq -r '.status' "$destination")" = completed ]; then
+                return 0
+              fi
+              sleep 15
+            done
+            return 1
+          }
+
+          wait_for_run_after_sha() {
+            local expected_sha="$1"
+            local destination="$2"
+            local run_id=''
+            for _ in $(seq 1 240); do
+              run_id="$(all_stage0_runs \
+                | jq -s --arg sha "$expected_sha" \
+                  '[.[] | select(.head_sha == $sha)] | sort_by(.created_at, .id) | reverse | .[0].id // empty')"
+              if [ -n "$run_id" ]; then break; fi
+              sleep 5
+            done
+            test -n "$run_id"
+            wait_until_completed "$run_id" "$destination"
+            printf '%s\n' "$run_id"
+          }
+
+          current="$(latest_stage0_run)"
+          current_id="$(jq -r '.id // empty' <<<"$current")"
+          current_status="$(jq -r '.status // empty' <<<"$current")"
+          test -n "$current_id" || {
+            echo 'No stage0-v6 run exists. Touching the builder to trigger the push workflow.' >&2
+            printf '\n# convergence trigger %s\n' "$GITHUB_RUN_ID" \
+              >> arm64/scripts/build_stage0_v6.py
+            python3 -m py_compile arm64/scripts/build_stage0_v6.py
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add arm64/scripts/build_stage0_v6.py
+            git commit -m "Trigger initial stage0 v6 build from convergence ${GITHUB_RUN_ID}"
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+            pushed_sha="$(git rev-parse HEAD)"
+            current_id="$(wait_for_run_after_sha "$pushed_sha" work/converge/current-run.json)"
+            current="$(cat work/converge/current-run.json)"
+            current_status=completed
+          }
+
+          if [ "$current_status" != completed ]; then
+            wait_until_completed "$current_id" work/converge/current-run.json
+          else
+            printf '%s\n' "$current" > work/converge/current-run.json
+          fi
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            run_json="work/converge/run-${attempt}.json"
+            cp work/converge/current-run.json "$run_json"
+            run_id="$(jq -r '.id' "$run_json")"
+            conclusion="$(jq -r '.conclusion // empty' "$run_json")"
+            echo "attempt=${attempt} run=${run_id} conclusion=${conclusion}"
+
+            if [ "$conclusion" = success ]; then
+              success=true
+              successful_run="$run_id"
+              break
+            fi
+
+            attempt_dir="work/converge/attempt-${attempt}"
+            mkdir -p "$attempt_dir"
+            cp "$run_json" "$attempt_dir/run.json"
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+              > "$attempt_dir/jobs.json"
+            set +e
+            gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --log-failed \
+              > "$attempt_dir/failed.log" 2>&1
+            printf '%s\n' "$?" > "$attempt_dir/log-exit-code.txt"
+            set -e
+
+            python3 arm64/scripts/repair_stage0_v6.py \
+              --log "$attempt_dir/failed.log" \
+              --builder arm64/scripts/build_stage0_v6.py \
+              --workflow .github/workflows/arm64-stage0-v6.yml \
+              --attempt "$attempt" \
+              --output "$attempt_dir/repair-report.json"
+
+            changed="$(jq -r '.changed' "$attempt_dir/repair-report.json")"
+            blockers="$(jq -r '.boot_critical_missing_packages | length' "$attempt_dir/repair-report.json")"
+            if [ "$blockers" -ne 0 ]; then
+              echo 'A boot-critical package is unavailable; refusing unsafe removal.' >&2
+              break
+            fi
+            if [ "$changed" != true ]; then
+              echo 'No bounded safe repair matched this failure.' >&2
+              break
+            fi
+
+            python3 -m py_compile \
+              arm64/scripts/build_stage0_v6.py \
+              arm64/scripts/repair_stage0_v6.py
+
+            audit_destination="arm64/audit/stage0-v6-converge/${GITHUB_RUN_ID}/attempt-${attempt}"
+            mkdir -p "$audit_destination"
+            cp "$attempt_dir/run.json" "$audit_destination/"
+            cp "$attempt_dir/jobs.json" "$audit_destination/"
+            cp "$attempt_dir/repair-report.json" "$audit_destination/"
+            tail -n 1800 "$attempt_dir/failed.log" > "$audit_destination/failed-tail.log" || true
+
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add arm64/scripts/build_stage0_v6.py \
+              .github/workflows/arm64-stage0-v6.yml "$audit_destination"
+            git commit -m "Apply bounded stage0 v6 repair attempt ${attempt} from run ${run_id}"
+            for push_attempt in 1 2 3 4 5; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then break; fi
+              if [ "$push_attempt" -eq 5 ]; then exit 1; fi
+              sleep $((push_attempt * 3))
+            done
+
+            pushed_sha="$(git rev-parse HEAD)"
+            next_json="work/converge/next-run-${attempt}.json"
+            next_id="$(wait_for_run_after_sha "$pushed_sha" "$next_json")"
+            cp "$next_json" work/converge/current-run.json
+            echo "triggered_run=$next_id head_sha=$pushed_sha"
+          done
+
+          jq -n \
+            --argjson success "$success" \
+            --arg successful_run "$successful_run" \
+            --argjson max_attempts "$max_attempts" \
+            '{
+              schema:1,
+              policy:"bounded-stage0-v6-convergence-v2",
+              success:$success,
+              successful_run_id:$successful_run,
+              maximum_repair_attempts:$max_attempts
+            }' > work/converge/summary.json
+          echo "success=$success" >> "$GITHUB_OUTPUT"
+          echo "successful_run=$successful_run" >> "$GITHUB_OUTPUT"
+          cat work/converge/summary.json
+
+      - name: Download and verify successful stage0 release assets
+        if: steps.loop.outputs.success == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/converge/release
+          for _ in $(seq 1 60); do
+            if gh release view v3.3-arm64-stage0-v6 \
+              --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then break; fi
+            sleep 5
+          done
+          gh release download v3.3-arm64-stage0-v6 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso*' \
+            --dir work/converge/release
+          cd work/converge/release
+          test -s Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso
+          test "$(stat -c '%s' Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso)" -gt 104857600
+          sha256sum --check Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso.sha256
+
+      - name: Upload complete convergence evidence and any real ISO
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stage0-v6-convergence-v2-${{ github.run_id }}
+          path: work/converge
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit convergence summary
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/audit/stage0-v6-converge/${GITHUB_RUN_ID}"
+          mkdir -p "$destination"
+          cp work/converge/summary.json "$destination/" 2>/dev/null || true
+          if [ -f work/converge/release/Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso.sha256 ]; then
+            cp work/converge/release/Hancom-Gooroom-3.3-arm64-stage0-v6.hybrid.iso.sha256 "$destination/"
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record stage0 v6 convergence v2 run ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce convergence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.success == true' work/converge/summary.json
