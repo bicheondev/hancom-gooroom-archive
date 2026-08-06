@@ -7,9 +7,11 @@ on:
       - '.github/workflows/arm64-port-coverage.yml'
       - 'arm64/scripts/report_arm64_port_coverage.py'
       - 'arm64/rebuild-batches.json'
+      - 'arm64/source-recovery-blockers.json'
       - 'arm64/locks/reference/**'
       - 'arm64/locks/sources-api-baseline/**'
       - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/effective-sources-v3/**'
       - 'arm64/locks/rebuild-results/**'
   workflow_dispatch:
 
@@ -39,12 +41,18 @@ jobs:
           if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
             lock=arm64/locks/effective-sources/effective-source-lock.json
           fi
+          if [ -f arm64/locks/effective-sources-v3/effective-source-lock.json ]; then
+            lock=arm64/locks/effective-sources-v3/effective-source-lock.json
+          fi
+          test -f "$lock"
+          test -f arm64/source-recovery-blockers.json
           rm -rf work/port-coverage
           python3 arm64/scripts/report_arm64_port_coverage.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --source-lock "$lock" \
             --rebuild-plan arm64/rebuild-batches.json \
             --rebuild-results arm64/locks/rebuild-results \
+            --source-recovery-blockers arm64/source-recovery-blockers.json \
             --output-dir work/port-coverage
           find work/port-coverage -type f ! -name LOCKSUMS.sha256 -print0 \
             | sort -z \
@@ -54,8 +62,15 @@ jobs:
           {
             echo '## Hancom Gooroom 3.3 ARM64 package-layer coverage'
             echo
+            echo "- Source authority: \`$lock\`"
+            echo
             echo '```json'
             cat work/port-coverage/summary.json
+            echo '```'
+            echo
+            echo '### Source recovery required'
+            echo '```json'
+            cat work/port-coverage/source-recovery-required.json
             echo '```'
             echo
             echo '### Source blockers'
