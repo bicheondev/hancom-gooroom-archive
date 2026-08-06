@@ -1,0 +1,48 @@
+name: Hancom Gooroom 3.3 ARM64 port
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/arm64-v3.3-port
+    paths:
+      - .github/workflows/arm64-port.yml
+      - config/v3.3.json
+      - scripts/inventory-amd64.sh
+      - tools/parse-dpkg-status.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-v3.3-arm64-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  inventory-amd64:
+    name: Lock and inventory the AMD64 reference ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@v4
+
+      - name: Install image inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            jq xorriso squashfs-tools
+
+      - name: Extract immutable AMD64 package and source-version inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/inventory-amd64.sh config/v3.3.json build/inventory-v3.3-amd64
+
+      - name: Upload the version lock and inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: hancom-gooroom-v3.3-amd64-inventory
+          path: build/inventory-v3.3-amd64
+          if-no-files-found: error
+          retention-days: 30
