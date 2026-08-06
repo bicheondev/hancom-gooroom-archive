@@ -12,25 +12,55 @@ BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64.sh"
 PATCHED_BUILDER="$(mktemp)"
 trap 'rm -f "$PATCHED_BUILDER"' EXIT
 
-# mk-build-deps names its generated binary package either
-#   <source>-build-deps_<version>_<arch>.deb
-# or
-#   <source>-build-deps-depends_<version>_<arch>.deb
-# depending on the devscripts/equivs generation. The original strict glob only
-# accepted the first form and stopped immediately after a successful dummy
-# package build. Patch exactly that compatibility point while preserving the
-# locked source, snapshot, commit/tree, and output validation logic unchanged.
+# Old Bullseye devscripts/equivs has two compatibility quirks:
+#
+# 1. The generated package can be named either
+#      <source>-build-deps_<version>_<arch>.deb
+#    or
+#      <source>-build-deps-depends_<version>_<arch>.deb
+# 2. Some revisions return a non-zero status after successfully writing the
+#    dummy package. Treat that return code as fatal only when no package exists.
+#
+# Patch only these compatibility points. Exact source/version, commit/tree,
+# Debian snapshot, output architecture, and package validation remain unchanged.
 python3 - "$BASE_BUILDER" "$PATCHED_BUILDER" <<'PY'
 from pathlib import Path
 import sys
 
 source = Path(sys.argv[1]).read_text(encoding="utf-8")
-old = "-name '*-build-deps_*.deb'"
-new = "-name '*-build-deps*.deb'"
-count = source.count(old)
-if count != 1:
-    raise SystemExit(f"expected exactly one build-deps glob, found {count}")
-Path(sys.argv[2]).write_text(source.replace(old, new), encoding="utf-8")
+
+old_glob = "-name '*-build-deps_*.deb'"
+new_glob = "-name '*-build-deps*.deb'"
+if source.count(old_glob) != 1:
+    raise SystemExit(
+        f"expected exactly one strict build-deps glob, found {source.count(old_glob)}"
+    )
+source = source.replace(old_glob, new_glob)
+
+old_command = """mk-build-deps --build-dep debian/control
+DUMMY_PACKAGE=\"$(find . -maxdepth 1 -type f -name '*-build-deps*.deb' -print -quit)\"
+[ -n \"$DUMMY_PACKAGE\" ]
+"""
+new_command = """set +e
+mk-build-deps --build-dep debian/control
+MK_BUILD_DEPS_RC=$?
+set -e
+DUMMY_PACKAGE=\"$(find . -maxdepth 1 -type f -name '*-build-deps*.deb' -print -quit)\"
+if [ -z \"$DUMMY_PACKAGE\" ]; then
+  echo \"mk-build-deps produced no dependency package (exit $MK_BUILD_DEPS_RC)\" >&2
+  exit \"$MK_BUILD_DEPS_RC\"
+fi
+if [ \"$MK_BUILD_DEPS_RC\" -ne 0 ]; then
+  echo \"mk-build-deps returned $MK_BUILD_DEPS_RC after creating $DUMMY_PACKAGE; continuing with explicit APT validation\" >&2
+fi
+"""
+if source.count(old_command) != 1:
+    raise SystemExit(
+        f"expected exactly one mk-build-deps block, found {source.count(old_command)}"
+    )
+source = source.replace(old_command, new_command)
+
+Path(sys.argv[2]).write_text(source, encoding="utf-8")
 PY
 
 chmod +x "$PATCHED_BUILDER"
