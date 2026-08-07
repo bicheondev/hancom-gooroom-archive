@@ -43,19 +43,43 @@ jobs:
           esac
           docker version
           docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          free -h
           df -h
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             git jq dpkg-dev ca-certificates file python3
+
+      - name: Provision bounded swap for the heavyweight native compile
+        shell: bash
+        run: |
+          set -euxo pipefail
+          swap_file=/mnt/hancom-gooroom-browser.swap
+          total_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
+          available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
+          if [ "$total_swap_mb" -lt 2048 ] && [ "$available_mb" -ge 12288 ]; then
+            sudo rm -f "$swap_file"
+            sudo fallocate -l 4G "$swap_file"
+            sudo chmod 600 "$swap_file"
+            if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
+              sudo sysctl -w vm.swappiness=15 || true
+            else
+              sudo rm -f "$swap_file"
+            fi
+          fi
+          free -h
+          sudo swapon --show || true
+          df -h / /mnt
 
       - name: Build exact locked Gooroom browser source for ARM64
         env:
           HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
           HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
+          HANCOM_GOOROOM_BUILD_JOBS: '1'
           SOURCE_NAME: gooroom-browser
         run: |
           set -euxo pipefail
+          ulimit -c 0
           chmod +x \
             arm64/scripts/build_locked_source_arm64_v2.sh \
             arm64/scripts/run_locked_source_arm64.sh \
@@ -63,6 +87,19 @@ jobs:
             arm64/scripts/prepare_composite_source_chroot.sh \
             arm64/scripts/verify_locked_arm64_build.sh
           rm -rf work/gooroom-browser-arm64
+
+          heartbeat() {
+            while sleep 60; do
+              echo "=== browser build heartbeat $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+              free -h
+              df -h / /mnt
+              docker stats --no-stream || true
+            done
+          }
+          heartbeat &
+          heartbeat_pid=$!
+          trap 'kill "$heartbeat_pid" 2>/dev/null || true' EXIT
+
           arm64/scripts/run_locked_source_arm64_component_compat.sh \
             arm64/locks/effective-sources/effective-source-lock.json \
             gooroom-browser \
