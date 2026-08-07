@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 132,
-    "workflow_name_count": 132,
-    "referenced_local_file_count": 206,
+    "workflow_count": 133,
+    "workflow_name_count": 133,
+    "referenced_local_file_count": 208,
     "error_count": 0,
     "warning_count": 38,
     "passed": true
@@ -363,6 +363,24 @@
         "arm64/scripts/build_locked_apt_source_arm64.sh",
         "arm64/scripts/build_locked_apt_source_arm64_v2.sh",
         "arm64/scripts/verify_deb_payload_machine.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-reconstructed-libsecurity-extensions-v2.yml",
+      "path": ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml",
+      "name": "ARM64 port - build reconstructed exact libsecurity extensions",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh",
+        "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py"
       ]
     },
     {
@@ -3111,6 +3129,9 @@
     "arm64/scripts/build_package_acquisition_plan_v4.py": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml"
     ],
+    "arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh": [
+      ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
+    ],
     "arm64/scripts/build_recovered_exact_arm64_rootfs.sh": [
       ".github/workflows/arm64-build-recovered-exact-rootfs.yml"
     ],
@@ -3286,6 +3307,9 @@
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
+    ],
+    "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py": [
+      ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
     ],
     "arm64/scripts/recover_exact_arm64_package_pool.py": [
       ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
