@@ -6,12 +6,14 @@ on:
     paths:
       - '.github/workflows/arm64-port-coverage.yml'
       - 'arm64/scripts/report_arm64_port_coverage.py'
+      - 'arm64/scripts/merge_reconstructed_source_locks.py'
       - 'arm64/rebuild-batches.json'
       - 'arm64/source-recovery-blockers.json'
       - 'arm64/locks/reference/**'
       - 'arm64/locks/sources-api-baseline/**'
       - 'arm64/locks/effective-sources/**'
       - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/locks/reconstructed-sources/**'
       - 'arm64/locks/rebuild-results/**'
   workflow_dispatch:
 
@@ -37,16 +39,28 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          lock=arm64/locks/sources-api-baseline/source-lock.json
+          base_lock=arm64/locks/sources-api-baseline/source-lock.json
           if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
-            lock=arm64/locks/effective-sources/effective-source-lock.json
+            base_lock=arm64/locks/effective-sources/effective-source-lock.json
           fi
           if [ -f arm64/locks/effective-sources-v3/effective-source-lock.json ]; then
-            lock=arm64/locks/effective-sources-v3/effective-source-lock.json
+            base_lock=arm64/locks/effective-sources-v3/effective-source-lock.json
           fi
-          test -f "$lock"
+          test -f "$base_lock"
           test -f arm64/source-recovery-blockers.json
-          rm -rf work/port-coverage
+
+          rm -rf work/port-coverage work/effective-source-lock.json
+          mkdir -p work
+          lock="$base_lock"
+          reconstructed=arm64/locks/reconstructed-sources/source-locks.json
+          if [ -f "$reconstructed" ]; then
+            python3 arm64/scripts/merge_reconstructed_source_locks.py \
+              --base-lock "$base_lock" \
+              --reconstructed-locks "$reconstructed" \
+              --output work/effective-source-lock.json
+            lock=work/effective-source-lock.json
+          fi
+
           python3 arm64/scripts/report_arm64_port_coverage.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --source-lock "$lock" \
@@ -63,6 +77,7 @@ jobs:
             echo '## Hancom Gooroom 3.3 ARM64 package-layer coverage'
             echo
             echo "- Source authority: \`$lock\`"
+            echo "- Base authority: \`$base_lock\`"
             echo
             echo '```json'
             cat work/port-coverage/summary.json
@@ -102,8 +117,6 @@ jobs:
           mkdir -p "$coverage_dir" arm64/status
           cp -a work/port-coverage/. "$coverage_dir/"
 
-          # Keep stable top-level convenience files while preserving independent
-          # directories such as arm64/status/rebuild-failures.
           for name in \
             summary.json \
             coverage.json \
