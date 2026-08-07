@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-07T03:50:14.297963Z",
+  "generated_at": "2026-08-07T03:55:51.488535Z",
   "status": "failed",
   "python": [
     {
@@ -1126,7 +1126,7 @@
     {
       "path": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704cb2f0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704c9dc0>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aaaf90>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aab740>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
@@ -1147,12 +1147,12 @@
     {
       "path": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704c8260>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704cab40>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aa9880>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aa8740>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704c9b80>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704ca060>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aa99d0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aa8650>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6.yml",
@@ -3187,7 +3187,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-07T03:50:15.408384Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-07T03:55:52.326708Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -3197,13 +3197,13 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-07T03:50:15.448602Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-07T03:55:52.359051Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
   "issues": [
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704cb2f0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704c9dc0>)",
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704c8260>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704cab40>)",
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f58704c9b80>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f58704ca060>)"
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aaaf90>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aab740>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aa9880>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aa8740>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f8937aa99d0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f8937aa8650>)"
   ]
 }
