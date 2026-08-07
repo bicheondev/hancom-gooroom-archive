@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 125,
-    "workflow_name_count": 125,
-    "referenced_local_file_count": 201,
+    "workflow_count": 126,
+    "workflow_name_count": 126,
+    "referenced_local_file_count": 202,
     "error_count": 9,
     "warning_count": 38,
     "passed": false
@@ -2346,6 +2346,23 @@
       ]
     },
     {
+      "filename": "arm64-summarize-recovered-package-blockers.yml",
+      "path": ".github/workflows/arm64-summarize-recovered-package-blockers.yml",
+      "name": "ARM64 port - summarize recovered package blockers",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/summarize_recovered_package_blockers.py"
+      ]
+    },
+    {
       "filename": "arm64-upstream-probe.yml",
       "path": ".github/workflows/arm64-upstream-probe.yml",
       "name": "ARM64 port - probe archived upstream repositories",
@@ -3315,6 +3332,9 @@
     ],
     "arm64/scripts/summarize_arm64_port_coverage_v2.py": [
       ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
+    "arm64/scripts/summarize_recovered_package_blockers.py": [
+      ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
