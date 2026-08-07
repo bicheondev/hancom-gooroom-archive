@@ -1,20 +1,19 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-06T13:40:54Z",
+    "generated_at": "2026-08-07T11:44:02Z",
     "branch": "arm64-port",
-    "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
+    "head_sha": "fa354738879ddb5d7a76cbf20823eba366b792ee",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 12,
-      "in_progress": 5,
-      "no-run": 82,
-      "pending": 1
+      "completed": 7,
+      "in_progress": 1,
+      "no-run": 92
     },
     "latest_run_conclusion_counts": {
-      "failure": 2,
-      "none": 88,
-      "success": 10
+      "failure": 4,
+      "none": 93,
+      "success": 3
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -37,18 +36,29 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328622069,
-      "name": ".github/workflows/arm64-prioritize-current-retry-maintenance.yml",
-      "path": ".github/workflows/arm64-prioritize-current-retry-maintenance.yml",
+      "workflow_id": 328833901,
+      "name": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
+      "path": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
       "state": "active",
       "latest_run": null
     },
     {
-      "workflow_id": 328585875,
-      "name": ".github/workflows/arm64-repair-git-builder-v2.yml",
-      "path": ".github/workflows/arm64-repair-git-builder-v2.yml",
+      "workflow_id": 329239402,
+      "name": ".github/workflows/arm64-patch-libsecurity-reconstruction-build-deps.yml",
+      "path": ".github/workflows/arm64-patch-libsecurity-reconstruction-build-deps.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31171529119,
+        "run_number": 2,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "bdf53c04ff230d57e411dfb91185a3211794ce45",
+        "created_at": "2026-08-07T10:48:09Z",
+        "updated_at": "2026-08-07T10:48:19Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31171529119",
+        "display_title": "Fix libsecurity dependency patch workflow syntax"
+      }
     },
     {
       "workflow_id": 328569987,
@@ -58,9 +68,30 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328526995,
-      "name": "ARM64 port - aggregate committed state evidence",
-      "path": ".github/workflows/arm64-port-state-audit.yml",
+      "workflow_id": 329152691,
+      "name": "ARM64 port - analyze libsecurity XSM history",
+      "path": ".github/workflows/arm64-analyze-libsecurity-xsm-history.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329028336,
+      "name": "ARM64 port - apply firmware-aware package recovery policy",
+      "path": ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329038692,
+      "name": "ARM64 port - apply user-aware source archaeology policy",
+      "path": ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329037044,
+      "name": "ARM64 port - archaeology exact sources for remaining blockers",
+      "path": ".github/workflows/arm64-archaeology-recovered-package-blockers.yml",
       "state": "active",
       "latest_run": null
     },
@@ -72,21 +103,28 @@
       "latest_run": null
     },
     {
+      "workflow_id": 328672033,
+      "name": "ARM64 port - assemble final exact live ISO v2",
+      "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 328533078,
       "name": "ARM64 port - audit active v2 pipeline graph",
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31107048432,
-        "run_number": 196,
+        "id": 31175157834,
+        "run_number": 336,
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
-        "created_at": "2026-08-06T13:40:35Z",
-        "updated_at": "2026-08-06T13:40:39Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048432",
-        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "6917c4ff4ddeaae267b8be4b919e0b21b7525ebb",
+        "created_at": "2026-08-07T11:42:33Z",
+        "updated_at": "2026-08-07T11:42:48Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31175157834",
+        "display_title": "Lock the verified XSM and GRAC ARM64 security stack"
       }
     },
     {
@@ -115,18 +153,7 @@
       "name": "ARM64 port - audit generated lock schemas",
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106550713,
-        "run_number": 5,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:34:50Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550713",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328539039,
@@ -136,9 +163,66 @@
       "latest_run": null
     },
     {
+      "workflow_id": 329204773,
+      "name": "ARM64 port - bootstrap audited finalizer compatibility",
+      "path": ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329135446,
+      "name": "ARM64 port - bridge exact artifacts into package recovery",
+      "path": ".github/workflows/arm64-bridge-exact-artifacts-to-recovery.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329262737,
+      "name": "ARM64 port - build Gooroom libsecurity extensions v1",
+      "path": ".github/workflows/arm64-build-gooroom-libsecurity-extensions-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31174263886,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "d86a0e633b2f92f77b37e98d461e70944032e0e3",
+        "created_at": "2026-08-07T11:29:11Z",
+        "updated_at": "2026-08-07T11:29:39Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31174263886",
+        "display_title": "Build and verify Gooroom XSM as an ARM64 Debian package"
+      }
+    },
+    {
+      "workflow_id": 329267215,
+      "name": "ARM64 port - build Gooroom resource access control v1",
+      "path": ".github/workflows/arm64-build-gooroom-resource-access-control-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31174920769,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "2c571553bc80ae4893d49e357413eb3d114ad8b5",
+        "created_at": "2026-08-07T11:39:00Z",
+        "updated_at": "2026-08-07T11:39:43Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31174920769",
+        "display_title": "Build GRAC on ARM64 and verify the XSM runtime contract"
+      }
+    },
+    {
       "workflow_id": 328523159,
       "name": "ARM64 port - build and record exact package wave 1 v4",
       "path": ".github/workflows/arm64-build-wave1-v4.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329018868,
+      "name": "ARM64 port - build audited architecture replacements",
+      "path": ".github/workflows/arm64-build-arch-replacements.yml",
       "state": "active",
       "latest_run": null
     },
@@ -147,41 +231,26 @@
       "name": "ARM64 port - build control center with exact accountsservice",
       "path": ".github/workflows/arm64-build-gnome-control-center.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31105972462,
-        "run_number": 5,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "40f5d94f8408bb2ff35f7386c8a41843f93deabc",
-        "created_at": "2026-08-06T13:27:07Z",
-        "updated_at": "2026-08-06T13:28:49Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972462",
-        "display_title": "Use exact locked Snapshot pool fallback for composite source members"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328476660,
       "name": "ARM64 port - build exact Gooroom browser",
       "path": ".github/workflows/arm64-build-wave5-browser.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31107059548,
-        "run_number": 14,
-        "event": "push",
-        "status": "pending",
-        "conclusion": null,
-        "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
-        "created_at": "2026-08-06T13:40:44Z",
-        "updated_at": "2026-08-06T13:40:44Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107059548",
-        "display_title": "Route Chromium 111 source recovery through exact hash-locked Snapshot…"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328564306,
       "name": "ARM64 port - build exact QtBase for ARM64",
       "path": ".github/workflows/arm64-build-qtbase.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329052934,
+      "name": "ARM64 port - build exact libsecurity extensions",
+      "path": ".github/workflows/arm64-build-libsecurity-extensions.yml",
       "state": "active",
       "latest_run": null
     },
@@ -263,21 +332,35 @@
       "latest_run": null
     },
     {
+      "workflow_id": 328669038,
+      "name": "ARM64 port - build final exact ARM64 rootfs v2",
+      "path": ".github/workflows/arm64-build-final-rootfs-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 328527325,
       "name": "ARM64 port - build persistent exact package acquisition plan v2",
       "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329236157,
+      "name": "ARM64 port - build reconstructed exact libsecurity extensions",
+      "path": ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml",
+      "state": "active",
       "latest_run": {
-        "id": 31106550692,
-        "run_number": 15,
-        "event": "push",
+        "id": 31171640445,
+        "run_number": 2,
+        "event": "workflow_dispatch",
         "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:34:39Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550692",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
+        "conclusion": "success",
+        "head_sha": "f276aa11e0226178c77c741e20f33842e5fad627",
+        "created_at": "2026-08-07T10:49:51Z",
+        "updated_at": "2026-08-07T10:51:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31171640445",
+        "display_title": "ARM64 port - build reconstructed exact libsecurity extensions"
       }
     },
     {
@@ -295,47 +378,11 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328632711,
-      "name": "ARM64 port - build verified recovery stage-0 ISO",
-      "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
+      "workflow_id": 328650309,
+      "name": "ARM64 port - build recovered exact DSC sources v2",
+      "path": ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
       "state": "active",
       "latest_run": null
-    },
-    {
-      "workflow_id": 328565048,
-      "name": "ARM64 port - classify exact-source rebuild failures v3",
-      "path": ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31106551003,
-        "run_number": 7,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:34:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106551003",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
-      }
-    },
-    {
-      "workflow_id": 328537179,
-      "name": "ARM64 port - classify native rebuild failures",
-      "path": ".github/workflows/arm64-rebuild-failure-audit.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31106808442,
-        "run_number": 21,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "dad9e2a2fc22691f9af33e7fc19b34bee5001c27",
-        "created_at": "2026-08-06T13:37:34Z",
-        "updated_at": "2026-08-06T13:37:52Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106808442",
-        "display_title": "ARM64 port - classify native rebuild failures"
-      }
     },
     {
       "workflow_id": 328449024,
@@ -345,22 +392,64 @@
       "latest_run": null
     },
     {
+      "workflow_id": 329199036,
+      "name": "ARM64 port - converge pending pipeline maintenance",
+      "path": ".github/workflows/arm64-converge-pipeline-maintenance.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329047780,
+      "name": "ARM64 port - dispatch browser after composite jq fix",
+      "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329241005,
+      "name": "ARM64 port - dispatch reconstructed libsecurity rerun",
+      "path": ".github/workflows/arm64-dispatch-libsecurity-reconstruction-rerun.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31171635835,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "f276aa11e0226178c77c741e20f33842e5fad627",
+        "created_at": "2026-08-07T10:49:47Z",
+        "updated_at": "2026-08-07T10:49:53Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31171635835",
+        "display_title": "Dispatch reconstructed libsecurity ARM64 rerun"
+      }
+    },
+    {
+      "workflow_id": 329149581,
+      "name": "ARM64 port - dispatch recovery after control center build",
+      "path": ".github/workflows/arm64-dispatch-recovery-after-gnome-control-center.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329053114,
+      "name": "ARM64 port - dispatch resolved exact source builds",
+      "path": ".github/workflows/arm64-dispatch-resolved-source-builds.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329039905,
+      "name": "ARM64 port - dispatch user-aware source archaeology",
+      "path": ".github/workflows/arm64-dispatch-source-archaeology.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 328517066,
       "name": "ARM64 port - drain exact-source native rebuild backlog",
       "path": ".github/workflows/arm64-native-rebuild-backlog.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106550752,
-        "run_number": 13,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:34:33Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550752",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328612712,
@@ -384,24 +473,6 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328566881,
-      "name": "ARM64 port - exact authority and phase coverage v2",
-      "path": ".github/workflows/arm64-port-coverage-v2.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31106777912,
-        "run_number": 11,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "3035a86b8b968817241b6902acc41fc05a9e0c34",
-        "created_at": "2026-08-06T13:37:12Z",
-        "updated_at": "2026-08-06T13:37:24Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106777912",
-        "display_title": "ARM64 port - exact authority and phase coverage v2"
-      }
-    },
-    {
       "workflow_id": 328565754,
       "name": "ARM64 port - exact dependency retry controller v3",
       "path": ".github/workflows/arm64-dependency-retry-controller-v3.yml",
@@ -423,9 +494,9 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328529544,
-      "name": "ARM64 port - extend state audit to targeted source builds",
-      "path": ".github/workflows/arm64-repair-audit-coverage.yml",
+      "workflow_id": 328765768,
+      "name": "ARM64 port - extract exact blocker binary provenance",
+      "path": ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
       "state": "active",
       "latest_run": null
     },
@@ -451,16 +522,23 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328511844,
-      "name": "ARM64 port - finalize rebuild workflow normalization",
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance-v2.yml",
+      "workflow_id": 328533579,
+      "name": "ARM64 port - finalize single v2 execution path",
+      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
       "state": "active",
       "latest_run": null
     },
     {
-      "workflow_id": 328533579,
-      "name": "ARM64 port - finalize single v2 execution path",
-      "path": ".github/workflows/arm64-final-cleanup-maintenance-v3.yml",
+      "workflow_id": 329046752,
+      "name": "ARM64 port - fix composite source jq object merges",
+      "path": ".github/workflows/arm64-fix-composite-source-jq.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 329201124,
+      "name": "ARM64 port - fix convergence workflow retry",
+      "path": ".github/workflows/arm64-fix-convergence-v2.yml",
       "state": "active",
       "latest_run": null
     },
@@ -472,22 +550,25 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328523233,
-      "name": "ARM64 port - lint and audit pipeline",
-      "path": ".github/workflows/arm64-pipeline-lint.yml",
+      "workflow_id": 329133663,
+      "name": "ARM64 port - fix exact artifact recovery filter",
+      "path": ".github/workflows/arm64-fix-recovery-exact-artifact-filter.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31107048482,
-        "run_number": 253,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
-        "created_at": "2026-08-06T13:40:35Z",
-        "updated_at": "2026-08-06T13:40:45Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048482",
-        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
-      }
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328805108,
+      "name": "ARM64 port - fix paginated API evidence collection",
+      "path": ".github/workflows/arm64-pagination-maintenance.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328653184,
+      "name": "ARM64 port - index verified rebuild results v2",
+      "path": ".github/workflows/arm64-index-rebuild-results-v2.yml",
+      "state": "active",
+      "latest_run": null
     },
     {
       "workflow_id": 328424946,
@@ -497,18 +578,22 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328561429,
-      "name": "ARM64 port - lock deterministic source rebuild plan",
-      "path": ".github/workflows/arm64-rebuild-plan.yml",
+      "workflow_id": 329268994,
+      "name": "ARM64 port - lock verified XSM and GRAC security stack v1",
+      "path": ".github/workflows/arm64-lock-xsm-grac-security-stack-v1.yml",
       "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328615977,
-      "name": "ARM64 port - lock non-vendor Architecture all assets",
-      "path": ".github/workflows/arm64-repair-debian-all-asset-mapping.yml",
-      "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31175157880,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "6917c4ff4ddeaae267b8be4b919e0b21b7525ebb",
+        "created_at": "2026-08-07T11:42:33Z",
+        "updated_at": "2026-08-07T11:42:44Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31175157880",
+        "display_title": "Lock the verified XSM and GRAC ARM64 security stack"
+      }
     },
     {
       "workflow_id": 328571936,
@@ -525,9 +610,37 @@
       "latest_run": null
     },
     {
+      "workflow_id": 328664926,
+      "name": "ARM64 port - materialize exact Debian reference repository v2",
+      "path": ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328656086,
+      "name": "ARM64 port - materialize exact build dependency repository v2",
+      "path": ".github/workflows/arm64-build-dependency-repository-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 328562743,
       "name": "ARM64 port - merge exact Git sources into effective lock",
       "path": ".github/workflows/arm64-merge-effective-source-lock.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328647552,
+      "name": "ARM64 port - merge exact source authorities v2",
+      "path": ".github/workflows/arm64-merge-source-authorities-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328667027,
+      "name": "ARM64 port - merge final exact package repository v2",
+      "path": ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       "state": "active",
       "latest_run": null
     },
@@ -557,18 +670,7 @@
       "name": "ARM64 port - native exact-source rebuild controller v3",
       "path": ".github/workflows/arm64-native-rebuild-controller-v3.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106775918,
-        "run_number": 6,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "3035a86b8b968817241b6902acc41fc05a9e0c34",
-        "created_at": "2026-08-06T13:37:10Z",
-        "updated_at": "2026-08-06T13:37:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106775918",
-        "display_title": "ARM64 port - native exact-source rebuild controller v3"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328513142,
@@ -585,62 +687,9 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328527545,
-      "name": "ARM64 port - normalize persistent acquisition v2 path",
-      "path": ".github/workflows/arm64-persistent-acquisition-maintenance.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328511538,
-      "name": "ARM64 port - normalize rebuild workflow",
-      "path": ".github/workflows/arm64-rebuild-workflow-maintenance.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328523512,
-      "name": "ARM64 port - pin all workflow actions",
-      "path": ".github/workflows/arm64-pin-actions-maintenance.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328526139,
-      "name": "ARM64 port - pipeline self-check",
-      "path": ".github/workflows/arm64-pipeline-selfcheck.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31107048851,
-        "run_number": 237,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
-        "created_at": "2026-08-06T13:40:36Z",
-        "updated_at": "2026-08-06T13:40:45Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048851",
-        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
-      }
-    },
-    {
       "workflow_id": 328522338,
       "name": "ARM64 port - preserve live finalization evidence",
       "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328625161,
-      "name": "ARM64 port - prioritize newest infrastructure retry v2",
-      "path": ".github/workflows/arm64-prioritize-current-retry-maintenance-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328533416,
-      "name": "ARM64 port - prioritized resolve and build exact QtBase v3",
-      "path": ".github/workflows/arm64-qtbase-resolve-build-v3.yml",
       "state": "active",
       "latest_run": null
     },
@@ -659,29 +708,25 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328554890,
-      "name": "ARM64 port - publish exact rebuild packages v3",
-      "path": ".github/workflows/arm64-publish-rebuild-packages-v3.yml",
+      "workflow_id": 328662427,
+      "name": "ARM64 port - reaudit historical ARM64 artifacts v2",
+      "path": ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       "state": "active",
       "latest_run": null
     },
     {
-      "workflow_id": 328526484,
-      "name": "ARM64 port - publish verified rebuild package cache",
-      "path": ".github/workflows/arm64-publish-rebuild-packages.yml",
+      "workflow_id": 328688670,
+      "name": "ARM64 port - reaudit historical ARM64 artifacts v3",
+      "path": ".github/workflows/arm64-import-historical-artifacts-v3.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106806447,
-        "run_number": 19,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "dad9e2a2fc22691f9af33e7fc19b34bee5001c27",
-        "created_at": "2026-08-06T13:37:32Z",
-        "updated_at": "2026-08-06T13:38:06Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106806447",
-        "display_title": "ARM64 port - publish verified rebuild package cache"
-      }
+      "latest_run": null
+    },
+    {
+      "workflow_id": 328684236,
+      "name": "ARM64 port - rebuild exact p7zip with full binary docs",
+      "path": ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
+      "state": "active",
+      "latest_run": null
     },
     {
       "workflow_id": 328485753,
@@ -691,122 +736,9 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328566255,
-      "name": "ARM64 port - recover QtBase archival source candidate",
-      "path": ".github/workflows/arm64-qtbase-apt-source-archive.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328569150,
-      "name": "ARM64 port - recover QtBase archival source candidate v2",
-      "path": ".github/workflows/arm64-qtbase-apt-source-archive-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328536060,
-      "name": "ARM64 port - recover and build exact QtBase source archive v1",
-      "path": ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 328559992,
       "name": "ARM64 port - recover exact Linux 5.10.179 source",
       "path": ".github/workflows/arm64-linux-apt-source-lock.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328548317,
-      "name": "ARM64 port - recover exact QtBase source from APT",
-      "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328568835,
-      "name": "ARM64 port - recover exact QtBase source from APT v2",
-      "path": ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328646208,
-      "name": "ARM64 port - recover exact signed vendor sources v2",
-      "path": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31107048226,
-        "run_number": 1,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "b9a77f1a244bb7be73edd2e6e5b7538825ef284e",
-        "created_at": "2026-08-06T13:40:35Z",
-        "updated_at": "2026-08-06T13:40:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107048226",
-        "display_title": "Recover exact signed source packages for remaining ARM64 blockers"
-      }
-    },
-    {
-      "workflow_id": 328613885,
-      "name": "ARM64 port - repair Debian epoch asset URI validation",
-      "path": ".github/workflows/arm64-repair-debian-asset-epoch-uri.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328596738,
-      "name": "ARM64 port - repair Git builder output ownership",
-      "path": ".github/workflows/arm64-repair-git-builder-v2-permissions.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328529340,
-      "name": "ARM64 port - repair boot evidence commit paths",
-      "path": ".github/workflows/arm64-repair-boot-evidence-commit.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328589708,
-      "name": "ARM64 port - repair dependency materializer v3 schema",
-      "path": ".github/workflows/arm64-repair-dependency-materializer-v3.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328607840,
-      "name": "ARM64 port - repair normalized source-exact binNMU status",
-      "path": ".github/workflows/arm64-repair-normalized-binnmu-status.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328510158,
-      "name": "ARM64 port - report exact package-layer coverage",
-      "path": ".github/workflows/arm64-port-coverage.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 31106845119,
-        "run_number": 53,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "1f1279babf6341c1b0037b4fd7be2f82f369d5b5",
-        "created_at": "2026-08-06T13:38:03Z",
-        "updated_at": "2026-08-06T13:38:17Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106845119",
-        "display_title": "ARM64 port - report exact package-layer coverage"
-      }
-    },
-    {
-      "workflow_id": 328530517,
-      "name": "ARM64 port - resolve and build exact QtBase v2",
-      "path": ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       "state": "active",
       "latest_run": null
     },
@@ -822,18 +754,7 @@
       "name": "ARM64 port - retry dependency failures on verified package-cache changes v2",
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106550717,
-        "run_number": 16,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:35:21Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550717",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328594078,
@@ -847,18 +768,7 @@
       "name": "ARM64 port - reverify baseline native rebuilds",
       "path": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31106550750,
-        "run_number": 9,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "e1a7b9b0abf7ff88510a55c219ae4c8111374356",
-        "created_at": "2026-08-06T13:34:24Z",
-        "updated_at": "2026-08-06T13:34:42Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31106550750",
-        "display_title": "Restore effective verified vendor-seeded ARM64 security build result"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328535700,
@@ -887,38 +797,17 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 31107058139,
-        "run_number": 9,
+        "id": 31175249541,
+        "run_number": 10,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "cb7331b8a7644f2afe3df8d24643e7f84c1e66dd",
-        "created_at": "2026-08-06T13:40:42Z",
-        "updated_at": "2026-08-06T13:40:46Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31107058139",
-        "display_title": "Route Chromium 111 source recovery through exact hash-locked Snapshot…"
+        "head_sha": "fa354738879ddb5d7a76cbf20823eba366b792ee",
+        "created_at": "2026-08-07T11:43:53Z",
+        "updated_at": "2026-08-07T11:43:56Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31175249541",
+        "display_title": "Document the verified ARM64 XSM and GRAC security stack boundary"
       }
-    },
-    {
-      "workflow_id": 328527932,
-      "name": "ARM64 port - targeted exact QtBase source archaeology",
-      "path": ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328540496,
-      "name": "ARM64 port - test acquisition and retry control logic",
-      "path": ".github/workflows/arm64-pipeline-unit-tests.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328411136,
-      "name": "Hancom Gooroom 3.3 ARM64 port",
-      "path": ".github/workflows/arm64-port.yml",
-      "state": "active",
-      "latest_run": null
     }
   ],
   "gates": {
@@ -933,7 +822,7 @@
       "exists": true,
       "path": "arm64/audit/active-pipeline/summary.json",
       "values": {
-        "passed": true
+        "passed": false
       }
     },
     "workflow_secrets": {
@@ -965,7 +854,7 @@
       "exists": true,
       "path": "arm64/locks/package-plan/summary.json",
       "values": {
-        "complete": false,
+        "complete": true,
         "unresolved_count": 0
       }
     },
@@ -982,7 +871,7 @@
       "path": "arm64/locks/acquisition-plan/summary.json",
       "values": {
         "ready_for_fetch": false,
-        "blocker_count": 1181
+        "blocker_count": 34
       }
     },
     "rootfs": {
