@@ -10,8 +10,8 @@
     "signed_dsc_source_count": 0,
     "source_blocker_count": 13,
     "native_rebuild_source_count": 35,
-    "native_rebuild_passed_count": 26,
-    "native_rebuild_blocker_count": 9,
+    "native_rebuild_passed_count": 31,
+    "native_rebuild_blocker_count": 4,
     "normalized_package_count": 0,
     "normalized_status_counts": {},
     "expected_rebuilt_package_count": 0,
@@ -143,8 +143,8 @@
         "git",
         "4efcdc4c26fe2ca5bfc4d009e0ab918fbf06f91d"
       ],
-      "actions_run_id": "31103220338",
-      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338"
+      "actions_run_id": "31105972462",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972462"
     },
     {
       "source": "celluloid",
@@ -155,6 +155,16 @@
       ],
       "actions_run_id": "31101738881",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881"
+    },
+    {
+      "source": "dpkg",
+      "source_version": "1.20.12+grm3u1",
+      "authority": [
+        "git",
+        "1a5c57b238149446b5ea4f2a76916b3e72d051ef"
+      ],
+      "actions_run_id": "31089491039",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039"
     },
     {
       "source": "eog",
@@ -215,6 +225,16 @@
       ],
       "actions_run_id": "31101738881",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881"
+    },
+    {
+      "source": "gnome-settings-daemon",
+      "source_version": "3.38.2-1+grm3u1",
+      "authority": [
+        "git",
+        "a5fec2ac6898a8b0ce9dffd4377e06ef497d61ba"
+      ],
+      "actions_run_id": "31089491039",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039"
     },
     {
       "source": "gooroom-indicator-applet",
@@ -343,8 +363,18 @@
         "git",
         "3ef99087b50a0e5f759bcb7ce3df144680bc60fa"
       ],
-      "actions_run_id": "31103220338",
-      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338"
+      "actions_run_id": "31103303835",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103303835"
+    },
+    {
+      "source": "nautilus",
+      "source_version": "3.38.2-1+deb11u1+grm3u8",
+      "authority": [
+        "git",
+        "d3b2a8e8599902b40da81867f85c2ac81fe4d984"
+      ],
+      "actions_run_id": "31090345461",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31090345461"
     },
     {
       "source": "network-manager",
@@ -377,6 +407,16 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734"
     },
     {
+      "source": "p7zip",
+      "source_version": "16.02+dfsg-8+grm3u1",
+      "authority": [
+        "git",
+        "e392d61e4303302107f9468a06ef0bcb49fe4f33"
+      ],
+      "actions_run_id": "31112702650",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31112702650"
+    },
+    {
       "source": "pam-gooroom",
       "source_version": "0.4.3+grm3u1",
       "authority": [
@@ -395,18 +435,19 @@
       ],
       "actions_run_id": "31103220338",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338"
+    },
+    {
+      "source": "yelp",
+      "source_version": "3.38.3-1+han3u3",
+      "authority": [
+        "git",
+        "404913af82e2c63363d1a864b5226812fd1c77b6"
+      ],
+      "actions_run_id": "31089491039",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039"
     }
   ],
   "native_rebuild_blockers": [
-    {
-      "source": "dpkg",
-      "source_version": "1.20.12+grm3u1",
-      "reason": "no-native-arm64-attempt-recorded",
-      "authority": [
-        "git",
-        "1a5c57b238149446b5ea4f2a76916b3e72d051ef"
-      ]
-    },
     {
       "source": "gnome-control-center",
       "source_version": "1:3.38.4-1+grm3u9",
@@ -414,15 +455,6 @@
       "authority": [
         "git",
         "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0"
-      ]
-    },
-    {
-      "source": "gnome-settings-daemon",
-      "source_version": "3.38.2-1+grm3u1",
-      "reason": "no-native-arm64-attempt-recorded",
-      "authority": [
-        "git",
-        "a5fec2ac6898a8b0ce9dffd4377e06ef497d61ba"
       ]
     },
     {
@@ -457,39 +489,9 @@
         "git",
         "083237804297c06e1f7dcec02436c226ca75f1ec"
       ],
-      "actions_run_id": "31097724529",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    },
-    {
-      "source": "nautilus",
-      "source_version": "3.38.2-1+deb11u1+grm3u8",
-      "reason": "no-native-arm64-attempt-recorded",
-      "authority": [
-        "git",
-        "d3b2a8e8599902b40da81867f85c2ac81fe4d984"
-      ]
-    },
-    {
-      "source": "p7zip",
-      "source_version": "16.02+dfsg-8+grm3u1",
-      "reason": "latest-exact-authority-build-not-verified",
-      "authority": [
-        "git",
-        "e392d61e4303302107f9468a06ef0bcb49fe4f33"
-      ],
-      "actions_run_id": "31104803734",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    },
-    {
-      "source": "yelp",
-      "source_version": "3.38.3-1+han3u3",
-      "reason": "no-native-arm64-attempt-recorded",
-      "authority": [
-        "git",
-        "404913af82e2c63363d1a864b5226812fd1c77b6"
-      ]
+      "actions_run_id": "31148819375",
+      "build_outcome": "success",
+      "verify_outcome": "success"
     }
   ],
   "persistent_rebuilt_package_blockers": [],
