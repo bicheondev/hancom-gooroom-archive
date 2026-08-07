@@ -1,0 +1,31 @@
+name: ARM64 port - dispatch reconstructed libsecurity rerun
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-libsecurity-reconstruction-rerun.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-dispatch-libsecurity-reconstruction-rerun
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch exact reconstructed package build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-build-reconstructed-libsecurity-extensions-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
