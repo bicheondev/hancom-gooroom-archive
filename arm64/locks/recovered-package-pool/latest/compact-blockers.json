@@ -2,22 +2,14 @@
   "schema": 1,
   "recovery_policy": "exact-reference-source-version-and-no-host-x86-elf-firmware-exempt",
   "reference_package_count": 1279,
-  "selected_package_count": 1250,
+  "selected_package_count": 1251,
   "excluded_package_count": 9,
-  "blocker_count": 20,
+  "blocker_count": 19,
   "reason_counts": {
-    "no-exact-source-version-candidate": 20
+    "no-exact-source-version-candidate": 19
   },
-  "source_group_count": 12,
+  "source_group_count": 11,
   "source_groups": [
-    {
-      "source": "gnome-control-center",
-      "source_version": "1:3.38.4-1+grm3u9",
-      "blocker_count": 1,
-      "reference_packages": [
-        "gnome-control-center"
-      ]
-    },
     {
       "source": "gnome-flashback",
       "source_version": "3.38.0-2+grm3u2+han3u4",
@@ -116,31 +108,6 @@
     }
   ],
   "blockers": [
-    {
-      "reference_package": "gnome-control-center",
-      "target_package": "gnome-control-center",
-      "reason": "no-exact-source-version-candidate",
-      "source": "gnome-control-center",
-      "source_version": "1:3.38.4-1+grm3u9",
-      "disposition": "native-arm64",
-      "target_architecture": "arm64",
-      "candidate_version": "",
-      "candidate_architecture": "",
-      "candidate_sha256": "",
-      "x86_payload_count": 0,
-      "foreign_payload_count": 0,
-      "embedded_firmware_payload_count": 0,
-      "available_candidate_count": 1,
-      "available_candidates": [
-        {
-          "filename": "c1313d3ec99a99d9f7236a1ab6ea416f873056614ec7036dc9b98325f9265beb-gnome-control-center_3.38.4-1+grm3u9_amd64.deb",
-          "version": "1:3.38.4-1+grm3u9",
-          "architecture": "amd64",
-          "source": "gnome-control-center",
-          "source_version": "1:3.38.4-1+grm3u9"
-        }
-      ]
-    },
     {
       "reference_package": "gnome-flashback",
       "target_package": "gnome-flashback",
