@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 139,
-    "workflow_name_count": 139,
+    "workflow_count": 140,
+    "workflow_name_count": 140,
     "referenced_local_file_count": 213,
     "error_count": 1,
     "warning_count": 39,
@@ -107,6 +107,23 @@
       "filename": "arm64-audit-gooroom-greeter-han3u2-v2.yml",
       "path": ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml",
       "name": "ARM64 port - audit Gooroom greeter han3u2 source equivalence v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_gooroom_greeter_han3u2.py"
+      ]
+    },
+    {
+      "filename": "arm64-audit-gooroom-greeter-han3u2-v3.yml",
+      "path": ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v3.yml",
+      "name": "ARM64 port - audit Gooroom greeter han3u2 source equivalence v3",
       "events": [
         "push",
         "workflow_dispatch"
@@ -3146,7 +3163,8 @@
       ".github/workflows/arm64-repair-audit-coverage.yml"
     ],
     "arm64/scripts/audit_gooroom_greeter_han3u2.py": [
-      ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml"
+      ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml",
+      ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v3.yml"
     ],
     "arm64/scripts/audit_package_plan_inventory.py": [
       ".github/workflows/arm64-package-plan-audit.yml"
