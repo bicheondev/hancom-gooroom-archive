@@ -13,7 +13,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-recover-exact-package-pool
@@ -313,6 +313,20 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Refresh compact blocker authority
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ -f work/recovery/summary.json ] \
+             && jq -e '.blocker_count > 0' work/recovery/summary.json >/dev/null; then
+            gh workflow run arm64-summarize-recovered-package-blockers.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port
+          fi
 
       - name: Enforce completeness without inventing missing packages
         if: always()
