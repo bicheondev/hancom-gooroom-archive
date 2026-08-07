@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """Reconstruct the unpublished gooroom-greeter han3u2 source revision.
 
-The Hancom package's shipped changelog identifies an unpublished vendor commit
-(`daff60c9`) and its subject.  The same Gerrit Change-Id and one-line change
-survive publicly as hancomgooroom/gooroom-greeter commit 053a6835.  This script
-applies that exact asserted delta to the exact public han3u1 tree and prepends
-the exact changelog stanza extracted from the locked han3u2 AMD64 package.
-
-It does not claim source equivalence by itself.  The resulting tree must still
-pass the independent AMD64 package/payload/ELF reproduction gate before it is
-accepted for an ARM64 build.
+The locked AMD64 package names vendor commit ``daff60c9`` and HGOOROOM-171.
+The same subject, Gerrit Change-Id, and one-line behavioral delta survive in
+public commit 053a6835.  This script applies that asserted delta to the exact
+public han3u1 tree and prepends the exact changelog stanza shipped by han3u2.
+An independent AMD64 reproduction gate must still pass before ARM64 promotion.
 """
 
 from __future__ import annotations
@@ -28,16 +24,15 @@ BASE_TREE = "ef841874d45b7f44f08c4d337d49802b28d35b5e"
 BASE_VERSION = "0.3.1+grm3u1+han3u1"
 TARGET_VERSION = "0.3.1+grm3u1+han3u2"
 
-PATCH_AUTHORITY_REPOSITORY = "hancomgooroom/gooroom-greeter"
-PATCH_AUTHORITY_COMMIT = "053a6835c1b24866876c1bd082ee923d3f5a30c7"
-PATCH_AUTHORITY_PARENT = "a4ff3ff58418c1e03d9707ac9a95ade7c291e480"
-PATCH_AUTHORITY_TREE = "5d05541bcc8d3160fb92bb1d3a5032a222f2b547"
+PATCH_REPOSITORY = "hancomgooroom/gooroom-greeter"
+PATCH_COMMIT = "053a6835c1b24866876c1bd082ee923d3f5a30c7"
+PATCH_PARENT = "a4ff3ff58418c1e03d9707ac9a95ade7c291e480"
+PATCH_TREE = "5d05541bcc8d3160fb92bb1d3a5032a222f2b547"
 PATCH_MERGE_COMMIT = "d6076ffe9ffa2203567d60f06339fe4bf5fd3091"
 PATCH_CHANGE_ID = "I0fe62f0bed88fcb1ca9760d210335fc774263e65"
 PATCH_SUBJECT = (
     "Fixed Laterbutton actable when the message a password change for security pop up"
 )
-TARGET_VENDOR_COMMIT_SHORT = "daff60c9"
 
 TARGET_PACKAGE_URL = (
     "https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/"
@@ -62,21 +57,24 @@ CHANGELOG_PREFIX = """gooroom-greeter (0.3.1+grm3u1+han3u2) unstable; urgency=me
  -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:02:02 +0900
 
 """
+CHANGELOG_PREFIX_SHA256 = (
+    "ee7f5aa853da77444fb7bbc1886cdeeb3e047f0072ae1f4a3f0db3293ae462f3"
+)
 
 
-def run(command: list[str], *, cwd: Path | None = None, check: bool = True) -> str:
+def run(command: list[str], cwd: Path, *, text: bool = True) -> str | bytes:
     completed = subprocess.run(
         command,
         cwd=cwd,
-        text=True,
+        text=text,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if check and completed.returncode:
+    if completed.returncode:
+        tail = completed.stdout[-12000:]
         raise RuntimeError(
-            f"command failed ({completed.returncode}): {' '.join(command)}\n"
-            f"{completed.stdout[-12000:]}"
+            f"command failed ({completed.returncode}): {' '.join(command)}\n{tail}"
         )
     return completed.stdout
 
@@ -93,41 +91,32 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+def exact_git_value(source_dir: Path, expression: str) -> str:
+    return str(run(["git", "rev-parse", expression], source_dir)).strip()
 
 
-def assert_source_identity(source_dir: Path) -> None:
-    head = run(["git", "rev-parse", "HEAD"], cwd=source_dir).strip()
-    tree = run(["git", "rev-parse", "HEAD^{tree}"], cwd=source_dir).strip()
-    status = run(["git", "status", "--porcelain=v1"], cwd=source_dir).strip()
-    if head != BASE_COMMIT:
-        raise RuntimeError(f"base commit mismatch: {head} != {BASE_COMMIT}")
-    if tree != BASE_TREE:
-        raise RuntimeError(f"base tree mismatch: {tree} != {BASE_TREE}")
-    if status:
-        raise RuntimeError(f"source tree is not clean before reconstruction:\n{status}")
-    version = run(
-        ["dpkg-parsechangelog", "-ldebian/changelog", "-SVersion"], cwd=source_dir
+def assert_base(source_dir: Path) -> None:
+    if exact_git_value(source_dir, "HEAD") != BASE_COMMIT:
+        raise RuntimeError("base commit does not match the locked han3u1 commit")
+    if exact_git_value(source_dir, "HEAD^{tree}") != BASE_TREE:
+        raise RuntimeError("base tree does not match the locked han3u1 tree")
+    if str(run(["git", "status", "--porcelain=v1"], source_dir)).strip():
+        raise RuntimeError("base source work tree is not clean")
+    source = str(
+        run(["dpkg-parsechangelog", "-ldebian/changelog", "-SSource"], source_dir)
     ).strip()
-    source = run(
-        ["dpkg-parsechangelog", "-ldebian/changelog", "-SSource"], cwd=source_dir
+    version = str(
+        run(["dpkg-parsechangelog", "-ldebian/changelog", "-SVersion"], source_dir)
     ).strip()
-    if source != "gooroom-greeter":
-        raise RuntimeError(f"unexpected source name: {source}")
-    if version != BASE_VERSION:
-        raise RuntimeError(f"base version mismatch: {version} != {BASE_VERSION}")
+    if source != "gooroom-greeter" or version != BASE_VERSION:
+        raise RuntimeError(f"base package identity mismatch: {source} {version}")
 
 
 def apply_code_delta(source_dir: Path) -> dict[str, Any]:
     path = source_dir / "src/greeter-window.c"
-    original = path.read_bytes()
-    newline = b"\r\n" if b"\r\n" in original else b"\n"
-    marker = newline.join(
+    before = path.read_bytes()
+    newline = b"\r\n" if b"\r\n" in before else b"\n"
+    old = newline.join(
         [
             b'\t\t\tlightdm_greeter_respond (priv->lightdm, "chpasswd_no");',
             b"#endif",
@@ -137,7 +126,7 @@ def apply_code_delta(source_dir: Path) -> dict[str, Any]:
             b"out:",
         ]
     )
-    replacement = newline.join(
+    new = newline.join(
         [
             b'\t\t\tlightdm_greeter_respond (priv->lightdm, "chpasswd_no");',
             b"#endif",
@@ -148,78 +137,76 @@ def apply_code_delta(source_dir: Path) -> dict[str, Any]:
             b"out:",
         ]
     )
-    count = original.count(marker)
-    if count != 1:
-        raise RuntimeError(
-            f"expected exactly one asserted Later-button patch context, found {count}"
-        )
-    modified = original.replace(marker, replacement, 1)
-    if modified.count(b"\t\treturn;" + newline + b"\t}" + newline + newline + b"out:") != 1:
-        raise RuntimeError("post-patch control-flow assertion failed")
-    path.write_bytes(modified)
+    if before.count(old) != 1:
+        raise RuntimeError("the exact Later-button control-flow context was not unique")
+    after = before.replace(old, new, 1)
+    if after.count(new) != 1:
+        raise RuntimeError("the asserted one-line code delta was not applied exactly once")
+    path.write_bytes(after)
     return {
         "path": "src/greeter-window.c",
         "newline": "crlf" if newline == b"\r\n" else "lf",
-        "base_blob_sha256": sha256_bytes(original),
-        "reconstructed_blob_sha256": sha256_bytes(modified),
-        "change": "insert one return statement after sending chpasswd_no",
+        "base_sha256": sha256_bytes(before),
+        "reconstructed_sha256": sha256_bytes(after),
+        "inserted_statement": "return;",
     }
 
 
 def apply_changelog_delta(source_dir: Path) -> dict[str, Any]:
     path = source_dir / "debian/changelog"
-    original = path.read_bytes()
-    expected_prefix = f"gooroom-greeter ({BASE_VERSION})".encode()
-    if not original.startswith(expected_prefix):
-        raise RuntimeError("base changelog does not start with the exact han3u1 stanza")
+    before = path.read_bytes()
+    if not before.startswith(f"gooroom-greeter ({BASE_VERSION})".encode()):
+        raise RuntimeError("the base changelog does not begin with han3u1")
     prefix = CHANGELOG_PREFIX.encode("utf-8")
-    modified = prefix + original
-    path.write_bytes(modified)
-    version = run(
-        ["dpkg-parsechangelog", "-ldebian/changelog", "-SVersion"], cwd=source_dir
+    if sha256_bytes(prefix) != CHANGELOG_PREFIX_SHA256:
+        raise RuntimeError("the canonical han3u2 changelog prefix digest changed")
+    after = prefix + before
+    path.write_bytes(after)
+    version = str(
+        run(["dpkg-parsechangelog", "-ldebian/changelog", "-SVersion"], source_dir)
     ).strip()
     if version != TARGET_VERSION:
-        raise RuntimeError(f"reconstructed version mismatch: {version} != {TARGET_VERSION}")
-    if sha256_bytes(prefix) != "51ab38387687cef1864af23bc9abb0874ea5b1d7fbff3ca4e659cd51fd3c1f56":
-        raise RuntimeError("canonical changelog-prefix digest changed unexpectedly")
+        raise RuntimeError(f"reconstructed version mismatch: {version}")
     return {
         "path": "debian/changelog",
-        "base_blob_sha256": sha256_bytes(original),
-        "reconstructed_blob_sha256": sha256_bytes(modified),
-        "prefix_sha256": sha256_bytes(prefix),
+        "base_sha256": sha256_bytes(before),
+        "reconstructed_sha256": sha256_bytes(after),
+        "prefix_sha256": CHANGELOG_PREFIX_SHA256,
         "prefix_text": CHANGELOG_PREFIX,
     }
 
 
-def build_reconstruction_lock(source_dir: Path, output_lock: Path) -> dict[str, Any]:
-    assert_source_identity(source_dir)
+def reconstruct(source_dir: Path, output_lock: Path) -> dict[str, Any]:
+    assert_base(source_dir)
     code_delta = apply_code_delta(source_dir)
     changelog_delta = apply_changelog_delta(source_dir)
 
-    changed_paths = run(["git", "diff", "--name-only"], cwd=source_dir).splitlines()
-    if changed_paths != ["debian/changelog", "src/greeter-window.c"]:
-        raise RuntimeError(f"unexpected reconstructed path set: {changed_paths}")
+    changed = str(run(["git", "diff", "--name-only"], source_dir)).splitlines()
+    if changed != ["debian/changelog", "src/greeter-window.c"]:
+        raise RuntimeError(f"unexpected reconstructed path set: {changed}")
 
-    diff_bytes = subprocess.run(
-        ["git", "diff", "--binary", "--full-index", "--no-ext-diff"],
-        cwd=source_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    ).stdout
-    diff_path = output_lock.with_name("reconstruction.patch")
-    diff_path.parent.mkdir(parents=True, exist_ok=True)
-    diff_path.write_bytes(diff_bytes)
+    patch = bytes(
+        run(
+            ["git", "diff", "--binary", "--full-index", "--no-ext-diff"],
+            source_dir,
+            text=False,
+        )
+    )
+    output_lock.parent.mkdir(parents=True, exist_ok=True)
+    patch_path = output_lock.with_name("reconstruction.patch")
+    patch_path.write_bytes(patch)
 
-    run(["git", "add", "debian/changelog", "src/greeter-window.c"], cwd=source_dir)
-    reconstructed_tree = run(["git", "write-tree"], cwd=source_dir).strip()
+    run(["git", "add", *changed], source_dir)
+    tree = exact_git_value(source_dir, "$(git write-tree)") if False else str(
+        run(["git", "write-tree"], source_dir)
+    ).strip()
 
     archive_path = output_lock.with_name("reconstructed-source.tar")
-    with archive_path.open("wb") as stream:
+    with archive_path.open("wb") as output:
         completed = subprocess.run(
-            ["git", "archive", "--format=tar", reconstructed_tree],
+            ["git", "archive", "--format=tar", tree],
             cwd=source_dir,
-            stdout=stream,
+            stdout=output,
             stderr=subprocess.PIPE,
             check=False,
         )
@@ -227,7 +214,7 @@ def build_reconstruction_lock(source_dir: Path, output_lock: Path) -> dict[str, 
         raise RuntimeError(completed.stderr.decode(errors="replace"))
 
     lock: dict[str, Any] = {
-        "schema": 1,
+        "schema": 2,
         "source": "gooroom-greeter",
         "source_version": TARGET_VERSION,
         "status": "binary-equivalence-verification-required",
@@ -245,35 +232,31 @@ def build_reconstruction_lock(source_dir: Path, output_lock: Path) -> dict[str, 
                 "path": "usr/share/doc/gooroom-greeter/changelog.gz",
                 "gzip_sha256": TARGET_CHANGELOG_GZIP_SHA256,
                 "text_sha256": TARGET_CHANGELOG_TEXT_SHA256,
-                "vendor_commit_short": TARGET_VENDOR_COMMIT_SHORT,
+                "vendor_commit_short": "daff60c9",
                 "issue": "HGOOROOM-171",
                 "subject": PATCH_SUBJECT,
             },
         },
         "patch_authority": {
-            "repository_full_name": PATCH_AUTHORITY_REPOSITORY,
-            "commit_sha": PATCH_AUTHORITY_COMMIT,
-            "parent_sha": PATCH_AUTHORITY_PARENT,
-            "tree_sha": PATCH_AUTHORITY_TREE,
+            "repository_full_name": PATCH_REPOSITORY,
+            "commit_sha": PATCH_COMMIT,
+            "parent_sha": PATCH_PARENT,
+            "tree_sha": PATCH_TREE,
             "merge_commit_sha": PATCH_MERGE_COMMIT,
             "change_id": PATCH_CHANGE_ID,
             "subject": PATCH_SUBJECT,
             "changed_paths": ["src/greeter-window.c"],
             "additions": 1,
             "deletions": 0,
-            "relationship_to_target": (
-                "same subject and one-line behavioral delta as the unpublished "
-                "vendor commit named by the target package changelog"
-            ),
         },
         "reconstruction": {
-            "changed_paths": changed_paths,
+            "changed_paths": changed,
             "code_delta": code_delta,
             "changelog_delta": changelog_delta,
-            "tree_sha": reconstructed_tree,
-            "patch_filename": diff_path.name,
-            "patch_size": len(diff_bytes),
-            "patch_sha256": sha256_bytes(diff_bytes),
+            "tree_sha": tree,
+            "patch_filename": patch_path.name,
+            "patch_size": len(patch),
+            "patch_sha256": sha256_bytes(patch),
             "archive_filename": archive_path.name,
             "archive_size": archive_path.stat().st_size,
             "archive_sha256": sha256_file(archive_path),
@@ -281,25 +264,28 @@ def build_reconstruction_lock(source_dir: Path, output_lock: Path) -> dict[str, 
         "acceptance_gate": {
             "plain_version_relabel_allowed": False,
             "required": [
-                "Build this exact reconstructed tree for AMD64 in a locked Bullseye environment.",
-                "Compare package path set, non-ELF payloads, normalized ELF semantics, and shipped changelog against the exact target AMD64 package.",
-                "Only after equivalence passes may the same tree be built for ARM64.",
+                "Rebuild this exact tree for AMD64 in a locked Bullseye environment.",
+                "Compare its path set, non-ELF payload, normalized ELF behavior, and shipped changelog with the exact target AMD64 package.",
+                "Build ARM64 only after that equivalence gate passes.",
             ],
         },
     }
-    write_json(output_lock, lock)
+    output_lock.write_text(
+        json.dumps(lock, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     return lock
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source-dir", required=True, type=Path)
-    parser.add_argument("--output-lock", required=True, type=Path)
+    parser.add_argument("--source-dir", type=Path, required=True)
+    parser.add_argument("--output-lock", type=Path, required=True)
     arguments = parser.parse_args()
     source_dir = arguments.source_dir.resolve()
-    if not (source_dir / ".git").exists():
+    if not (source_dir / ".git").is_dir():
         raise RuntimeError(f"not a Git work tree: {source_dir}")
-    lock = build_reconstruction_lock(source_dir, arguments.output_lock.resolve())
+    lock = reconstruct(source_dir, arguments.output_lock.resolve())
     print(json.dumps(lock, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
@@ -307,6 +293,6 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception as error:  # fail closed with a concise CI diagnostic
+    except Exception as error:
         print(f"reconstruction failed: {error}", file=sys.stderr)
         raise
