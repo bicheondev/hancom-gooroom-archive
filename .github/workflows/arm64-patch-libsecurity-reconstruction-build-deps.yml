@@ -29,27 +29,13 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh')
-          text = path.read_text(encoding='utf-8')
-          old = '''  libdbus-1-dev libjson-c-dev libnotify-dev libsystemd-dev pkg-config \\
-  python3 xserver-xorg-dev \\
-'''
-          new = '''  libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0 \\
-  libjson-c-dev libnotify-dev libsystemd-dev pkg-config \\
-  python3 xserver-xorg-dev \\
-'''
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'expected one dependency anchor, found {count}')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
-
-          bash -n arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
-          grep -F 'libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0' \
-            arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          path=arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          test "$(grep -c 'libdbus-1-dev libjson-c-dev libnotify-dev libsystemd-dev pkg-config' "$path")" -eq 1
+          sed -i \
+            's/libdbus-1-dev libjson-c-dev libnotify-dev libsystemd-dev pkg-config/libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0 libjson-c-dev libnotify-dev libsystemd-dev pkg-config/' \
+            "$path"
+          test "$(grep -c 'libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0 libjson-c-dev libnotify-dev libsystemd-dev pkg-config' "$path")" -eq 1
+          bash -n "$path"
           git diff --check
 
       - name: Commit the dependency-only correction
