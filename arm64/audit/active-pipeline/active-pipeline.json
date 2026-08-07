@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 129,
-    "workflow_name_count": 129,
+    "workflow_count": 130,
+    "workflow_name_count": 130,
     "referenced_local_file_count": 206,
     "error_count": 6,
     "warning_count": 38,
@@ -745,6 +745,18 @@
         "arm64/scripts/select_dependency_retry_wave.py",
         "arm64/scripts/verify_arm64_rebuild.py"
       ]
+    },
+    {
+      "filename": "arm64-dispatch-source-archaeology.yml",
+      "path": ".github/workflows/arm64-dispatch-source-archaeology.yml",
+      "name": "ARM64 port - dispatch user-aware source archaeology",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-effective-source-lock.yml",
