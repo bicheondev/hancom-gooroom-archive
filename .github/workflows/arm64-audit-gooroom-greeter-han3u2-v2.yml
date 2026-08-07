@@ -1,0 +1,380 @@
+name: ARM64 port - audit Gooroom greeter han3u2 source equivalence v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml'
+      - 'arm64/scripts/audit_gooroom_greeter_han3u2.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-greeter-han3u2-v2
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out ARM64 port authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic package and ELF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl diffutils dpkg-dev file git gzip jq \
+            python3 xz-utils
+          docker version
+          python3 -m py_compile arm64/scripts/audit_gooroom_greeter_han3u2.py
+
+      - name: Acquire and verify exact han3u2 package and debug symbols
+        id: acquire
+        shell: bash
+        env:
+          TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+          TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+          TARGET_SIZE: '282940'
+          DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_amd64.deb
+          DEBUG_SHA256: 2d883d730eeb0e38d27828fe873d928fca9ef7d44020e5a775e41ca514964237
+          DEBUG_SIZE: '129604'
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-han3u2-forensics-v2
+          downloads="$output/downloads"
+          rm -rf "$output"
+          mkdir -p "$downloads"
+
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$downloads/target.deb"
+          test "$(stat -c '%s' "$downloads/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $downloads/target.deb" | sha256sum --check -
+
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$DEBUG_URL" -o "$downloads/target-dbgsym.deb"
+          test "$(stat -c '%s' "$downloads/target-dbgsym.deb")" = "$DEBUG_SIZE"
+          echo "$DEBUG_SHA256  $downloads/target-dbgsym.deb" | sha256sum --check -
+
+          test "$(dpkg-deb -f "$downloads/target.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$downloads/target.deb" Version)" = '0.3.1+grm3u1+han3u2'
+          test "$(dpkg-deb -f "$downloads/target.deb" Architecture)" = amd64
+          test "$(dpkg-deb -f "$downloads/target-dbgsym.deb" Version)" = '0.3.1+grm3u1+han3u2'
+          test "$(dpkg-deb -f "$downloads/target-dbgsym.deb" Architecture)" = amd64
+
+          jq -n \
+            --arg target_url "$TARGET_URL" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --argjson target_size "$TARGET_SIZE" \
+            --arg debug_url "$DEBUG_URL" \
+            --arg debug_sha256 "$DEBUG_SHA256" \
+            --argjson debug_size "$DEBUG_SIZE" '
+              {
+                schema: 2,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $target_url,
+                  size: $target_size,
+                  sha256: $target_sha256
+                },
+                debug_symbols: {
+                  package: "gooroom-greeter-dbgsym",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $debug_url,
+                  size: $debug_size,
+                  sha256: $debug_sha256
+                }
+              }
+            ' > "$output/target-lock.json"
+          echo "output=$output" >> "$GITHUB_OUTPUT"
+          jq . "$output/target-lock.json"
+
+      - name: Lock exact public han3u1 source commit and tree
+        id: source
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          SOURCE_REPOSITORY: hancom-io/gooroom-greeter
+          SOURCE_COMMIT: 886f8b6c5cd35117fd5a2d31896e4f9818400960
+          SOURCE_TREE: ef841874d45b7f44f08c4d337d49802b28d35b5e
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$SOURCE_REPOSITORY.git" "$OUTPUT/source"
+          git -C "$OUTPUT/source" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$OUTPUT/source" checkout --detach "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          test "$(dpkg-parsechangelog -l"$OUTPUT/source/debian/changelog" -SSource)" = \
+            gooroom-greeter
+          test "$(dpkg-parsechangelog -l"$OUTPUT/source/debian/changelog" -SVersion)" = \
+            '0.3.1+grm3u1+han3u1'
+
+          git -C "$OUTPUT/source" archive --format=tar "$SOURCE_COMMIT" \
+            > "$OUTPUT/source-han3u1.tar"
+          source_archive_sha256="$(sha256sum "$OUTPUT/source-han3u1.tar" | awk '{print $1}')"
+          source_archive_size="$(stat -c '%s' "$OUTPUT/source-han3u1.tar")"
+          jq -n \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg commit_sha "$SOURCE_COMMIT" \
+            --arg tree_sha "$SOURCE_TREE" \
+            --arg archive_sha256 "$source_archive_sha256" \
+            --argjson archive_size "$source_archive_size" '
+              {
+                schema: 2,
+                repository_full_name: $repository,
+                commit_sha: $commit_sha,
+                tree_sha: $tree_sha,
+                declared_source: "gooroom-greeter",
+                declared_version: "0.3.1+grm3u1+han3u1",
+                deterministic_git_archive: {
+                  size: $archive_size,
+                  sha256: $archive_sha256
+                }
+              }
+            ' > "$OUTPUT/source-lock.json"
+          jq . "$OUTPUT/source-lock.json"
+
+      - name: Search all known package-pool locations for archived han3u1 binary
+        id: baseline
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+        run: |
+          set -euxo pipefail
+          baseline="$OUTPUT/downloads/baseline.deb"
+          candidates="$OUTPUT/baseline-url-candidates.tsv"
+          : > "$candidates"
+          found_url=''
+          for base in \
+            https://update.hancomgooroom.com/hancom \
+            https://update.hancomgooroom.com/gooroom \
+            http://update.hancomgooroom.com/hancom \
+            http://update.hancomgooroom.com/gooroom; do
+            url="$base/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u1_amd64.deb"
+            if curl --fail --show-error --location \
+              --connect-timeout 20 --max-time 90 \
+              --retry 2 --retry-delay 2 --retry-all-errors \
+              "$url" -o "$baseline.candidate"; then
+              if [ "$(dpkg-deb -f "$baseline.candidate" Package)" = gooroom-greeter ] \
+                && [ "$(dpkg-deb -f "$baseline.candidate" Version)" = '0.3.1+grm3u1+han3u1' ] \
+                && [ "$(dpkg-deb -f "$baseline.candidate" Architecture)" = amd64 ]; then
+                mv "$baseline.candidate" "$baseline"
+                found_url="$url"
+                printf '%s\tfound\n' "$url" >> "$candidates"
+                break
+              fi
+            fi
+            rm -f "$baseline.candidate"
+            printf '%s\tnot-found\n' "$url" >> "$candidates"
+          done
+
+          if [ -n "$found_url" ]; then
+            origin="apt-archive:$found_url"
+            available=true
+          else
+            origin='none'
+            available=false
+          fi
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+          echo "origin=$origin" >> "$GITHUB_OUTPUT"
+          cat "$candidates"
+
+      - name: Rebuild public han3u1 source in locked Bullseye snapshot when archive is absent
+        id: rebuild
+        if: steps.baseline.outputs.available != 'true'
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          SNAPSHOT: 20230730T235959Z
+          BASE_IMAGE: debian:bullseye-slim
+        run: |
+          set -euxo pipefail
+          docker pull "$BASE_IMAGE"
+          docker image inspect "$BASE_IMAGE" > "$OUTPUT/baseline-build-image.json"
+          docker image inspect --format '{{json .RepoDigests}}' "$BASE_IMAGE" \
+            > "$OUTPUT/baseline-build-image-digests.json"
+
+          output_absolute="$(readlink -f "$OUTPUT")"
+          set +e
+          docker run --rm \
+            --platform linux/amd64 \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e DEB_BUILD_OPTIONS=nocheck \
+            -e SNAPSHOT="$SNAPSHOT" \
+            -v "$output_absolute:/evidence" \
+            -w /evidence/source \
+            "$BASE_IMAGE" \
+            bash -euxo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates
+              cat > /etc/apt/sources.list <<EOF
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT} bullseye main
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT} bullseye-security main
+          EOF
+              apt-get -o Acquire::Check-Valid-Until=false update
+              apt-get install -y --no-install-recommends \
+                build-essential devscripts dpkg-dev equivs git
+              mk-build-deps \
+                --install \
+                --remove \
+                --tool "apt-get -y --no-install-recommends -o Acquire::Check-Valid-Until=false" \
+                debian/control
+              dpkg-buildpackage -us -uc -b -j2
+              package="$(find /evidence -maxdepth 1 -type f \
+                -name "gooroom-greeter_0.3.1+grm3u1+han3u1_amd64.deb" \
+                -print -quit)"
+              test -n "$package"
+              cp "$package" /evidence/downloads/baseline.deb
+            ' 2>&1 | tee "$OUTPUT/baseline-build.log"
+          build_rc=${PIPESTATUS[0]}
+          set -e
+          test "$build_rc" -eq 0
+          test -f "$OUTPUT/downloads/baseline.deb"
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Version)" = \
+            '0.3.1+grm3u1+han3u1'
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Architecture)" = amd64
+          echo 'origin=rebuild:hancom-io/gooroom-greeter@886f8b6c5cd35117fd5a2d31896e4f9818400960:debian-bullseye-snapshot-20230730T235959Z' \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Extract target, debug symbols, and baseline without assuming doc layout
+        id: extract
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          ARCHIVE_BASELINE: ${{ steps.baseline.outputs.available }}
+          ARCHIVE_ORIGIN: ${{ steps.baseline.outputs.origin }}
+          REBUILD_ORIGIN: ${{ steps.rebuild.outputs.origin }}
+        run: |
+          set -euxo pipefail
+          mkdir -p \
+            "$OUTPUT/target-control" "$OUTPUT/target-root" \
+            "$OUTPUT/target-debug-control" "$OUTPUT/target-debug-root" \
+            "$OUTPUT/baseline-control" "$OUTPUT/baseline-root"
+
+          dpkg-deb -e "$OUTPUT/downloads/target.deb" "$OUTPUT/target-control"
+          dpkg-deb -x "$OUTPUT/downloads/target.deb" "$OUTPUT/target-root"
+          dpkg-deb -e "$OUTPUT/downloads/target-dbgsym.deb" "$OUTPUT/target-debug-control"
+          dpkg-deb -x "$OUTPUT/downloads/target-dbgsym.deb" "$OUTPUT/target-debug-root"
+          dpkg-deb -e "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-control"
+          dpkg-deb -x "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-root"
+
+          dpkg-deb -f "$OUTPUT/downloads/target.deb" > "$OUTPUT/target-control.txt"
+          dpkg-deb -f "$OUTPUT/downloads/target-dbgsym.deb" > "$OUTPUT/target-debug-control.txt"
+          dpkg-deb -f "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-control.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target.deb" > "$OUTPUT/target-file-list.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target-dbgsym.deb" > "$OUTPUT/target-debug-file-list.txt"
+          dpkg-deb -c "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-file-list.txt"
+
+          find "$OUTPUT/target-root/usr/share/doc" -maxdepth 4 \
+            -printf '%y\t%p\t%l\n' 2>/dev/null \
+            > "$OUTPUT/target-doc-layout.tsv" || true
+          find "$OUTPUT/baseline-root/usr/share/doc" -maxdepth 4 \
+            -printf '%y\t%p\t%l\n' 2>/dev/null \
+            > "$OUTPUT/baseline-doc-layout.tsv" || true
+
+          if [ "$ARCHIVE_BASELINE" = true ]; then
+            baseline_origin="$ARCHIVE_ORIGIN"
+          else
+            baseline_origin="$REBUILD_ORIGIN"
+          fi
+          test -n "$baseline_origin"
+          echo "baseline_origin=$baseline_origin" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$baseline_origin" > "$OUTPUT/baseline-origin.txt"
+          cat "$OUTPUT/target-doc-layout.tsv"
+          cat "$OUTPUT/baseline-doc-layout.tsv"
+
+      - name: Compare complete payload and normalized ELF semantics
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          BASELINE_ORIGIN: ${{ steps.extract.outputs.baseline_origin }}
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/audit_gooroom_greeter_han3u2.py \
+            --output "$OUTPUT/analysis" \
+            --target-root "$OUTPUT/target-root" \
+            --baseline-root "$OUTPUT/baseline-root" \
+            --source-root "$OUTPUT/source" \
+            --target-debug-root "$OUTPUT/target-debug-root" \
+            --baseline-origin "$BASELINE_ORIGIN"
+          jq . "$OUTPUT/analysis/summary.json"
+          cat "$OUTPUT/analysis/payload-delta.tsv"
+          cat "$OUTPUT/analysis/elf-comparison.tsv"
+
+      - name: Create immutable compact evidence authority
+        id: compact
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+        run: |
+          set -euxo pipefail
+          compact="$OUTPUT/compact"
+          rm -rf "$compact"
+          mkdir -p "$compact"
+          cp "$OUTPUT"/*.json "$compact/" 2>/dev/null || true
+          cp "$OUTPUT"/*.txt "$compact/" 2>/dev/null || true
+          cp "$OUTPUT"/*.tsv "$compact/" 2>/dev/null || true
+          cp "$OUTPUT/analysis/summary.json" "$compact/summary.json"
+          cp "$OUTPUT/analysis/payload-delta.json" "$compact/"
+          cp "$OUTPUT/analysis/payload-delta.tsv" "$compact/"
+          cp "$OUTPUT/analysis/elf-comparison.tsv" "$compact/"
+          cp "$OUTPUT/analysis/target-payload-manifest.json" "$compact/"
+          cp "$OUTPUT/analysis/baseline-payload-manifest.json" "$compact/"
+          find "$compact" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$compact/LOCKSUMS.sha256"
+          (cd "$compact" && sha256sum --check LOCKSUMS.sha256)
+          echo "compact=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Upload complete exact greeter forensic evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-source-equivalence-v2
+          path: |
+            ${{ steps.acquire.outputs.output }}/compact
+            ${{ steps.acquire.outputs.output }}/analysis/elf-comparison.json
+            ${{ steps.acquire.outputs.output }}/baseline-build.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact evidence authority
+        shell: bash
+        env:
+          COMPACT: ${{ steps.compact.outputs.compact }}
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/gooroom-greeter-han3u2-forensics/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$COMPACT"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record deterministic gooroom-greeter han3u2 source audit'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
