@@ -38,50 +38,36 @@ jobs:
           text = path.read_text(encoding='utf-8')
           replacements = [
               (
-                  '''    packaging: .packaging + {
-                    verified_source: $packaging_source,
-                    verified_version: $packaging_version
-                  },
-              ''',
-                  '''    packaging: (.packaging + {
-                    verified_source: $packaging_source,
-                    verified_version: $packaging_version
-                  }),
-              ''',
+                  '    packaging: .packaging + {\n',
+                  '    packaging: (.packaging + {\n',
               ),
               (
-                  '''    upstream: .upstream + {
-                    verified_snapshot: $snapshot,
-                    verified_content_addressed_base: $file_base,
-                    resolved_downloads: $resolved_downloads[0],
-                    verified_dsc_identity: true,
-                    verified_files: {
-                      dsc_sha256: $dsc_sha256,
-                      orig_sha256: $orig_sha256,
-                      debian_sha256: $debian_sha256
-                    },
-                    required_paths_verified: true
-                  },
-              ''',
-                  '''    upstream: (.upstream + {
-                    verified_snapshot: $snapshot,
-                    verified_content_addressed_base: $file_base,
-                    resolved_downloads: $resolved_downloads[0],
-                    verified_dsc_identity: true,
-                    verified_files: {
-                      dsc_sha256: $dsc_sha256,
-                      orig_sha256: $orig_sha256,
-                      debian_sha256: $debian_sha256
-                    },
-                    required_paths_verified: true
-                  }),
-              ''',
+                  '      verified_version: $packaging_version\n'
+                  '    },\n'
+                  '    changelog_anchor: .changelog_anchor,\n',
+                  '      verified_version: $packaging_version\n'
+                  '    }),\n'
+                  '    changelog_anchor: .changelog_anchor,\n',
+              ),
+              (
+                  '    upstream: .upstream + {\n',
+                  '    upstream: (.upstream + {\n',
+              ),
+              (
+                  '      required_paths_verified: true\n'
+                  '    },\n'
+                  '    composition: .composition,\n',
+                  '      required_paths_verified: true\n'
+                  '    }),\n'
+                  '    composition: .composition,\n',
               ),
           ]
           for old, new in replacements:
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'expected one guarded jq merge block, found {count}')
+                  raise SystemExit(
+                      f'expected exactly one guarded jq boundary, found {count}: {old!r}'
+                  )
               text = text.replace(old, new)
           path.write_text(text, encoding='utf-8')
           PY
