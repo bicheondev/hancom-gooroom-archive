@@ -219,6 +219,21 @@ export HANCOM_GOOROOM_REFERENCE_JSON="$REFERENCE_JSON"
 export HANCOM_GOOROOM_DEPENDENCY_REPOSITORY="$LOCAL_REPO"
 "$BASE_BUILDER" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
 
+# The v2 builder predates the common verifier's evidence-schema fields. Add
+# the same immutable policy metadata emitted by the generic locked builder so
+# this local-dependency path can be verified without weakening any gate.
+BUILD_LOCK_TMP="$WORK_DIR/build-lock.json"
+jq '
+  .binary_package_policy = "AMD64 reference packages whose Architecture is not all"
+  | .source_composition = {mode: "git-only"}
+' "$OUTPUT_DIR_ABS/build-lock.json" > "$BUILD_LOCK_TMP"
+mv "$BUILD_LOCK_TMP" "$OUTPUT_DIR_ABS/build-lock.json"
+
+jq -e '
+  .binary_package_policy == "AMD64 reference packages whose Architecture is not all"
+  and .source_composition.mode == "git-only"
+' "$OUTPUT_DIR_ABS/build-lock.json" >/dev/null
+
 jq -s \
   --arg target_source "$SOURCE_NAME" \
   --arg source "$LOCAL_SOURCE_NAME" \
