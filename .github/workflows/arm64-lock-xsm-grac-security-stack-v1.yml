@@ -1,0 +1,206 @@
+name: ARM64 port - lock verified XSM and GRAC security stack v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-lock-xsm-grac-security-stack-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-lock-xsm-grac-security-stack-v1
+  cancel-in-progress: true
+
+jobs:
+  lock:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate and aggregate the two verified security components
+        shell: bash
+        run: |
+          set -euxo pipefail
+          xsm=arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest
+          grac=arm64/locks/gooroom-resource-access-control-arm64-build/latest
+          run="arm64/locks/xsm-grac-security-stack-arm64/runs/${GITHUB_RUN_ID}"
+          latest=arm64/locks/xsm-grac-security-stack-arm64/latest
+
+          for dir in "$xsm" "$grac"; do
+            test -f "$dir/summary.json"
+            test -f "$dir/verification-summary.json"
+            test -f "$dir/authority.json"
+            (cd "$dir" && sha256sum --check SHA256SUMS)
+          done
+
+          jq -e '
+            .build_passed == true
+            and .build_architecture == "arm64"
+            and .xsm_module_machine == "AArch64"
+            and .xsm_module_path == "/usr/lib/xorg/modules/extensions/xsm.so"
+            and .generic_locked_build_verifier_passed == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' "$xsm/summary.json" >/dev/null
+          jq -e '
+            .verified == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' "$xsm/verification-summary.json" >/dev/null
+          jq -e '
+            .source_build_outcome == "success"
+            and .source_build_exit_code == "0"
+          ' "$xsm/authority.json" >/dev/null
+
+          jq -e '
+            .build_passed == true
+            and .build_architecture == "arm64"
+            and .xsm_grac_helper_path_contract_verified == true
+            and .xsm_user_rules_consumer_contract_present == true
+            and .packaged_grac_noti_forward_path == .xsm_grac_noti_forward_consumer_path
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+            and (.expected_package_mapping | sort_by(.package))
+                == (.produced_package_mapping | sort_by(.package))
+          ' "$grac/summary.json" >/dev/null
+          jq -e '
+            .verified == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' "$grac/verification-summary.json" >/dev/null
+          jq -e '
+            .source_build_outcome == "success"
+            and .source_build_exit_code == "0"
+          ' "$grac/authority.json" >/dev/null
+
+          xsm_helper="$(jq -er '.xsm_grac_noti_forward_consumer_path' "$grac/summary.json")"
+          grac_helper="$(jq -er '.packaged_grac_noti_forward_path' "$grac/summary.json")"
+          test "$xsm_helper" = "$grac_helper"
+
+          rm -rf "$run" "$latest"
+          mkdir -p "$run" "$latest"
+          jq -n \
+            --slurpfile xsm_summary "$xsm/summary.json" \
+            --slurpfile xsm_verification "$xsm/verification-summary.json" \
+            --slurpfile xsm_authority "$xsm/authority.json" \
+            --slurpfile grac_summary "$grac/summary.json" \
+            --slurpfile grac_verification "$grac/verification-summary.json" \
+            --slurpfile grac_authority "$grac/authority.json" '
+            {
+              schema: 1,
+              target_architecture: "arm64",
+              components: [
+                {
+                  role: "Xorg security extension",
+                  source: $xsm_summary[0].source,
+                  source_version: $xsm_summary[0].source_version,
+                  repository: $xsm_summary[0].repository,
+                  commit_sha: $xsm_summary[0].commit_sha,
+                  tree_sha: $xsm_summary[0].tree_sha,
+                  deb_count: $xsm_summary[0].deb_count,
+                  module_path: $xsm_summary[0].xsm_module_path,
+                  machine: $xsm_summary[0].xsm_module_machine,
+                  package_verification: $xsm_verification[0].verified,
+                  workflow_run_id: $xsm_authority[0].workflow_run_id
+                },
+                {
+                  role: "Gooroom resource access control",
+                  source: $grac_summary[0].source,
+                  source_version: $grac_summary[0].source_version,
+                  repository: $grac_summary[0].repository,
+                  commit_sha: $grac_summary[0].commit_sha,
+                  tree_sha: $grac_summary[0].tree_sha,
+                  deb_count: $grac_summary[0].deb_count,
+                  package_mapping: $grac_summary[0].produced_package_mapping,
+                  package_verification: $grac_verification[0].verified,
+                  workflow_run_id: $grac_authority[0].workflow_run_id
+                }
+              ],
+              runtime_contracts: {
+                xorg_module_autoload_path: $xsm_summary[0].xsm_module_path,
+                xsm_grac_noti_forward_consumer_path: $grac_summary[0].xsm_grac_noti_forward_consumer_path,
+                grac_noti_forward_provider_path: $grac_summary[0].packaged_grac_noti_forward_path,
+                helper_path_match: true,
+                xsm_user_rules_consumer_contract_present: $grac_summary[0].xsm_user_rules_consumer_contract_present
+              },
+              wrong_architecture_executable_count: 0,
+              component_count: 2,
+              security_stack_passed: true
+            }
+          ' > "$run/summary.json"
+
+          jq -e '
+            .target_architecture == "arm64"
+            and .component_count == 2
+            and (.components | length) == 2
+            and .runtime_contracts.helper_path_match == true
+            and .runtime_contracts.xsm_grac_noti_forward_consumer_path
+                == .runtime_contracts.grac_noti_forward_provider_path
+            and .wrong_architecture_executable_count == 0
+            and .security_stack_passed == true
+          ' "$run/summary.json" >/dev/null
+
+          jq -n \
+            --argjson workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_commit "$GITHUB_SHA" \
+            --arg workflow_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" '
+            {
+              schema: 1,
+              workflow_run_id: $workflow_run_id,
+              workflow_commit: $workflow_commit,
+              workflow_url: $workflow_url,
+              policy: "two-component-native-arm64-package-and-runtime-contract-gate"
+            }
+          ' > "$run/authority.json"
+          printf '%s\n' \
+            'arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest' \
+            'arm64/locks/gooroom-resource-access-control-arm64-build/latest' \
+            > "$run/input-authorities.txt"
+          (
+            cd "$run"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+          cp -a "$run/." "$latest/"
+          (cd "$latest" && sha256sum --check SHA256SUMS)
+
+      - name: Commit immutable security-stack authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/xsm-grac-security-stack-arm64
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Lock XSM and GRAC ARM64 security stack ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce the aggregate security gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '
+            .target_architecture == "arm64"
+            and .component_count == 2
+            and .runtime_contracts.helper_path_match == true
+            and .wrong_architecture_executable_count == 0
+            and .security_stack_passed == true
+          ' "arm64/locks/xsm-grac-security-stack-arm64/runs/${GITHUB_RUN_ID}/summary.json"
