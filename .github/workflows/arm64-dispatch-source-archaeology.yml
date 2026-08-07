@@ -1,0 +1,27 @@
+name: ARM64 port - dispatch user-aware source archaeology
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-source-archaeology.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch archaeology against current ARM64 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-archaeology-recovered-package-blockers.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
