@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 132,
-    "workflow_name_count": 132,
+    "workflow_count": 133,
+    "workflow_name_count": 133,
     "referenced_local_file_count": 206,
     "error_count": 6,
     "warning_count": 38,
@@ -257,6 +257,26 @@
         "arm64/scripts/prepare_composite_source_chroot.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_with_local_repo.sh",
+        "arm64/scripts/verify_locked_arm64_build.sh"
+      ]
+    },
+    {
+      "filename": "arm64-build-libsecurity-extensions.yml",
+      "path": ".github/workflows/arm64-build-libsecurity-extensions.yml",
+      "name": "ARM64 port - build exact libsecurity extensions",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/scripts/build_locked_source_arm64_v2.sh",
+        "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
     },
@@ -2729,6 +2749,7 @@
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
+      ".github/workflows/arm64-build-libsecurity-extensions.yml",
       ".github/workflows/arm64-build-p7zip-targeted-v2.yml",
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
@@ -3070,6 +3091,7 @@
     "arm64/scripts/build_locked_source_arm64_v2.sh": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       ".github/workflows/arm64-build-gnome-control-center.yml",
+      ".github/workflows/arm64-build-libsecurity-extensions.yml",
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
       ".github/workflows/arm64-build-wave1-v3.yml",
@@ -3333,6 +3355,7 @@
     ],
     "arm64/scripts/run_locked_source_arm64.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
+      ".github/workflows/arm64-build-libsecurity-extensions.yml",
       ".github/workflows/arm64-build-qtbase-targeted.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
       ".github/workflows/arm64-build-wave1-v2.yml",
@@ -3526,6 +3549,7 @@
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
+      ".github/workflows/arm64-build-libsecurity-extensions.yml",
       ".github/workflows/arm64-build-security-status-tools.yml",
       ".github/workflows/arm64-build-wave1-v2.yml",
       ".github/workflows/arm64-build-wave1.yml",
