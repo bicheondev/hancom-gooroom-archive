@@ -5,7 +5,7 @@
     "workflow_count": 127,
     "workflow_name_count": 127,
     "referenced_local_file_count": 203,
-    "error_count": 9,
+    "error_count": 6,
     "warning_count": 38,
     "passed": false
   },
@@ -3485,27 +3485,12 @@
       "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
-      "path": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 119, column 1:\n    mkdir -p /etc/gdm3\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 120, column 1:\n    cat >/etc/gdm3/daemon.conf <<'EOF'\n    ^"
-    },
-    {
       "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6-display-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 60, column 9:\n            reference_rootfs,\n            ^\ncould not find expected ':'\n  in \"<unicode string>\", line 61, column 9:\n            rootfs,\n            ^"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 37, column 3:\n      /etc/systemd/system/graphical.ta ... \n      ^\ncould not find expected ':'\n  in \"<unicode string>\", line 38, column 1:\n    systemctl set-default graphical. ... \n    ^"
     }
   ],
   "warnings": [
