@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 126,
-    "workflow_name_count": 126,
-    "referenced_local_file_count": 202,
+    "workflow_count": 127,
+    "workflow_name_count": 127,
+    "referenced_local_file_count": 203,
     "error_count": 9,
     "warning_count": 38,
     "passed": false
@@ -25,6 +25,25 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/audit_active_arm64_pipeline.py"
+      ]
+    },
+    {
+      "filename": "arm64-apply-package-recovery-firmware-policy.yml",
+      "path": ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
+      "name": "ARM64 port - apply firmware-aware package recovery policy",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/apply_package_recovery_firmware_policy.py",
+        "arm64/scripts/recover_exact_arm64_package_pool.py",
+        "arm64/scripts/recover_exact_arm64_package_pool_v2.py",
+        "arm64/scripts/summarize_recovered_package_blockers.py"
       ]
     },
     {
@@ -2890,6 +2909,9 @@
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/scripts/apply_package_recovery_firmware_policy.py": [
+      ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml"
+    ],
     "arm64/scripts/apply_reference_config_overlay.py": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-final-from-recovered-rootfs.yml",
@@ -3169,9 +3191,11 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/recover_exact_arm64_package_pool.py": [
+      ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-recover-exact-package-pool.yml"
     ],
     "arm64/scripts/recover_exact_arm64_package_pool_v2.py": [
+      ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-recover-exact-package-pool.yml"
     ],
     "arm64/scripts/recover_exact_vendor_sources_v2.py": [
@@ -3334,6 +3358,7 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/scripts/summarize_recovered_package_blockers.py": [
+      ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
