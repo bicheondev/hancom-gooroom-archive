@@ -1,0 +1,324 @@
+name: ARM64 port - audit Gooroom greeter han3u2 source equivalence v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-greeter-han3u2-v3.yml'
+      - 'arm64/scripts/audit_gooroom_greeter_han3u2.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-greeter-han3u2-v3
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    env:
+      OUTPUT: work/gooroom-greeter-han3u2-forensics-v3
+      SNAPSHOT: 20230730T235959Z
+      SOURCE_REPOSITORY: hancom-io/gooroom-greeter
+      SOURCE_COMMIT: 886f8b6c5cd35117fd5a2d31896e4f9818400960
+      SOURCE_TREE: ef841874d45b7f44f08c4d337d49802b28d35b5e
+
+    steps:
+      - name: Check out ARM64 port authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install historical-rootfs and ELF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/audit_gooroom_greeter_han3u2.py
+
+      - name: Lock exact target package and debug-symbol package
+        shell: bash
+        env:
+          TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+          TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+          TARGET_SIZE: '282940'
+          DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_amd64.deb
+          DEBUG_SHA256: 2d883d730eeb0e38d27828fe873d928fca9ef7d44020e5a775e41ca514964237
+          DEBUG_SIZE: '129604'
+        run: |
+          set -euxo pipefail
+          rm -rf "$OUTPUT"
+          mkdir -p "$OUTPUT/downloads"
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$OUTPUT/downloads/target.deb"
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$DEBUG_URL" -o "$OUTPUT/downloads/target-dbgsym.deb"
+
+          test "$(stat -c '%s' "$OUTPUT/downloads/target.deb")" = "$TARGET_SIZE"
+          test "$(stat -c '%s' "$OUTPUT/downloads/target-dbgsym.deb")" = "$DEBUG_SIZE"
+          echo "$TARGET_SHA256  $OUTPUT/downloads/target.deb" | sha256sum --check -
+          echo "$DEBUG_SHA256  $OUTPUT/downloads/target-dbgsym.deb" | sha256sum --check -
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Version)" = \
+            '0.3.1+grm3u1+han3u2'
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Architecture)" = amd64
+
+          jq -n \
+            --arg target_url "$TARGET_URL" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --argjson target_size "$TARGET_SIZE" \
+            --arg debug_url "$DEBUG_URL" \
+            --arg debug_sha256 "$DEBUG_SHA256" \
+            --argjson debug_size "$DEBUG_SIZE" '
+              {
+                schema: 3,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $target_url,
+                  size: $target_size,
+                  sha256: $target_sha256
+                },
+                debug_symbols: {
+                  package: "gooroom-greeter-dbgsym",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $debug_url,
+                  size: $debug_size,
+                  sha256: $debug_sha256
+                }
+              }
+            ' > "$OUTPUT/target-lock.json"
+
+      - name: Lock exact public han3u1 source commit and tree
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$SOURCE_REPOSITORY.git" "$OUTPUT/source"
+          git -C "$OUTPUT/source" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$OUTPUT/source" checkout --detach "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          test "$(dpkg-parsechangelog -l"$OUTPUT/source/debian/changelog" -SSource)" = \
+            gooroom-greeter
+          test "$(dpkg-parsechangelog -l"$OUTPUT/source/debian/changelog" -SVersion)" = \
+            '0.3.1+grm3u1+han3u1'
+
+          git -C "$OUTPUT/source" archive --format=tar "$SOURCE_COMMIT" \
+            > "$OUTPUT/source-han3u1.tar"
+          archive_sha256="$(sha256sum "$OUTPUT/source-han3u1.tar" | awk '{print $1}')"
+          archive_size="$(stat -c '%s' "$OUTPUT/source-han3u1.tar")"
+          jq -n \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg commit_sha "$SOURCE_COMMIT" \
+            --arg tree_sha "$SOURCE_TREE" \
+            --arg archive_sha256 "$archive_sha256" \
+            --argjson archive_size "$archive_size" '
+              {
+                schema: 3,
+                repository_full_name: $repository,
+                commit_sha: $commit_sha,
+                tree_sha: $tree_sha,
+                declared_source: "gooroom-greeter",
+                declared_version: "0.3.1+grm3u1+han3u1",
+                deterministic_git_archive: {
+                  size: $archive_size,
+                  sha256: $archive_sha256
+                }
+              }
+            ' > "$OUTPUT/source-lock.json"
+
+      - name: Bootstrap a clean Bullseye rootfs from the exact 2023 snapshot
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rootfs="$OUTPUT/bullseye-rootfs"
+          snapshot_url="https://snapshot.debian.org/archive/debian/$SNAPSHOT/"
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye \
+            "$rootfs" \
+            "$snapshot_url" \
+            2>&1 | tee "$OUTPUT/debootstrap.log"
+
+          sudo tee "$rootfs/etc/apt/sources.list" >/dev/null <<EOF
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main
+          EOF
+          sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null <<'EOF'
+          Acquire::Check-Valid-Until "false";
+          Acquire::Retries "5";
+          Dpkg::Use-Pty "0";
+          EOF
+          sudo mkdir -p "$rootfs/build"
+          sudo cp -a "$OUTPUT/source" "$rootfs/build/source"
+          sudo chown -R root:root "$rootfs/build/source"
+
+          sudo chroot "$rootfs" dpkg-query -W \
+            -f='${Package}\t${Version}\t${Architecture}\n' \
+            > "$OUTPUT/bootstrap-packages.tsv"
+          sudo tar --numeric-owner --sort=name \
+            --mtime='UTC 1970-01-01' \
+            -C "$rootfs" -cf "$OUTPUT/bootstrap-rootfs-metadata.tar" \
+            etc/apt/sources.list etc/apt/apt.conf.d/99snapshot var/lib/dpkg/status
+          sha256sum "$OUTPUT/bootstrap-rootfs-metadata.tar" \
+            > "$OUTPUT/bootstrap-rootfs-metadata.sha256"
+
+      - name: Build public han3u1 source inside the clean historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rootfs="$OUTPUT/bullseye-rootfs"
+          set +e
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps \
+              --install \
+              --remove \
+              --tool "apt-get -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$OUTPUT/baseline-build.log"
+          build_rc=${PIPESTATUS[0]}
+          set -e
+          test "$build_rc" -eq 0
+
+          baseline_in_rootfs="$(sudo find "$rootfs/build" -maxdepth 1 -type f \
+            -name 'gooroom-greeter_0.3.1+grm3u1+han3u1_amd64.deb' \
+            -print -quit)"
+          test -n "$baseline_in_rootfs"
+          sudo cp "$baseline_in_rootfs" "$OUTPUT/downloads/baseline.deb"
+          sudo chown "$(id -u):$(id -g)" "$OUTPUT/downloads/baseline.deb"
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Version)" = \
+            '0.3.1+grm3u1+han3u1'
+          test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Architecture)" = amd64
+          sha256sum "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-deb.sha256"
+          printf '%s\n' \
+            'rebuild:hancom-io/gooroom-greeter@886f8b6c5cd35117fd5a2d31896e4f9818400960:debootstrap-bullseye-snapshot-20230730T235959Z' \
+            > "$OUTPUT/baseline-origin.txt"
+
+      - name: Extract packages and record complete layouts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for kind in target target-debug baseline; do
+            mkdir -p "$OUTPUT/$kind-control" "$OUTPUT/$kind-root"
+          done
+          dpkg-deb -e "$OUTPUT/downloads/target.deb" "$OUTPUT/target-control"
+          dpkg-deb -x "$OUTPUT/downloads/target.deb" "$OUTPUT/target-root"
+          dpkg-deb -e "$OUTPUT/downloads/target-dbgsym.deb" "$OUTPUT/target-debug-control"
+          dpkg-deb -x "$OUTPUT/downloads/target-dbgsym.deb" "$OUTPUT/target-debug-root"
+          dpkg-deb -e "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-control"
+          dpkg-deb -x "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-root"
+
+          dpkg-deb -f "$OUTPUT/downloads/target.deb" > "$OUTPUT/target-control.txt"
+          dpkg-deb -f "$OUTPUT/downloads/target-dbgsym.deb" > "$OUTPUT/target-debug-control.txt"
+          dpkg-deb -f "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-control.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target.deb" > "$OUTPUT/target-file-list.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target-dbgsym.deb" > "$OUTPUT/target-debug-file-list.txt"
+          dpkg-deb -c "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-file-list.txt"
+          find "$OUTPUT/target-root/usr/share/doc" -maxdepth 4 \
+            -printf '%y\t%p\t%l\n' 2>/dev/null \
+            > "$OUTPUT/target-doc-layout.tsv" || true
+          find "$OUTPUT/baseline-root/usr/share/doc" -maxdepth 4 \
+            -printf '%y\t%p\t%l\n' 2>/dev/null \
+            > "$OUTPUT/baseline-doc-layout.tsv" || true
+
+      - name: Compare full payload and normalized ELF semantics
+        shell: bash
+        run: |
+          set -euxo pipefail
+          baseline_origin="$(cat "$OUTPUT/baseline-origin.txt")"
+          python3 arm64/scripts/audit_gooroom_greeter_han3u2.py \
+            --output "$OUTPUT/analysis" \
+            --target-root "$OUTPUT/target-root" \
+            --baseline-root "$OUTPUT/baseline-root" \
+            --source-root "$OUTPUT/source" \
+            --target-debug-root "$OUTPUT/target-debug-root" \
+            --baseline-origin "$baseline_origin"
+          jq . "$OUTPUT/analysis/summary.json"
+          cat "$OUTPUT/analysis/payload-delta.tsv"
+          cat "$OUTPUT/analysis/elf-comparison.tsv"
+
+      - name: Create compact immutable evidence
+        id: compact
+        shell: bash
+        run: |
+          set -euxo pipefail
+          compact="$OUTPUT/compact"
+          rm -rf "$compact"
+          mkdir -p "$compact"
+          for pattern in '*.json' '*.txt' '*.tsv' '*.sha256'; do
+            find "$OUTPUT" -maxdepth 1 -type f -name "$pattern" \
+              -exec cp '{}' "$compact/" ';'
+          done
+          cp "$OUTPUT/analysis/summary.json" "$compact/summary.json"
+          cp "$OUTPUT/analysis/payload-delta.json" "$compact/"
+          cp "$OUTPUT/analysis/payload-delta.tsv" "$compact/"
+          cp "$OUTPUT/analysis/elf-comparison.tsv" "$compact/"
+          cp "$OUTPUT/analysis/target-payload-manifest.json" "$compact/"
+          cp "$OUTPUT/analysis/baseline-payload-manifest.json" "$compact/"
+          find "$compact" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$compact/LOCKSUMS.sha256"
+          (cd "$compact" && sha256sum --check LOCKSUMS.sha256)
+          echo "compact=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Upload complete forensic evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-source-equivalence-v3
+          path: |
+            ${{ env.OUTPUT }}/compact
+            ${{ env.OUTPUT }}/analysis/elf-comparison.json
+            ${{ env.OUTPUT }}/debootstrap.log
+            ${{ env.OUTPUT }}/baseline-build.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact evidence authority
+        shell: bash
+        env:
+          COMPACT: ${{ steps.compact.outputs.compact }}
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/gooroom-greeter-han3u2-forensics/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$COMPACT"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record clean-rootfs gooroom-greeter han3u2 source audit'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
