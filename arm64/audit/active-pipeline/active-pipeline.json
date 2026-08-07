@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 138,
-    "workflow_name_count": 138,
-    "referenced_local_file_count": 212,
+    "workflow_count": 139,
+    "workflow_name_count": 139,
+    "referenced_local_file_count": 213,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -101,6 +101,23 @@
         "arm64/locks/recovered-package-pool/latest/artifact-lock.json",
         "arm64/locks/recovered-package-pool/latest/compact-blockers.json",
         "arm64/scripts/targeted_source_archaeology.py"
+      ]
+    },
+    {
+      "filename": "arm64-audit-gooroom-greeter-han3u2-v2.yml",
+      "path": ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml",
+      "name": "ARM64 port - audit Gooroom greeter han3u2 source equivalence v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_gooroom_greeter_han3u2.py"
       ]
     },
     {
@@ -3127,6 +3144,9 @@
     "arm64/scripts/audit_arm64_port_state.py": [
       ".github/workflows/arm64-port-state-audit.yml",
       ".github/workflows/arm64-repair-audit-coverage.yml"
+    ],
+    "arm64/scripts/audit_gooroom_greeter_han3u2.py": [
+      ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml"
     ],
     "arm64/scripts/audit_package_plan_inventory.py": [
       ".github/workflows/arm64-package-plan-audit.yml"
