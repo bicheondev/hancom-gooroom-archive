@@ -98,16 +98,20 @@ jobs:
               assert len(host_audit['x86']) == 1, host_audit
           PY
 
-      - name: Commit the verified policy implementation
+      - name: Commit the verified Python policy implementation
         shell: bash
         run: |
           set -euxo pipefail
+          # The guarded patcher also prepares the recovery-workflow update, but
+          # the Actions token cannot push workflow files. Restore that file and
+          # commit only the verified Python implementation; the workflow change
+          # is applied separately through the GitHub connector.
+          git restore .github/workflows/arm64-recover-exact-package-pool.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
             arm64/scripts/recover_exact_arm64_package_pool.py \
-            arm64/scripts/summarize_recovered_package_blockers.py \
-            .github/workflows/arm64-recover-exact-package-pool.yml
+            arm64/scripts/summarize_recovered_package_blockers.py
           if git diff --cached --quiet; then
             exit 0
           fi
