@@ -1,0 +1,515 @@
+{
+  "schema": 1,
+  "recovery_policy": "exact-reference-source-version-and-no-x86-elf",
+  "reference_package_count": 1279,
+  "selected_package_count": 1245,
+  "excluded_package_count": 9,
+  "blocker_count": 25,
+  "reason_counts": {
+    "candidate-payload-architecture-audit-failed": 4,
+    "no-exact-source-version-candidate": 21
+  },
+  "source_group_count": 14,
+  "source_groups": [
+    {
+      "source": "firmware-nonfree",
+      "source_version": "20210315-3",
+      "blocker_count": 4,
+      "reference_packages": [
+        "firmware-atheros",
+        "firmware-misc-nonfree",
+        "firmware-netronome",
+        "firmware-qcom-soc"
+      ]
+    },
+    {
+      "source": "gnome-control-center",
+      "source_version": "1:3.38.4-1+grm3u9",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gnome-control-center"
+      ]
+    },
+    {
+      "source": "gnome-flashback",
+      "source_version": "3.38.0-2+grm3u2+han3u4",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gnome-flashback"
+      ]
+    },
+    {
+      "source": "gooroom-applauncher-applet",
+      "source_version": "0.4.0+grm3u1+han3u2",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-applauncher-applet"
+      ]
+    },
+    {
+      "source": "gooroom-browser",
+      "source_version": "3.5.0-1+grm3u3",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-browser"
+      ]
+    },
+    {
+      "source": "gooroom-dockbarx-applet",
+      "source_version": "0.3.1+grm3u1+han3u1",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-dockbarx-applet"
+      ]
+    },
+    {
+      "source": "gooroom-greeter",
+      "source_version": "0.3.1+grm3u1+han3u2",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-greeter"
+      ]
+    },
+    {
+      "source": "gooroom-guide",
+      "source_version": "0.5.3+grm3u1+han3u1",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-guide"
+      ]
+    },
+    {
+      "source": "gooroom-integration-applet",
+      "source_version": "0.3.1+grm3u1+han3u3",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-integration-applet"
+      ]
+    },
+    {
+      "source": "gooroom-libsecurity-extensions",
+      "source_version": "0.1.7+grm3u1",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-libsecurity-extensions"
+      ]
+    },
+    {
+      "source": "gooroom-security-status-tools",
+      "source_version": "0.3.9+grm3u1",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-security-status-tools"
+      ]
+    },
+    {
+      "source": "gooroom-session-manager",
+      "source_version": "0.3.9+grm3u1+han3u2",
+      "blocker_count": 1,
+      "reference_packages": [
+        "gooroom-session-manager"
+      ]
+    },
+    {
+      "source": "linux",
+      "source_version": "5.10.179-1+grm3u1",
+      "blocker_count": 1,
+      "reference_packages": [
+        "linux-image-5.10.0-23-amd64"
+      ]
+    },
+    {
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "blocker_count": 9,
+      "reference_packages": [
+        "libqt5core5a",
+        "libqt5dbus5",
+        "libqt5gui5",
+        "libqt5network5",
+        "libqt5printsupport5",
+        "libqt5sql5",
+        "libqt5test5",
+        "libqt5widgets5",
+        "libqt5xml5"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "reference_package": "firmware-atheros",
+      "target_package": "firmware-atheros",
+      "reason": "candidate-payload-architecture-audit-failed",
+      "source": "firmware-nonfree",
+      "source_version": "20210315-3",
+      "disposition": "",
+      "target_architecture": "",
+      "candidate_version": "20210315-3",
+      "candidate_architecture": "all",
+      "candidate_sha256": "f5e75316beeed9100230e8662571864f5d0329b461219edbf0b10949b05701dd",
+      "x86_payload_count": 5,
+      "foreign_payload_count": 6,
+      "available_candidate_count": 0
+    },
+    {
+      "reference_package": "firmware-misc-nonfree",
+      "target_package": "firmware-misc-nonfree",
+      "reason": "candidate-payload-architecture-audit-failed",
+      "source": "firmware-nonfree",
+      "source_version": "20210315-3",
+      "disposition": "",
+      "target_architecture": "",
+      "candidate_version": "20210315-3",
+      "candidate_architecture": "all",
+      "candidate_sha256": "3c77731b43f22ca26d4f9c9110202a088e3425cd34473370467168edc81ef6a0",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 1,
+      "available_candidate_count": 0
+    },
+    {
+      "reference_package": "firmware-netronome",
+      "target_package": "firmware-netronome",
+      "reason": "candidate-payload-architecture-audit-failed",
+      "source": "firmware-nonfree",
+      "source_version": "20210315-3",
+      "disposition": "",
+      "target_architecture": "",
+      "candidate_version": "20210315-3",
+      "candidate_architecture": "all",
+      "candidate_sha256": "15daf08a834c09e4b549e206c16b210f3d25b2abaa675000d50c838809b163f6",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 40,
+      "available_candidate_count": 0
+    },
+    {
+      "reference_package": "firmware-qcom-soc",
+      "target_package": "firmware-qcom-soc",
+      "reason": "candidate-payload-architecture-audit-failed",
+      "source": "firmware-nonfree",
+      "source_version": "20210315-3",
+      "disposition": "",
+      "target_architecture": "",
+      "candidate_version": "20210315-3",
+      "candidate_architecture": "all",
+      "candidate_sha256": "22e31751a620f132406c4084bc8dc245d18c146618190c07ee77338ebcfa9083",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 23,
+      "available_candidate_count": 0
+    },
+    {
+      "reference_package": "gnome-control-center",
+      "target_package": "gnome-control-center",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gnome-control-center",
+      "source_version": "1:3.38.4-1+grm3u9",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gnome-flashback",
+      "target_package": "gnome-flashback",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gnome-flashback",
+      "source_version": "3.38.0-2+grm3u2+han3u4",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-applauncher-applet",
+      "target_package": "gooroom-applauncher-applet",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-applauncher-applet",
+      "source_version": "0.4.0+grm3u1+han3u2",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-browser",
+      "target_package": "gooroom-browser",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-browser",
+      "source_version": "3.5.0-1+grm3u3",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-dockbarx-applet",
+      "target_package": "gooroom-dockbarx-applet",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-dockbarx-applet",
+      "source_version": "0.3.1+grm3u1+han3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-greeter",
+      "target_package": "gooroom-greeter",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-greeter",
+      "source_version": "0.3.1+grm3u1+han3u2",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-guide",
+      "target_package": "gooroom-guide",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-guide",
+      "source_version": "0.5.3+grm3u1+han3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-integration-applet",
+      "target_package": "gooroom-integration-applet",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-integration-applet",
+      "source_version": "0.3.1+grm3u1+han3u3",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-libsecurity-extensions",
+      "target_package": "gooroom-libsecurity-extensions",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-libsecurity-extensions",
+      "source_version": "0.1.7+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-security-status-tools",
+      "target_package": "gooroom-security-status-tools",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-security-status-tools",
+      "source_version": "0.3.9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "gooroom-session-manager",
+      "target_package": "gooroom-session-manager",
+      "reason": "no-exact-source-version-candidate",
+      "source": "gooroom-session-manager",
+      "source_version": "0.3.9+grm3u1+han3u2",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "linux-image-5.10.0-23-amd64",
+      "target_package": "linux-image-5.10.0-23-arm64",
+      "reason": "no-exact-source-version-candidate",
+      "source": "linux",
+      "source_version": "5.10.179-1+grm3u1",
+      "disposition": "arch-replace",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 0
+    },
+    {
+      "reference_package": "libqt5core5a",
+      "target_package": "libqt5core5a",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5dbus5",
+      "target_package": "libqt5dbus5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5gui5",
+      "target_package": "libqt5gui5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5network5",
+      "target_package": "libqt5network5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5printsupport5",
+      "target_package": "libqt5printsupport5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5sql5",
+      "target_package": "libqt5sql5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5test5",
+      "target_package": "libqt5test5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5widgets5",
+      "target_package": "libqt5widgets5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    },
+    {
+      "reference_package": "libqt5xml5",
+      "target_package": "libqt5xml5",
+      "reason": "no-exact-source-version-candidate",
+      "source": "qtbase-opensource-src",
+      "source_version": "5.15.2+dfsg-9+grm3u1",
+      "disposition": "native-arm64",
+      "target_architecture": "arm64",
+      "candidate_version": "",
+      "candidate_architecture": "",
+      "candidate_sha256": "",
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0,
+      "available_candidate_count": 1
+    }
+  ]
+}
