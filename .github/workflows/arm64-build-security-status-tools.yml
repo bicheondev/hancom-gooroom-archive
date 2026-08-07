@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-build-security-status-tools.yml'
       - 'arm64/scripts/run_locked_source_arm64_with_vendor.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v4.sh'
       - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
@@ -55,6 +56,7 @@ jobs:
           chmod +x \
             arm64/scripts/build_locked_source_arm64_v2.sh \
             arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v4.sh \
             arm64/scripts/run_locked_source_arm64_with_vendor.sh \
             arm64/scripts/verify_locked_arm64_build.sh
           rm -rf work/gooroom-security-status-tools-arm64
