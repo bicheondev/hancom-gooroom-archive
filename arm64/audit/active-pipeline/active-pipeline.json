@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 136,
-    "workflow_name_count": 136,
+    "workflow_count": 135,
+    "workflow_name_count": 135,
     "referenced_local_file_count": 205,
-    "error_count": 4,
+    "error_count": 2,
     "warning_count": 38,
     "passed": false
   },
@@ -1563,20 +1563,6 @@
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json"
       ]
-    },
-    {
-      "filename": "arm64-pagination-maintenance.yml",
-      "path": ".github/workflows/arm64-pagination-maintenance.yml",
-      "name": "ARM64 port - fix paginated API evidence collection",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
     },
     {
       "filename": "arm64-pipeline-lint.yml",
@@ -3621,15 +3607,6 @@
     ]
   },
   "errors": [
-    {
-      "path": ".github/workflows/arm64-pagination-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-retry-convergence.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 41, column 1:\n    '''\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 42, column 20:\n              new = '''          replace_all(\n                       ^"
-    },
     {
       "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
