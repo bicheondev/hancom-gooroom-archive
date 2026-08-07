@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-07T03:26:25.671109Z",
+  "generated_at": "2026-08-07T03:26:47.070248Z",
   "status": "failed",
   "python": [
     {
@@ -928,11 +928,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
-      "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecda23c0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecda03b0>)"
-    },
-    {
       "path": ".github/workflows/arm64-package-repo-incremental.yml",
       "status": "passed"
     },
@@ -1119,7 +1114,7 @@
     {
       "path": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaf080>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdacb30>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70f680>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70eff0>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
@@ -1140,12 +1135,12 @@
     {
       "path": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaf620>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdae990>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70d2e0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70eab0>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaefc0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdac500>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70eb40>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70d9a0>)"
     },
     {
       "path": ".github/workflows/arm64-stage0-v6.yml",
@@ -2348,12 +2343,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-package-repo-incremental.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -3164,7 +3153,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-07T03:26:26.760271Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-07T03:26:47.912846Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -3174,14 +3163,13 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-07T03:26:26.800391Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-07T03:26:47.945600Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
   "issues": [
-    "YAML parse failed: .github/workflows/arm64-package-pool-v2-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecda23c0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecda03b0>)",
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaf080>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdacb30>)",
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaf620>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdae990>)",
-    "YAML parse failed: .github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fd9ecdaefc0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fd9ecdac500>)"
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70f680>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70eff0>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70d2e0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70eab0>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fdcde70eb40>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fdcde70d9a0>)"
   ]
 }
