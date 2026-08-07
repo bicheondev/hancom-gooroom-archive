@@ -1,0 +1,753 @@
+name: ARM64 port - reconstruct and build exact Gooroom greeter han3u2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-gooroom-greeter-han3u2.yml'
+      - 'arm64/scripts/reconstruct_gooroom_greeter_han3u2.py'
+      - 'arm64/scripts/verify_gooroom_greeter_han3u2_equivalence.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-greeter-han3u2
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT: 20230730T235959Z
+  SOURCE_REPOSITORY: hancom-io/gooroom-greeter
+  SOURCE_COMMIT: 886f8b6c5cd35117fd5a2d31896e4f9818400960
+  SOURCE_TREE: ef841874d45b7f44f08c4d337d49802b28d35b5e
+  TARGET_VERSION: 0.3.1+grm3u1+han3u2
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+  TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+  TARGET_SIZE: '282940'
+  TARGET_DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_amd64.deb
+  TARGET_DEBUG_SHA256: 2d883d730eeb0e38d27828fe873d928fca9ef7d44020e5a775e41ca514964237
+  TARGET_DEBUG_SIZE: '129604'
+
+jobs:
+  amd64-equivalence:
+    name: Reconstruct source and prove AMD64 equivalence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - name: Check out the exact reconstruction implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install clean-rootfs, package, and ELF tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_gooroom_greeter_han3u2.py \
+            arm64/scripts/verify_gooroom_greeter_han3u2_equivalence.py
+
+      - name: Lock and reconstruct the exact han3u2 source tree
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-amd64-equivalence
+          rm -rf "$output"
+          mkdir -p "$output/source-authority" "$output/downloads"
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$SOURCE_REPOSITORY.git" "$output/source"
+          git -C "$output/source" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$output/source" checkout --detach "$SOURCE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+
+          python3 arm64/scripts/reconstruct_gooroom_greeter_han3u2.py \
+            --source-dir "$output/source" \
+            --output-lock "$output/source-authority/reconstruction-lock.json"
+          test "$(dpkg-parsechangelog -l"$output/source/debian/changelog" -SVersion)" = \
+            "$TARGET_VERSION"
+          test "$(jq -r '.source_version' "$output/source-authority/reconstruction-lock.json")" = \
+            "$TARGET_VERSION"
+          test "$(jq -r '.status' "$output/source-authority/reconstruction-lock.json")" = \
+            binary-equivalence-verification-required
+
+      - name: Download and verify exact AMD64 target authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-amd64-equivalence
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$output/downloads/target.deb"
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_DEBUG_URL" -o "$output/downloads/target-dbgsym.deb"
+          test "$(stat -c '%s' "$output/downloads/target.deb")" = "$TARGET_SIZE"
+          test "$(stat -c '%s' "$output/downloads/target-dbgsym.deb")" = \
+            "$TARGET_DEBUG_SIZE"
+          echo "$TARGET_SHA256  $output/downloads/target.deb" | sha256sum --check -
+          echo "$TARGET_DEBUG_SHA256  $output/downloads/target-dbgsym.deb" | \
+            sha256sum --check -
+          test "$(dpkg-deb -f "$output/downloads/target.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$output/downloads/target.deb" Version)" = "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$output/downloads/target.deb" Architecture)" = amd64
+          mkdir -p "$output/target-root" "$output/target-debug-root"
+          dpkg-deb -x "$output/downloads/target.deb" "$output/target-root"
+          dpkg-deb -x "$output/downloads/target-dbgsym.deb" "$output/target-debug-root"
+
+          target_changelog="$output/target-root/usr/share/doc/gooroom-greeter/changelog.gz"
+          test -f "$target_changelog"
+          gzip -dc "$target_changelog" > "$output/target-changelog"
+          echo '5a843cdc103427616c1b5f8e98f6259187941658d805b16e50b9cfafc170bb71  work/gooroom-greeter-amd64-equivalence/target-changelog' \
+            | sha256sum --check -
+          cmp "$output/target-changelog" "$output/source/debian/changelog"
+
+          jq -n \
+            --arg url "$TARGET_URL" \
+            --arg sha256 "$TARGET_SHA256" \
+            --argjson size "$TARGET_SIZE" \
+            --arg debug_url "$TARGET_DEBUG_URL" \
+            --arg debug_sha256 "$TARGET_DEBUG_SHA256" \
+            --argjson debug_size "$TARGET_DEBUG_SIZE" '
+              {
+                schema: 1,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $url,
+                  size: $size,
+                  sha256: $sha256
+                },
+                debug_symbols: {
+                  package: "gooroom-greeter-dbgsym",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $debug_url,
+                  size: $debug_size,
+                  sha256: $debug_sha256
+                }
+              }
+            ' > "$output/source-authority/target-binary-lock.json"
+
+      - name: Bootstrap a clean historical AMD64 Bullseye rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-amd64-equivalence
+          rootfs="$output/rootfs"
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye \
+            "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$output/debootstrap.log"
+          sudo tee "$rootfs/etc/apt/sources.list" >/dev/null <<EOF
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main
+          EOF
+          sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null <<'EOF'
+          Acquire::Check-Valid-Until "false";
+          Acquire::Retries "5";
+          Dpkg::Use-Pty "0";
+          EOF
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf "$output/source-authority/reconstructed-source.tar" \
+            -C "$rootfs/build/source"
+          sudo chown -R root:root "$rootfs/build/source"
+
+      - name: Build the reconstructed source natively for AMD64
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-amd64-equivalence
+          rootfs="$output/rootfs"
+          set +e
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps \
+              --install \
+              --remove \
+              --tool "apt-get -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$output/amd64-build.log"
+          build_rc=${PIPESTATUS[0]}
+          set -e
+          test "$build_rc" -eq 0
+
+          candidate_in_rootfs="$(sudo find "$rootfs/build" -maxdepth 1 -type f \
+            -name 'gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb' \
+            -print -quit)"
+          test -n "$candidate_in_rootfs"
+          sudo cp "$candidate_in_rootfs" "$output/downloads/candidate.deb"
+          sudo chown "$(id -u):$(id -g)" "$output/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$output/downloads/candidate.deb" Package)" = \
+            gooroom-greeter
+          test "$(dpkg-deb -f "$output/downloads/candidate.deb" Version)" = \
+            "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$output/downloads/candidate.deb" Architecture)" = amd64
+          mkdir -p "$output/candidate-root"
+          dpkg-deb -x "$output/downloads/candidate.deb" "$output/candidate-root"
+
+      - name: Prove target and reconstructed AMD64 payload equivalence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-amd64-equivalence
+          python3 arm64/scripts/verify_gooroom_greeter_han3u2_equivalence.py \
+            --target-root "$output/target-root" \
+            --candidate-root "$output/candidate-root" \
+            --output-dir "$output/equivalence"
+          jq -e '
+            .verified == true
+            and .same_path_set == true
+            and .changelog_text_identical == true
+            and .all_elf_normalized_identical == true
+            and .difference_count == 0
+          ' "$output/equivalence/summary.json" >/dev/null
+
+          candidate_sha256="$(sha256sum "$output/downloads/candidate.deb" | awk '{print $1}')"
+          candidate_size="$(stat -c '%s' "$output/downloads/candidate.deb")"
+          jq -n \
+            --arg package gooroom-greeter \
+            --arg version "$TARGET_VERSION" \
+            --arg architecture amd64 \
+            --arg sha256 "$candidate_sha256" \
+            --argjson size "$candidate_size" '
+              {
+                package: $package,
+                version: $version,
+                architecture: $architecture,
+                size: $size,
+                sha256: $sha256
+              }
+            ' > "$output/source-authority/amd64-candidate.json"
+          cp "$output/equivalence/summary.json" \
+            "$output/source-authority/amd64-equivalence-summary.json"
+          cp "$output/equivalence/elf-comparison.json" \
+            "$output/source-authority/amd64-elf-comparison.json"
+          cp "$output/equivalence/differences.json" \
+            "$output/source-authority/amd64-differences.json"
+
+          jq '
+            .status = "verified-reconstructed-source"
+            | .amd64_equivalence = {
+                passed: true,
+                policy: "exact-payload-and-normalized-elf-equivalence",
+                summary: "amd64-equivalence-summary.json",
+                target_binary_lock: "target-binary-lock.json"
+              }
+          ' "$output/source-authority/reconstruction-lock.json" \
+            > "$output/source-authority/reconstruction-lock.verified.json"
+          mv "$output/source-authority/reconstruction-lock.verified.json" \
+            "$output/source-authority/reconstruction-lock.json"
+          (
+            cd "$output/source-authority"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check LOCKSUMS.sha256
+          )
+
+      - name: Upload verified reconstructed-source authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-verified-source
+          path: work/gooroom-greeter-amd64-equivalence/source-authority
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload complete AMD64 equivalence diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-amd64-equivalence-diagnostics
+          path: |
+            work/gooroom-greeter-amd64-equivalence/equivalence
+            work/gooroom-greeter-amd64-equivalence/amd64-build.log
+            work/gooroom-greeter-amd64-equivalence/debootstrap.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+  arm64-build:
+    name: Build the verified source natively for ARM64
+    needs: amd64-equivalence
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+
+    steps:
+      - name: Check out the exact build implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download verified reconstructed-source authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-greeter-han3u2-verified-source
+          path: work/source-authority
+
+      - name: Verify native ARM64 host and immutable source bundle
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This build must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file jq python3 xz-utils
+          (cd work/source-authority && sha256sum --check LOCKSUMS.sha256)
+          expected_archive_sha="$(jq -r '.reconstruction.archive_sha256' \
+            work/source-authority/reconstruction-lock.json)"
+          echo "$expected_archive_sha  work/source-authority/reconstructed-source.tar" \
+            | sha256sum --check -
+          jq -e '
+            .status == "verified-reconstructed-source"
+            and .amd64_equivalence.passed == true
+            and .source_version == "0.3.1+grm3u1+han3u2"
+          ' work/source-authority/reconstruction-lock.json >/dev/null
+
+      - name: Bootstrap a clean historical native ARM64 Bullseye rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-arm64
+          rootfs="$output/rootfs"
+          rm -rf "$output"
+          mkdir -p "$output"
+          sudo debootstrap \
+            --arch=arm64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye \
+            "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$output/debootstrap.log"
+          sudo tee "$rootfs/etc/apt/sources.list" >/dev/null <<EOF
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main
+          EOF
+          sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null <<'EOF'
+          Acquire::Check-Valid-Until "false";
+          Acquire::Retries "5";
+          Dpkg::Use-Pty "0";
+          EOF
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf work/source-authority/reconstructed-source.tar \
+            -C "$rootfs/build/source"
+          sudo chown -R root:root "$rootfs/build/source"
+
+      - name: Build exact reconstructed source natively for ARM64
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-arm64
+          rootfs="$output/rootfs"
+          set +e
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps \
+              --install \
+              --remove \
+              --tool "apt-get -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$output/arm64-build.log"
+          build_rc=${PIPESTATUS[0]}
+          set -e
+          test "$build_rc" -eq 0
+          mkdir -p "$output/artifact/debs"
+          while IFS= read -r package; do
+            sudo cp "$package" "$output/artifact/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f \
+            -name '*_0.3.1+grm3u1+han3u2_arm64.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$output/artifact/debs"
+          test -n "$(find "$output/artifact/debs" -type f -name '*.deb' -print -quit)"
+
+      - name: Verify ARM64 package identity and every executable payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-arm64
+          artifact="$output/artifact"
+          mkdir -p "$artifact/extracted"
+          python3 - "$artifact" "$TARGET_VERSION" <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          artifact = Path(sys.argv[1])
+          version = sys.argv[2]
+          rows = []
+          wrong = []
+          elf_rows = []
+
+          def output(command):
+              completed = subprocess.run(command, text=True, stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT, check=False)
+              if completed.returncode:
+                  raise SystemExit(f"command failed: {' '.join(command)}\n{completed.stdout}")
+              return completed.stdout.strip()
+
+          def digest(path):
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(block)
+              return h.hexdigest()
+
+          for deb in sorted((artifact / 'debs').glob('*.deb')):
+              package = output(['dpkg-deb', '-f', str(deb), 'Package'])
+              package_version = output(['dpkg-deb', '-f', str(deb), 'Version'])
+              architecture = output(['dpkg-deb', '-f', str(deb), 'Architecture'])
+              source_field = output(['dpkg-deb', '-f', str(deb), 'Source']) if subprocess.run(
+                  ['dpkg-deb', '-f', str(deb), 'Source'], stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL).returncode == 0 else ''
+              if package_version != version or architecture != 'arm64':
+                  raise SystemExit(f'invalid DEB identity: {package} {package_version} {architecture}')
+              root = artifact / 'extracted' / package
+              root.mkdir(parents=True, exist_ok=True)
+              output(['dpkg-deb', '-x', str(deb), str(root)])
+              rows.append({
+                  'filename': deb.name,
+                  'package': package,
+                  'version': package_version,
+                  'architecture': architecture,
+                  'source_field': source_field,
+                  'size': deb.stat().st_size,
+                  'sha256': digest(deb),
+              })
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or path.read_bytes()[:4] != b'\x7fELF':
+                      continue
+                  description = output(['file', '-b', str(path)])
+                  machine = output(['readelf', '-hW', str(path)])
+                  entry = {
+                      'package': package,
+                      'path': path.relative_to(root).as_posix(),
+                      'sha256': digest(path),
+                      'file': description,
+                      'machine_header': machine,
+                  }
+                  elf_rows.append(entry)
+                  if 'AArch64' not in machine or 'x86-64' in description or 'Intel 80386' in description:
+                      wrong.append(entry)
+
+          required = [row for row in rows if row['package'] == 'gooroom-greeter']
+          if len(required) != 1:
+              raise SystemExit(f'exactly one gooroom-greeter DEB required, found {len(required)}')
+          if not elf_rows:
+              raise SystemExit('no ELF payload was found in ARM64 build')
+          document = {
+              'schema': 1,
+              'source': 'gooroom-greeter',
+              'source_version': version,
+              'target_architecture': 'arm64',
+              'deb_artifacts': rows,
+              'elf_payloads': elf_rows,
+              'wrong_architecture_executables': wrong,
+              'verified': not wrong,
+          }
+          (artifact / 'verification-summary.json').write_text(
+              json.dumps(document, indent=2, sort_keys=True) + '\n'
+          )
+          (artifact / 'deb-artifacts.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n'
+          )
+          if wrong:
+              raise SystemExit(json.dumps(wrong, indent=2))
+          PY
+          jq -e '
+            .verified == true
+            and (.wrong_architecture_executables | length) == 0
+            and ([.deb_artifacts[] | select(.package == "gooroom-greeter")] | length) == 1
+          ' "$artifact/verification-summary.json" >/dev/null
+
+          cp work/source-authority/reconstruction-lock.json \
+            "$artifact/reconstruction-lock.json"
+          cp work/source-authority/amd64-equivalence-summary.json \
+            "$artifact/amd64-equivalence-summary.json"
+          source_archive_sha="$(jq -r '.reconstruction.archive_sha256' \
+            "$artifact/reconstruction-lock.json")"
+          reconstructed_tree="$(jq -r '.reconstruction.tree_sha' \
+            "$artifact/reconstruction-lock.json")"
+          jq -n \
+            --arg source gooroom-greeter \
+            --arg source_version "$TARGET_VERSION" \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg base_commit "$SOURCE_COMMIT" \
+            --arg reconstructed_tree "$reconstructed_tree" \
+            --arg source_archive_sha256 "$source_archive_sha" \
+            --arg snapshot "$SNAPSHOT" '
+              {
+                schema: 1,
+                source: $source,
+                source_version: $source_version,
+                repository: $repository,
+                base_commit_sha: $base_commit,
+                reconstructed_tree_sha: $reconstructed_tree,
+                source_archive_sha256: $source_archive_sha256,
+                target_architecture: "arm64",
+                debian_snapshot: $snapshot,
+                build_mode: "native-arm64-clean-historical-rootfs",
+                source_authority: "locked-amd64-binary-changelog-plus-public-change-id-and-amd64-equivalence"
+              }
+            ' > "$artifact/build-lock.json"
+          (
+            cd "$artifact"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+
+      - name: Upload verified native ARM64 build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-exact-arm64
+          path: work/gooroom-greeter-arm64/artifact
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload native ARM64 diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-arm64-diagnostics
+          path: |
+            work/gooroom-greeter-arm64/arm64-build.log
+            work/gooroom-greeter-arm64/debootstrap.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+  promote:
+    name: Promote verified source and ARM64 build locks
+    needs: [amd64-equivalence, arm64-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out current ARM64 evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download verified reconstructed-source authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-greeter-han3u2-verified-source
+          path: work/promote/source
+
+      - name: Download verified native ARM64 build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-greeter-han3u2-exact-arm64
+          path: work/promote/arm64
+
+      - name: Verify downloaded evidence and generate promotion records
+        shell: bash
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euxo pipefail
+          (cd work/promote/source && sha256sum --check LOCKSUMS.sha256)
+          (cd work/promote/arm64 && sha256sum --check SHA256SUMS)
+          jq -e '.verified == true' work/promote/arm64/verification-summary.json >/dev/null
+          jq -e '.verified == true' work/promote/source/amd64-equivalence-summary.json >/dev/null
+
+          result_dir=arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2
+          evidence_dir=arm64/locks/gooroom-greeter-han3u2-reconstruction/latest
+          reconstructed_locks=arm64/locks/reconstructed-sources/source-locks.json
+          rm -rf "$result_dir" "$evidence_dir"
+          mkdir -p "$result_dir" "$evidence_dir" "$(dirname "$reconstructed_locks")"
+
+          cp work/promote/source/reconstruction-lock.json "$evidence_dir/"
+          cp work/promote/source/reconstruction.patch "$evidence_dir/"
+          cp work/promote/source/target-binary-lock.json "$evidence_dir/"
+          cp work/promote/source/amd64-equivalence-summary.json "$evidence_dir/"
+          cp work/promote/source/amd64-elf-comparison.json "$evidence_dir/"
+          cp work/promote/arm64/build-lock.json "$evidence_dir/arm64-build-lock.json"
+          cp work/promote/arm64/verification-summary.json "$evidence_dir/arm64-verification-summary.json"
+
+          python3 - "$RUN_ID" "$RUN_URL" "$result_dir/result.json" \
+            "$reconstructed_locks" <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          run_id, run_url = sys.argv[1], sys.argv[2]
+          result_path = Path(sys.argv[3])
+          reconstructed_path = Path(sys.argv[4])
+          source_dir = Path('work/promote/source')
+          arm_dir = Path('work/promote/arm64')
+
+          reconstruction = json.loads((source_dir / 'reconstruction-lock.json').read_text())
+          equivalence = json.loads((source_dir / 'amd64-equivalence-summary.json').read_text())
+          build_lock = json.loads((arm_dir / 'build-lock.json').read_text())
+          verification = json.loads((arm_dir / 'verification-summary.json').read_text())
+          debs = json.loads((arm_dir / 'deb-artifacts.json').read_text())
+          if not equivalence.get('verified') or not verification.get('verified'):
+              raise SystemExit('promotion requires passed AMD64 equivalence and ARM64 verification')
+
+          result = {
+              'schema': 4,
+              'source': 'gooroom-greeter',
+              'source_version': '0.3.1+grm3u1+han3u2',
+              'source_type': 'verified-reconstructed-git-tree',
+              'repository_full_name': 'hancom-io/gooroom-greeter',
+              'commit_sha': reconstruction['base_source']['commit_sha'],
+              'tree_sha': reconstruction['reconstruction']['tree_sha'],
+              'dsc_filename': None,
+              'dsc_sha256': None,
+              'authority_provenance': 'locked-amd64-binary-changelog-plus-public-change-id-and-amd64-equivalence',
+              'actions_run_id': run_id,
+              'actions_run_url': run_url,
+              'batch': 'gooroom-greeter-han3u2-source-reconstruction',
+              'build_outcome': 'success',
+              'build_exit_code': '0',
+              'verify_outcome': 'success',
+              'required_native_packages': ['gooroom-greeter'],
+              'reused_all_packages': [],
+              'job_passed': True,
+              'verification_passed': True,
+              'passed': True,
+              'deb_artifacts': debs,
+              'verification_errors': [],
+              'verification_warnings': [],
+              'build_lock': build_lock,
+              'source_lock_evidence': {
+                  'schema': 3,
+                  'base_repository': reconstruction['base_source']['repository_full_name'],
+                  'base_commit_sha': reconstruction['base_source']['commit_sha'],
+                  'base_tree_sha': reconstruction['base_source']['tree_sha'],
+                  'reconstructed_tree_sha': reconstruction['reconstruction']['tree_sha'],
+                  'source_archive_sha256': reconstruction['reconstruction']['archive_sha256'],
+                  'target_binary_sha256': reconstruction['target_binary_authority']['sha256'],
+                  'patch_authority': reconstruction['patch_authority'],
+                  'amd64_equivalence': equivalence,
+              },
+              'verification_summary': verification,
+              'evidence_paths': {
+                  'reconstruction': 'arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/reconstruction-lock.json',
+                  'amd64_equivalence': 'arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/amd64-equivalence-summary.json',
+                  'arm64_verification': 'arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/arm64-verification-summary.json',
+              },
+          }
+          result_path.parent.mkdir(parents=True, exist_ok=True)
+          result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+
+          if reconstructed_path.exists():
+              document = json.loads(reconstructed_path.read_text())
+          else:
+              document = {
+                  'schema': 1,
+                  'policy': 'independently-verified-reconstructed-source-overlays',
+                  'sources': [],
+              }
+          rows = [
+              row for row in document.get('sources', [])
+              if not (
+                  row.get('source') == 'gooroom-greeter'
+                  and row.get('source_version') == '0.3.1+grm3u1+han3u2'
+              )
+          ]
+          rows.append({
+              'source': 'gooroom-greeter',
+              'source_version': '0.3.1+grm3u1+han3u2',
+              'status': 'resolved',
+              'provenance': 'verified-reconstructed-source',
+              'selected': {
+                  'type': 'reconstructed-git-tree',
+                  'provenance': 'locked-amd64-binary-changelog-plus-public-change-id-and-amd64-equivalence',
+                  'repository_full_name': 'hancom-io/gooroom-greeter',
+                  'commit_sha': reconstruction['base_source']['commit_sha'],
+                  'tree_sha': reconstruction['reconstruction']['tree_sha'],
+                  'ref_kind': 'reconstructed-tree',
+                  'ref_name': '0.3.1+grm3u1+han3u2',
+                  'match_scope': 'binary-changelog-and-public-change-id-reconstruction',
+                  'declared_source': 'gooroom-greeter',
+                  'declared_version': '0.3.1+grm3u1+han3u2',
+                  'source_archive_sha256': reconstruction['reconstruction']['archive_sha256'],
+              },
+              'verification': {
+                  'passed': True,
+                  'actions_run_id': run_id,
+                  'actions_run_url': run_url,
+                  'amd64_equivalence_verified': True,
+                  'native_arm64_build_verified': True,
+                  'evidence_path': 'arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/reconstruction-lock.json',
+              },
+          })
+          document['sources'] = sorted(rows, key=lambda row: (row['source'], row['source_version']))
+          document['source_count'] = len(document['sources'])
+          reconstructed_path.parent.mkdir(parents=True, exist_ok=True)
+          reconstructed_path.write_text(json.dumps(document, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$evidence_dir"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check LOCKSUMS.sha256
+          )
+          sha256sum "$result_dir/result.json" > "$result_dir/SHA256SUMS"
+          sha256sum --check "$result_dir/SHA256SUMS"
+          jq -e '.passed == true' "$result_dir/result.json" >/dev/null
+
+      - name: Commit verified greeter source and ARM64 result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2 \
+            arm64/locks/gooroom-greeter-han3u2-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          git commit -m 'Promote exact gooroom-greeter han3u2 ARM64 build'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
