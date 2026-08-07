@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 137,
-    "workflow_name_count": 137,
+    "workflow_count": 138,
+    "workflow_name_count": 138,
     "referenced_local_file_count": 212,
     "error_count": 1,
     "warning_count": 39,
@@ -102,6 +102,21 @@
         "arm64/locks/recovered-package-pool/latest/compact-blockers.json",
         "arm64/scripts/targeted_source_archaeology.py"
       ]
+    },
+    {
+      "filename": "arm64-audit-gooroom-greeter-han3u2.yml",
+      "path": ".github/workflows/arm64-audit-gooroom-greeter-han3u2.yml",
+      "name": "ARM64 port - audit exact Gooroom greeter han3u2 delta",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-audit-libsecurity-binary.yml",
