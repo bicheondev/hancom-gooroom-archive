@@ -1,0 +1,91 @@
+name: ARM64 port - build exact libsecurity extensions
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-libsecurity-extensions.yml'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-build-libsecurity-extensions
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: gooroom-libsecurity-extensions
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+
+    steps:
+      - name: Check out exact source locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Build exact locked source for ARM64
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
+          rm -rf work/gooroom-libsecurity-extensions-arm64
+          arm64/scripts/run_locked_source_arm64.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gooroom-libsecurity-extensions \
+            work/gooroom-libsecurity-extensions-arm64
+
+      - name: Verify source identity, ARM64 binaries, and payload machine types
+        env:
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+        shell: bash
+        run: |
+          set -euxo pipefail
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gooroom-libsecurity-extensions \
+            work/gooroom-libsecurity-extensions-arm64
+
+          deb="$(find work/gooroom-libsecurity-extensions-arm64 -maxdepth 1 -type f \
+            -name 'gooroom-libsecurity-extensions_*_arm64.deb' -print -quit)"
+          test -n "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = gooroom-libsecurity-extensions
+          test "$(dpkg-deb -f "$deb" Version)" = 0.1.7+grm3u1
+          test "$(dpkg-deb -f "$deb" Architecture)" = arm64
+
+      - name: Upload exact ARM64 package and immutable diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-libsecurity-extensions-exact-arm64
+          path: work/gooroom-libsecurity-extensions-arm64
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
