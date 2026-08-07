@@ -1,0 +1,511 @@
+name: ARM64 port - audit exact Gooroom greeter han3u2 delta
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-greeter-han3u2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-greeter-han3u2
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out ARM64 port authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install binary-forensics tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl diffutils dpkg-dev file git gzip jq python3 xz-utils
+
+      - name: Download and lock exact han3u2 and public han3u1 binaries
+        id: acquire
+        shell: bash
+        env:
+          TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+          TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+          TARGET_SIZE: '282940'
+          BASELINE_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u1_amd64.deb
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-han3u2-forensics
+          downloads="$output/downloads"
+          rm -rf "$output"
+          mkdir -p "$downloads"
+
+          curl --fail --show-error --location \
+            --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$downloads/target.deb"
+          test "$(stat -c '%s' "$downloads/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $downloads/target.deb" | sha256sum --check -
+
+          baseline_available=true
+          if ! curl --fail --show-error --location \
+            --retry 3 --retry-delay 2 --retry-all-errors \
+            "$BASELINE_URL" -o "$downloads/baseline.deb"; then
+            baseline_available=false
+            rm -f "$downloads/baseline.deb"
+          fi
+
+          target_actual_sha256="$(sha256sum "$downloads/target.deb" | awk '{print $1}')"
+          target_actual_size="$(stat -c '%s' "$downloads/target.deb")"
+          if [ "$baseline_available" = true ]; then
+            baseline_sha256="$(sha256sum "$downloads/baseline.deb" | awk '{print $1}')"
+            baseline_size="$(stat -c '%s' "$downloads/baseline.deb")"
+          else
+            baseline_sha256=''
+            baseline_size=0
+          fi
+
+          jq -n \
+            --arg target_url "$TARGET_URL" \
+            --arg target_sha256 "$target_actual_sha256" \
+            --argjson target_size "$target_actual_size" \
+            --arg baseline_url "$BASELINE_URL" \
+            --arg baseline_sha256 "$baseline_sha256" \
+            --argjson baseline_size "$baseline_size" \
+            --argjson baseline_available "$baseline_available" '
+              {
+                schema: 1,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $target_url,
+                  size: $target_size,
+                  sha256: $target_sha256
+                },
+                baseline: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u1",
+                  architecture: "amd64",
+                  url: $baseline_url,
+                  available: $baseline_available,
+                  size: $baseline_size,
+                  sha256: $baseline_sha256
+                }
+              }
+            ' > "$output/download-lock.json"
+
+          echo "output=$output" >> "$GITHUB_OUTPUT"
+          echo "baseline_available=$baseline_available" >> "$GITHUB_OUTPUT"
+          jq . "$output/download-lock.json"
+
+      - name: Extract package metadata, payloads, and shipped changelogs
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          BASELINE_AVAILABLE: ${{ steps.acquire.outputs.baseline_available }}
+        run: |
+          set -euxo pipefail
+          mkdir -p "$OUTPUT/target-control" "$OUTPUT/target-root"
+          dpkg-deb -e "$OUTPUT/downloads/target.deb" "$OUTPUT/target-control"
+          dpkg-deb -x "$OUTPUT/downloads/target.deb" "$OUTPUT/target-root"
+          dpkg-deb -f "$OUTPUT/downloads/target.deb" > "$OUTPUT/target-control.txt"
+
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Version)" = '0.3.1+grm3u1+han3u2'
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Architecture)" = amd64
+
+          target_changelog="$OUTPUT/target-root/usr/share/doc/gooroom-greeter/changelog.Debian.gz"
+          test -f "$target_changelog"
+          gzip -dc "$target_changelog" > "$OUTPUT/target-changelog.txt"
+          head -n 30 "$OUTPUT/target-changelog.txt"
+          grep -F 'gooroom-greeter (0.3.1+grm3u1+han3u2)' "$OUTPUT/target-changelog.txt"
+
+          if [ "$BASELINE_AVAILABLE" = true ]; then
+            mkdir -p "$OUTPUT/baseline-control" "$OUTPUT/baseline-root"
+            dpkg-deb -e "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-control"
+            dpkg-deb -x "$OUTPUT/downloads/baseline.deb" "$OUTPUT/baseline-root"
+            dpkg-deb -f "$OUTPUT/downloads/baseline.deb" > "$OUTPUT/baseline-control.txt"
+            test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Package)" = gooroom-greeter
+            test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Version)" = '0.3.1+grm3u1+han3u1'
+            test "$(dpkg-deb -f "$OUTPUT/downloads/baseline.deb" Architecture)" = amd64
+            baseline_changelog="$OUTPUT/baseline-root/usr/share/doc/gooroom-greeter/changelog.Debian.gz"
+            test -f "$baseline_changelog"
+            gzip -dc "$baseline_changelog" > "$OUTPUT/baseline-changelog.txt"
+          fi
+
+      - name: Lock the public han3u1 source tree
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          SOURCE_REPOSITORY: hancom-io/gooroom-greeter
+          SOURCE_COMMIT: 886f8b6c5cd35117fd5a2d31896e4f9818400960
+          SOURCE_TREE: ef841874d45b7f44f08c4d337d49802b28d35b5e
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$SOURCE_REPOSITORY.git" "$OUTPUT/source"
+          git -C "$OUTPUT/source" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$OUTPUT/source" checkout --detach "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C "$OUTPUT/source" rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          test "$(dpkg-parsechangelog -l"$OUTPUT/source/debian/changelog" -SVersion)" = \
+            '0.3.1+grm3u1+han3u1'
+          cp "$OUTPUT/source/debian/changelog" "$OUTPUT/source-changelog.txt"
+
+          source_archive="$OUTPUT/source-han3u1.tar"
+          git -C "$OUTPUT/source" archive --format=tar "$SOURCE_COMMIT" > "$source_archive"
+          source_archive_sha256="$(sha256sum "$source_archive" | awk '{print $1}')"
+          source_archive_size="$(stat -c '%s' "$source_archive")"
+          jq -n \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg commit_sha "$SOURCE_COMMIT" \
+            --arg tree_sha "$SOURCE_TREE" \
+            --arg source_archive_sha256 "$source_archive_sha256" \
+            --argjson source_archive_size "$source_archive_size" '
+              {
+                schema: 1,
+                repository_full_name: $repository,
+                commit_sha: $commit_sha,
+                tree_sha: $tree_sha,
+                declared_source: "gooroom-greeter",
+                declared_version: "0.3.1+grm3u1+han3u1",
+                deterministic_git_archive: {
+                  size: $source_archive_size,
+                  sha256: $source_archive_sha256
+                }
+              }
+            ' > "$OUTPUT/source-identity.json"
+          jq . "$OUTPUT/source-identity.json"
+
+      - name: Compare package payloads and normalize ELF differences
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          BASELINE_AVAILABLE: ${{ steps.acquire.outputs.baseline_available }}
+        run: |
+          set -euxo pipefail
+          python3 - "$OUTPUT" "$BASELINE_AVAILABLE" <<'PY'
+          import hashlib
+          import json
+          import os
+          import stat
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          baseline_available = sys.argv[2].lower() == 'true'
+
+          def digest(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def manifest(root: Path):
+              result = {}
+              for path in sorted(root.rglob('*')):
+                  relative = path.relative_to(root).as_posix()
+                  metadata = path.lstat()
+                  mode = stat.S_IMODE(metadata.st_mode)
+                  entry = {'mode': f'{mode:04o}'}
+                  if path.is_symlink():
+                      entry.update({'type': 'symlink', 'target': os.readlink(path)})
+                  elif path.is_dir():
+                      entry.update({'type': 'directory'})
+                  elif path.is_file():
+                      header = path.read_bytes()[:4]
+                      entry.update({
+                          'type': 'file',
+                          'size': metadata.st_size,
+                          'sha256': digest(path),
+                          'elf': header == b'\x7fELF',
+                      })
+                  else:
+                      entry.update({'type': 'other'})
+                  result[relative] = entry
+              return result
+
+          target = manifest(output / 'target-root')
+          (output / 'target-payload-manifest.json').write_text(
+              json.dumps(target, indent=2, sort_keys=True) + '\n'
+          )
+          baseline = manifest(output / 'baseline-root') if baseline_available else {}
+          if baseline_available:
+              (output / 'baseline-payload-manifest.json').write_text(
+                  json.dumps(baseline, indent=2, sort_keys=True) + '\n'
+              )
+
+          paths = sorted(set(target) | set(baseline)) if baseline_available else sorted(target)
+          delta = []
+          for relative in paths:
+              left = baseline.get(relative)
+              right = target.get(relative)
+              if baseline_available and left == right:
+                  continue
+              delta.append({
+                  'path': relative,
+                  'baseline': left,
+                  'target': right,
+              })
+          (output / 'payload-delta.json').write_text(
+              json.dumps(delta, indent=2, sort_keys=True) + '\n'
+          )
+          with (output / 'payload-delta.tsv').open('w') as stream:
+              stream.write('path\tbaseline_type\ttarget_type\tbaseline_sha256\ttarget_sha256\telf\n')
+              for item in delta:
+                  left = item['baseline'] or {}
+                  right = item['target'] or {}
+                  stream.write('\t'.join([
+                      item['path'],
+                      str(left.get('type', 'missing')),
+                      str(right.get('type', 'missing')),
+                      str(left.get('sha256', '')),
+                      str(right.get('sha256', '')),
+                      str(bool(left.get('elf') or right.get('elf'))).lower(),
+                  ]) + '\n')
+
+          elf_rows = []
+          if baseline_available:
+              normalization = output / 'elf-normalized'
+              normalization.mkdir(exist_ok=True)
+              for item in delta:
+                  relative = item['path']
+                  left = item['baseline'] or {}
+                  right = item['target'] or {}
+                  if not (left.get('elf') and right.get('elf')):
+                      continue
+                  baseline_path = output / 'baseline-root' / relative
+                  target_path = output / 'target-root' / relative
+                  key = hashlib.sha256(relative.encode()).hexdigest()[:16]
+                  baseline_normalized = normalization / f'{key}.baseline'
+                  target_normalized = normalization / f'{key}.target'
+                  for source, destination in (
+                      (baseline_path, baseline_normalized),
+                      (target_path, target_normalized),
+                  ):
+                      subprocess.run([
+                          'objcopy',
+                          '--remove-section=.note.gnu.build-id',
+                          '--remove-section=.comment',
+                          '--strip-debug',
+                          str(source),
+                          str(destination),
+                      ], check=True)
+                  baseline_normalized_sha = digest(baseline_normalized)
+                  target_normalized_sha = digest(target_normalized)
+                  elf_rows.append({
+                      'path': relative,
+                      'baseline_raw_sha256': left['sha256'],
+                      'target_raw_sha256': right['sha256'],
+                      'baseline_normalized_sha256': baseline_normalized_sha,
+                      'target_normalized_sha256': target_normalized_sha,
+                      'normalized_identical': baseline_normalized_sha == target_normalized_sha,
+                  })
+                  for label, binary in (('baseline', baseline_path), ('target', target_path)):
+                      prefix = output / f'elf-{key}-{label}'
+                      commands = {
+                          'file': ['file', '-b', str(binary)],
+                          'dynamic': ['readelf', '-dW', str(binary)],
+                          'notes': ['readelf', '-nW', str(binary)],
+                          'symbols': ['readelf', '-WsW', str(binary)],
+                          'strings': ['strings', '-a', str(binary)],
+                      }
+                      for suffix, command in commands.items():
+                          completed = subprocess.run(command, text=True, stdout=subprocess.PIPE,
+                                                     stderr=subprocess.STDOUT, check=False)
+                          Path(f'{prefix}-{suffix}.txt').write_text(completed.stdout)
+          (output / 'elf-normalization.json').write_text(
+              json.dumps(elf_rows, indent=2, sort_keys=True) + '\n'
+          )
+          with (output / 'elf-normalization.tsv').open('w') as stream:
+              stream.write('path\tbaseline_raw_sha256\ttarget_raw_sha256\tbaseline_normalized_sha256\ttarget_normalized_sha256\tnormalized_identical\n')
+              for row in elf_rows:
+                  stream.write('\t'.join([
+                      row['path'], row['baseline_raw_sha256'], row['target_raw_sha256'],
+                      row['baseline_normalized_sha256'], row['target_normalized_sha256'],
+                      str(row['normalized_identical']).lower(),
+                  ]) + '\n')
+          PY
+          cat "$OUTPUT/payload-delta.tsv"
+          cat "$OUTPUT/elf-normalization.tsv"
+
+      - name: Classify the exact revision delta
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+          BASELINE_AVAILABLE: ${{ steps.acquire.outputs.baseline_available }}
+        run: |
+          set -euxo pipefail
+          python3 - "$OUTPUT" "$BASELINE_AVAILABLE" <<'PY'
+          import hashlib
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          baseline_available = sys.argv[2].lower() == 'true'
+          target_changelog = (output / 'target-changelog.txt').read_text(errors='replace')
+          source_changelog = (output / 'source-changelog.txt').read_text(errors='replace')
+          baseline_changelog = (
+              (output / 'baseline-changelog.txt').read_text(errors='replace')
+              if baseline_available else None
+          )
+          delta = json.loads((output / 'payload-delta.json').read_text())
+          elf_rows = json.loads((output / 'elf-normalization.json').read_text())
+          download_lock = json.loads((output / 'download-lock.json').read_text())
+          source_identity = json.loads((output / 'source-identity.json').read_text())
+
+          doc_paths = {
+              'usr/share/doc/gooroom-greeter/changelog.Debian.gz',
+          }
+          changed_paths = [item['path'] for item in delta]
+          changed_elf_paths = [
+              item['path'] for item in delta
+              if bool((item.get('baseline') or {}).get('elf') or (item.get('target') or {}).get('elf'))
+          ]
+          changed_non_elf_paths = [path for path in changed_paths if path not in changed_elf_paths]
+          normalized_elf_identical = all(row['normalized_identical'] for row in elf_rows)
+
+          source_suffix_offset = target_changelog.find(source_changelog)
+          target_has_exact_source_suffix = (
+              source_suffix_offset >= 0
+              and target_changelog[source_suffix_offset:] == source_changelog
+          )
+          target_prefix = (
+              target_changelog[:source_suffix_offset]
+              if target_has_exact_source_suffix else ''
+          )
+          target_prefix_has_exact_version = (
+              'gooroom-greeter (0.3.1+grm3u1+han3u2)' in target_prefix
+          )
+          baseline_matches_source = (
+              baseline_changelog == source_changelog if baseline_available else None
+          )
+
+          if not baseline_available:
+              classification = 'target-binary-locked-baseline-binary-unavailable'
+          elif set(changed_paths).issubset(doc_paths) and target_has_exact_source_suffix:
+              classification = 'changelog-only-revision'
+          elif (
+              set(changed_non_elf_paths).issubset(doc_paths)
+              and normalized_elf_identical
+              and target_has_exact_source_suffix
+          ):
+              classification = 'changelog-plus-reproducible-elf-rebuild'
+          else:
+              classification = 'payload-delta-requires-source-reconstruction'
+
+          summary = {
+              'schema': 2,
+              'source': 'gooroom-greeter',
+              'target_version': '0.3.1+grm3u1+han3u2',
+              'baseline_version': '0.3.1+grm3u1+han3u1',
+              'classification': classification,
+              'target_binary': download_lock['target'],
+              'baseline_binary': download_lock['baseline'],
+              'public_source': source_identity,
+              'changelog_analysis': {
+                  'baseline_matches_public_source': baseline_matches_source,
+                  'target_contains_public_source_as_exact_suffix': target_has_exact_source_suffix,
+                  'target_prefix_has_exact_han3u2_version': target_prefix_has_exact_version,
+                  'target_prefix_sha256': hashlib.sha256(target_prefix.encode()).hexdigest(),
+                  'target_prefix': target_prefix,
+              },
+              'payload_analysis': {
+                  'baseline_available': baseline_available,
+                  'changed_path_count': len(changed_paths),
+                  'changed_paths': changed_paths,
+                  'changed_non_elf_paths': changed_non_elf_paths,
+                  'changed_elf_paths': changed_elf_paths,
+                  'normalized_elf_comparison_count': len(elf_rows),
+                  'all_changed_elf_normalized_identical': normalized_elf_identical,
+                  'elf_normalization': elf_rows,
+              },
+              'acceptance': {
+                  'exact_git_commit_for_han3u2_found': False,
+                  'binary_delta_audited': baseline_available,
+                  'automatic_exact_source_promotion_allowed': classification in {
+                      'changelog-only-revision',
+                      'changelog-plus-reproducible-elf-rebuild',
+                  },
+              },
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + '\n'
+          )
+          (output / 'han3u2-changelog-prefix.txt').write_text(target_prefix)
+          print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
+          PY
+
+      - name: Create compact immutable evidence set
+        id: compact
+        shell: bash
+        env:
+          OUTPUT: ${{ steps.acquire.outputs.output }}
+        run: |
+          set -euxo pipefail
+          compact="$OUTPUT/compact"
+          rm -rf "$compact"
+          mkdir -p "$compact"
+          for file in \
+            download-lock.json source-identity.json summary.json \
+            target-control.txt baseline-control.txt \
+            target-changelog.txt baseline-changelog.txt source-changelog.txt \
+            han3u2-changelog-prefix.txt payload-delta.json payload-delta.tsv \
+            elf-normalization.json elf-normalization.tsv; do
+            if [ -f "$OUTPUT/$file" ]; then
+              cp "$OUTPUT/$file" "$compact/$file"
+            fi
+          done
+          find "$OUTPUT" -maxdepth 1 -type f -name 'elf-*.txt' -exec cp '{}' "$compact/" ';'
+          find "$compact" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$compact/LOCKSUMS.sha256"
+          (cd "$compact" && sha256sum --check LOCKSUMS.sha256)
+          echo "compact=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Upload exact greeter forensics
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-0.3.1-grm3u1-han3u2-forensics
+          path: ${{ steps.compact.outputs.compact }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact evidence authority
+        shell: bash
+        env:
+          COMPACT: ${{ steps.compact.outputs.compact }}
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/gooroom-greeter-han3u2-forensics/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$COMPACT"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact gooroom-greeter han3u2 binary delta'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
