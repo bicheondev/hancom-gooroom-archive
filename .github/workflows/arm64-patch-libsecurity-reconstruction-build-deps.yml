@@ -1,0 +1,70 @@
+name: ARM64 port - patch reconstructed libsecurity build dependencies
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-patch-libsecurity-reconstruction-build-deps.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-patch-libsecurity-reconstruction-build-deps
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add the exact packaging-declared build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh')
+          text = path.read_text(encoding='utf-8')
+          old = '''  libdbus-1-dev libjson-c-dev libnotify-dev libsystemd-dev pkg-config \\
+  python3 xserver-xorg-dev \\
+'''
+          new = '''  libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0 \\
+  libjson-c-dev libnotify-dev libsystemd-dev pkg-config \\
+  python3 xserver-xorg-dev \\
+'''
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one dependency anchor, found {count}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          bash -n arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          grep -F 'libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0' \
+            arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          git diff --check
+
+      - name: Commit the dependency-only correction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          git commit -m 'Install exact libsecurity packaging build dependencies'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
