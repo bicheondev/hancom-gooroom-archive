@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 132,
-    "workflow_name_count": 132,
+    "workflow_count": 131,
+    "workflow_name_count": 131,
     "referenced_local_file_count": 205,
     "error_count": 0,
     "warning_count": 38,
@@ -165,24 +165,6 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
-      ]
-    },
-    {
-      "filename": "arm64-bootstrap-finalizer-compat.yml",
-      "path": ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
-      "name": "ARM64 port - bootstrap audited finalizer compatibility",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/audit_active_arm64_pipeline.py",
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh"
       ]
     },
     {
@@ -3014,8 +2996,7 @@
       ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
-      ".github/workflows/arm64-active-pipeline-audit.yml",
-      ".github/workflows/arm64-bootstrap-finalizer-compat.yml"
+      ".github/workflows/arm64-active-pipeline-audit.yml"
     ],
     "arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml"
@@ -3190,11 +3171,9 @@
       ".github/workflows/arm64-static-audit.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
-      ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
-      ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh": [
