@@ -9,12 +9,12 @@
   "dsc_filename": null,
   "dsc_sha256": null,
   "authority_provenance": "github-exact-commit",
-  "actions_run_id": "31093920102",
-  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31093920102",
+  "actions_run_id": "31148819375",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148819375",
   "batch": "specialized-exact-vendor-dependency",
-  "artifact_id": "8964671508",
+  "artifact_id": "8982546322",
   "artifact_name": "gooroom-security-status-tools-exact-arm64",
-  "artifact_digest": "sha256:fab2cf6d39cbc81d820926f2576c587af6fcb8c357a4b40c2e52ea6aafdb4b02",
+  "artifact_digest": "sha256:17a11147c4ed3a650a26990f2296fb3ba2ba25e80571e790192605edf65ee0ef",
   "build_outcome": "success",
   "build_exit_code": "0",
   "verify_outcome": "success",
@@ -46,7 +46,7 @@
   "verification_errors": [],
   "verification_warnings": [],
   "build_lock": {
-    "schema": 4,
+    "schema": 3,
     "source": "gooroom-security-status-tools",
     "source_version": "0.3.9+grm3u1",
     "repository": "gooroom/gooroom-security-status-tools",
@@ -65,8 +65,8 @@
       "mode": "git-only"
     },
     "produced_binary_packages": [
-      "gooroom-security-status-tools",
-      "gooroom-security-status-tools-dbgsym"
+      "gooroom-security-status-tools-dbgsym",
+      "gooroom-security-status-tools"
     ]
   },
   "source_lock_evidence": {
@@ -91,14 +91,28 @@
       "sha256": "2f59a55125e99d3a468e6247c03aea1f5dd64adf8745ea669b890432523be182"
     }
   ],
-  "superseded_generic_failures": [
+  "verification_summary": {
+    "schema": 3,
+    "deb_count": 2,
+    "wrong_architecture_executable_count": 0,
+    "verified": true
+  },
+  "artifact_file_sha256": {
+    "build-lock.json": "0a8baceafe71d25e1baedff7956630eaaf2927e4686e2bc5c7b00a7d6d449cb7",
+    "source-lock-evidence.json": "9b1be47f6267c630228ff9faa20f9f88b5ec39f16e43b9cc7f47c93681a2d570",
+    "vendor-build-dependencies.json": "081b32472971efab76e3631a4a9195b886018cac5624684ee4389386b01e5c39",
+    "verification-summary.json": "6d8640bbfae8751026fbd92ab78a8e9fbdb0097eb8b47e251e15f40811091b65"
+  },
+  "superseded_results": [
     {
-      "actions_run_id": "31102922971",
-      "reason": "generic builder omitted the exact Architecture: all vendor build dependency"
+      "actions_run_id": "31097724529",
+      "evidence_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9+grm3u1/result.json",
+      "reason": "obsolete generic-builder failure; the exact vendor-aware ARM64 workflow subsequently passed"
     },
     {
-      "actions_run_id": "31104940988",
-      "reason": "generic retry again omitted the exact Architecture: all vendor build dependency"
+      "actions_run_id": "31093920102",
+      "evidence_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/result.json",
+      "reason": "valid earlier specialized success superseded by a newer independently verified success"
     }
   ]
 }
