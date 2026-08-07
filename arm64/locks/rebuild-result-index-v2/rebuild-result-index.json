@@ -2,10 +2,10 @@
   "summary": {
     "schema": 2,
     "policy": "latest-verified-exact-source-native-arm64-result",
-    "source_result_count": 33,
-    "verified_source_count": 29,
-    "failed_source_count": 4,
-    "verified_binary_package_count": 126,
+    "source_result_count": 38,
+    "verified_source_count": 36,
+    "failed_source_count": 2,
+    "verified_binary_package_count": 103,
     "ambiguous_binary_package_count": 0,
     "parse_error_count": 0,
     "package_index_usable": true
@@ -23,9 +23,9 @@
         "commit_sha": "706c15ce56c8facdad9733989d305840ad109de8",
         "tree_sha": "4efcdc4c26fe2ca5bfc4d009e0ab918fbf06f91d",
         "dsc_sha256": null,
-        "actions_run_id": "31103220338",
-        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
-        "artifact_name": "arm64-rebuild-accountsservice-0.6.55-3-grm3u1",
+        "actions_run_id": "31105972462",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972462",
+        "artifact_name": "gnome-control-center-exact-arm64-with-accountsservice",
         "passed": true,
         "packages": [
           {
@@ -39,36 +39,6 @@
             "source_version": "0.6.55-3+grm3u1"
           },
           {
-            "package": "accountsservice-dbgsym",
-            "version": "0.6.55-3+grm3u1",
-            "architecture": "arm64",
-            "filename": "accountsservice-dbgsym_0.6.55-3+grm3u1_arm64.deb",
-            "sha256": "5375d775ff6361041e9544d16edce02b30af6ab8ac7d6417817250297c9fa490",
-            "size": 162924,
-            "source": "accountsservice",
-            "source_version": "0.6.55-3+grm3u1"
-          },
-          {
-            "package": "gir1.2-accountsservice-1.0",
-            "version": "0.6.55-3+grm3u1",
-            "architecture": "arm64",
-            "filename": "gir1.2-accountsservice-1.0_0.6.55-3+grm3u1_arm64.deb",
-            "sha256": "1ca2416864b373c260b89a1786d5484173d3b5282509ecf75bfa2f48f735167f",
-            "size": 18148,
-            "source": "accountsservice",
-            "source_version": "0.6.55-3+grm3u1"
-          },
-          {
-            "package": "libaccountsservice-dev",
-            "version": "0.6.55-3+grm3u1",
-            "architecture": "arm64",
-            "filename": "libaccountsservice-dev_0.6.55-3+grm3u1_arm64.deb",
-            "sha256": "e6aa640197cecb2fba52b70f335ba0cc4a40921c1366a5b4fd7321339e02b461",
-            "size": 25492,
-            "source": "accountsservice",
-            "source_version": "0.6.55-3+grm3u1"
-          },
-          {
             "package": "libaccountsservice0",
             "version": "0.6.55-3+grm3u1",
             "architecture": "arm64",
@@ -77,23 +47,50 @@
             "size": 79104,
             "source": "accountsservice",
             "source_version": "0.6.55-3+grm3u1"
-          },
-          {
-            "package": "libaccountsservice0-dbgsym",
-            "version": "0.6.55-3+grm3u1",
-            "architecture": "arm64",
-            "filename": "libaccountsservice0-dbgsym_0.6.55-3+grm3u1_arm64.deb",
-            "sha256": "01c500b80f266a613c02a7b6446c0f1df5ec584f2ba381267f4043597cf55f6a",
-            "size": 224124,
-            "source": "accountsservice",
-            "source_version": "0.6.55-3+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "accountsservice/0.6.55-3_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/accountsservice/0.6.55-3+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "accountsservice",
+          "source_version": "0.6.55-3+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/accountsservice",
+          "commit_sha": "706c15ce56c8facdad9733989d305840ad109de8",
+          "tree_sha": "4efcdc4c26fe2ca5bfc4d009e0ab918fbf06f91d",
+          "dsc_sha256": null,
+          "actions_run_id": "31105972462",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31105972462",
+          "artifact_name": "gnome-control-center-exact-arm64-with-accountsservice",
+          "passed": true,
+          "packages": [
+            {
+              "package": "accountsservice",
+              "version": "0.6.55-3+grm3u1",
+              "architecture": "arm64",
+              "filename": "accountsservice_0.6.55-3+grm3u1_arm64.deb",
+              "sha256": "2f64ce63cb666be87ac5aff05934d0d81845bd8d4cdc20489b316f234ce68eb8",
+              "size": 89164,
+              "source": "accountsservice",
+              "source_version": "0.6.55-3+grm3u1"
+            },
+            {
+              "package": "libaccountsservice0",
+              "version": "0.6.55-3+grm3u1",
+              "architecture": "arm64",
+              "filename": "libaccountsservice0_0.6.55-3+grm3u1_arm64.deb",
+              "sha256": "cf9cd9140af096579185bc6f39e5f99a06f5e82a0cb159030e76c183f1bc64e4",
+              "size": 79104,
+              "source": "accountsservice",
+              "source_version": "0.6.55-3+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/accountsservice/0.6.55-3+grm3u1/result.json"
+        },
         {
           "source": "accountsservice",
           "source_version": "0.6.55-3+grm3u1",
@@ -230,7 +227,7 @@
         "verification_errors": [],
         "evidence_path": "celluloid/0.20-2_grm3u6/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "celluloid",
@@ -268,6 +265,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "celluloid/0.20-2_grm3u6/result.json"
+        },
+        {
+          "source": "celluloid",
+          "source_version": "0.20-2+grm3u6",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/celluloid",
+          "commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
+          "tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
+          "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-celluloid-0.20-2-grm3u6",
+          "passed": true,
+          "packages": [
+            {
+              "package": "celluloid",
+              "version": "0.20-2+grm3u6",
+              "architecture": "arm64",
+              "filename": "celluloid_0.20-2+grm3u6_arm64.deb",
+              "sha256": "8dbb6443e6e101d7394d2458fcf9b3ae3e505cb36b2859224b4c96b4bbc117e9",
+              "size": 205184,
+              "source": "celluloid",
+              "source_version": "0.20-2+grm3u6"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/celluloid/0.20-2+grm3u6/result.json"
         },
         {
           "source": "celluloid",
@@ -328,7 +352,7 @@
         "verification_errors": [],
         "evidence_path": "cups-pk-helper/0.2.6-1ubuntu3_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "cups-pk-helper",
@@ -375,6 +399,33 @@
           "commit_sha": "fead88f5fe9626f17bcba1cb9f3f2407c933dfb4",
           "tree_sha": "8e016f0c497e909186752f250d49ca1efb0ce561",
           "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-cups-pk-helper-0.2.6-1ubuntu3-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "cups-pk-helper",
+              "version": "0.2.6-1ubuntu3+grm3u1",
+              "architecture": "arm64",
+              "filename": "cups-pk-helper_0.2.6-1ubuntu3+grm3u1_arm64.deb",
+              "sha256": "130a807302f7db8dd8eb9f97c6846f1b59f582f3663c9f176c061e9fa2fdafab",
+              "size": 75820,
+              "source": "cups-pk-helper",
+              "source_version": "0.2.6-1ubuntu3+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/cups-pk-helper/0.2.6-1ubuntu3+grm3u1/result.json"
+        },
+        {
+          "source": "cups-pk-helper",
+          "source_version": "0.2.6-1ubuntu3+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/cups-pk-helper",
+          "commit_sha": "fead88f5fe9626f17bcba1cb9f3f2407c933dfb4",
+          "tree_sha": "8e016f0c497e909186752f250d49ca1efb0ce561",
+          "dsc_sha256": null,
           "actions_run_id": "31099944118",
           "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31099944118",
           "artifact_name": "0.2.6-1ubuntu3+grm3u1",
@@ -382,6 +433,68 @@
           "packages": [],
           "verification_errors": [],
           "evidence_path": "cups-pk-helper/0.2.6-1ubuntu3+grm3u1/result.json"
+        }
+      ]
+    },
+    {
+      "source": "dpkg",
+      "source_version": "1.20.12+grm3u1",
+      "status": "verified",
+      "selected": {
+        "source": "dpkg",
+        "source_version": "1.20.12+grm3u1",
+        "provenance": "github-exact-commit",
+        "repository": "gooroom/dpkg",
+        "commit_sha": "251444d812939e48e092400708ad3cd8ade36326",
+        "tree_sha": "1a5c57b238149446b5ea4f2a76916b3e72d051ef",
+        "dsc_sha256": null,
+        "actions_run_id": "31089491039",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+        "artifact_name": "dpkg-exact-arm64-wave3",
+        "passed": true,
+        "packages": [
+          {
+            "package": "dpkg",
+            "version": "1.20.12+grm3u1",
+            "architecture": "arm64",
+            "filename": "dpkg_1.20.12+grm3u1_arm64.deb",
+            "sha256": "ed1c84310442c61bdacac0f0d059c76cb2683b65f7f16623e84e6a217c6cd16d",
+            "size": 2448100,
+            "source": "dpkg",
+            "source_version": "1.20.12+grm3u1"
+          }
+        ],
+        "verification_errors": [],
+        "evidence_path": "historical-import-v3/dpkg/1.20.12+grm3u1/result.json"
+      },
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "source": "dpkg",
+          "source_version": "1.20.12+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/dpkg",
+          "commit_sha": "251444d812939e48e092400708ad3cd8ade36326",
+          "tree_sha": "1a5c57b238149446b5ea4f2a76916b3e72d051ef",
+          "dsc_sha256": null,
+          "actions_run_id": "31089491039",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+          "artifact_name": "dpkg-exact-arm64-wave3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "dpkg",
+              "version": "1.20.12+grm3u1",
+              "architecture": "arm64",
+              "filename": "dpkg_1.20.12+grm3u1_arm64.deb",
+              "sha256": "ed1c84310442c61bdacac0f0d059c76cb2683b65f7f16623e84e6a217c6cd16d",
+              "size": 2448100,
+              "source": "dpkg",
+              "source_version": "1.20.12+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/dpkg/1.20.12+grm3u1/result.json"
         }
       ]
     },
@@ -436,7 +549,7 @@
         "verification_errors": [],
         "evidence_path": "eog/3.38.2-1_grm3u4/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "eog",
@@ -484,6 +597,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "eog/3.38.2-1_grm3u4/result.json"
+        },
+        {
+          "source": "eog",
+          "source_version": "3.38.2-1+grm3u4",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/eog",
+          "commit_sha": "6db9c892f4b8b824cb49d0353dd74392235e02b9",
+          "tree_sha": "6f2608b0ed80be8e4ed8f63b8930efd961bc921f",
+          "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-eog-3.38.2-1-grm3u4",
+          "passed": true,
+          "packages": [
+            {
+              "package": "eog",
+              "version": "3.38.2-1+grm3u4",
+              "architecture": "arm64",
+              "filename": "eog_3.38.2-1+grm3u4_arm64.deb",
+              "sha256": "8e59a90cd6a00f2b6e78f08100fa1142dad1a3310bc07aac3981f1f5b234cca6",
+              "size": 3049068,
+              "source": "eog",
+              "source_version": "3.38.2-1+grm3u4"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/eog/3.38.2-1+grm3u4/result.json"
         },
         {
           "source": "eog",
@@ -544,7 +684,7 @@
         "verification_errors": [],
         "evidence_path": "file-roller/3.38.1-1_grm3u3/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "file-roller",
@@ -582,6 +722,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "file-roller/3.38.1-1_grm3u3/result.json"
+        },
+        {
+          "source": "file-roller",
+          "source_version": "3.38.1-1+grm3u3",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/file-roller",
+          "commit_sha": "c7f4b12b289f3b81f709d528af38e759514fd448",
+          "tree_sha": "4435151f83ccebc9a2465ff272c992deaf949cdc",
+          "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-file-roller-3.38.1-1-grm3u3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "file-roller",
+              "version": "3.38.1-1+grm3u3",
+              "architecture": "arm64",
+              "filename": "file-roller_3.38.1-1+grm3u3_arm64.deb",
+              "sha256": "e4cd29f2d2a4c4dcd30fac7ef721250c9cf241f7204e9768e88dc0db3e435d7f",
+              "size": 671960,
+              "source": "file-roller",
+              "source_version": "3.38.1-1+grm3u3"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/file-roller/3.38.1-1+grm3u3/result.json"
         },
         {
           "source": "file-roller",
@@ -652,7 +819,7 @@
         "verification_errors": [],
         "evidence_path": "gedit/3.38.1-1_grm3u3/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gedit",
@@ -700,6 +867,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "gedit/3.38.1-1_grm3u3/result.json"
+        },
+        {
+          "source": "gedit",
+          "source_version": "3.38.1-1+grm3u3",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gedit",
+          "commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
+          "tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
+          "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-gedit-3.38.1-1-grm3u3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gedit",
+              "version": "3.38.1-1+grm3u3",
+              "architecture": "arm64",
+              "filename": "gedit_3.38.1-1+grm3u3_arm64.deb",
+              "sha256": "3e674c79e40255537366dbacd54ff3761ef6bde7f26489ba7312b97096cfbd1f",
+              "size": 354888,
+              "source": "gedit",
+              "source_version": "3.38.1-1+grm3u3"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gedit/3.38.1-1+grm3u3/result.json"
         },
         {
           "source": "gedit",
@@ -800,7 +994,7 @@
         "verification_errors": [],
         "evidence_path": "gnome-bluetooth/3.34.3-2_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gnome-bluetooth",
@@ -878,6 +1072,43 @@
           ],
           "verification_errors": [],
           "evidence_path": "gnome-bluetooth/3.34.3-2_grm3u1/result.json"
+        },
+        {
+          "source": "gnome-bluetooth",
+          "source_version": "3.34.3-2+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gnome-bluetooth",
+          "commit_sha": "377e4a327d5e26e2d202aab48da04d0a077d4f93",
+          "tree_sha": "46ac22ded0d9e36d45ba2bd9ad5ae427f38cfca5",
+          "dsc_sha256": null,
+          "actions_run_id": "31103220338",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
+          "artifact_name": "arm64-rebuild-gnome-bluetooth-3.34.3-2-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gnome-bluetooth",
+              "version": "3.34.3-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "gnome-bluetooth_3.34.3-2+grm3u1_arm64.deb",
+              "sha256": "fcc8d7f922f1686a31644071c90598189862ba4ea0d801d57bef9c2b448c0d41",
+              "size": 196808,
+              "source": "gnome-bluetooth",
+              "source_version": "3.34.3-2+grm3u1"
+            },
+            {
+              "package": "libgnome-bluetooth13",
+              "version": "3.34.3-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "libgnome-bluetooth13_3.34.3-2+grm3u1_arm64.deb",
+              "sha256": "3509d114a6401a8bfc67e9416c1cee951605f1b2dd3db76ae9c42a1f729c8ed0",
+              "size": 78208,
+              "source": "gnome-bluetooth",
+              "source_version": "3.34.3-2+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gnome-bluetooth/3.34.3-2+grm3u1/result.json"
         },
         {
           "source": "gnome-bluetooth",
@@ -968,7 +1199,7 @@
         "verification_errors": [],
         "evidence_path": "gnome-panel/3.38.0-1_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gnome-panel",
@@ -1045,6 +1276,43 @@
           "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
           "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
           "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-gnome-panel-3.38.0-1-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gnome-panel",
+              "version": "3.38.0-1+grm3u1",
+              "architecture": "arm64",
+              "filename": "gnome-panel_3.38.0-1+grm3u1_arm64.deb",
+              "sha256": "5f14e1fdb4ed5150c83e6f9711245ddb3bf7de9a676e13ad53881db31b4b0cbe",
+              "size": 357472,
+              "source": "gnome-panel",
+              "source_version": "3.38.0-1+grm3u1"
+            },
+            {
+              "package": "libgnome-panel0",
+              "version": "3.38.0-1+grm3u1",
+              "architecture": "arm64",
+              "filename": "libgnome-panel0_3.38.0-1+grm3u1_arm64.deb",
+              "sha256": "5bd04c57c8c4ef8843b3ed6759892f450973bf9e8e57100585ee842b65ca12d7",
+              "size": 52480,
+              "source": "gnome-panel",
+              "source_version": "3.38.0-1+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gnome-panel/3.38.0-1+grm3u1/result.json"
+        },
+        {
+          "source": "gnome-panel",
+          "source_version": "3.38.0-1+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gnome-panel",
+          "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
+          "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
+          "dsc_sha256": null,
           "actions_run_id": "31097792684",
           "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31097792684",
           "artifact_name": "3.38.0-1+grm3u1",
@@ -1096,7 +1364,7 @@
         "verification_errors": [],
         "evidence_path": "gnome-screenshot/3.38.0-1_grm3u2/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gnome-screenshot",
@@ -1143,6 +1411,33 @@
           "commit_sha": "0829ef62630f694dba017cc39f6422b777bd8396",
           "tree_sha": "d97cf1f6dfac3a1cc30679b0c5b63c47218d0bfb",
           "dsc_sha256": null,
+          "actions_run_id": "31101738881",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881",
+          "artifact_name": "arm64-rebuild-gnome-screenshot-3.38.0-1-grm3u2",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gnome-screenshot",
+              "version": "3.38.0-1+grm3u2",
+              "architecture": "arm64",
+              "filename": "gnome-screenshot_3.38.0-1+grm3u2_arm64.deb",
+              "sha256": "e26cee3fc06601188d123834f91da1f006fd424d417cfc3c1f609de442c9b5b6",
+              "size": 171228,
+              "source": "gnome-screenshot",
+              "source_version": "3.38.0-1+grm3u2"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gnome-screenshot/3.38.0-1+grm3u2/result.json"
+        },
+        {
+          "source": "gnome-screenshot",
+          "source_version": "3.38.0-1+grm3u2",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gnome-screenshot",
+          "commit_sha": "0829ef62630f694dba017cc39f6422b777bd8396",
+          "tree_sha": "d97cf1f6dfac3a1cc30679b0c5b63c47218d0bfb",
+          "dsc_sha256": null,
           "actions_run_id": "31099944118",
           "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31099944118",
           "artifact_name": "3.38.0-1+grm3u2",
@@ -1150,6 +1445,68 @@
           "packages": [],
           "verification_errors": [],
           "evidence_path": "gnome-screenshot/3.38.0-1+grm3u2/result.json"
+        }
+      ]
+    },
+    {
+      "source": "gnome-settings-daemon",
+      "source_version": "3.38.2-1+grm3u1",
+      "status": "verified",
+      "selected": {
+        "source": "gnome-settings-daemon",
+        "source_version": "3.38.2-1+grm3u1",
+        "provenance": "github-exact-commit",
+        "repository": "gooroom/gnome-settings-daemon",
+        "commit_sha": "f94e8eaddd981096dc167d69848b24b085b33cc5",
+        "tree_sha": "a5fec2ac6898a8b0ce9dffd4377e06ef497d61ba",
+        "dsc_sha256": null,
+        "actions_run_id": "31089491039",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+        "artifact_name": "gnome-settings-daemon-exact-arm64-wave3",
+        "passed": true,
+        "packages": [
+          {
+            "package": "gnome-settings-daemon",
+            "version": "3.38.2-1+grm3u1",
+            "architecture": "arm64",
+            "filename": "gnome-settings-daemon_3.38.2-1+grm3u1_arm64.deb",
+            "sha256": "2fab2435133cd31e487e53be30e12dcf72d2c4a27af5bd04d4a1dbe5c2b7df48",
+            "size": 275400,
+            "source": "gnome-settings-daemon",
+            "source_version": "3.38.2-1+grm3u1"
+          }
+        ],
+        "verification_errors": [],
+        "evidence_path": "historical-import-v3/gnome-settings-daemon/3.38.2-1+grm3u1/result.json"
+      },
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "source": "gnome-settings-daemon",
+          "source_version": "3.38.2-1+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gnome-settings-daemon",
+          "commit_sha": "f94e8eaddd981096dc167d69848b24b085b33cc5",
+          "tree_sha": "a5fec2ac6898a8b0ce9dffd4377e06ef497d61ba",
+          "dsc_sha256": null,
+          "actions_run_id": "31089491039",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+          "artifact_name": "gnome-settings-daemon-exact-arm64-wave3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gnome-settings-daemon",
+              "version": "3.38.2-1+grm3u1",
+              "architecture": "arm64",
+              "filename": "gnome-settings-daemon_3.38.2-1+grm3u1_arm64.deb",
+              "sha256": "2fab2435133cd31e487e53be30e12dcf72d2c4a27af5bd04d4a1dbe5c2b7df48",
+              "size": 275400,
+              "source": "gnome-settings-daemon",
+              "source_version": "3.38.2-1+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gnome-settings-daemon/3.38.2-1+grm3u1/result.json"
         }
       ]
     },
@@ -1250,7 +1607,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-indicator-applet/0.3.0_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-indicator-applet",
@@ -1288,6 +1645,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "gooroom-indicator-applet/0.3.0_grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-indicator-applet",
+          "source_version": "0.3.0+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-indicator-applet",
+          "commit_sha": "cb5092080b8fbe48effd990e60084e938aa0b306",
+          "tree_sha": "dae79af224f437e6ed12e9690b7d2a7f7f46292e",
+          "dsc_sha256": null,
+          "actions_run_id": "31102459428",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
+          "artifact_name": "arm64-rebuild-gooroom-indicator-applet-0.3.0-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-indicator-applet",
+              "version": "0.3.0+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-indicator-applet_0.3.0+grm3u1_arm64.deb",
+              "sha256": "476caf39d3828905d855dfead989f08c8f891c34b0854e91cff422dc4cc9e44b",
+              "size": 8696,
+              "source": "gooroom-indicator-applet",
+              "source_version": "0.3.0+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-indicator-applet/0.3.0+grm3u1/result.json"
         },
         {
           "source": "gooroom-indicator-applet",
@@ -1404,7 +1788,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-logout/0.3.0_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-logout",
@@ -1442,6 +1826,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "gooroom-logout/0.3.0_grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-logout",
+          "source_version": "0.3.0+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-logout",
+          "commit_sha": "28dcdee1a4297eaa5c3403a6b5630d3c23250379",
+          "tree_sha": "fd614ae882300afbb5e91206547a21642a59807c",
+          "dsc_sha256": null,
+          "actions_run_id": "31102459428",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
+          "artifact_name": "arm64-rebuild-gooroom-logout-0.3.0-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-logout",
+              "version": "0.3.0+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-logout_0.3.0+grm3u1_arm64.deb",
+              "sha256": "ed7472398c2d1b63a6b9fbfe5c8da075c449353f518c7dd27b676a22d0de37b1",
+              "size": 13080,
+              "source": "gooroom-logout",
+              "source_version": "0.3.0+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-logout/0.3.0+grm3u1/result.json"
         },
         {
           "source": "gooroom-logout",
@@ -1502,7 +1913,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-notice-applet/0.3.4_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-notice-applet",
@@ -1540,6 +1951,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "gooroom-notice-applet/0.3.4_grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-notice-applet",
+          "source_version": "0.3.4+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-notice-applet",
+          "commit_sha": "3109138327c56be9b704c3efb6b4fdb305de5dfe",
+          "tree_sha": "1b7737d55f83af87ea607e6ae989a98368348d83",
+          "dsc_sha256": null,
+          "actions_run_id": "31102459428",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
+          "artifact_name": "arm64-rebuild-gooroom-notice-applet-0.3.4-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-notice-applet",
+              "version": "0.3.4+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-notice-applet_0.3.4+grm3u1_arm64.deb",
+              "sha256": "244e189c0c495bac995fccda21df0b8046dbe77886fd36d5834f63071bcf8719",
+              "size": 18184,
+              "source": "gooroom-notice-applet",
+              "source_version": "0.3.4+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-notice-applet/0.3.4+grm3u1/result.json"
         },
         {
           "source": "gooroom-notice-applet",
@@ -1600,7 +2038,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-notifyd/0.5.0_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-notifyd",
@@ -1647,6 +2085,33 @@
           "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
           "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
           "dsc_sha256": null,
+          "actions_run_id": "31102459428",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
+          "artifact_name": "arm64-rebuild-gooroom-notifyd-0.5.0-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-notifyd",
+              "version": "0.5.0+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-notifyd_0.5.0+grm3u1_arm64.deb",
+              "sha256": "a55b3e7f47522249aaf3c06b3d389e4b9a5c59d70dc0191cd5d87fbb6181839a",
+              "size": 26096,
+              "source": "gooroom-notifyd",
+              "source_version": "0.5.0+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-notifyd/0.5.0+grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-notifyd",
+          "source_version": "0.5.0+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-notifyd",
+          "commit_sha": "c7e5fc76cc0928361f1b2cb0e69baf9e14bc0f6f",
+          "tree_sha": "f4bc0f6f19f0ac51091eaf2abde590003447d4e7",
+          "dsc_sha256": null,
           "actions_run_id": "31097604683",
           "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31097604683",
           "artifact_name": "0.5.0+grm3u1",
@@ -1660,7 +2125,7 @@
     {
       "source": "gooroom-security-status-tools",
       "source_version": "0.3.9+grm3u1",
-      "status": "failed",
+      "status": "verified",
       "selected": {
         "source": "gooroom-security-status-tools",
         "source_version": "0.3.9+grm3u1",
@@ -1669,16 +2134,70 @@
         "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
         "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
         "dsc_sha256": null,
-        "actions_run_id": "31097724529",
-        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31097724529",
-        "artifact_name": "0.3.9+grm3u1",
-        "passed": false,
-        "packages": [],
+        "actions_run_id": "31093920102",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31093920102",
+        "artifact_name": "gooroom-security-status-tools-exact-arm64",
+        "passed": true,
+        "packages": [
+          {
+            "package": "gooroom-security-status-tools",
+            "version": "0.3.9+grm3u1",
+            "architecture": "arm64",
+            "filename": "gooroom-security-status-tools_0.3.9+grm3u1_arm64.deb",
+            "sha256": "18946a97397b1fb5bcf1938dd3dacaa265d876a3b8d2bdad526b1967c8c0becf",
+            "size": 52672,
+            "source": "gooroom-security-status-tools",
+            "source_version": "0.3.9+grm3u1"
+          }
+        ],
         "verification_errors": [],
-        "evidence_path": "gooroom-security-status-tools/0.3.9+grm3u1/result.json"
+        "evidence_path": "historical-import-v3/gooroom-security-status-tools/0.3.9+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "gooroom-security-status-tools",
+          "source_version": "0.3.9+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-security-status-tools",
+          "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+          "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+          "dsc_sha256": null,
+          "actions_run_id": "31093920102",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31093920102",
+          "artifact_name": "gooroom-security-status-tools-exact-arm64",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-security-status-tools",
+              "version": "0.3.9+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-security-status-tools_0.3.9+grm3u1_arm64.deb",
+              "sha256": "18946a97397b1fb5bcf1938dd3dacaa265d876a3b8d2bdad526b1967c8c0becf",
+              "size": 52672,
+              "source": "gooroom-security-status-tools",
+              "source_version": "0.3.9+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-security-status-tools/0.3.9+grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-security-status-tools",
+          "source_version": "0.3.9+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-security-status-tools",
+          "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+          "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+          "dsc_sha256": null,
+          "actions_run_id": "31148819375",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148819375",
+          "artifact_name": "gooroom-security-status-tools-exact-arm64",
+          "passed": false,
+          "packages": [],
+          "verification_errors": [],
+          "evidence_path": "gooroom-security-status-tools/0.3.9_grm3u1/result.json"
+        },
         {
           "source": "gooroom-security-status-tools",
           "source_version": "0.3.9+grm3u1",
@@ -1694,22 +2213,6 @@
           "packages": [],
           "verification_errors": [],
           "evidence_path": "gooroom-security-status-tools/0.3.9+grm3u1/result.json"
-        },
-        {
-          "source": "gooroom-security-status-tools",
-          "source_version": "0.3.9+grm3u1",
-          "provenance": "github-exact-commit",
-          "repository": "gooroom/gooroom-security-status-tools",
-          "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
-          "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
-          "dsc_sha256": null,
-          "actions_run_id": "31093920102",
-          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31093920102",
-          "artifact_name": "gooroom-security-status-tools-exact-arm64",
-          "passed": false,
-          "packages": [],
-          "verification_errors": [],
-          "evidence_path": "gooroom-security-status-tools/0.3.9_grm3u1/result.json"
         }
       ]
     },
@@ -1754,7 +2257,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-showdesktop-applet/0.2.0_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-showdesktop-applet",
@@ -1792,6 +2295,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "gooroom-showdesktop-applet/0.2.0_grm3u1/result.json"
+        },
+        {
+          "source": "gooroom-showdesktop-applet",
+          "source_version": "0.2.0+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-showdesktop-applet",
+          "commit_sha": "7a296d9d0b9c35c01014f08495cc6da347f07ca0",
+          "tree_sha": "d139bced2ae046922d3c0e35dc8357551245b6a3",
+          "dsc_sha256": null,
+          "actions_run_id": "31102922971",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
+          "artifact_name": "arm64-rebuild-gooroom-showdesktop-applet-0.2.0-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-showdesktop-applet",
+              "version": "0.2.0+grm3u1",
+              "architecture": "arm64",
+              "filename": "gooroom-showdesktop-applet_0.2.0+grm3u1_arm64.deb",
+              "sha256": "e8a6d1320d3ee1f679873777b3805486d52f524f326b9810ae755a9fca303b71",
+              "size": 6372,
+              "source": "gooroom-showdesktop-applet",
+              "source_version": "0.2.0+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-showdesktop-applet/0.2.0+grm3u1/result.json"
         },
         {
           "source": "gooroom-showdesktop-applet",
@@ -1902,7 +2432,7 @@
         "verification_errors": [],
         "evidence_path": "gooroom-software/3.30.6_5_grm3u6/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gooroom-software",
@@ -1990,6 +2520,43 @@
           ],
           "verification_errors": [],
           "evidence_path": "gooroom-software/3.30.6_5_grm3u6/result.json"
+        },
+        {
+          "source": "gooroom-software",
+          "source_version": "3.30.6+5+grm3u6",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gooroom-software",
+          "commit_sha": "2aedea76a1c77853d80ec2d05cbfcbec48879eaf",
+          "tree_sha": "5181988d917696bc0159edae219f1dcb5dd5fe09",
+          "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-gooroom-software-3.30.6-5-grm3u6",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gooroom-software",
+              "version": "3.30.6+5+grm3u6",
+              "architecture": "arm64",
+              "filename": "gooroom-software_3.30.6+5+grm3u6_arm64.deb",
+              "sha256": "02a221613258ddf979750b306b93f3682255955513fe6d9a74a579ecf9b2d608",
+              "size": 429560,
+              "source": "gooroom-software",
+              "source_version": "3.30.6+5+grm3u6"
+            },
+            {
+              "package": "gooroom-software-plugin-flatpak",
+              "version": "3.30.6+5+grm3u6",
+              "architecture": "arm64",
+              "filename": "gooroom-software-plugin-flatpak_3.30.6+5+grm3u6_arm64.deb",
+              "sha256": "136ce8c038b26cc4d59de463cf91e78052c0c227e75b6507c2c661e3fe75af2a",
+              "size": 52324,
+              "source": "gooroom-software",
+              "source_version": "3.30.6+5+grm3u6"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gooroom-software/3.30.6+5+grm3u6/result.json"
         },
         {
           "source": "gooroom-software",
@@ -2170,7 +2737,7 @@
         "verification_errors": [],
         "evidence_path": "gtk_2.0/2.24.33-2_grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gtk+2.0",
@@ -2328,6 +2895,43 @@
           ],
           "verification_errors": [],
           "evidence_path": "gtk_2.0/2.24.33-2_grm3u1/result.json"
+        },
+        {
+          "source": "gtk+2.0",
+          "source_version": "2.24.33-2+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gtk2",
+          "commit_sha": "dd67a4d4c36d6b0a178663d0fe192cadf836877d",
+          "tree_sha": "8020c98e6206a576e3a6049962be7ad10b5b8333",
+          "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-gtk-2.0-2.24.33-2-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gtk2-engines-pixbuf",
+              "version": "2.24.33-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "gtk2-engines-pixbuf_2.24.33-2+grm3u1_arm64.deb",
+              "sha256": "0d730a5278c8ea13aa9bb8dbc5cfc2a9bed1e62a09ef4415d9f747c788250cb5",
+              "size": 61748,
+              "source": "gtk+2.0",
+              "source_version": "2.24.33-2+grm3u1"
+            },
+            {
+              "package": "libgtk2.0-0",
+              "version": "2.24.33-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "libgtk2.0-0_2.24.33-2+grm3u1_arm64.deb",
+              "sha256": "21493f151830caddc080cd5ee0a7dd4c7ac5fdbeba81da5d4b12217713cf772d",
+              "size": 1704416,
+              "source": "gtk+2.0",
+              "source_version": "2.24.33-2+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gtk+2.0/2.24.33-2+grm3u1/result.json"
         },
         {
           "source": "gtk+2.0",
@@ -2498,7 +3102,7 @@
         "verification_errors": [],
         "evidence_path": "gtk_3.0/3.24.24-4_grm3u2/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "gtk+3.0",
@@ -2655,6 +3259,63 @@
           "commit_sha": "b566a9d629f2f6ce1b2bf415c102a15a1d2d2495",
           "tree_sha": "e6d2a53b942106b26c58d54a8a52edfde7dea3ae",
           "dsc_sha256": null,
+          "actions_run_id": "31104803734",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734",
+          "artifact_name": "arm64-rebuild-gtk-3.0-3.24.24-4-grm3u2",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gir1.2-gtk-3.0",
+              "version": "3.24.24-4+grm3u2",
+              "architecture": "arm64",
+              "filename": "gir1.2-gtk-3.0_3.24.24-4+grm3u2_arm64.deb",
+              "sha256": "b43a539aecb43f613f65e9d4d90727f9c0bb351820a981548ffec041e70308bb",
+              "size": 257588,
+              "source": "gtk+3.0",
+              "source_version": "3.24.24-4+grm3u2"
+            },
+            {
+              "package": "gtk-update-icon-cache",
+              "version": "3.24.24-4+grm3u2",
+              "architecture": "arm64",
+              "filename": "gtk-update-icon-cache_3.24.24-4+grm3u2_arm64.deb",
+              "sha256": "3f6d3f8dd64f11a502a98e4cf5faa13758f25ae29b543dd9bedade48a837059d",
+              "size": 86356,
+              "source": "gtk+3.0",
+              "source_version": "3.24.24-4+grm3u2"
+            },
+            {
+              "package": "libgtk-3-0",
+              "version": "3.24.24-4+grm3u2",
+              "architecture": "arm64",
+              "filename": "libgtk-3-0_3.24.24-4+grm3u2_arm64.deb",
+              "sha256": "6a8bc2c9fac0a88400a3d0e5f23df7300b84f303ad947a80be7c5eb1c5ff8456",
+              "size": 2514588,
+              "source": "gtk+3.0",
+              "source_version": "3.24.24-4+grm3u2"
+            },
+            {
+              "package": "libgtk-3-bin",
+              "version": "3.24.24-4+grm3u2",
+              "architecture": "arm64",
+              "filename": "libgtk-3-bin_3.24.24-4+grm3u2_arm64.deb",
+              "sha256": "42f4721f5b1d4617238aa9c78141dfb11f6e9c1811dac85f9f70ac3a68c36967",
+              "size": 122088,
+              "source": "gtk+3.0",
+              "source_version": "3.24.24-4+grm3u2"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/gtk+3.0/3.24.24-4+grm3u2/result.json"
+        },
+        {
+          "source": "gtk+3.0",
+          "source_version": "3.24.24-4+grm3u2",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/gtk3",
+          "commit_sha": "b566a9d629f2f6ce1b2bf415c102a15a1d2d2495",
+          "tree_sha": "e6d2a53b942106b26c58d54a8a52edfde7dea3ae",
+          "dsc_sha256": null,
           "actions_run_id": "31097916427",
           "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31097916427",
           "artifact_name": "3.24.24-4+grm3u2",
@@ -2706,7 +3367,7 @@
         "verification_errors": [],
         "evidence_path": "hancom-toolkit/0.3.3_han3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "hancom-toolkit",
@@ -2744,6 +3405,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "hancom-toolkit/0.3.3_han3u1/result.json"
+        },
+        {
+          "source": "hancom-toolkit",
+          "source_version": "0.3.3+han3u1",
+          "provenance": "github-exact-commit",
+          "repository": "hancomgooroom/hancom-toolkit",
+          "commit_sha": "57d9ca6f5a066dc801149c78edb5175c27a05ecc",
+          "tree_sha": "cb1f9edd051b6521442a15ebadc95e4b82718f05",
+          "dsc_sha256": null,
+          "actions_run_id": "31102922971",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
+          "artifact_name": "arm64-rebuild-hancom-toolkit-0.3.3-han3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "hancom-toolkit",
+              "version": "0.3.3+han3u1",
+              "architecture": "arm64",
+              "filename": "hancom-toolkit_0.3.3+han3u1_arm64.deb",
+              "sha256": "3025249447aa1f01e1b777e1851cb70921fcd162a1f64aa933444ce241d42d8f",
+              "size": 28672,
+              "source": "hancom-toolkit",
+              "source_version": "0.3.3+han3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/hancom-toolkit/0.3.3+han3u1/result.json"
         },
         {
           "source": "hancom-toolkit",
@@ -2804,7 +3492,7 @@
         "verification_errors": [],
         "evidence_path": "hancom-viewer-installer/0.2.2_han3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "hancom-viewer-installer",
@@ -2842,6 +3530,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "hancom-viewer-installer/0.2.2_han3u1/result.json"
+        },
+        {
+          "source": "hancom-viewer-installer",
+          "source_version": "0.2.2+han3u1",
+          "provenance": "github-exact-commit",
+          "repository": "hancom-io/hancom-viewer-installer",
+          "commit_sha": "883c293b0a23e7bd47e54ef0a5edf3d26b7906b9",
+          "tree_sha": "b394ff18973f4c0ce3d594845e0f6be3360ac250",
+          "dsc_sha256": null,
+          "actions_run_id": "31102922971",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
+          "artifact_name": "arm64-rebuild-hancom-viewer-installer-0.2.2-han3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "hancom-viewer-installer",
+              "version": "0.2.2+han3u1",
+              "architecture": "arm64",
+              "filename": "hancom-viewer-installer_0.2.2+han3u1_arm64.deb",
+              "sha256": "15f15545996a1a63b7efe48122178f0824510305947fecc26e93e303a9a2cf51",
+              "size": 17788,
+              "source": "hancom-viewer-installer",
+              "source_version": "0.2.2+han3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/hancom-viewer-installer/0.2.2+han3u1/result.json"
         },
         {
           "source": "hancom-viewer-installer",
@@ -2892,7 +3607,7 @@
         "verification_errors": [],
         "evidence_path": "hancomgrm-adjustments-utils/0.3.3_han3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
         {
           "source": "hancomgrm-adjustments-utils",
@@ -2920,6 +3635,33 @@
           ],
           "verification_errors": [],
           "evidence_path": "hancomgrm-adjustments-utils/0.3.3_han3u1/result.json"
+        },
+        {
+          "source": "hancomgrm-adjustments-utils",
+          "source_version": "0.3.3+han3u1",
+          "provenance": "github-exact-commit",
+          "repository": "hancomgooroom/hancomgrm-adjustments-utils",
+          "commit_sha": "2f8d22c40c79922bdb444fe787bd05f7d55f10e6",
+          "tree_sha": "c9bf9631d38a6c95af97f80affbd71fe534a94c6",
+          "dsc_sha256": null,
+          "actions_run_id": "31102922971",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971",
+          "artifact_name": "arm64-rebuild-hancomgrm-adjustments-utils-0.3.3-han3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "hancomgrm-adjustments-utils",
+              "version": "0.3.3+han3u1",
+              "architecture": "arm64",
+              "filename": "hancomgrm-adjustments-utils_0.3.3+han3u1_arm64.deb",
+              "sha256": "334baa086428676ee842beac83843f63ade38d96dc79da5d92f8d0f391f4b352",
+              "size": 4604,
+              "source": "hancomgrm-adjustments-utils",
+              "source_version": "0.3.3+han3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/hancomgrm-adjustments-utils/0.3.3+han3u1/result.json"
         },
         {
           "source": "hancomgrm-adjustments-utils",
@@ -2957,26 +3699,6 @@
         "passed": true,
         "packages": [
           {
-            "package": "gir1.2-nma-1.0",
-            "version": "1.8.30-1+grm3u2",
-            "architecture": "arm64",
-            "filename": "gir1.2-nma-1.0_1.8.30-1+grm3u2_arm64.deb",
-            "sha256": "f365c68f3f974d3dafb04b304f9e7e42bf37db1d72d4cc1c90b759863a3a6931",
-            "size": 7196,
-            "source": "libnma",
-            "source_version": "1.8.30-1+grm3u2"
-          },
-          {
-            "package": "libnma-dev",
-            "version": "1.8.30-1+grm3u2",
-            "architecture": "arm64",
-            "filename": "libnma-dev_1.8.30-1+grm3u2_arm64.deb",
-            "sha256": "137e70f284cdd37f68d97681a80a2551f9b961bbc3f93726ed6755056f64d18f",
-            "size": 44056,
-            "source": "libnma",
-            "source_version": "1.8.30-1+grm3u2"
-          },
-          {
             "package": "libnma0",
             "version": "1.8.30-1+grm3u2",
             "architecture": "arm64",
@@ -2985,23 +3707,40 @@
             "size": 86968,
             "source": "libnma",
             "source_version": "1.8.30-1+grm3u2"
-          },
-          {
-            "package": "libnma0-dbgsym",
-            "version": "1.8.30-1+grm3u2",
-            "architecture": "arm64",
-            "filename": "libnma0-dbgsym_1.8.30-1+grm3u2_arm64.deb",
-            "sha256": "a654c7e936ebfa5f6d7583e1a0c75ece629f156a18f24c8f56cae9ab6ba5c46e",
-            "size": 329864,
-            "source": "libnma",
-            "source_version": "1.8.30-1+grm3u2"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "libnma/1.8.30-1_grm3u2/result.json"
+        "evidence_path": "historical-import-v3/libnma/1.8.30-1+grm3u2/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "libnma",
+          "source_version": "1.8.30-1+grm3u2",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/libnma",
+          "commit_sha": "7ea056fd93525e344559ebc2e38b90ce5937ecc8",
+          "tree_sha": "2ada6a3ee3ba66b0768ef666baba32e4998a6eff",
+          "dsc_sha256": null,
+          "actions_run_id": "31104940988",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104940988",
+          "artifact_name": "arm64-rebuild-libnma-1.8.30-1-grm3u2",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libnma0",
+              "version": "1.8.30-1+grm3u2",
+              "architecture": "arm64",
+              "filename": "libnma0_1.8.30-1+grm3u2_arm64.deb",
+              "sha256": "410ec44719c0c92e84824a196f55608072ca4a8daf3d117c71b1c3680f6ee161",
+              "size": 86968,
+              "source": "libnma",
+              "source_version": "1.8.30-1+grm3u2"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/libnma/1.8.30-1+grm3u2/result.json"
+        },
         {
           "source": "libnma",
           "source_version": "1.8.30-1+grm3u2",
@@ -3095,72 +3834,12 @@
         "passed": true,
         "packages": [
           {
-            "package": "gir1.2-lightdm-1",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "gir1.2-lightdm-1_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "9c89a78fa3bcf494ddebb8fe3d6e7253f48ee1c17124c10d1f53c3ad63d9aee1",
-            "size": 31048,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
             "package": "liblightdm-gobject-1-0",
             "version": "1.26.0-7+grm3u1",
             "architecture": "arm64",
             "filename": "liblightdm-gobject-1-0_1.26.0-7+grm3u1_arm64.deb",
             "sha256": "f28d1813c0b56cdf78310ede537afe9f09f68198028e5a0d4562a7ce1f12637b",
             "size": 61092,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "liblightdm-gobject-1-0-dbgsym",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "liblightdm-gobject-1-0-dbgsym_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "096453fc9010c1464875518bbf7bd0bef3649a80ed34e3ebcef9c4d6bd9f7722",
-            "size": 125220,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "liblightdm-gobject-dev",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "liblightdm-gobject-dev_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "aab028f24d50680a40456c250339917bb9ffc9eed7d5e80c302eaa46edb48ec8",
-            "size": 101604,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "liblightdm-qt5-3-0",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "liblightdm-qt5-3-0_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "4720dd1dac41ad3d1f6cc09d70869c2d613e9ed0a8cea14386dfe82473e45fae",
-            "size": 45732,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "liblightdm-qt5-3-0-dbgsym",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "liblightdm-qt5-3-0-dbgsym_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "30a29b09ad0664d3471afb5696e3e3b14f9a81e969abd9ad668b601386ec20c6",
-            "size": 432140,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "liblightdm-qt5-3-dev",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "liblightdm-qt5-3-dev_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "b0c9d0c3e6262c14c90902228a6a1d3adde9a096675ce5e1d5b7dd931e0502af",
-            "size": 48976,
             "source": "lightdm",
             "source_version": "1.26.0-7+grm3u1"
           },
@@ -3173,33 +3852,50 @@
             "size": 165364,
             "source": "lightdm",
             "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "lightdm-dbgsym",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "lightdm-dbgsym_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "2f6d833e3a026ae97c7665df2ef549034169af5e9a19c57618a077c5f9881162",
-            "size": 362408,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
-          },
-          {
-            "package": "lightdm-vala",
-            "version": "1.26.0-7+grm3u1",
-            "architecture": "arm64",
-            "filename": "lightdm-vala_1.26.0-7+grm3u1_arm64.deb",
-            "sha256": "c9544fd0e283431d66490ee719a859712efa373f8f6587d896a9ce379914d349",
-            "size": 29000,
-            "source": "lightdm",
-            "source_version": "1.26.0-7+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "lightdm/1.26.0-7_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/lightdm/1.26.0-7+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "lightdm",
+          "source_version": "1.26.0-7+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/lightdm",
+          "commit_sha": "6824813cf5d82b8c5cc47009e2e7be45717af6f8",
+          "tree_sha": "aef7445a73e7240dc68bf83edf506ad5f1bd0ce3",
+          "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-lightdm-1.26.0-7-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "liblightdm-gobject-1-0",
+              "version": "1.26.0-7+grm3u1",
+              "architecture": "arm64",
+              "filename": "liblightdm-gobject-1-0_1.26.0-7+grm3u1_arm64.deb",
+              "sha256": "f28d1813c0b56cdf78310ede537afe9f09f68198028e5a0d4562a7ce1f12637b",
+              "size": 61092,
+              "source": "lightdm",
+              "source_version": "1.26.0-7+grm3u1"
+            },
+            {
+              "package": "lightdm",
+              "version": "1.26.0-7+grm3u1",
+              "architecture": "arm64",
+              "filename": "lightdm_1.26.0-7+grm3u1_arm64.deb",
+              "sha256": "b02a7ed003ac733b5d713646ae13bbc635d6d0b9046d5353f4c75c136eabd3b1",
+              "size": 165364,
+              "source": "lightdm",
+              "source_version": "1.26.0-7+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/lightdm/1.26.0-7+grm3u1/result.json"
+        },
         {
           "source": "lightdm",
           "source_version": "1.26.0-7+grm3u1",
@@ -3353,32 +4049,12 @@
         "passed": true,
         "packages": [
           {
-            "package": "libmetacity-dev",
-            "version": "1:3.38.0-2+grm3u1",
-            "architecture": "arm64",
-            "filename": "libmetacity-dev_3.38.0-2+grm3u1_arm64.deb",
-            "sha256": "21a03341e27360a45a9750a56a3c1a92aec98b595b55a594181f849d666e5493",
-            "size": 173716,
-            "source": "metacity",
-            "source_version": "1:3.38.0-2+grm3u1"
-          },
-          {
             "package": "libmetacity3",
             "version": "1:3.38.0-2+grm3u1",
             "architecture": "arm64",
             "filename": "libmetacity3_3.38.0-2+grm3u1_arm64.deb",
             "sha256": "bef542edefd8c8488f693290524953c28abead9abad2481fd0004caa9553a551",
             "size": 220700,
-            "source": "metacity",
-            "source_version": "1:3.38.0-2+grm3u1"
-          },
-          {
-            "package": "libmetacity3-dbgsym",
-            "version": "1:3.38.0-2+grm3u1",
-            "architecture": "arm64",
-            "filename": "libmetacity3-dbgsym_3.38.0-2+grm3u1_arm64.deb",
-            "sha256": "e34418417e702e3f1ad7763a6750aaaf38d661a96981b6d5754aef4ac55676cf",
-            "size": 177868,
             "source": "metacity",
             "source_version": "1:3.38.0-2+grm3u1"
           },
@@ -3391,23 +4067,50 @@
             "size": 355676,
             "source": "metacity",
             "source_version": "1:3.38.0-2+grm3u1"
-          },
-          {
-            "package": "metacity-dbgsym",
-            "version": "1:3.38.0-2+grm3u1",
-            "architecture": "arm64",
-            "filename": "metacity-dbgsym_3.38.0-2+grm3u1_arm64.deb",
-            "sha256": "f9f5e0583981401f62f228755062bc4fd4e18a2d4d7705ca0c795c3afc97c518",
-            "size": 677892,
-            "source": "metacity",
-            "source_version": "1:3.38.0-2+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "metacity/1_3.38.0-2_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/metacity/1:3.38.0-2+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "metacity",
+          "source_version": "1:3.38.0-2+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/metacity",
+          "commit_sha": "a16c481927cd6694eb2ec2afaedf07a9ee411b5c",
+          "tree_sha": "7c52cb654d792f4f32fe450c9206b4bd1b5acbc8",
+          "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-metacity-1-3.38.0-2-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libmetacity3",
+              "version": "1:3.38.0-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "libmetacity3_3.38.0-2+grm3u1_arm64.deb",
+              "sha256": "bef542edefd8c8488f693290524953c28abead9abad2481fd0004caa9553a551",
+              "size": 220700,
+              "source": "metacity",
+              "source_version": "1:3.38.0-2+grm3u1"
+            },
+            {
+              "package": "metacity",
+              "version": "1:3.38.0-2+grm3u1",
+              "architecture": "arm64",
+              "filename": "metacity_3.38.0-2+grm3u1_arm64.deb",
+              "sha256": "b9d644a494b1a7683e5968a65472287342baff11c4f481b6d1a33386e9081aa2",
+              "size": 355676,
+              "source": "metacity",
+              "source_version": "1:3.38.0-2+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/metacity/1:3.38.0-2+grm3u1/result.json"
+        },
         {
           "source": "metacity",
           "source_version": "1:3.38.0-2+grm3u1",
@@ -3505,8 +4208,8 @@
         "commit_sha": "06ed39e08e6e2427a515bdab114d02a35fc010f8",
         "tree_sha": "3ef99087b50a0e5f759bcb7ce3df144680bc60fa",
         "dsc_sha256": null,
-        "actions_run_id": "31103220338",
-        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
+        "actions_run_id": "31103303835",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103303835",
         "artifact_name": "arm64-rebuild-mousetweaks-3.32.0-3-grm3u1",
         "passed": true,
         "packages": [
@@ -3519,23 +4222,40 @@
             "size": 178724,
             "source": "mousetweaks",
             "source_version": "3.32.0-3+grm3u1"
-          },
-          {
-            "package": "mousetweaks-dbgsym",
-            "version": "3.32.0-3+grm3u1",
-            "architecture": "arm64",
-            "filename": "mousetweaks-dbgsym_3.32.0-3+grm3u1_arm64.deb",
-            "sha256": "c390a4155c4dbe6436fe08939581e0994460c2156928156366ddbf873262b74d",
-            "size": 79620,
-            "source": "mousetweaks",
-            "source_version": "3.32.0-3+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "mousetweaks/3.32.0-3_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/mousetweaks/3.32.0-3+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "mousetweaks",
+          "source_version": "3.32.0-3+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/mousetweaks",
+          "commit_sha": "06ed39e08e6e2427a515bdab114d02a35fc010f8",
+          "tree_sha": "3ef99087b50a0e5f759bcb7ce3df144680bc60fa",
+          "dsc_sha256": null,
+          "actions_run_id": "31103303835",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103303835",
+          "artifact_name": "arm64-rebuild-mousetweaks-3.32.0-3-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "mousetweaks",
+              "version": "3.32.0-3+grm3u1",
+              "architecture": "arm64",
+              "filename": "mousetweaks_3.32.0-3+grm3u1_arm64.deb",
+              "sha256": "1884b447e6f258abe6adee174b9f02fc2ef45345bc84828e48f7425639cdc77f",
+              "size": 178724,
+              "source": "mousetweaks",
+              "source_version": "3.32.0-3+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/mousetweaks/3.32.0-3+grm3u1/result.json"
+        },
         {
           "source": "mousetweaks",
           "source_version": "3.32.0-3+grm3u1",
@@ -3592,6 +4312,88 @@
       ]
     },
     {
+      "source": "nautilus",
+      "source_version": "3.38.2-1+deb11u1+grm3u8",
+      "status": "verified",
+      "selected": {
+        "source": "nautilus",
+        "source_version": "3.38.2-1+deb11u1+grm3u8",
+        "provenance": "github-exact-commit",
+        "repository": "gooroom/nautilus",
+        "commit_sha": "8d7900ad94c2dbfe167e0dd9a00ee37f203f0511",
+        "tree_sha": "d3b2a8e8599902b40da81867f85c2ac81fe4d984",
+        "dsc_sha256": null,
+        "actions_run_id": "31090345461",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31090345461",
+        "artifact_name": "nautilus-exact-arm64-wave4",
+        "passed": true,
+        "packages": [
+          {
+            "package": "libnautilus-extension1a",
+            "version": "3.38.2-1+deb11u1+grm3u8",
+            "architecture": "arm64",
+            "filename": "libnautilus-extension1a_3.38.2-1+deb11u1+grm3u8_arm64.deb",
+            "sha256": "704c98ca7fe0f658b1e84ed03601b1be80de71aead0e6031d8e1d3172338983a",
+            "size": 37868,
+            "source": "nautilus",
+            "source_version": "3.38.2-1+deb11u1+grm3u8"
+          },
+          {
+            "package": "nautilus",
+            "version": "3.38.2-1+deb11u1+grm3u8",
+            "architecture": "arm64",
+            "filename": "nautilus_3.38.2-1+deb11u1+grm3u8_arm64.deb",
+            "sha256": "d7a96f58524266cf15fc50840665f5959d3ffee34a7aeb3daef8a5703b791699",
+            "size": 544280,
+            "source": "nautilus",
+            "source_version": "3.38.2-1+deb11u1+grm3u8"
+          }
+        ],
+        "verification_errors": [],
+        "evidence_path": "historical-import-v3/nautilus/3.38.2-1+deb11u1+grm3u8/result.json"
+      },
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "source": "nautilus",
+          "source_version": "3.38.2-1+deb11u1+grm3u8",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/nautilus",
+          "commit_sha": "8d7900ad94c2dbfe167e0dd9a00ee37f203f0511",
+          "tree_sha": "d3b2a8e8599902b40da81867f85c2ac81fe4d984",
+          "dsc_sha256": null,
+          "actions_run_id": "31090345461",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31090345461",
+          "artifact_name": "nautilus-exact-arm64-wave4",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libnautilus-extension1a",
+              "version": "3.38.2-1+deb11u1+grm3u8",
+              "architecture": "arm64",
+              "filename": "libnautilus-extension1a_3.38.2-1+deb11u1+grm3u8_arm64.deb",
+              "sha256": "704c98ca7fe0f658b1e84ed03601b1be80de71aead0e6031d8e1d3172338983a",
+              "size": 37868,
+              "source": "nautilus",
+              "source_version": "3.38.2-1+deb11u1+grm3u8"
+            },
+            {
+              "package": "nautilus",
+              "version": "3.38.2-1+deb11u1+grm3u8",
+              "architecture": "arm64",
+              "filename": "nautilus_3.38.2-1+deb11u1+grm3u8_arm64.deb",
+              "sha256": "d7a96f58524266cf15fc50840665f5959d3ffee34a7aeb3daef8a5703b791699",
+              "size": 544280,
+              "source": "nautilus",
+              "source_version": "3.38.2-1+deb11u1+grm3u8"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/nautilus/3.38.2-1+deb11u1+grm3u8/result.json"
+        }
+      ]
+    },
+    {
       "source": "network-manager",
       "source_version": "1.30.0-2+grm3u3",
       "status": "verified",
@@ -3609,42 +4411,12 @@
         "passed": true,
         "packages": [
           {
-            "package": "gir1.2-nm-1.0",
-            "version": "1.30.0-2+grm3u3",
-            "architecture": "arm64",
-            "filename": "gir1.2-nm-1.0_1.30.0-2+grm3u3_arm64.deb",
-            "sha256": "f7001cffb37667f08e07f88e332d1e977e1810658c21582bfe761a211215138d",
-            "size": 102000,
-            "source": "network-manager",
-            "source_version": "1.30.0-2+grm3u3"
-          },
-          {
-            "package": "libnm-dev",
-            "version": "1.30.0-2+grm3u3",
-            "architecture": "arm64",
-            "filename": "libnm-dev_1.30.0-2+grm3u3_arm64.deb",
-            "sha256": "3be29164d8d7300a86e92a3689c79737be4e35fca85a865f7d81da45cf8b7487",
-            "size": 707848,
-            "source": "network-manager",
-            "source_version": "1.30.0-2+grm3u3"
-          },
-          {
             "package": "libnm0",
             "version": "1.30.0-2+grm3u3",
             "architecture": "arm64",
             "filename": "libnm0_1.30.0-2+grm3u3_arm64.deb",
             "sha256": "6a1fc6d454ab001ea56a9b8b55fa942b334c889fff3e218e09b47ac0d155c6d9",
             "size": 412816,
-            "source": "network-manager",
-            "source_version": "1.30.0-2+grm3u3"
-          },
-          {
-            "package": "libnm0-dbgsym",
-            "version": "1.30.0-2+grm3u3",
-            "architecture": "arm64",
-            "filename": "libnm0-dbgsym_1.30.0-2+grm3u3_arm64.deb",
-            "sha256": "7e100829dd356dafc3eb22977f95fb0e3b3965c69d492762b5de420f95a3e215",
-            "size": 2353860,
             "source": "network-manager",
             "source_version": "1.30.0-2+grm3u3"
           },
@@ -3657,23 +4429,50 @@
             "size": 2838476,
             "source": "network-manager",
             "source_version": "1.30.0-2+grm3u3"
-          },
-          {
-            "package": "network-manager-dbgsym",
-            "version": "1.30.0-2+grm3u3",
-            "architecture": "arm64",
-            "filename": "network-manager-dbgsym_1.30.0-2+grm3u3_arm64.deb",
-            "sha256": "1e58dd0ea8de57fbd43710c2803cf92ec26e04b44e73fb8d720401cb3313e37a",
-            "size": 11133452,
-            "source": "network-manager",
-            "source_version": "1.30.0-2+grm3u3"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "network-manager/1.30.0-2_grm3u3/result.json"
+        "evidence_path": "historical-import-v3/network-manager/1.30.0-2+grm3u3/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "network-manager",
+          "source_version": "1.30.0-2+grm3u3",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/network-manager",
+          "commit_sha": "712e0531988c471901936d0c8c415a1a8cec96fe",
+          "tree_sha": "fafc1de993a88e4bc27f53912199b8b65acb86b9",
+          "dsc_sha256": null,
+          "actions_run_id": "31103830214",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214",
+          "artifact_name": "arm64-rebuild-network-manager-1.30.0-2-grm3u3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libnm0",
+              "version": "1.30.0-2+grm3u3",
+              "architecture": "arm64",
+              "filename": "libnm0_1.30.0-2+grm3u3_arm64.deb",
+              "sha256": "6a1fc6d454ab001ea56a9b8b55fa942b334c889fff3e218e09b47ac0d155c6d9",
+              "size": 412816,
+              "source": "network-manager",
+              "source_version": "1.30.0-2+grm3u3"
+            },
+            {
+              "package": "network-manager",
+              "version": "1.30.0-2+grm3u3",
+              "architecture": "arm64",
+              "filename": "network-manager_1.30.0-2+grm3u3_arm64.deb",
+              "sha256": "63f0fc230506bb0601a0321d949820a614e422de487c8fa5868617d8809ed321",
+              "size": 2838476,
+              "source": "network-manager",
+              "source_version": "1.30.0-2+grm3u3"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/network-manager/1.30.0-2+grm3u3/result.json"
+        },
         {
           "source": "network-manager",
           "source_version": "1.30.0-2+grm3u3",
@@ -3795,23 +4594,40 @@
             "size": 896140,
             "source": "network-manager-applet",
             "source_version": "1.20.0-3+grm3u4"
-          },
-          {
-            "package": "network-manager-gnome-dbgsym",
-            "version": "1.20.0-3+grm3u4",
-            "architecture": "arm64",
-            "filename": "network-manager-gnome-dbgsym_1.20.0-3+grm3u4_arm64.deb",
-            "sha256": "f7db70d9ddd19d1228cd8adeb8d11ec12affa647edbde60ad36b4476df7638bf",
-            "size": 704604,
-            "source": "network-manager-applet",
-            "source_version": "1.20.0-3+grm3u4"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "network-manager-applet/1.20.0-3_grm3u4/result.json"
+        "evidence_path": "historical-import-v3/network-manager-applet/1.20.0-3+grm3u4/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "network-manager-applet",
+          "source_version": "1.20.0-3+grm3u4",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/network-manager-applet",
+          "commit_sha": "fb22dadeb9eeb78b4d256a2a78d619aa5687cbea",
+          "tree_sha": "5b8aeb62c1e855d611025b10e4fd7e0eb351c9ad",
+          "dsc_sha256": null,
+          "actions_run_id": "31103220338",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
+          "artifact_name": "arm64-rebuild-network-manager-applet-1.20.0-3-grm3u4",
+          "passed": true,
+          "packages": [
+            {
+              "package": "network-manager-gnome",
+              "version": "1.20.0-3+grm3u4",
+              "architecture": "arm64",
+              "filename": "network-manager-gnome_1.20.0-3+grm3u4_arm64.deb",
+              "sha256": "46389382ee7fec52d1bd40383536dd872a5e192b2f580fb81a780c566d4eb7ca",
+              "size": 896140,
+              "source": "network-manager-applet",
+              "source_version": "1.20.0-3+grm3u4"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/network-manager-applet/1.20.0-3+grm3u4/result.json"
+        },
         {
           "source": "network-manager-applet",
           "source_version": "1.20.0-3+grm3u4",
@@ -3895,62 +4711,12 @@
             "source_version": "2023.06.30+grm3u1"
           },
           {
-            "package": "libnimf1-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "libnimf1-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "46bd964fe174a22f060279b7c086c47002ea92c104c98c528fb9c897b55a0ea0",
-            "size": 88900,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
             "package": "nimf",
             "version": "2023.06.30+grm3u1",
             "architecture": "arm64",
             "filename": "nimf_2023.06.30+grm3u1_arm64.deb",
             "sha256": "9b7d14e9c539e7b097cbf7ea606a6b0914e5aee493147b2a3f4aa790a2e028ab",
             "size": 135040,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-anthy",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-anthy_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "1d4b02eb4dff6c0524865ea4fb4feb5c0f5caf05e04a9443480bf274849fd313",
-            "size": 48612,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-anthy-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-anthy-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "4fa661ddc3b1c6ceb4a841a0f0702f0482ae0fce4fc56ff02ca326d4eab83b9b",
-            "size": 30984,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "559c79f110d6fc3306ba29f28bf8682106d41f72ccf1395bdbe6274ea9a34f52",
-            "size": 655336,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-dev",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-dev_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "1f72470e29588bf8cbc97fb06c1a8082a7f388190c008a12cafd2fb75719077e",
-            "size": 47748,
             "source": "nimf",
             "source_version": "2023.06.30+grm3u1"
           },
@@ -3963,63 +4729,60 @@
             "size": 38572,
             "source": "nimf",
             "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-libhangul-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-libhangul-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "b3ec0438c61705942f81c04cbbd8d8cfee7bf9297a8d53f23c48be811e5da69c",
-            "size": 23868,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-m17n",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-m17n_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "1d51b712460a392a8cb549627b20e78589086f38589ace3a2e7398097bcf505c",
-            "size": 921080,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-m17n-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-m17n-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "2f576674e5cda4fa7465a20e7d57c5c5a33845d467e8e69089d8971f8187a7f8",
-            "size": 416740,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-rime",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-rime_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "52423f4dae6c72df6b1b7d0fe272095c17acb7a15c016110f07e3e9c3d7a18ee",
-            "size": 64028,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
-          },
-          {
-            "package": "nimf-rime-dbgsym",
-            "version": "2023.06.30+grm3u1",
-            "architecture": "arm64",
-            "filename": "nimf-rime-dbgsym_2023.06.30+grm3u1_arm64.deb",
-            "sha256": "64109f9d5b2b5dad8fd5856dfefb22666f9fab481ae520b254644f1ed22aae75",
-            "size": 21736,
-            "source": "nimf",
-            "source_version": "2023.06.30+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "nimf/2023.06.30_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/nimf/2023.06.30+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "nimf",
+          "source_version": "2023.06.30+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/nimf",
+          "commit_sha": "583ad8b183db06a84c6b85a80fe132583566909d",
+          "tree_sha": "a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d",
+          "dsc_sha256": null,
+          "actions_run_id": "31104803734",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734",
+          "artifact_name": "arm64-rebuild-nimf-2023.06.30-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libnimf1",
+              "version": "2023.06.30+grm3u1",
+              "architecture": "arm64",
+              "filename": "libnimf1_2023.06.30+grm3u1_arm64.deb",
+              "sha256": "1fb17b589d4672f70d9c72994679fd531fbf0f9bc3528c83cdfd571e372aa97b",
+              "size": 40072,
+              "source": "nimf",
+              "source_version": "2023.06.30+grm3u1"
+            },
+            {
+              "package": "nimf",
+              "version": "2023.06.30+grm3u1",
+              "architecture": "arm64",
+              "filename": "nimf_2023.06.30+grm3u1_arm64.deb",
+              "sha256": "9b7d14e9c539e7b097cbf7ea606a6b0914e5aee493147b2a3f4aa790a2e028ab",
+              "size": 135040,
+              "source": "nimf",
+              "source_version": "2023.06.30+grm3u1"
+            },
+            {
+              "package": "nimf-libhangul",
+              "version": "2023.06.30+grm3u1",
+              "architecture": "arm64",
+              "filename": "nimf-libhangul_2023.06.30+grm3u1_arm64.deb",
+              "sha256": "8d3f5bb50ab81656156b9eed9e40a462db1fa8f266ddfa629dd175caa7beb673",
+              "size": 38572,
+              "source": "nimf",
+              "source_version": "2023.06.30+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/nimf/2023.06.30+grm3u1/result.json"
+        },
         {
           "source": "nimf",
           "source_version": "2023.06.30+grm3u1",
@@ -4188,7 +4951,7 @@
     {
       "source": "p7zip",
       "source_version": "16.02+dfsg-8+grm3u1",
-      "status": "failed",
+      "status": "verified",
       "selected": {
         "source": "p7zip",
         "source_version": "16.02+dfsg-8+grm3u1",
@@ -4197,16 +4960,74 @@
         "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
         "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
         "dsc_sha256": null,
-        "actions_run_id": "31104803734",
-        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104803734",
-        "artifact_name": "arm64-rebuild-p7zip-16.02-dfsg-8-grm3u1",
-        "passed": false,
-        "packages": [],
+        "actions_run_id": "31112702650",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31112702650",
+        "artifact_name": "arm64-rebuild-p7zip-16.02-dfsg-8-grm3u1-full",
+        "passed": true,
+        "packages": [
+          {
+            "package": "p7zip",
+            "version": "16.02+dfsg-8+grm3u1",
+            "architecture": "arm64",
+            "filename": "p7zip_16.02+dfsg-8+grm3u1_arm64.deb",
+            "sha256": "72a0e9f3943e5d529141a9d1475e838dc1d3a42fd497e1c628cdf095241c42ad",
+            "size": 342228,
+            "source": "p7zip",
+            "source_version": "16.02+dfsg-8+grm3u1"
+          },
+          {
+            "package": "p7zip-full",
+            "version": "16.02+dfsg-8+grm3u1",
+            "architecture": "arm64",
+            "filename": "p7zip-full_16.02+dfsg-8+grm3u1_arm64.deb",
+            "sha256": "dda5c02cb3edbed2830b6367d575c989d5a2f09cdbe0161b5ff6dd1d7768c5c8",
+            "size": 1065696,
+            "source": "p7zip",
+            "source_version": "16.02+dfsg-8+grm3u1"
+          }
+        ],
         "verification_errors": [],
-        "evidence_path": "p7zip/16.02_dfsg-8_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/p7zip/16.02+dfsg-8+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "p7zip",
+          "source_version": "16.02+dfsg-8+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/p7zip",
+          "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
+          "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
+          "dsc_sha256": null,
+          "actions_run_id": "31112702650",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31112702650",
+          "artifact_name": "arm64-rebuild-p7zip-16.02-dfsg-8-grm3u1-full",
+          "passed": true,
+          "packages": [
+            {
+              "package": "p7zip",
+              "version": "16.02+dfsg-8+grm3u1",
+              "architecture": "arm64",
+              "filename": "p7zip_16.02+dfsg-8+grm3u1_arm64.deb",
+              "sha256": "72a0e9f3943e5d529141a9d1475e838dc1d3a42fd497e1c628cdf095241c42ad",
+              "size": 342228,
+              "source": "p7zip",
+              "source_version": "16.02+dfsg-8+grm3u1"
+            },
+            {
+              "package": "p7zip-full",
+              "version": "16.02+dfsg-8+grm3u1",
+              "architecture": "arm64",
+              "filename": "p7zip-full_16.02+dfsg-8+grm3u1_arm64.deb",
+              "sha256": "dda5c02cb3edbed2830b6367d575c989d5a2f09cdbe0161b5ff6dd1d7768c5c8",
+              "size": 1065696,
+              "source": "p7zip",
+              "source_version": "16.02+dfsg-8+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/p7zip/16.02+dfsg-8+grm3u1/result.json"
+        },
         {
           "source": "p7zip",
           "source_version": "16.02+dfsg-8+grm3u1",
@@ -4267,23 +5088,40 @@
             "size": 106492,
             "source": "pam-gooroom",
             "source_version": "0.4.3+grm3u1"
-          },
-          {
-            "package": "pam-gooroom-dbgsym",
-            "version": "0.4.3+grm3u1",
-            "architecture": "arm64",
-            "filename": "pam-gooroom-dbgsym_0.4.3+grm3u1_arm64.deb",
-            "sha256": "313d5a1163fd9dc4b4a628bf3425d92d8ed5dffa84932b2addc4adb5a4ddf396",
-            "size": 84552,
-            "source": "pam-gooroom",
-            "source_version": "0.4.3+grm3u1"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "pam-gooroom/0.4.3_grm3u1/result.json"
+        "evidence_path": "historical-import-v3/pam-gooroom/0.4.3+grm3u1/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "pam-gooroom",
+          "source_version": "0.4.3+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/libpam-gooroom-authenticator",
+          "commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
+          "tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
+          "dsc_sha256": null,
+          "actions_run_id": "31103220338",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
+          "artifact_name": "arm64-rebuild-pam-gooroom-0.4.3-grm3u1",
+          "passed": true,
+          "packages": [
+            {
+              "package": "pam-gooroom",
+              "version": "0.4.3+grm3u1",
+              "architecture": "arm64",
+              "filename": "pam-gooroom_0.4.3+grm3u1_arm64.deb",
+              "sha256": "d9b8310bd113e83b07cd25db67b8a85806b69c4d15ed50f0d193c8b567f6c7db",
+              "size": 106492,
+              "source": "pam-gooroom",
+              "source_version": "0.4.3+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/pam-gooroom/0.4.3+grm3u1/result.json"
+        },
         {
           "source": "pam-gooroom",
           "source_version": "0.4.3+grm3u1",
@@ -4340,6 +5178,128 @@
       ]
     },
     {
+      "source": "policykit-1",
+      "source_version": "0.105-31+nDeb11u1+grm3u1",
+      "status": "verified",
+      "selected": {
+        "source": "policykit-1",
+        "source_version": "0.105-31+nDeb11u1+grm3u1",
+        "provenance": "github-exact-commit",
+        "repository": "gooroom/policykit-1",
+        "commit_sha": "0563a8a6e1276df34e70c52029b0d8e3a2314520",
+        "tree_sha": "c636768dd74927fb948b0c4527966a110de5516b",
+        "dsc_sha256": null,
+        "actions_run_id": "31089491039",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+        "artifact_name": "policykit-1-exact-arm64-wave3",
+        "passed": true,
+        "packages": [
+          {
+            "package": "gir1.2-polkit-1.0",
+            "version": "0.105-31+nDeb11u1+grm3u1",
+            "architecture": "arm64",
+            "filename": "gir1.2-polkit-1.0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+            "sha256": "718d52f5eaf0449b73cfdf882d531f96f53c2473c2abbea39cc50e868c9b0a3b",
+            "size": 20340,
+            "source": "policykit-1",
+            "source_version": "0.105-31+nDeb11u1+grm3u1"
+          },
+          {
+            "package": "libpolkit-agent-1-0",
+            "version": "0.105-31+nDeb11u1+grm3u1",
+            "architecture": "arm64",
+            "filename": "libpolkit-agent-1-0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+            "sha256": "9675b24b19a6c3d9651d35a7301be3a4dd01b00347a35d1864de8b725a7616b7",
+            "size": 27348,
+            "source": "policykit-1",
+            "source_version": "0.105-31+nDeb11u1+grm3u1"
+          },
+          {
+            "package": "libpolkit-gobject-1-0",
+            "version": "0.105-31+nDeb11u1+grm3u1",
+            "architecture": "arm64",
+            "filename": "libpolkit-gobject-1-0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+            "sha256": "919ebc22d94f1c6708c95a788dd27864a8822d40598cb81be5a0276450a573bd",
+            "size": 47000,
+            "source": "policykit-1",
+            "source_version": "0.105-31+nDeb11u1+grm3u1"
+          },
+          {
+            "package": "policykit-1",
+            "version": "0.105-31+nDeb11u1+grm3u1",
+            "architecture": "arm64",
+            "filename": "policykit-1_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+            "sha256": "ba28b97244f3d00af3be02e702abb2eeb5dcded36511225661b749dd809f0119",
+            "size": 85900,
+            "source": "policykit-1",
+            "source_version": "0.105-31+nDeb11u1+grm3u1"
+          }
+        ],
+        "verification_errors": [],
+        "evidence_path": "historical-import-v3/policykit-1/0.105-31+nDeb11u1+grm3u1/result.json"
+      },
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "source": "policykit-1",
+          "source_version": "0.105-31+nDeb11u1+grm3u1",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/policykit-1",
+          "commit_sha": "0563a8a6e1276df34e70c52029b0d8e3a2314520",
+          "tree_sha": "c636768dd74927fb948b0c4527966a110de5516b",
+          "dsc_sha256": null,
+          "actions_run_id": "31089491039",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+          "artifact_name": "policykit-1-exact-arm64-wave3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "gir1.2-polkit-1.0",
+              "version": "0.105-31+nDeb11u1+grm3u1",
+              "architecture": "arm64",
+              "filename": "gir1.2-polkit-1.0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+              "sha256": "718d52f5eaf0449b73cfdf882d531f96f53c2473c2abbea39cc50e868c9b0a3b",
+              "size": 20340,
+              "source": "policykit-1",
+              "source_version": "0.105-31+nDeb11u1+grm3u1"
+            },
+            {
+              "package": "libpolkit-agent-1-0",
+              "version": "0.105-31+nDeb11u1+grm3u1",
+              "architecture": "arm64",
+              "filename": "libpolkit-agent-1-0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+              "sha256": "9675b24b19a6c3d9651d35a7301be3a4dd01b00347a35d1864de8b725a7616b7",
+              "size": 27348,
+              "source": "policykit-1",
+              "source_version": "0.105-31+nDeb11u1+grm3u1"
+            },
+            {
+              "package": "libpolkit-gobject-1-0",
+              "version": "0.105-31+nDeb11u1+grm3u1",
+              "architecture": "arm64",
+              "filename": "libpolkit-gobject-1-0_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+              "sha256": "919ebc22d94f1c6708c95a788dd27864a8822d40598cb81be5a0276450a573bd",
+              "size": 47000,
+              "source": "policykit-1",
+              "source_version": "0.105-31+nDeb11u1+grm3u1"
+            },
+            {
+              "package": "policykit-1",
+              "version": "0.105-31+nDeb11u1+grm3u1",
+              "architecture": "arm64",
+              "filename": "policykit-1_0.105-31+nDeb11u1+grm3u1_arm64.deb",
+              "sha256": "ba28b97244f3d00af3be02e702abb2eeb5dcded36511225661b749dd809f0119",
+              "size": 85900,
+              "source": "policykit-1",
+              "source_version": "0.105-31+nDeb11u1+grm3u1"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/policykit-1/0.105-31+nDeb11u1+grm3u1/result.json"
+        }
+      ]
+    },
+    {
       "source": "synaptic",
       "source_version": "0.90.2+grm3u3",
       "status": "verified",
@@ -4365,23 +5325,40 @@
             "size": 2042948,
             "source": "synaptic",
             "source_version": "0.90.2+grm3u3"
-          },
-          {
-            "package": "synaptic-dbgsym",
-            "version": "0.90.2+grm3u3",
-            "architecture": "arm64",
-            "filename": "synaptic-dbgsym_0.90.2+grm3u3_arm64.deb",
-            "sha256": "ae946e67004afcd7b90d6eac55d58e3d2ae4bb5ece8ac90b9cd49501db8068fa",
-            "size": 4269980,
-            "source": "synaptic",
-            "source_version": "0.90.2+grm3u3"
           }
         ],
         "verification_errors": [],
-        "evidence_path": "synaptic/0.90.2_grm3u3/result.json"
+        "evidence_path": "historical-import-v3/synaptic/0.90.2+grm3u3/result.json"
       },
-      "attempt_count": 2,
+      "attempt_count": 3,
       "attempts": [
+        {
+          "source": "synaptic",
+          "source_version": "0.90.2+grm3u3",
+          "provenance": "github-exact-commit",
+          "repository": "gooroom/synaptic",
+          "commit_sha": "0aadbfb8a87e3be73dc0b20c1edb74774c46e9a8",
+          "tree_sha": "569d9d83a12748ff484c34432a0562c6951b39ae",
+          "dsc_sha256": null,
+          "actions_run_id": "31103220338",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338",
+          "artifact_name": "arm64-rebuild-synaptic-0.90.2-grm3u3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "synaptic",
+              "version": "0.90.2+grm3u3",
+              "architecture": "arm64",
+              "filename": "synaptic_0.90.2+grm3u3_arm64.deb",
+              "sha256": "966a670bdbf06b43fe2cd2880a3a400cb4b54c090e5225834a5f38b8f34c166c",
+              "size": 2042948,
+              "source": "synaptic",
+              "source_version": "0.90.2+grm3u3"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/synaptic/0.90.2+grm3u3/result.json"
+        },
         {
           "source": "synaptic",
           "source_version": "0.90.2+grm3u3",
@@ -4434,6 +5411,88 @@
           "packages": [],
           "verification_errors": [],
           "evidence_path": "synaptic/0.90.2+grm3u3/result.json"
+        }
+      ]
+    },
+    {
+      "source": "yelp",
+      "source_version": "3.38.3-1+han3u3",
+      "status": "verified",
+      "selected": {
+        "source": "yelp",
+        "source_version": "3.38.3-1+han3u3",
+        "provenance": "github-exact-commit",
+        "repository": "hancom-io/yelp",
+        "commit_sha": "73af67d27815adcd09e4c319f692754a4b008a85",
+        "tree_sha": "404913af82e2c63363d1a864b5226812fd1c77b6",
+        "dsc_sha256": null,
+        "actions_run_id": "31089491039",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+        "artifact_name": "yelp-exact-arm64-wave3",
+        "passed": true,
+        "packages": [
+          {
+            "package": "libyelp0",
+            "version": "3.38.3-1+han3u3",
+            "architecture": "arm64",
+            "filename": "libyelp0_3.38.3-1+han3u3_arm64.deb",
+            "sha256": "4b8f914baa2b910690305b4cf1ca022383ae09d8a1637f0722407509d0d42afe",
+            "size": 163824,
+            "source": "yelp",
+            "source_version": "3.38.3-1+han3u3"
+          },
+          {
+            "package": "yelp",
+            "version": "3.38.3-1+han3u3",
+            "architecture": "arm64",
+            "filename": "yelp_3.38.3-1+han3u3_arm64.deb",
+            "sha256": "eb0ebb2680569e08c568b2ce1ef974299c6f544ee925a5682c439bf4de20801f",
+            "size": 752888,
+            "source": "yelp",
+            "source_version": "3.38.3-1+han3u3"
+          }
+        ],
+        "verification_errors": [],
+        "evidence_path": "historical-import-v3/yelp/3.38.3-1+han3u3/result.json"
+      },
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "source": "yelp",
+          "source_version": "3.38.3-1+han3u3",
+          "provenance": "github-exact-commit",
+          "repository": "hancom-io/yelp",
+          "commit_sha": "73af67d27815adcd09e4c319f692754a4b008a85",
+          "tree_sha": "404913af82e2c63363d1a864b5226812fd1c77b6",
+          "dsc_sha256": null,
+          "actions_run_id": "31089491039",
+          "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039",
+          "artifact_name": "yelp-exact-arm64-wave3",
+          "passed": true,
+          "packages": [
+            {
+              "package": "libyelp0",
+              "version": "3.38.3-1+han3u3",
+              "architecture": "arm64",
+              "filename": "libyelp0_3.38.3-1+han3u3_arm64.deb",
+              "sha256": "4b8f914baa2b910690305b4cf1ca022383ae09d8a1637f0722407509d0d42afe",
+              "size": 163824,
+              "source": "yelp",
+              "source_version": "3.38.3-1+han3u3"
+            },
+            {
+              "package": "yelp",
+              "version": "3.38.3-1+han3u3",
+              "architecture": "arm64",
+              "filename": "yelp_3.38.3-1+han3u3_arm64.deb",
+              "sha256": "eb0ebb2680569e08c568b2ce1ef974299c6f544ee925a5682c439bf4de20801f",
+              "size": 752888,
+              "source": "yelp",
+              "source_version": "3.38.3-1+han3u3"
+            }
+          ],
+          "verification_errors": [],
+          "evidence_path": "historical-import-v3/yelp/3.38.3-1+han3u3/result.json"
         }
       ]
     }
