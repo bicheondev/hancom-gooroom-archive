@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 142,
     "workflow_name_count": 142,
-    "referenced_local_file_count": 213,
+    "referenced_local_file_count": 215,
     "error_count": 1,
-    "warning_count": 39,
+    "warning_count": 40,
     "passed": false
   },
   "workflows": [
@@ -1770,9 +1770,11 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources-v3/effective-source-lock.json",
         "arm64/locks/effective-sources/effective-source-lock.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/rebuild-batches.json",
+        "arm64/scripts/merge_reconstructed_source_locks.py",
         "arm64/scripts/report_arm64_port_coverage.py",
         "arm64/source-recovery-blockers.json",
         "arm64/status/build-blockers.json",
@@ -3025,6 +3027,9 @@
     "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
+    "arm64/locks/reconstructed-sources/source-locks.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
     "arm64/locks/recovered-package-pool/latest/artifact-lock.json": [
       ".github/workflows/arm64-archaeology-recovered-package-blockers.yml"
     ],
@@ -3438,6 +3443,9 @@
     ],
     "arm64/scripts/merge_final_package_repositories_v2.py": [
       ".github/workflows/arm64-merge-final-package-repository-v2.yml"
+    ],
+    "arm64/scripts/merge_reconstructed_source_locks.py": [
+      ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/scripts/merge_source_authorities_v2.py": [
       ".github/workflows/arm64-merge-source-authorities-v2.yml"
@@ -3897,6 +3905,11 @@
     {
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage.yml",
+      "local_path": "arm64/locks/reconstructed-sources/source-locks.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
