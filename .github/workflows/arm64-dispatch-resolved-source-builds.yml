@@ -1,0 +1,40 @@
+name: ARM64 port - dispatch resolved exact source builds
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-resolved-source-builds.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-dispatch-resolved-source-builds
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - arm64-build-gnome-control-center.yml
+          - arm64-build-security-status-tools.yml
+    steps:
+      - name: Dispatch exact ARM64 source build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TARGET_WORKFLOW: ${{ matrix.workflow }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh api \
+            --method POST \
+            "/repos/${GH_REPO}/actions/workflows/${TARGET_WORKFLOW}/dispatches" \
+            -f ref=arm64-port
