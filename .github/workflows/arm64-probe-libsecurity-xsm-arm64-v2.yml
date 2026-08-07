@@ -51,9 +51,8 @@ jobs:
           set -o pipefail
           rm -rf work/libsecurity-xsm-arm64-probe
           mkdir -p work/libsecurity-xsm-arm64-probe
-          chmod +x arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh
           set +e
-          arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh \
+          bash arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh \
             work/libsecurity-xsm-arm64-probe \
             2>&1 | tee work/libsecurity-xsm-arm64-probe/workflow-probe.log
           rc=${PIPESTATUS[0]}
@@ -137,6 +136,7 @@ jobs:
             exit 0
           fi
           git commit -m "Record XSM ARM64 source probe ${GITHUB_RUN_ID}"
+          test -z "$(git status --porcelain --untracked-files=no)"
           for attempt in 1 2 3 4 5 6; do
             git pull --rebase origin arm64-port
             if git push origin HEAD:arm64-port; then
