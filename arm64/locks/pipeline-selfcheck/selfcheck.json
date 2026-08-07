@@ -1,7 +1,7 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-06T16:07:54.219659Z",
-  "status": "passed",
+  "generated_at": "2026-08-07T03:25:20.758018Z",
+  "status": "failed",
   "python": [
     {
       "path": "arm64/scripts/apply_reference_config_overlay.py",
@@ -32,6 +32,10 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/build_arch_replacement_packages.py",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/build_package_acquisition_plan_v2.py",
       "status": "passed"
     },
@@ -41,6 +45,10 @@
     },
     {
       "path": "arm64/scripts/build_package_acquisition_plan_v4.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/build_stage0_v6.py",
       "status": "passed"
     },
     {
@@ -65,6 +73,10 @@
     },
     {
       "path": "arm64/scripts/collect_native_rebuild_results_v4.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/extract_blocker_binary_evidence.py",
       "status": "passed"
     },
     {
@@ -176,11 +188,23 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/probe_wayback_blocker_dsc.py",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/promote_source_archive_lock.py",
       "status": "passed"
     },
     {
       "path": "arm64/scripts/promote_targeted_source_lock.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/recover_exact_arm64_package_pool.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/recover_exact_arm64_package_pool_v2.py",
       "status": "passed"
     },
     {
@@ -225,6 +249,10 @@
     },
     {
       "path": "arm64/scripts/repair_result_collector_v3.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/repair_stage0_v6.py",
       "status": "passed"
     },
     {
@@ -518,6 +546,10 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/build_recovered_exact_arm64_rootfs.sh",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/build_recovery_stage0_v1.sh",
       "status": "passed"
     },
@@ -626,6 +658,10 @@
       "status": "passed"
     },
     {
+      "path": "arm64/scripts/test_arm64_iso_qemu_v2.sh",
+      "status": "passed"
+    },
+    {
       "path": "arm64/scripts/test_final_arm64_iso_qemu_v2.sh",
       "status": "passed"
     },
@@ -660,6 +696,10 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-build-arch-replacements.yml",
+      "status": "passed"
+    },
+    {
       "path": ".github/workflows/arm64-build-dependency-repository-v2.yml",
       "status": "passed"
     },
@@ -689,6 +729,10 @@
     },
     {
       "path": ".github/workflows/arm64-build-recovered-dsc-sources-v2.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
       "status": "passed"
     },
     {
@@ -764,7 +808,19 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
+      "status": "passed"
+    },
+    {
       "path": ".github/workflows/arm64-extract-repository-keys.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       "status": "passed"
     },
     {
@@ -872,11 +928,20 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
+      "status": "failed",
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa5527393a0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa552739c10>)"
+    },
+    {
       "path": ".github/workflows/arm64-package-repo-incremental.yml",
       "status": "passed"
     },
     {
       "path": ".github/workflows/arm64-package-repo-wave1.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-pagination-maintenance.yml",
       "status": "passed"
     },
     {
@@ -901,6 +966,10 @@
     },
     {
       "path": ".github/workflows/arm64-port-state-audit.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-probe-wayback-blocker-dsc.yml",
       "status": "passed"
     },
     {
@@ -940,7 +1009,15 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-recover-exact-package-pool.yml",
+      "status": "passed"
+    },
+    {
       "path": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-existing-iso.yml",
       "status": "passed"
     },
     {
@@ -1000,6 +1077,10 @@
       "status": "passed"
     },
     {
+      "path": ".github/workflows/arm64-stage0-auto-repair.yml",
+      "status": "passed"
+    },
+    {
       "path": ".github/workflows/arm64-stage0-live-v3.yml",
       "status": "passed"
     },
@@ -1033,6 +1114,41 @@
     },
     {
       "path": ".github/workflows/arm64-stage0-v5-retest.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
+      "status": "failed",
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa55273be30>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa55276d730>)"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-converge.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-display-maintenance.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
+      "status": "failed",
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa5527390d0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa55273af90>)"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
+      "status": "failed",
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa552738ec0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa552738260>)"
+    },
+    {
+      "path": ".github/workflows/arm64-stage0-v6.yml",
       "status": "passed"
     },
     {
@@ -1164,6 +1280,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-build-arch-replacements.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-arch-replacements.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-build-dependency-repository-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1288,6 +1416,30 @@
       "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
       "status": "passed",
       "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-build-recovered-exact-rootfs.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
     },
     {
       "workflow": ".github/workflows/arm64-build-security-status-tools.yml",
@@ -1716,6 +1868,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-extract-blocker-binary-evidence.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-extract-repository-keys.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -1724,6 +1888,30 @@
     {
       "workflow": ".github/workflows/arm64-extract-repository-keys.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -2160,6 +2348,12 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-package-pool-v2-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-package-repo-incremental.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2180,6 +2374,12 @@
     {
       "workflow": ".github/workflows/arm64-package-repo-wave1.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-pagination-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
       "reason": null
     },
@@ -2251,6 +2451,18 @@
     },
     {
       "workflow": ".github/workflows/arm64-port-state-audit.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-probe-wayback-blocker-dsc.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-probe-wayback-blocker-dsc.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
@@ -2406,6 +2618,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-recover-exact-package-pool.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-recover-exact-package-pool.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2413,6 +2637,18 @@
     },
     {
       "workflow": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-recover-existing-iso.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-recover-existing-iso.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
@@ -2580,6 +2816,18 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-stage0-auto-repair.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-auto-repair.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
       "workflow": ".github/workflows/arm64-stage0-live-v3.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -2689,6 +2937,78 @@
     },
     {
       "workflow": ".github/workflows/arm64-stage0-v5-retest.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-auto-repair.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-checksum-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-converge-v2.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-converge.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-converge.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-display-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-hardening-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6-systemd-maintenance.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-stage0-v6.yml",
       "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
@@ -2844,7 +3164,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-06T16:07:55.173410Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-07T03:25:21.816806Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -2854,9 +3174,14 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-06T16:07:55.214796Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-07T03:25:21.859178Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
-  "issues": []
+  "issues": [
+    "YAML parse failed: .github/workflows/arm64-package-pool-v2-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa5527393a0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa552739c10>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-auto-repair.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa55273be30>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa55276d730>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-hardening-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa5527390d0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa55273af90>)",
+    "YAML parse failed: .github/workflows/arm64-stage0-v6-systemd-maintenance.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7fa552738ec0>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7fa552738260>)"
+  ]
 }
