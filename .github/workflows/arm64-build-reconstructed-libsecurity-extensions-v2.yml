@@ -1,0 +1,176 @@
+name: ARM64 port - build reconstructed exact libsecurity extensions
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml'
+      - 'arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh'
+      - 'arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-build-reconstructed-libsecurity-extensions-v2
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact locks and reconstruction policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 host and install audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo "native ARM64 runner required, got $(uname -m)" >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file git jq python3
+          bash -n arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
+          python3 -m py_compile arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py
+
+      - name: Build exact-version ARM64 package from constrained reconstruction
+        id: package_build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/gooroom-libsecurity-extensions-reconstructed-arm64
+          mkdir -p work/gooroom-libsecurity-extensions-reconstructed-arm64
+          set +e
+          bash arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh \
+            work/gooroom-libsecurity-extensions-reconstructed-arm64 \
+            2>&1 | tee work/gooroom-libsecurity-extensions-reconstructed-arm64/workflow-build.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Upload exact package, reconstructed source, and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: exact-package-rebuild-arm64-gooroom-libsecurity-extensions-${{ github.run_id }}
+          path: work/gooroom-libsecurity-extensions-reconstructed-arm64
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact immutable reconstruction authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/gooroom-libsecurity-extensions-reconstructed-arm64
+          run="arm64/locks/libsecurity-reconstruction/runs/${GITHUB_RUN_ID}"
+          latest=arm64/locks/libsecurity-reconstruction/latest
+          rm -rf "$run" "$latest"
+          mkdir -p "$run" "$latest"
+
+          for file in \
+            build-lock.json source-lock-evidence.json \
+            reconstruction-manifest.json \
+            container.exit-code container.stderr.log \
+            chroot-build.stderr.log \
+            xsm-compile.stderr.log \
+            dpkg-buildpackage.stderr.log \
+            prepackage-xsm.file.txt prepackage-xsm.readelf.txt \
+            prepackage-xsm.dynamic.txt \
+            packaged-xsm.file.txt packaged-xsm.readelf.txt \
+            packaged-xsm.dynamic.txt \
+            package-file-report.txt; do
+            if [ -f "$source/$file" ]; then
+              cp "$source/$file" "$run/"
+            fi
+          done
+
+          jq -n \
+            --argjson workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_commit "$GITHUB_SHA" \
+            --arg workflow_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg package_build_outcome '${{ steps.package_build.outcome }}' \
+            --arg package_build_exit_code '${{ steps.package_build.outputs.exit_code }}' \
+            '{
+              schema:3,
+              workflow_run_id:$workflow_run_id,
+              workflow_commit:$workflow_commit,
+              workflow_url:$workflow_url,
+              package_build_outcome:$package_build_outcome,
+              package_build_exit_code:$package_build_exit_code,
+              source_status:"reconstructed-not-recovered-original-source",
+              byte_identity_claimed:false,
+              policy:"exact-packaging-and-binary-history-constrained-native-arm64-reconstruction"
+            }' > "$run/authority.json"
+
+          (
+            cd "$run"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+          cp -a "$run/." "$latest/"
+          (
+            cd "$latest"
+            sha256sum --check SHA256SUMS
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/libsecurity-reconstruction
+          git commit -m "Record reconstructed libsecurity ARM64 build ${GITHUB_RUN_ID}"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce exact version, AArch64 payload, and explicit provenance
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.package_build.outcome }}' = success
+          test '${{ steps.package_build.outputs.exit_code }}' = 0
+          jq -e '
+            .verified == true
+            and .source == "gooroom-libsecurity-extensions"
+            and .source_version == "0.1.7+grm3u1"
+            and .target_architecture == "arm64"
+            and .source_status == "reconstructed-not-recovered-original-source"
+            and .byte_identity_claimed == false
+            and .package.architecture == "arm64"
+            and .payload.machine == "AArch64"
+            and .wrong_architecture_executable_count == 0
+          ' work/gooroom-libsecurity-extensions-reconstructed-arm64/build-lock.json
+
+      - name: Dispatch refreshed exact package recovery
+        if: steps.package_build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
