@@ -241,7 +241,7 @@ chmod +x /usr/sbin/policy-rc.d
 apt-get update > /build/output/chroot-apt-update.log 2>&1
 apt-get install -y --no-install-recommends \
   build-essential binutils ca-certificates debhelper dpkg-dev fakeroot file \
-  libdbus-1-dev libjson-c-dev libnotify-dev libsystemd-dev pkg-config \
+  libdbus-1-dev libdbus-glib-1-dev libgdk-pixbuf2.0-0 libjson-c-dev libnotify-dev libsystemd-dev pkg-config \
   python3 xserver-xorg-dev \
   > /build/output/chroot-apt-install.log 2>&1
 
