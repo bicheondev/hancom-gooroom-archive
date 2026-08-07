@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 134,
-    "workflow_name_count": 134,
+    "workflow_count": 135,
+    "workflow_name_count": 135,
     "referenced_local_file_count": 206,
     "error_count": 6,
     "warning_count": 38,
@@ -771,6 +771,18 @@
       "filename": "arm64-dispatch-browser-after-jq-fix.yml",
       "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
       "name": "ARM64 port - dispatch browser after composite jq fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-dispatch-recovery-after-gnome-control-center.yml",
+      "path": ".github/workflows/arm64-dispatch-recovery-after-gnome-control-center.yml",
+      "name": "ARM64 port - dispatch recovery after control center build",
       "events": [
         "push",
         "workflow_dispatch"
