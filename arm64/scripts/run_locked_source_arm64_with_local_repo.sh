@@ -13,57 +13,74 @@ SOURCE_NAME="$2"
 OUTPUT_DIR="$3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_BUILDER="$SCRIPT_DIR/build_locked_source_arm64_v2.sh"
-COMPAT_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
-COMPOSITE_HELPER="${HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER:-$SCRIPT_DIR/prepare_composite_source_chroot.sh}"
-COMPONENT_LOCK_DIR="${HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR:-$SCRIPT_DIR/../locks/source-components}"
+REFERENCE_JSON="${HANCOM_GOOROOM_REFERENCE_JSON:-$SCRIPT_DIR/../locks/reference/amd64-reference.json}"
 LOCAL_DEB_DIR="${HANCOM_GOOROOM_LOCAL_DEB_DIR:-}"
 LOCAL_SOURCE_NAME="${HANCOM_GOOROOM_LOCAL_SOURCE:-}"
 LOCAL_REQUIRED_PACKAGES_RAW="${HANCOM_GOOROOM_LOCAL_REQUIRED_PACKAGES:-}"
 SOURCE_VERSION_RE='\(([^)]+)\)'
 
-for command in jq dpkg-deb dpkg-scanpackages sha256sum gzip python3 stat find; do
+for command in \
+  jq dpkg-deb dpkg-scanpackages sha256sum gzip python3 stat find \
+  awk sort sed tr readlink; do
   command -v "$command" >/dev/null || {
     echo "required command is missing: $command" >&2
     exit 69
   }
 done
-[ -f "$LOCK_JSON" ] || { echo "source lock not found: $LOCK_JSON" >&2; exit 69; }
-[ -f "$BASE_BUILDER" ] || { echo "base builder not found: $BASE_BUILDER" >&2; exit 69; }
-[ -f "$COMPAT_WRAPPER" ] || { echo "compatibility wrapper not found: $COMPAT_WRAPPER" >&2; exit 69; }
-[ -f "$COMPOSITE_HELPER" ] || { echo "composite helper not found: $COMPOSITE_HELPER" >&2; exit 69; }
-[ -d "$COMPONENT_LOCK_DIR" ] || { echo "component lock directory not found: $COMPONENT_LOCK_DIR" >&2; exit 69; }
+[ -f "$LOCK_JSON" ] || {
+  echo "source lock not found: $LOCK_JSON" >&2
+  exit 69
+}
+[ -f "$BASE_BUILDER" ] || {
+  echo "base builder not found: $BASE_BUILDER" >&2
+  exit 69
+}
+[ -f "$REFERENCE_JSON" ] || {
+  echo "AMD64 reference lock not found: $REFERENCE_JSON" >&2
+  exit 69
+}
 [ -d "$LOCAL_DEB_DIR" ] || usage
 [[ "$LOCAL_SOURCE_NAME" =~ ^[a-z0-9][a-z0-9+.-]*$ ]] || usage
 
-COMPOSITE_HELPER="$(readlink -f "$COMPOSITE_HELPER")"
-COMPONENT_LOCK_DIR="$(readlink -f "$COMPONENT_LOCK_DIR")"
+LOCK_JSON="$(readlink -f "$LOCK_JSON")"
+REFERENCE_JSON="$(readlink -f "$REFERENCE_JSON")"
 LOCAL_DEB_DIR="$(readlink -f "$LOCAL_DEB_DIR")"
 OUTPUT_DIR_ABS="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 LOCAL_REPO="$WORK_DIR/local-repo"
-BUILDER_DIR="$WORK_DIR/builder"
 EVIDENCE_LINES="$WORK_DIR/local-evidence.jsonl"
-mkdir -p "$LOCAL_REPO" "$BUILDER_DIR"
+mkdir -p "$LOCAL_REPO"
 : > "$EVIDENCE_LINES"
 
 local_entry="$(jq -c --arg source "$LOCAL_SOURCE_NAME" '
   .sources[]
   | select(.source == $source and .status == "resolved" and .selected != null)
-' "$LOCK_JSON" | head -n1)"
-[ -n "$local_entry" ] || {
-  echo "No resolved exact source lock for local dependency source $LOCAL_SOURCE_NAME" >&2
+' "$LOCK_JSON")"
+[ "$(grep -c . <<<"$local_entry")" -eq 1 ] || {
+  echo "expected one resolved exact source lock for local dependency $LOCAL_SOURCE_NAME" >&2
   exit 2
 }
 LOCAL_SOURCE_VERSION="$(jq -r '.source_version' <<<"$local_entry")"
 LOCAL_REPOSITORY="$(jq -r '.selected.repository_full_name' <<<"$local_entry")"
 LOCAL_COMMIT_SHA="$(jq -r '.selected.commit_sha' <<<"$local_entry")"
 LOCAL_TREE_SHA="$(jq -r '.selected.tree_sha' <<<"$local_entry")"
-[[ "$LOCAL_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid local dependency commit" >&2; exit 2; }
-[[ "$LOCAL_TREE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid local dependency tree" >&2; exit 2; }
+[[ "$LOCAL_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || {
+  echo "invalid local dependency repository: $LOCAL_REPOSITORY" >&2
+  exit 2
+}
+[[ "$LOCAL_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "invalid local dependency commit" >&2
+  exit 2
+}
+[[ "$LOCAL_TREE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "invalid local dependency tree" >&2
+  exit 2
+}
 
 mapfile -d '' LOCAL_DEBS < <(
-  find "$LOCAL_DEB_DIR" -maxdepth 1 -type f -name '*.deb' -print0 | LC_ALL=C sort -z
+  find "$LOCAL_DEB_DIR" -maxdepth 1 -type f -name '*.deb' -print0 \
+    | LC_ALL=C sort -z
 )
 [ "${#LOCAL_DEBS[@]}" -gt 0 ] || {
   echo "no local DEBs found in $LOCAL_DEB_DIR" >&2
@@ -81,7 +98,10 @@ for deb in "${LOCAL_DEBS[@]}"; do
   }
   case "$architecture" in
     arm64|all) ;;
-    *) echo "local dependency is not ARM64/all: $package $architecture" >&2; exit 3 ;;
+    *)
+      echo "local dependency is not ARM64/all: $package $architecture" >&2
+      exit 3
+      ;;
   esac
   [ "$version" = "$LOCAL_SOURCE_VERSION" ] || {
     echo "local dependency version mismatch for $package: $version != $LOCAL_SOURCE_VERSION" >&2
@@ -165,74 +185,39 @@ done
   cd "$LOCAL_REPO"
   dpkg-scanpackages . /dev/null > Packages
   gzip -n -9 -c Packages > Packages.gz
-  sha256sum ./*.deb Packages Packages.gz | LC_ALL=C sort -k2 > REPOSITORY-SHA256SUMS
+
+  packages_sha256="$(sha256sum Packages | awk '{print $1}')"
+  packages_size="$(stat -c '%s' Packages)"
+  packages_gz_sha256="$(sha256sum Packages.gz | awk '{print $1}')"
+  packages_gz_size="$(stat -c '%s' Packages.gz)"
+  cat > Release <<EOF
+Origin: Hancom Gooroom ARM64
+Label: Hancom Gooroom ARM64
+Suite: exact-local
+Codename: exact-local
+Date: Thu, 01 Jan 1970 00:00:00 UTC
+Architectures: arm64 all
+Components: main
+Description: Exact locally built ARM64 dependencies
+SHA256:
+ $packages_sha256 $packages_size Packages
+ $packages_gz_sha256 $packages_gz_size Packages.gz
+EOF
+
+  find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+    | LC_ALL=C sort -z \
+    | xargs -0 sha256sum \
+    > SHA256SUMS
+  sha256sum --check SHA256SUMS
 )
 
-# Patch a disposable copy of only the generic builder to mount the verified
-# repository. The checked-in compatibility wrapper still performs the exact
-# target Git commit/tree/version and AMD64-reference package gates unchanged.
-cp "$BASE_BUILDER" "$BUILDER_DIR/build_locked_source_arm64_v2.sh"
-cp "$COMPAT_WRAPPER" "$BUILDER_DIR/run_locked_source_arm64.sh"
-chmod +x "$BUILDER_DIR/"*.sh
-
-python3 - "$BUILDER_DIR/build_locked_source_arm64_v2.sh" <<'PY'
-from pathlib import Path
-import sys
-
-path = Path(sys.argv[1])
-source = path.read_text(encoding="utf-8")
-
-anchor = '''BOOTSTRAP_IMAGE="${HANCOM_GOOROOM_BOOTSTRAP_IMAGE:-arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e}"
-'''
-replacement = anchor + '''LOCAL_REPO="${HANCOM_GOOROOM_LOCAL_REPO:-}"
-[ -d "$LOCAL_REPO" ] || {
-  echo "verified local build repository is missing: $LOCAL_REPO" >&2
-  exit 69
-}
-'''
-if source.count(anchor) != 1:
-    raise SystemExit(f"expected one bootstrap-image anchor, found {source.count(anchor)}")
-source = source.replace(anchor, replacement)
-
-chroot_anchor = '''cp -L /etc/resolv.conf "$ROOT/etc/resolv.conf"
-
-mkdir -p "$ROOT/build/source" "$ROOT/build/output"
-'''
-chroot_replacement = '''cp -L /etc/resolv.conf "$ROOT/etc/resolv.conf"
-
-mkdir -p "$ROOT/opt/hancom-gooroom-local-build-repo"
-cp -a /local-build-repo/. "$ROOT/opt/hancom-gooroom-local-build-repo/"
-cat > "$ROOT/etc/apt/sources.list.d/98hancom-gooroom-local-build.list" <<'EOF'
-deb [trusted=yes] file:/opt/hancom-gooroom-local-build-repo ./
-EOF
-cat > "$ROOT/etc/apt/preferences.d/98hancom-gooroom-local-build.pref" <<'EOF'
-Package: *
-Pin: origin ""
-Pin-Priority: 1001
-EOF
-
-mkdir -p "$ROOT/build/source" "$ROOT/build/output"
-'''
-if source.count(chroot_anchor) != 1:
-    raise SystemExit(f"expected one chroot-copy anchor, found {source.count(chroot_anchor)}")
-source = source.replace(chroot_anchor, chroot_replacement)
-
-docker_anchor = '''  --volume "$SOURCE_ROOT:/src:ro" \\
-'''
-docker_replacement = '''  --volume "$SOURCE_ROOT:/src:ro" \\
-  --volume "$LOCAL_REPO:/local-build-repo:ro" \\
-'''
-if source.count(docker_anchor) != 1:
-    raise SystemExit(f"expected one Docker source mount, found {source.count(docker_anchor)}")
-source = source.replace(docker_anchor, docker_replacement)
-
-path.write_text(source, encoding="utf-8")
-PY
-
-export HANCOM_GOOROOM_LOCAL_REPO="$LOCAL_REPO"
-export HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR="$COMPONENT_LOCK_DIR"
-export HANCOM_GOOROOM_COMPOSITE_SOURCE_HELPER="$COMPOSITE_HELPER"
-"$BUILDER_DIR/run_locked_source_arm64.sh" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
+# build_locked_source_arm64_v2.sh owns the repository-mount implementation.
+# This wrapper only validates and materializes exact local DEBs, then supplies
+# that immutable flat repository through the builder's public environment
+# contract. No source-code anchor or disposable builder patch is involved.
+export HANCOM_GOOROOM_REFERENCE_JSON="$REFERENCE_JSON"
+export HANCOM_GOOROOM_DEPENDENCY_REPOSITORY="$LOCAL_REPO"
+"$BASE_BUILDER" "$LOCK_JSON" "$SOURCE_NAME" "$OUTPUT_DIR_ABS"
 
 jq -s \
   --arg target_source "$SOURCE_NAME" \
@@ -242,8 +227,9 @@ jq -s \
   --arg commit_sha "$LOCAL_COMMIT_SHA" \
   --arg tree_sha "$LOCAL_TREE_SHA" '
     {
-      schema: 1,
+      schema: 2,
       policy: "exact-locally-built-source-dependency-repository",
+      injection_contract: "HANCOM_GOOROOM_DEPENDENCY_REPOSITORY",
       target_source: $target_source,
       dependency_source: {
         source: $source,
@@ -260,4 +246,5 @@ find "$OUTPUT_DIR_ABS" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
   | LC_ALL=C sort -z \
   | xargs -0 sha256sum \
   > "$OUTPUT_DIR_ABS/SHA256SUMS"
+sha256sum --check "$OUTPUT_DIR_ABS/SHA256SUMS"
 cat "$OUTPUT_DIR_ABS/local-build-dependencies.json"
