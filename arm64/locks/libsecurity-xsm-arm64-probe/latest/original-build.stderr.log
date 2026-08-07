@@ -1,0 +1,4 @@
++ '[' GNOME == XFCE ']'
++ '[' GNOME == GNOME ']'
+++ pkg-config xorg-server --cflags --libs dbus-1,libnotify,json-c
++ gcc -fvisibility=hidden -pthread -I/usr/include/xorg -I/usr/include/pixman-1 -I/usr/include/libdrm -I/usr/include/dbus-1.0 -I/usr/lib/aarch64-linux-gnu/dbus-1.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/glib-2.0 -I/usr/lib/aarch64-linux-gnu/glib-2.0/include -I/usr/include/json-c -I/usr/include/X11/dri -ldbus-1 -lnotify -lgdk_pixbuf-2.0 -lgio-2.0 -lgobject-2.0 -lglib-2.0 -ljson-c -DXACE -D_XSERVER64 -DX_REGISTRY_REQUEST -DX_REGISTRY_RESOURCE -DCOMPOSITE xsm.c -o xsm.so -shared -ldl -fPIC -s
