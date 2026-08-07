@@ -378,12 +378,12 @@ jq \
     source: .source,
     source_version: .source_version,
     source_component_lock_sha256: $lock_sha256,
-    packaging: .packaging + {
+    packaging: (.packaging + {
       verified_source: $packaging_source,
       verified_version: $packaging_version
-    },
+    }),
     changelog_anchor: .changelog_anchor,
-    upstream: .upstream + {
+    upstream: (.upstream + {
       verified_snapshot: $snapshot,
       verified_content_addressed_base: $file_base,
       resolved_downloads: $resolved_downloads[0],
@@ -394,7 +394,7 @@ jq \
         debian_sha256: $debian_sha256
       },
       required_paths_verified: true
-    },
+    }),
     composition: .composition,
     composite_root: "/build/composite-source",
     verified: true
