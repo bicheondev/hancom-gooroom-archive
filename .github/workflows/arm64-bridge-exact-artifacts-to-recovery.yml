@@ -1,0 +1,191 @@
+name: ARM64 port - bridge exact artifacts into package recovery
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-bridge-exact-artifacts-to-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-bridge-exact-artifacts-to-recovery
+  cancel-in-progress: false
+
+jobs:
+  bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out recovery policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Install artifact and Debian inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq unzip dpkg-dev file
+          gh --version
+
+      - name: Select exact ARM64 artifacts missed by the current recovery filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/bridge/downloads work/bridge/debs work/bridge/evidence
+          gh api --paginate \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            | jq -s '.' > work/bridge/evidence/pages.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          pages = json.loads(Path('work/bridge/evidence/pages.json').read_text())
+          artifacts = []
+          for page in pages:
+              artifacts.extend(page.get('artifacts', []))
+
+          already_admitted = (
+              'package', 'rebuild', 'repo', 'reference', 'historical',
+              'vendor', 'p7zip', 'accountsservice', 'wave',
+              'arch-replacements',
+          )
+          selected = []
+          for artifact in artifacts:
+              name = (artifact.get('name') or '').lower()
+              if artifact.get('expired'):
+                  continue
+              if int(artifact.get('size_in_bytes') or 0) < 1024:
+                  continue
+              if 'exact-arm64' not in name:
+                  continue
+              if any(token in name for token in ('iso', 'rootfs')):
+                  continue
+              if name.startswith('recovered-exact-arm64-package-pool-'):
+                  continue
+              if any(token in name for token in already_admitted):
+                  continue
+              selected.append({
+                  'id': artifact['id'],
+                  'name': artifact.get('name'),
+                  'size_in_bytes': int(artifact.get('size_in_bytes') or 0),
+                  'created_at': artifact.get('created_at'),
+                  'digest': artifact.get('digest'),
+                  'workflow_run': artifact.get('workflow_run'),
+              })
+
+          selected.sort(
+              key=lambda row: (row.get('created_at') or '', row['id']),
+              reverse=True,
+          )
+          newest = []
+          seen_names = set()
+          for row in selected:
+              if row['name'] in seen_names:
+                  continue
+              seen_names.add(row['name'])
+              newest.append(row)
+
+          Path('work/bridge/evidence/selected.json').write_text(
+              json.dumps(newest, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'selected_count': len(newest),
+              'names': [row['name'] for row in newest],
+          }, indent=2))
+          if not newest:
+              raise SystemExit('no missed exact ARM64 artifacts were found')
+          PY
+
+      - name: Extract and verify ARM64 Debian packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : > work/bridge/evidence/extraction.jsonl
+          jq -c '.[]' work/bridge/evidence/selected.json | while IFS= read -r row; do
+            id="$(jq -r '.id' <<<"$row")"
+            name="$(jq -r '.name' <<<"$row")"
+            archive="work/bridge/downloads/${id}.zip"
+            directory="work/bridge/downloads/${id}"
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "$archive"
+            mkdir -p "$directory"
+            unzip -q "$archive" -d "$directory"
+            found=0
+            while IFS= read -r -d '' deb; do
+              found=$((found + 1))
+              package="$(dpkg-deb -f "$deb" Package)"
+              version="$(dpkg-deb -f "$deb" Version)"
+              architecture="$(dpkg-deb -f "$deb" Architecture)"
+              source="$(dpkg-deb -f "$deb" Source 2>/dev/null || true)"
+              case "$architecture" in
+                arm64|all) ;;
+                *)
+                  echo "rejecting non-ARM64 package: $deb ($architecture)" >&2
+                  exit 1
+                  ;;
+              esac
+              digest="$(sha256sum "$deb" | awk '{print $1}')"
+              destination="work/bridge/debs/${digest}-$(basename "$deb")"
+              cp "$deb" "$destination"
+              jq -cn \
+                --argjson artifact_id "$id" \
+                --arg artifact_name "$name" \
+                --arg package "$package" \
+                --arg version "$version" \
+                --arg architecture "$architecture" \
+                --arg source "$source" \
+                --arg sha256 "$digest" \
+                '{artifact_id:$artifact_id,artifact_name:$artifact_name,package:$package,version:$version,architecture:$architecture,source:$source,sha256:$sha256}' \
+                >> work/bridge/evidence/extraction.jsonl
+            done < <(find "$directory" -type f -name '*.deb' -print0)
+            jq -cn \
+              --argjson artifact_id "$id" \
+              --arg artifact_name "$name" \
+              --argjson deb_count "$found" \
+              '{artifact_id:$artifact_id,artifact_name:$artifact_name,deb_count:$deb_count}' \
+              >> work/bridge/evidence/artifact-counts.jsonl
+          done
+
+          test -s work/bridge/evidence/extraction.jsonl
+          test "$(find work/bridge/debs -maxdepth 1 -type f -name '*.deb' | wc -l)" -gt 0
+          jq -s '.' work/bridge/evidence/extraction.jsonl \
+            > work/bridge/evidence/extraction.json
+          jq -s '.' work/bridge/evidence/artifact-counts.jsonl \
+            > work/bridge/evidence/artifact-counts.json
+          find work/bridge/debs work/bridge/evidence \
+            -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/bridge/evidence/SHA256SUMS
+          sha256sum --check work/bridge/evidence/SHA256SUMS
+
+      - name: Upload recovery-admitted package alias
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: exact-package-aliases-arm64-${{ github.run_id }}
+          path: |
+            work/bridge/debs
+            work/bridge/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Dispatch exact package recovery
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
