@@ -18,7 +18,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm
+    # The replacement is a config-only DEB with no executable payload. Building
+    # it does not require a scarce native ARM64 runner; its Architecture and
+    # immutable reference fields are verified below.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out immutable reference
@@ -27,11 +30,10 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Verify native ARM64 host and build config-only replacement
+      - name: Build and verify config-only ARM64 replacement
         shell: bash
         run: |
           set -euxo pipefail
-          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1;; esac
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python3 dpkg-dev jq file
           rm -rf work/arch-replacements
@@ -44,12 +46,12 @@ jobs:
           test "$(dpkg-deb -f "$deb" Architecture)" = arm64
           test "$(dpkg-deb -f "$deb" Package)" = linux-image-arm64
           root="$(mktemp -d)"
+          trap 'rm -rf "$root"' EXIT
           dpkg-deb -x "$deb" "$root"
           if find "$root" -type f -exec file '{}' + | grep -E 'ELF|executable'; then
             echo 'config-only architecture replacement contains executable payload' >&2
             exit 1
           fi
-          rm -rf "$root"
           find work/arch-replacements -type f ! -name SHA256SUMS -print0 \
             | sort -z | xargs -0 sha256sum > work/arch-replacements/SHA256SUMS
 
@@ -82,7 +84,9 @@ jobs:
           git commit -m 'Lock audited ARM64 architecture replacement packages'
           for attempt in 1 2 3 4; do
             git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then exit 0; fi
-            sleep $((attempt*3))
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
           done
           exit 1
