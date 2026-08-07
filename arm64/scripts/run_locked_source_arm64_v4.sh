@@ -21,9 +21,10 @@ LEGACY_WRAPPER="$SCRIPT_DIR/run_locked_source_arm64.sh"
 PATCHED_WRAPPER="$(mktemp "$SCRIPT_DIR/.run_locked_source_arm64_v4.XXXXXX")"
 trap 'rm -f "$PATCHED_WRAPPER"' EXIT
 
-# Adapt two stale asserted transformations in the historical wrapper to the
-# current base builder. Every replacement is fail-closed and validates the
-# exact old block before producing an executable wrapper.
+# Adapt the one stale source-component transformation in the historical
+# wrapper to the current base builder. The legacy manifest transformation is
+# already the exact adapter required by the current build-lock schema, so it is
+# validated and retained rather than being replaced a second time.
 python3 - "$LEGACY_WRAPPER" "$PATCHED_WRAPPER" <<'PY'
 from pathlib import Path
 import sys
@@ -121,31 +122,35 @@ text = replace_asserted_block(
     label="stale expected-package/source-component patch block",
 )
 
-# build_locked_source_arm64.sh now emits EXPECTED_PACKAGES_JSON itself. Keep
-# the extra policy/composition evidence, but anchor it to the current field.
-manifest_replacement = r"""manifest_anchor = '''  "expected_binary_packages": $EXPECTED_PACKAGES_JSON,
-'''
-manifest_fields = manifest_anchor + '''  "binary_package_policy": "AMD64 reference packages whose Architecture is not all",
-  "source_composition": $SOURCE_COMPOSITION_JSON,
-'''
-if source.count(manifest_anchor) != 1:
-    raise SystemExit(
-        f"expected exactly one current build-lock expected-package field, found {source.count(manifest_anchor)}"
-    )
-source = source.replace(manifest_anchor, manifest_fields)
-"""
-text = replace_asserted_block(
-    text,
-    start_marker="old_manifest_field = '''",
-    end_marker="source = source.replace(old_manifest_field, new_manifest_field)\n",
-    required=(
-        "$(jq -c '.binary_packages' <<<\"$entry\")",
-        '"binary_package_policy"',
-        '"source_composition"',
-    ),
-    replacement=manifest_replacement,
-    label="stale build-lock patch block",
+# The current base builder still emits the inline jq expression in
+# expected_binary_packages. The checked-in legacy wrapper correctly replaces
+# that field with EXPECTED_PACKAGES_JSON and appends the policy/composition
+# evidence after defining both values. Validate this adapter fail-closed and
+# leave it in place.
+manifest_start = "old_manifest_field = '''"
+manifest_end = "source = source.replace(old_manifest_field, new_manifest_field)\n"
+start = text.find(manifest_start)
+if start < 0:
+    raise SystemExit("current build-lock manifest adapter start was not found")
+end = text.find(manifest_end, start)
+if end < 0:
+    raise SystemExit("current build-lock manifest adapter end was not found")
+end += len(manifest_end)
+manifest_block = text[start:end]
+required_manifest_tokens = (
+    '"expected_binary_packages": $(jq -c',
+    '"expected_binary_packages": $EXPECTED_PACKAGES_JSON',
+    '"binary_package_policy"',
+    '"source_composition"',
 )
+missing = [token for token in required_manifest_tokens if token not in manifest_block]
+if missing:
+    raise SystemExit(
+        "refusing an unrecognized current build-lock manifest adapter; missing: "
+        + ", ".join(missing)
+    )
+if text.find(manifest_start, end) >= 0:
+    raise SystemExit("more than one current build-lock manifest adapter was found")
 
 output_path.write_text(text, encoding="utf-8")
 PY
