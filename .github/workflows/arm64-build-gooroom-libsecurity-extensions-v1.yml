@@ -1,0 +1,183 @@
+name: ARM64 port - build Gooroom libsecurity extensions v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-gooroom-libsecurity-extensions-v1.yml'
+      - 'arm64/scripts/build_gooroom_libsecurity_extensions_arm64_v1.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-gooroom-libsecurity-extensions-arm64-v1
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 runner and install historical-build tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo "Native ARM64 runner required, got $(uname -m)" >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debian-archive-keyring debootstrap \
+            devscripts dpkg-dev file git jq xz-utils
+          bash -n arm64/scripts/build_gooroom_libsecurity_extensions_arm64_v1.sh
+          bash -n arm64/scripts/verify_locked_arm64_build.sh
+
+      - name: Build the exact XSM source as a Bullseye ARM64 package
+        id: source_build
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          output=work/gooroom-libsecurity-extensions-arm64-build
+          workflow_log=work/gooroom-libsecurity-extensions-arm64-build.workflow.log
+          rm -rf "$output" "$workflow_log"
+          mkdir -p work
+          set +e
+          bash arm64/scripts/build_gooroom_libsecurity_extensions_arm64_v1.sh "$output" \
+            2>&1 | tee "$workflow_log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          mkdir -p "$output"
+          cp "$workflow_log" "$output/workflow-build.log"
+          printf '%s\n' "$rc" > "$output/workflow-build.exit-code"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Upload the complete package and build evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-libsecurity-extensions-arm64-build-${{ github.run_id }}
+          path: |
+            work/gooroom-libsecurity-extensions-arm64-build
+            work/gooroom-libsecurity-extensions-arm64-build.workflow.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact immutable package-build authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/gooroom-libsecurity-extensions-arm64-build
+          run="arm64/locks/gooroom-libsecurity-extensions-arm64-build/runs/${GITHUB_RUN_ID}"
+          latest=arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest
+          rm -rf "$run" "$latest"
+          mkdir -p "$run" "$latest"
+
+          for file in \
+            summary.json verification-summary.json \
+            source-provenance.json source-lock-evidence.json \
+            effective-source-lock.json build-lock.json \
+            source-lock-path.txt source-lock-origin.txt \
+            debian-snapshot.txt debian-snapshot-url.txt \
+            package-metadata.tsv package-contents.txt \
+            xsm-module.file.txt xsm-module.readelf.txt xsm-module.dynamic.txt \
+            debootstrap.exit-code build.exit-code workflow-build.exit-code \
+            generic-verifier.stdout.log generic-verifier.stderr.log; do
+            if [ -f "$source/$file" ]; then
+              cp "$source/$file" "$run/"
+            fi
+          done
+
+          for log in \
+            workflow-build.log debootstrap.stdout.log debootstrap.stderr.log \
+            build.stdout.log build.stderr.log git-fetch.stderr.log; do
+            if [ -f "$source/$log" ]; then
+              tail -n 600 "$source/$log" > "$run/$log.tail"
+            fi
+          done
+
+          if [ -d "$source/file-reports" ]; then
+            mkdir -p "$run/file-reports"
+            cp -a "$source/file-reports/." "$run/file-reports/"
+          fi
+
+          jq -n \
+            --argjson workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_commit "$GITHUB_SHA" \
+            --arg workflow_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg source_build_outcome '${{ steps.source_build.outcome }}' \
+            --arg source_build_exit_code '${{ steps.source_build.outputs.exit_code }}' \
+            '{
+              schema: 1,
+              workflow_run_id: $workflow_run_id,
+              workflow_commit: $workflow_commit,
+              workflow_url: $workflow_url,
+              source_build_outcome: $source_build_outcome,
+              source_build_exit_code: $source_build_exit_code,
+              policy: "exact-source-native-arm64-bullseye-package-build-and-generic-verification"
+            }' > "$run/authority.json"
+
+          (
+            cd "$run"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+          cp -a "$run/." "$latest/"
+          (
+            cd "$latest"
+            sha256sum --check SHA256SUMS
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/gooroom-libsecurity-extensions-arm64-build
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record Gooroom XSM ARM64 package build ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce an exact verified ARM64 Debian package result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.source_build.outcome }}' = success
+          test '${{ steps.source_build.outputs.exit_code }}' = 0
+          jq -e '
+            .build_passed == true
+            and .build_architecture == "arm64"
+            and .xsm_module_machine == "AArch64"
+            and .xsm_module_path == "/usr/lib/xorg/modules/extensions/xsm.so"
+            and .generic_locked_build_verifier_passed == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+            and (.expected_binary_packages | sort) == (.produced_binary_packages | sort)
+          ' work/gooroom-libsecurity-extensions-arm64-build/summary.json
+          jq -e '
+            .verified == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' work/gooroom-libsecurity-extensions-arm64-build/verification-summary.json
