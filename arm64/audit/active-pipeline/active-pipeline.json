@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 125,
     "workflow_name_count": 125,
-    "referenced_local_file_count": 200,
+    "referenced_local_file_count": 201,
     "error_count": 10,
     "warning_count": 39,
     "passed": false
@@ -1761,7 +1761,8 @@
       ],
       "referenced_local_files": [
         "arm64/locks/reference/amd64-reference.json",
-        "arm64/scripts/recover_exact_arm64_package_pool.py"
+        "arm64/scripts/recover_exact_arm64_package_pool.py",
+        "arm64/scripts/recover_exact_arm64_package_pool_v2.py"
       ]
     },
     {
@@ -3151,6 +3152,9 @@
       ".github/workflows/arm64-qtbase-resolve-build-v3.yml"
     ],
     "arm64/scripts/recover_exact_arm64_package_pool.py": [
+      ".github/workflows/arm64-recover-exact-package-pool.yml"
+    ],
+    "arm64/scripts/recover_exact_arm64_package_pool_v2.py": [
       ".github/workflows/arm64-recover-exact-package-pool.yml"
     ],
     "arm64/scripts/recover_exact_vendor_sources_v2.py": [
