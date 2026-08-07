@@ -44,7 +44,6 @@ SUPERSEDED_WORKFLOWS = {
     "arm64-package-smoke.yml",
 }
 SUPERSEDED_SCRIPTS = {
-    "arm64/scripts/finalize_arm64_live_rootfs.sh",
     "arm64/scripts/build_package_acquisition_plan.py",
     "arm64/scripts/prepare_rebuild_release_assets.py",
     "arm64/scripts/collect_native_rebuild_results.py",
@@ -58,6 +57,8 @@ REQUIRED_SCRIPTS = {
     "arm64/scripts/collect_native_rebuild_results_v2.py",
     "arm64/scripts/build_package_acquisition_plan_v2.py",
     "arm64/scripts/materialize_package_acquisition_plan_v2.py",
+    # Compatibility entry point used by the recovered-rootfs path; it delegates only to v2.
+    "arm64/scripts/finalize_arm64_live_rootfs.sh",
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
     "arm64/scripts/build_arm64_live_iso.sh",
     "arm64/scripts/test_arm64_iso_qemu.sh",
