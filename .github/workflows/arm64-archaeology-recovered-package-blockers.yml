@@ -1,0 +1,346 @@
+name: ARM64 port - archaeology exact sources for remaining blockers
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-archaeology-recovered-package-blockers.yml'
+      - 'arm64/scripts/targeted_source_archaeology.py'
+      - 'arm64/locks/recovered-package-pool/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-archaeology-recovered-package-blockers
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      target_count: ${{ steps.matrix.outputs.target_count }}
+      source_recovery_run_id: ${{ steps.matrix.outputs.source_recovery_run_id }}
+    steps:
+      - name: Check out compact blocker authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Build exact source/version matrix
+        id: matrix
+        shell: bash
+        run: |
+          set -euxo pipefail
+          blockers=arm64/locks/recovered-package-pool/latest/compact-blockers.json
+          authority=arm64/locks/recovered-package-pool/latest/artifact-lock.json
+          test -f "$blockers"
+          test -f "$authority"
+          jq -e '.blocker_count > 0 and .source_group_count > 0' "$blockers"
+          matrix="$(jq -c '{include:[.source_groups[] | {source:.source,version:.source_version}]}' "$blockers")"
+          target_count="$(jq -r '.source_group_count' "$blockers")"
+          source_recovery_run_id="$(jq -r '.source_recovery_run_id' "$authority")"
+          test "$(jq -r '.include | length' <<<"$matrix")" = "$target_count"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "target_count=$target_count" >> "$GITHUB_OUTPUT"
+          echo "source_recovery_run_id=$source_recovery_run_id" >> "$GITHUB_OUTPUT"
+          jq . <<<"$matrix"
+
+  archaeology:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Check out the exact archaeology implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Git history inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git python3 jq ca-certificates
+          python3 -m py_compile arm64/scripts/targeted_source_archaeology.py
+
+      - name: Search complete packaging history for one exact source
+        id: search
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SOURCE: ${{ matrix.source }}
+          TARGET_VERSION: ${{ matrix.version }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          safe_source="$(printf '%s' "$TARGET_SOURCE" | tr -cs 'A-Za-z0-9._-' '_')"
+          version_id="$(python3 - <<'PY'
+          import hashlib, os
+          print(hashlib.sha256(os.environ['TARGET_VERSION'].encode()).hexdigest()[:16])
+          PY
+          )"
+          key="${safe_source}-${version_id}"
+          output="work/archaeology/$key"
+          rm -rf "$output"
+          mkdir -p "$output"
+
+          set +e
+          python3 arm64/scripts/targeted_source_archaeology.py \
+            --source "$TARGET_SOURCE" \
+            --version "$TARGET_VERSION" \
+            --maximum-repositories 12 \
+            --output-dir "$output" \
+            2>&1 | tee "$output/workflow.log"
+          search_rc=${PIPESTATUS[0]}
+          set -e
+
+          result="$(find "$output" -maxdepth 1 -type f \
+            \( -name targeted-source-lock.json -o -name targeted-source-archaeology.json \) \
+            -print -quit)"
+          test -n "$result"
+          python3 - "$result" "$TARGET_SOURCE" "$TARGET_VERSION" <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          source = sys.argv[2]
+          version = sys.argv[3]
+          result = json.loads(path.read_text())
+          if result.get('source') != source or result.get('version') != version:
+              raise SystemExit('archaeology result identity mismatch')
+          if result.get('status') not in {'resolved', 'unresolved', 'ambiguous'}:
+              raise SystemExit('invalid archaeology status')
+          if result.get('status') == 'resolved':
+              selected = result.get('selected') or {}
+              for field in ('repository_full_name', 'commit_sha', 'tree_sha'):
+                  if not selected.get(field):
+                      raise SystemExit(f'resolved result lacks {field}')
+          PY
+
+          status="$(jq -r '.status' "$result")"
+          jq -n \
+            --arg source "$TARGET_SOURCE" \
+            --arg version "$TARGET_VERSION" \
+            --arg status "$status" \
+            --arg result_file "$(basename "$result")" \
+            --argjson search_exit_code "$search_rc" \
+            '{schema:1,source:$source,source_version:$version,status:$status,result_file:$result_file,search_exit_code:$search_exit_code}' \
+            > "$output/source-target.json"
+          find "$output" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > "$output/LOCKSUMS.sha256"
+
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          echo "output=$output" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "source=$TARGET_SOURCE" >> "$GITHUB_OUTPUT"
+          echo "version=$TARGET_VERSION" >> "$GITHUB_OUTPUT"
+          jq . "$output/source-target.json"
+
+      - name: Upload exact source archaeology evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: source-archaeology-${{ steps.search.outputs.key }}
+          path: ${{ steps.search.outputs.output }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit this immutable source result
+        env:
+          RESULT_KEY: ${{ steps.search.outputs.key }}
+          RESULT_OUTPUT: ${{ steps.search.outputs.output }}
+          TARGET_SOURCE: ${{ matrix.source }}
+          TARGET_VERSION: ${{ matrix.version }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/locks/targeted-source-archaeology/results/$RESULT_KEY"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$RESULT_OUTPUT"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record exact source archaeology for $TARGET_SOURCE $TARGET_VERSION"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+  aggregate:
+    needs: [prepare, archaeology]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out all committed source results
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Pull the final matrix commits
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+
+      - name: Build one source authority for the current blockers
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/source-archaeology-summary
+          mkdir -p work/source-archaeology-summary
+          python3 - <<'PY'
+          import csv
+          import hashlib
+          import json
+          import re
+          from collections import Counter
+          from pathlib import Path
+
+          compact = json.loads(Path(
+              'arm64/locks/recovered-package-pool/latest/compact-blockers.json'
+          ).read_text())
+          root = Path('arm64/locks/targeted-source-archaeology/results')
+          rows = []
+          missing = []
+          resolved = []
+          unresolved = []
+
+          for target in compact['source_groups']:
+              source = target['source']
+              version = target['source_version']
+              safe = re.sub(r'[^A-Za-z0-9._-]+', '_', source)
+              version_id = hashlib.sha256(version.encode()).hexdigest()[:16]
+              directory = root / f'{safe}-{version_id}'
+              target_path = directory / 'source-target.json'
+              if not target_path.is_file():
+                  missing.append({'source': source, 'source_version': version})
+                  continue
+              identity = json.loads(target_path.read_text())
+              result_path = directory / identity['result_file']
+              result = json.loads(result_path.read_text())
+              row = {
+                  'source': source,
+                  'source_version': version,
+                  'status': result['status'],
+                  'result_path': str(result_path),
+                  'repository_full_name': '',
+                  'commit_sha': '',
+                  'tree_sha': '',
+                  'reason': result.get('reason') or '',
+              }
+              if result['status'] == 'resolved':
+                  selected = result['selected']
+                  row.update({
+                      'repository_full_name': selected['repository_full_name'],
+                      'commit_sha': selected['commit_sha'],
+                      'tree_sha': selected['tree_sha'],
+                  })
+                  resolved.append({
+                      'source': source,
+                      'source_version': version,
+                      'selected': selected,
+                      'result_path': str(result_path),
+                  })
+              else:
+                  unresolved.append({
+                      'source': source,
+                      'source_version': version,
+                      'status': result['status'],
+                      'reason': result.get('reason'),
+                      'exact_match_count': result.get('exact_match_count'),
+                      'exact_tree_count': result.get('exact_tree_count'),
+                      'repository_candidates': result.get('repository_candidates'),
+                      'result_path': str(result_path),
+                  })
+              rows.append(row)
+
+          counts = Counter(row['status'] for row in rows)
+          summary = {
+              'schema': 1,
+              'policy': 'complete-history-exact-debian-changelog-source-version',
+              'source_recovery_run_id': json.loads(Path(
+                  'arm64/locks/recovered-package-pool/latest/artifact-lock.json'
+              ).read_text())['source_recovery_run_id'],
+              'target_count': len(compact['source_groups']),
+              'result_count': len(rows),
+              'missing_count': len(missing),
+              'resolved_count': counts.get('resolved', 0),
+              'unresolved_count': counts.get('unresolved', 0),
+              'ambiguous_count': counts.get('ambiguous', 0),
+              'all_targets_audited': len(missing) == 0 and len(rows) == len(compact['source_groups']),
+          }
+          output = Path('work/source-archaeology-summary')
+          (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          (output / 'resolved-source-locks.json').write_text(
+              json.dumps(resolved, ensure_ascii=False, indent=2) + '\n'
+          )
+          (output / 'unresolved.json').write_text(
+              json.dumps(unresolved, ensure_ascii=False, indent=2) + '\n'
+          )
+          (output / 'missing.json').write_text(
+              json.dumps(missing, ensure_ascii=False, indent=2) + '\n'
+          )
+          with (output / 'source-results.tsv').open('w', newline='') as handle:
+              writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [], delimiter='\t')
+              if rows:
+                  writer.writeheader()
+                  writer.writerows(rows)
+          print(json.dumps(summary, indent=2))
+          PY
+          jq -e '.all_targets_audited == true and .missing_count == 0' \
+            work/source-archaeology-summary/summary.json
+          find work/source-archaeology-summary -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-archaeology-summary/LOCKSUMS.sha256
+
+      - name: Upload aggregate source authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: exact-source-archaeology-${{ needs.prepare.outputs.source_recovery_run_id }}
+          path: work/source-archaeology-summary
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the aggregate source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=arm64/locks/targeted-source-archaeology/latest
+          rm -rf "$target"
+          mkdir -p "$target"
+          cp -a work/source-archaeology-summary/. "$target/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Aggregate exact source archaeology for ARM64 blockers'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
