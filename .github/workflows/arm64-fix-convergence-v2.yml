@@ -1,0 +1,66 @@
+name: ARM64 port - fix convergence workflow retry
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-convergence-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-fix-convergence-v2
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Strengthen both final live ISO assertions
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-converge-pipeline-maintenance.yml')
+          text = path.read_text(encoding='utf-8')
+          needle = "          replace_once(\n              final_live,\n"
+          replacement = "          replace_all(\n              final_live,\n"
+          if text.count(needle) != 1:
+              raise SystemExit(
+                  f'expected one final-live convergence anchor, found {text.count(needle)}'
+              )
+          path.write_text(text.replace(needle, replacement, 1), encoding='utf-8')
+
+          for obsolete in (
+              '.github/workflows/arm64-retry-convergence.yml',
+              '.github/workflows/arm64-fix-convergence-v2.yml',
+          ):
+              candidate = Path(obsolete)
+              if candidate.exists():
+                  candidate.unlink()
+          PY
+
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .github/workflows
+          git commit -m 'Fix pending ARM64 pipeline convergence'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
