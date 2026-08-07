@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 137,
-    "workflow_name_count": 137,
+    "workflow_count": 138,
+    "workflow_name_count": 138,
     "referenced_local_file_count": 206,
-    "error_count": 9,
+    "error_count": 6,
     "warning_count": 38,
     "passed": false
   },
@@ -165,6 +165,24 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-bootstrap-finalizer-compat.yml",
+      "path": ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
+      "name": "ARM64 port - bootstrap audited finalizer compatibility",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_active_arm64_pipeline.py",
+        "arm64/scripts/finalize_arm64_live_rootfs.sh",
+        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh"
       ]
     },
     {
@@ -3091,7 +3109,8 @@
       ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
-      ".github/workflows/arm64-active-pipeline-audit.yml"
+      ".github/workflows/arm64-active-pipeline-audit.yml",
+      ".github/workflows/arm64-bootstrap-finalizer-compat.yml"
     ],
     "arm64/scripts/audit_and_repack_arch_neutral_vendor_debs.py": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml"
@@ -3267,11 +3286,13 @@
       ".github/workflows/arm64-static-audit.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
+      ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
       ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
+      ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
       ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
@@ -3652,22 +3673,7 @@
   "errors": [
     {
       "path": ".github/workflows/arm64-converge-pipeline-maintenance.yml",
-      "local_path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
-    },
-    {
-      "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
-      "local_path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
-      "local_path": "arm64/scripts/finalize_arm64_live_rootfs.sh",
-      "reason": "referenced-local-code-missing"
     },
     {
       "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
