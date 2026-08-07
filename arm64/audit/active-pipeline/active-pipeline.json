@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 138,
-    "workflow_name_count": 138,
+    "workflow_count": 137,
+    "workflow_name_count": 137,
     "referenced_local_file_count": 206,
-    "error_count": 6,
+    "error_count": 5,
     "warning_count": 38,
     "passed": false
   },
@@ -718,25 +718,6 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/summarize_arm64_ci_state.py"
-      ]
-    },
-    {
-      "filename": "arm64-converge-pipeline-maintenance.yml",
-      "path": ".github/workflows/arm64-converge-pipeline-maintenance.yml",
-      "name": "ARM64 port - converge pending pipeline maintenance",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/finalize_arm64_live_rootfs.sh",
-        "arm64/scripts/finalize_arm64_live_rootfs_v2.sh",
-        "arm64/scripts/test_arm64_iso_qemu.sh",
-        "arm64/scripts/test_arm64_iso_qemu_v2.sh"
       ]
     },
     {
@@ -3287,13 +3268,11 @@
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
       ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
-      ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-bootstrap-finalizer-compat.yml",
-      ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
@@ -3574,13 +3553,11 @@
       ".github/workflows/arm64-installed-system-boot.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu.sh": [
-      ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/test_arm64_iso_qemu_v2.sh": [
-      ".github/workflows/arm64-converge-pipeline-maintenance.yml",
       ".github/workflows/arm64-final-graphical-gate-maintenance.yml"
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
@@ -3671,10 +3648,6 @@
     ]
   },
   "errors": [
-    {
-      "path": ".github/workflows/arm64-converge-pipeline-maintenance.yml",
-      "reason": "one-shot-maintenance-workflow-still-active"
-    },
     {
       "path": ".github/workflows/arm64-final-graphical-gate-maintenance.yml",
       "reason": "one-shot-maintenance-workflow-still-active"
