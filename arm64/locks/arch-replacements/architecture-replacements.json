@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "policy": "config-only-explicit-architecture-replacement",
+  "reference_iso_sha256": "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a",
+  "reference_package": {
+    "package": "linux-image-amd64",
+    "version": "5.10.179-1+grm3u1",
+    "architecture": "amd64",
+    "source": "linux-signed-amd64",
+    "source_version": "5.10.179+1+grm3u1",
+    "multi_arch": "",
+    "essential": "no",
+    "priority": "optional",
+    "section": "kernel",
+    "depends": "linux-image-5.10.0-23-amd64 (= 5.10.179-1+grm3u1)",
+    "pre_depends": "",
+    "provides": "linux-image-generic, linux-latest-modules-5.10.0-23-amd64, virtualbox-guest-modules, wireguard-modules (= 1.0.0)",
+    "custom_candidate": true
+  },
+  "reference_kernel_package": {
+    "package": "linux-image-5.10.0-23-amd64",
+    "version": "5.10.179-1+grm3u1",
+    "architecture": "amd64",
+    "source": "linux",
+    "source_version": "5.10.179-1+grm3u1",
+    "multi_arch": "",
+    "essential": "no",
+    "priority": "optional",
+    "section": "kernel",
+    "depends": "kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool",
+    "pre_depends": "",
+    "provides": "",
+    "custom_candidate": true
+  },
+  "output": {
+    "filename": "linux-image-arm64_5.10.179-1+grm3u1_arm64.deb",
+    "size": 1098,
+    "sha256": "b8d081d1620e2140f690b8a12ed18141ea63d5ee2c9647f5c0c276cb274be55f",
+    "control": {
+      "Package": "linux-image-arm64",
+      "Source": "hancom-gooroom-arm64-arch-replacements",
+      "Version": "5.10.179-1+grm3u1",
+      "Architecture": "arm64",
+      "Depends": "linux-image-5.10.0-23-arm64 (= 5.10.179-1+grm3u1)",
+      "X-Hancom-Gooroom-Reference-Package": "linux-image-amd64",
+      "X-Hancom-Gooroom-Reference-Version": "5.10.179-1+grm3u1",
+      "X-Hancom-Gooroom-Reference-Architecture": "amd64",
+      "X-Hancom-Gooroom-Reference-ISO-SHA256": "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a",
+      "X-Hancom-Gooroom-Replacement-Policy": "config-only-arm64-metapackage",
+      "X-Hancom-Gooroom-Required-Kernel": "linux-image-5.10.0-23-arm64 (= 5.10.179-1+grm3u1)"
+    },
+    "executable_payload_count": 0
+  }
+}
