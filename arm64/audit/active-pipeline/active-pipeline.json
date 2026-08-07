@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 127,
-    "workflow_name_count": 127,
-    "referenced_local_file_count": 203,
+    "workflow_count": 128,
+    "workflow_name_count": 128,
+    "referenced_local_file_count": 205,
     "error_count": 6,
     "warning_count": 38,
     "passed": false
@@ -44,6 +44,28 @@
         "arm64/scripts/recover_exact_arm64_package_pool.py",
         "arm64/scripts/recover_exact_arm64_package_pool_v2.py",
         "arm64/scripts/summarize_recovered_package_blockers.py"
+      ]
+    },
+    {
+      "filename": "arm64-archaeology-recovered-package-blockers.yml",
+      "path": ".github/workflows/arm64-archaeology-recovered-package-blockers.yml",
+      "name": "ARM64 port - archaeology exact sources for remaining blockers",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/recovered-package-pool/latest/artifact-lock.json",
+        "arm64/locks/recovered-package-pool/latest/compact-blockers.json",
+        "arm64/scripts/targeted_source_archaeology.py"
       ]
     },
     {
@@ -2769,6 +2791,12 @@
     "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
+    "arm64/locks/recovered-package-pool/latest/artifact-lock.json": [
+      ".github/workflows/arm64-archaeology-recovered-package-blockers.yml"
+    ],
+    "arm64/locks/recovered-package-pool/latest/compact-blockers.json": [
+      ".github/workflows/arm64-archaeology-recovered-package-blockers.yml"
+    ],
     "arm64/locks/recovered-rootfs/artifact-lock.json": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
     ],
@@ -3362,6 +3390,7 @@
       ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
+      ".github/workflows/arm64-archaeology-recovered-package-blockers.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml"
     ],
