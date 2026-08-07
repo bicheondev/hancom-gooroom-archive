@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 128,
-    "workflow_name_count": 128,
-    "referenced_local_file_count": 205,
+    "workflow_count": 129,
+    "workflow_name_count": 129,
+    "referenced_local_file_count": 206,
     "error_count": 6,
     "warning_count": 38,
     "passed": false
@@ -44,6 +44,23 @@
         "arm64/scripts/recover_exact_arm64_package_pool.py",
         "arm64/scripts/recover_exact_arm64_package_pool_v2.py",
         "arm64/scripts/summarize_recovered_package_blockers.py"
+      ]
+    },
+    {
+      "filename": "arm64-apply-targeted-source-owner-fallback.yml",
+      "path": ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml",
+      "name": "ARM64 port - apply user-aware source archaeology policy",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py",
+        "arm64/scripts/targeted_source_archaeology.py"
       ]
     },
     {
@@ -2945,6 +2962,9 @@
       ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       ".github/workflows/arm64-final-live-iso.yml"
     ],
+    "arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py": [
+      ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml"
+    ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
       ".github/workflows/arm64-active-pipeline-audit.yml"
     ],
@@ -3390,6 +3410,7 @@
       ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
     ],
     "arm64/scripts/targeted_source_archaeology.py": [
+      ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml",
       ".github/workflows/arm64-archaeology-recovered-package-blockers.yml",
       ".github/workflows/arm64-qtbase-resolve-and-build-v2.yml",
       ".github/workflows/arm64-qtbase-targeted-source-archaeology.yml"
