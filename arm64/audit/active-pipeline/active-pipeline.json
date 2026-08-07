@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 134,
-    "workflow_name_count": 134,
+    "workflow_count": 135,
+    "workflow_name_count": 135,
     "referenced_local_file_count": 206,
     "error_count": 6,
     "warning_count": 38,
@@ -26,6 +26,24 @@
       "referenced_local_files": [
         "arm64/scripts/audit_active_arm64_pipeline.py"
       ]
+    },
+    {
+      "filename": "arm64-analyze-libsecurity-xsm-history.yml",
+      "path": ".github/workflows/arm64-analyze-libsecurity-xsm-history.yml",
+      "name": "ARM64 port - analyze libsecurity XSM history",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-apply-package-recovery-firmware-policy.yml",
