@@ -49,6 +49,16 @@ def main() -> int:
         )
         reason = blocker.get("reason") or "unknown"
         reference_package = blocker.get("reference_package") or ""
+        available_identities = [
+            {
+                "filename": item.get("filename") or "",
+                "version": item.get("version") or "",
+                "architecture": item.get("architecture") or "",
+                "source": item.get("source") or "",
+                "source_version": item.get("source_version") or "",
+            }
+            for item in available
+        ]
         row = {
             "reference_package": reference_package,
             "target_package": blocker.get("target_package") or "",
@@ -62,7 +72,11 @@ def main() -> int:
             "candidate_sha256": candidate.get("sha256") or "",
             "x86_payload_count": len(payload.get("x86") or []),
             "foreign_payload_count": len(payload.get("foreign") or []),
+            "embedded_firmware_payload_count": len(
+                payload.get("embedded_firmware") or []
+            ),
             "available_candidate_count": len(available),
+            "available_candidates": available_identities,
         }
         rows.append(row)
         reason_counts[reason] += 1

@@ -3,8 +3,10 @@
 
 Each candidate is accepted only when it maps to one immutable AMD64 reference
 package under an explicit architecture rule, has an exact source version, uses
-arm64/all architecture as required, and contains no x86 ELF payload. The script
-never substitutes a newer/older source and never hides an uncovered package.
+arm64/all architecture as required, and contains no x86 host ELF payload. ELF-
+formatted device firmware under /lib/firmware or /usr/lib/firmware is retained
+and reported separately. The script never substitutes a newer/older source and
+never hides an uncovered package.
 """
 
 from __future__ import annotations
@@ -101,6 +103,7 @@ def elf_machine(path: Path) -> int | None:
 def audit_payload(deb: Path) -> dict[str, Any]:
     x86: list[dict[str, Any]] = []
     foreign: list[dict[str, Any]] = []
+    embedded_firmware: list[dict[str, Any]] = []
     machines: dict[str, int] = {}
     with tempfile.TemporaryDirectory(prefix="arm64-deb-audit-") as temporary:
         root = Path(temporary)
@@ -115,6 +118,7 @@ def audit_payload(deb: Path) -> dict[str, Any]:
                 "extract_error": process.stderr.decode("utf-8", "replace")[-2000:],
                 "x86": [],
                 "foreign": [],
+                "embedded_firmware": [],
                 "machines": {},
                 "passed": False,
             }
@@ -128,11 +132,20 @@ def audit_payload(deb: Path) -> dict[str, Any]:
                     continue
                 name = ELF_NAMES.get(machine, f"machine-{machine}")
                 machines[name] = machines.get(name, 0) + 1
+                relative = path.relative_to(root).as_posix()
                 record = {
-                    "path": str(path.relative_to(root)),
+                    "path": relative,
                     "machine": name,
                     "size": path.stat().st_size,
                 }
+                parts = Path(relative).parts
+                is_embedded_firmware = (
+                    parts[:2] == ("lib", "firmware")
+                    or parts[:3] == ("usr", "lib", "firmware")
+                )
+                if is_embedded_firmware:
+                    embedded_firmware.append(record)
+                    continue
                 if machine in {3, 62}:
                     x86.append(record)
                 elif machine not in {0, 183, 247}:
@@ -140,6 +153,7 @@ def audit_payload(deb: Path) -> dict[str, Any]:
     return {
         "x86": x86,
         "foreign": foreign,
+        "embedded_firmware": embedded_firmware,
         "machines": dict(sorted(machines.items())),
         "passed": not x86 and not foreign,
     }
@@ -393,7 +407,7 @@ def main() -> int:
         match_counts[row["match_reason"]] = match_counts.get(row["match_reason"], 0) + 1
     summary = {
         "schema": 1,
-        "policy": "exact-reference-source-version-and-no-x86-elf",
+        "policy": "exact-reference-source-version-and-no-host-x86-elf-firmware-exempt",
         "reference_package_count": len(targets),
         "candidate_deb_count": len(metadata),
         "invalid_deb_count": len(invalid_debs),
