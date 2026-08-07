@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "root": "arm64/locks",
-  "json_file_count": 506,
+  "json_file_count": 507,
   "error_count": 0,
   "files": [
     {
       "path": "acquisition-plan/blockers.json",
-      "size": 16927,
-      "sha256": "7b399056d194953da644485985dbea3c8a76d850ccf1fe10cfd9622250887d33",
+      "size": 11089,
+      "sha256": "c00b942ff8be02e3e6328cff723efb76be494ad3b5f6e8dfb636ca96c6f983be",
       "top_type": "list",
       "key_frequency": {
         "[].package": 20,
@@ -24,7 +24,7 @@
         "[].ready": 20,
         "[].reason": 20
       },
-      "length": 34,
+      "length": 22,
       "first_item_type": "dict",
       "first_item_keys": [
         "acquisition",
@@ -44,8 +44,8 @@
     },
     {
       "path": "acquisition-plan/package-acquisition-plan.json",
-      "size": 1222658,
-      "sha256": "2c2e53ad284906f12e4b07b00130884f9f23fedc7849474ced8a474575d24ea6",
+      "size": 1231084,
+      "sha256": "8724b77609514fd985bbdce27738739f3265ef4d6e67611a08ecee7b6bb5174f",
       "top_type": "dict",
       "key_frequency": {
         "packages[].package": 20,
@@ -81,6 +81,7 @@
         "summary.method_counts": 1,
         "summary.method_counts.architecture-replacement": 1,
         "summary.method_counts.blocked": 1,
+        "summary.method_counts.download-actions-rebuild-artifact": 1,
         "summary.method_counts.download-normalized-exact": 1,
         "summary.method_counts.download-release-exact": 1,
         "summary.method_counts.download-vendor-exact": 1,
@@ -135,8 +136,8 @@
     },
     {
       "path": "acquisition-plan/summary.json",
-      "size": 474,
-      "sha256": "dfa7b6ac16bef88bd4e52e19f40e674835d9bd5f113d343dd55a0e30512a20b2",
+      "size": 519,
+      "sha256": "45d4868aa15d32f830a7119ae923ee4626bff23fdfeb1cae24f9b755ed85bba7",
       "top_type": "dict",
       "key_frequency": {
         "schema": 1,
@@ -149,6 +150,7 @@
         "method_counts": 1,
         "method_counts.architecture-replacement": 1,
         "method_counts.blocked": 1,
+        "method_counts.download-actions-rebuild-artifact": 1,
         "method_counts.download-normalized-exact": 1,
         "method_counts.download-release-exact": 1,
         "method_counts.download-vendor-exact": 1,
@@ -193,6 +195,7 @@
           "keys": [
             "architecture-replacement",
             "blocked",
+            "download-actions-rebuild-artifact",
             "download-normalized-exact",
             "download-release-exact",
             "download-vendor-exact",
@@ -6174,7 +6177,7 @@
     {
       "path": "pipeline-selfcheck/selfcheck.json",
       "size": 114002,
-      "sha256": "7218d260a05f843881d72ff65dad38ede7821ae2de41f31fd0dbc6c54c7aa677",
+      "sha256": "f8bce0578f500ad0adefc6b03cc02504ef16f65710517f3068c6ac93994cc997",
       "top_type": "dict",
       "key_frequency": {
         "python[].path": 20,
@@ -33576,6 +33579,226 @@
         },
         "passed": {
           "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "rebuild-results/linux-signed-amd64/5.10.179+1_grm3u1/result.json",
+      "size": 2538,
+      "sha256": "5799cf8f8eca417562761f4a4953438e68c65a079ac717e8c458817ea4909b66",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "source": 1,
+        "source_version": 1,
+        "source_type": 1,
+        "authority_provenance": 1,
+        "actions_run_id": 1,
+        "actions_run_url": 1,
+        "artifact_id": 1,
+        "artifact_name": 1,
+        "artifact_digest": 1,
+        "build_outcome": 1,
+        "build_exit_code": 1,
+        "verify_outcome": 1,
+        "required_native_packages": 1,
+        "reused_all_packages": 1,
+        "job_passed": 1,
+        "verification_passed": 1,
+        "passed": 1,
+        "replacement_policy": 1,
+        "reference_iso_sha256": 1,
+        "reference_package": 1,
+        "reference_package.package": 1,
+        "reference_package.version": 1,
+        "reference_package.architecture": 1,
+        "reference_package.source": 1,
+        "reference_package.source_version": 1,
+        "replacement_kernel_contract": 1,
+        "replacement_kernel_contract.package": 1,
+        "replacement_kernel_contract.version": 1,
+        "replacement_kernel_contract.dependency": 1,
+        "deb_artifacts": 1,
+        "deb_artifacts[].filename": 1,
+        "deb_artifacts[].package": 1,
+        "deb_artifacts[].source": 1,
+        "deb_artifacts[].version": 1,
+        "deb_artifacts[].architecture": 1,
+        "deb_artifacts[].size": 1,
+        "deb_artifacts[].sha256": 1,
+        "deb_artifacts[].depends": 1,
+        "deb_artifacts[].executable_payload_count": 1,
+        "verification_summary": 1,
+        "verification_summary.schema": 1,
+        "verification_summary.reference_package_identity_verified": 1,
+        "verification_summary.replacement_architecture_verified": 1,
+        "verification_summary.replacement_dependency_verified": 1,
+        "verification_summary.reference_iso_hash_embedded": 1,
+        "verification_summary.executable_payload_count": 1,
+        "verification_summary.wrong_architecture_executable_count": 1,
+        "verification_summary.verified": 1,
+        "lock_evidence": 1,
+        "lock_evidence.metadata_path": 1,
+        "lock_evidence.metadata_sha256": 1,
+        "lock_evidence.artifact_lock_path": 1,
+        "verification_errors": 1,
+        "verification_warnings": 1
+      },
+      "top_keys": [
+        "actions_run_id",
+        "actions_run_url",
+        "artifact_digest",
+        "artifact_id",
+        "artifact_name",
+        "authority_provenance",
+        "build_exit_code",
+        "build_outcome",
+        "deb_artifacts",
+        "job_passed",
+        "lock_evidence",
+        "passed",
+        "reference_iso_sha256",
+        "reference_package",
+        "replacement_kernel_contract",
+        "replacement_policy",
+        "required_native_packages",
+        "reused_all_packages",
+        "schema",
+        "source",
+        "source_type",
+        "source_version",
+        "verification_errors",
+        "verification_passed",
+        "verification_summary",
+        "verification_warnings",
+        "verify_outcome"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "source_type": {
+          "type": "str"
+        },
+        "authority_provenance": {
+          "type": "str"
+        },
+        "actions_run_id": {
+          "type": "str"
+        },
+        "actions_run_url": {
+          "type": "str"
+        },
+        "artifact_id": {
+          "type": "str"
+        },
+        "artifact_name": {
+          "type": "str"
+        },
+        "artifact_digest": {
+          "type": "str"
+        },
+        "build_outcome": {
+          "type": "str"
+        },
+        "build_exit_code": {
+          "type": "str"
+        },
+        "verify_outcome": {
+          "type": "str"
+        },
+        "required_native_packages": {
+          "type": "list",
+          "length": 1,
+          "first_item_type": "str"
+        },
+        "reused_all_packages": {
+          "type": "list",
+          "length": 0
+        },
+        "job_passed": {
+          "type": "bool"
+        },
+        "verification_passed": {
+          "type": "bool"
+        },
+        "passed": {
+          "type": "bool"
+        },
+        "replacement_policy": {
+          "type": "str"
+        },
+        "reference_iso_sha256": {
+          "type": "str"
+        },
+        "reference_package": {
+          "type": "dict",
+          "keys": [
+            "architecture",
+            "package",
+            "source",
+            "source_version",
+            "version"
+          ]
+        },
+        "replacement_kernel_contract": {
+          "type": "dict",
+          "keys": [
+            "dependency",
+            "package",
+            "version"
+          ]
+        },
+        "deb_artifacts": {
+          "type": "list",
+          "length": 1,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "architecture",
+            "depends",
+            "executable_payload_count",
+            "filename",
+            "package",
+            "sha256",
+            "size",
+            "source",
+            "version"
+          ]
+        },
+        "verification_summary": {
+          "type": "dict",
+          "keys": [
+            "executable_payload_count",
+            "reference_iso_hash_embedded",
+            "reference_package_identity_verified",
+            "replacement_architecture_verified",
+            "replacement_dependency_verified",
+            "schema",
+            "verified",
+            "wrong_architecture_executable_count"
+          ]
+        },
+        "lock_evidence": {
+          "type": "dict",
+          "keys": [
+            "artifact_lock_path",
+            "metadata_path",
+            "metadata_sha256"
+          ]
+        },
+        "verification_errors": {
+          "type": "list",
+          "length": 0
+        },
+        "verification_warnings": {
+          "type": "list",
+          "length": 0
         }
       }
     },
