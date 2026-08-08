@@ -3,17 +3,17 @@
     "schema": 4,
     "policy": "exact-signed-dsc-then-exact-git-then-verified-build-selection-then-verified-reconstruction",
     "source_target_count": 74,
-    "resolved_count": 59,
+    "resolved_count": 60,
     "signed_dsc_resolved_count": 0,
     "git_resolved_count": 58,
     "arch_replace_count": 1,
-    "unresolved_count": 14,
-    "rebuild_blocker_count": 8,
+    "unresolved_count": 13,
+    "rebuild_blocker_count": 7,
     "build_allowed": false,
     "wayback_release_lock_present": true,
     "wayback_release_complete": false,
     "verified_build_git_resolved_count": 4,
-    "reconstructed_resolved_count": 1,
+    "reconstructed_resolved_count": 2,
     "verified_build_overlays": [
       {
         "source": "cups-pk-helper",
@@ -49,6 +49,14 @@
       }
     ],
     "reconstructed_overlays": [
+      {
+        "source": "gooroom-applauncher-applet",
+        "source_version": "0.4.0+grm3u1+han3u2",
+        "repository_full_name": "gooroom/gooroom-applauncher-applet",
+        "base_commit_sha": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+        "reconstructed_tree_sha": "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29",
+        "source_archive_sha256": "d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7"
+      },
       {
         "source": "gooroom-greeter",
         "source_version": "0.3.1+grm3u1+han3u2",
@@ -1356,13 +1364,40 @@
       "binary_architectures": [
         "amd64"
       ],
-      "status": "unresolved-exact-source",
-      "provenance": null,
-      "selected": null,
+      "status": "resolved",
+      "provenance": "verified-reconstructed-source",
+      "selected": {
+        "commit_sha": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+        "declared_source": "gooroom-applauncher-applet",
+        "declared_version": "0.4.0+grm3u1+han3u2",
+        "match_scope": "public-direct-parent-lineage-and-strict-reproducible-amd64-functional-equivalence",
+        "provenance": "public-direct-parent-drag-drop-lineage-plus-binary-constrained-hancom-theme-indicator-reconstruction",
+        "ref_kind": "reconstructed-tree",
+        "ref_name": "0.4.0+grm3u1+han3u2",
+        "repository_full_name": "gooroom/gooroom-applauncher-applet",
+        "source_archive_sha256": "d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7",
+        "tree_sha": "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29",
+        "type": "reconstructed-git-tree"
+      },
       "git_candidate_count": 0,
       "signed_dsc_candidate_count": 0,
       "git_candidates": [],
-      "signed_dsc_candidates": []
+      "signed_dsc_candidates": [],
+      "reconstruction_evidence": {
+        "actions_run_id": "31268447673",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31268447673",
+        "amd64_normalized_elf_identity_verified": true,
+        "amd64_structural_equivalence_verified": true,
+        "evidence_path": "arm64/locks/gooroom-applauncher-han3u2-reconstruction/latest/verification.json",
+        "native_arm64_build_verified": true,
+        "non_elf_payload_identity_verified": true,
+        "passed": true,
+        "raw_byte_identity_claimed": false,
+        "source_verification_run_id": "31251842558",
+        "authority_lock": "arm64/locks/reconstructed-sources/source-locks.json",
+        "original_status": "unresolved-exact-source",
+        "original_provenance": null
+      }
     },
     {
       "source": "gooroom-archive-keyring",
@@ -4545,6 +4580,14 @@
       }
     ],
     "reconstructed_applied": [
+      {
+        "source": "gooroom-applauncher-applet",
+        "source_version": "0.4.0+grm3u1+han3u2",
+        "repository_full_name": "gooroom/gooroom-applauncher-applet",
+        "base_commit_sha": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+        "reconstructed_tree_sha": "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29",
+        "source_archive_sha256": "d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7"
+      },
       {
         "source": "gooroom-greeter",
         "source_version": "0.3.1+grm3u1+han3u2",
