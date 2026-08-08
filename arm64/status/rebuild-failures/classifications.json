@@ -2,18 +2,17 @@
   "summary": {
     "schema": 3,
     "policy": "diagnostic-only-failure-classification",
-    "latest_result_count": 40,
-    "passed_count": 38,
-    "failed_count": 2,
+    "latest_result_count": 42,
+    "passed_count": 41,
+    "failed_count": 1,
     "dependency_resolution_failure_count": 0,
-    "source_recovery_required_count": 1,
+    "source_recovery_required_count": 0,
     "composite_source_required_count": 1,
     "infrastructure_transient_count": 0,
     "unknown_failure_count": 0,
     "category_counts": {
       "composite-source-required": 1,
-      "passed": 38,
-      "source-recovery-required": 1
+      "passed": 41
     }
   },
   "sources": [
@@ -154,6 +153,23 @@
       "result_path": "arm64/locks/rebuild-results/historical-import-v3/gnome-bluetooth/3.34.3-2+grm3u1/result.json"
     },
     {
+      "source": "gnome-control-center",
+      "source_version": "1:3.38.4-1+grm3u9",
+      "actions_run_id": "31224081719",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31224081719",
+      "batch": "verified-existing-workflow-artifact-promotion",
+      "passed": true,
+      "category": "passed",
+      "classification_evidence": [],
+      "build_outcome": "success",
+      "build_exit_code": "0",
+      "verify_outcome": "success",
+      "dependency_repository_packages_sha256": null,
+      "dependency_release_lock_sha256": null,
+      "retry_reason": null,
+      "result_path": "arm64/locks/rebuild-results/gnome-control-center/1_3.38.4-1_grm3u9/result.json"
+    },
+    {
       "source": "gnome-panel",
       "source_version": "3.38.0-1+grm3u1",
       "actions_run_id": "31103830214",
@@ -203,6 +219,23 @@
       "dependency_release_lock_sha256": null,
       "retry_reason": null,
       "result_path": "arm64/locks/rebuild-results/historical-import-v3/gnome-settings-daemon/3.38.2-1+grm3u1/result.json"
+    },
+    {
+      "source": "gooroom-applauncher-applet",
+      "source_version": "0.4.0+grm3u1+han3u2",
+      "actions_run_id": "31268447673",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31268447673",
+      "batch": "gooroom-applauncher-han3u2-source-reconstruction",
+      "passed": true,
+      "category": "passed",
+      "classification_evidence": [],
+      "build_outcome": "success",
+      "build_exit_code": "0",
+      "verify_outcome": "success",
+      "dependency_repository_packages_sha256": null,
+      "dependency_release_lock_sha256": null,
+      "retry_reason": null,
+      "result_path": "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json"
     },
     {
       "source": "gooroom-browser",
@@ -260,20 +293,18 @@
     {
       "source": "gooroom-libsecurity-extensions",
       "source_version": "0.1.7+grm3u1",
-      "actions_run_id": "31102459428",
-      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
-      "batch": "infrastructure-retry-v3",
-      "passed": false,
-      "category": "source-recovery-required",
-      "classification_evidence": [
-        "unable to recognise the format of the input file"
-      ],
-      "build_outcome": "failure",
-      "build_exit_code": "2",
-      "verify_outcome": "skipped",
+      "actions_run_id": "31233127653",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31233127653",
+      "batch": "reconstructed-libsecurity",
+      "passed": true,
+      "category": "passed",
+      "classification_evidence": [],
+      "build_outcome": "success",
+      "build_exit_code": "0",
+      "verify_outcome": "success",
       "dependency_repository_packages_sha256": null,
       "dependency_release_lock_sha256": null,
-      "retry_reason": "builder-infrastructure-changed",
+      "retry_reason": null,
       "result_path": "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json"
     },
     {
