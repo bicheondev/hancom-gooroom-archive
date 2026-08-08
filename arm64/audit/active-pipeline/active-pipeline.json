@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 150,
     "workflow_name_count": 150,
-    "referenced_local_file_count": 236,
+    "referenced_local_file_count": 237,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -2871,6 +2871,7 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
+        "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py",
         "arm64/scripts/run_gooroom_applauncher_lineage_build.sh",
         "arm64/scripts/verify_gooroom_applauncher_lineage.py"
       ]
@@ -3671,6 +3672,9 @@
     "arm64/scripts/promote_verified_git_arm64_artifact.py": [
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml"
+    ],
+    "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py": [
+      ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
