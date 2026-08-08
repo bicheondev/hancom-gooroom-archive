@@ -9,6 +9,7 @@ on:
       - 'arm64/scripts/run_gooroom_applauncher_lineage_build.sh'
       - 'arm64/scripts/verify_gooroom_applauncher_lineage.py'
       - 'arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py'
+      - 'arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py'
       - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
       - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/source-lineage-lock.json'
 
@@ -56,7 +57,21 @@ jobs:
           bash -n arm64/scripts/run_gooroom_applauncher_lineage_build.sh
           python3 -m py_compile \
             arm64/scripts/verify_gooroom_applauncher_lineage.py \
-            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py
+            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
+
+          # Exercise the exact empty-line condition that previously surfaced
+          # at the end of readelf symbol-table blocks.
+          python3 - <<'PY'
+          for line in ['', '   ', 'Symbol table .dynsym contains 1 entry:']:
+              parts = line.split(None, 7)
+              if len(parts) < 8:
+                  continue
+              if not parts[0].rstrip(':').isdigit():
+                  continue
+              raise SystemExit('non-symbol line reached the symbol parser')
+          PY
+
           jq -e '.schema == 1 and .claims.byte_identity_claimed == false' \
             "$LINEAGE_LOCK" >/dev/null
 
@@ -64,15 +79,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           HANCOM_THEME_RECONSTRUCTOR: ${{ github.workspace }}/arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py
+          HANCOM_INDICATOR_RECONSTRUCTOR: ${{ github.workspace }}/arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
         run: |
           set -euxo pipefail
           chmod +x \
             arm64/scripts/run_gooroom_applauncher_lineage_build.sh \
             arm64/scripts/verify_gooroom_applauncher_lineage.py \
-            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py
+            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
 
           mkdir -p work
-          runner=work/run-gooroom-applauncher-lineage-build-with-theme.sh
+          runner=work/run-gooroom-applauncher-lineage-build-with-hancom-delta.sh
           cp arm64/scripts/run_gooroom_applauncher_lineage_build.sh "$runner"
           python3 - "$runner" <<'PY'
           from pathlib import Path
@@ -92,6 +109,10 @@ jobs:
             --source-dir "$SOURCE_DIR" \\
             --target-elf "$TARGET_ROOT/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-applauncher-applet.so" \\
             --output "$OUTPUT_DIR_ABS/hancom-theme-reconstruction.json"
+
+          python3 "${HANCOM_INDICATOR_RECONSTRUCTOR:?}" \\
+            --source-dir "$SOURCE_DIR" \\
+            --output "$OUTPUT_DIR_ABS/hancom-indicator-reconstruction.json"
 
           git -C "$SOURCE_DIR" diff --binary \\
           '''
