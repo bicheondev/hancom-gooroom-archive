@@ -14,9 +14,9 @@ command -v python3 >/dev/null || {
   exit 69
 }
 case "$BUILD_JOBS" in
-  1|2) ;;
+  1|2|3) ;;
   *)
-    echo "HANCOM_GOOROOM_BUILD_JOBS must be 1 or 2, got: $BUILD_JOBS" >&2
+    echo "HANCOM_GOOROOM_BUILD_JOBS must be 1, 2, or 3, got: $BUILD_JOBS" >&2
     exit 64
     ;;
 esac
@@ -60,8 +60,8 @@ source = source.replace(old, new)
 
 # The generic wrapper patches the immutable base builder at runtime. Inject an
 # asserted second-stage patch into that Python transformation so heavyweight
-# composite sources can lower native compile parallelism without changing the
-# source lock, package version, or ordinary two-job builds.
+# composite sources can use a bounded one-to-three native compile jobs without
+# changing the immutable source lock, package version, or default two-job path.
 marker = "source = source.replace(old_options, new_options)\n\nold_docker_env ="
 if source.count(marker) != 1:
     raise SystemExit(
