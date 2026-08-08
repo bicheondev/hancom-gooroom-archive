@@ -1,4 +1,4 @@
-name: ARM64 port - build reconstructed exact libsecurity extensions
+name: ARM64 port - build verified reconstructed libsecurity extensions
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - '.github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml'
       - 'arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh'
       - 'arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py'
+      - 'arm64/scripts/promote_reconstructed_libsecurity_result.py'
   workflow_dispatch:
 
 permissions:
@@ -42,7 +43,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             binutils ca-certificates dpkg-dev file git jq python3
           bash -n arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh
-          python3 -m py_compile arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py \
+            arm64/scripts/promote_reconstructed_libsecurity_result.py
 
       - name: Build exact-version ARM64 package from constrained reconstruction
         id: package_build
@@ -73,7 +76,7 @@ jobs:
           retention-days: 30
           compression-level: 9
 
-      - name: Commit compact immutable reconstruction authority
+      - name: Commit immutable reconstruction authority and verified rebuild result
         if: always()
         shell: bash
         run: |
@@ -81,6 +84,8 @@ jobs:
           source=work/gooroom-libsecurity-extensions-reconstructed-arm64
           run="arm64/locks/libsecurity-reconstruction/runs/${GITHUB_RUN_ID}"
           latest=arm64/locks/libsecurity-reconstruction/latest
+          result=arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           rm -rf "$run" "$latest"
           mkdir -p "$run" "$latest"
 
@@ -104,7 +109,7 @@ jobs:
           jq -n \
             --argjson workflow_run_id "$GITHUB_RUN_ID" \
             --arg workflow_commit "$GITHUB_SHA" \
-            --arg workflow_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg workflow_url "$run_url" \
             --arg package_build_outcome '${{ steps.package_build.outcome }}' \
             --arg package_build_exit_code '${{ steps.package_build.outputs.exit_code }}' \
             '{
@@ -131,9 +136,34 @@ jobs:
             sha256sum --check SHA256SUMS
           )
 
+          if [ '${{ steps.package_build.outcome }}' = success ] \
+             && [ '${{ steps.package_build.outputs.exit_code }}' = 0 ]; then
+            python3 arm64/scripts/promote_reconstructed_libsecurity_result.py \
+              --evidence-dir "$source" \
+              --run-id "$GITHUB_RUN_ID" \
+              --run-url "$run_url" \
+              --authority-path "$run/authority.json" \
+              --manifest-path "$run/reconstruction-manifest.json" \
+              --result-path "$result"
+            jq -e '
+              .passed == true
+              and .verification_passed == true
+              and .source == "gooroom-libsecurity-extensions"
+              and .source_version == "0.1.7+grm3u1"
+              and .source_type == "git"
+              and .source_status == "reconstructed-not-recovered-original-source"
+              and .byte_identity_claimed == false
+              and .verification.packages[0].architecture == "arm64"
+              and .verification.payload.machine == "AArch64"
+            ' "$result" >/dev/null
+          fi
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add arm64/locks/libsecurity-reconstruction
+          if [ -f "$result" ]; then
+            git add "$result"
+          fi
           git commit -m "Record reconstructed libsecurity ARM64 build ${GITHUB_RUN_ID}"
           test -z "$(git status --porcelain --untracked-files=no)"
           for attempt in 1 2 3 4 5 6; do
@@ -164,7 +194,7 @@ jobs:
             and .wrong_architecture_executable_count == 0
           ' work/gooroom-libsecurity-extensions-reconstructed-arm64/build-lock.json
 
-      - name: Dispatch refreshed exact package recovery
+      - name: Refresh package recovery and ARM64 coverage
         if: steps.package_build.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -173,4 +203,10 @@ jobs:
           set -euxo pipefail
           gh workflow run arm64-recover-exact-package-pool.yml \
             --repo "$GITHUB_REPOSITORY" \
-            --ref arm64-port
+            --ref arm64-port || true
+          gh workflow run arm64-port-coverage.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port || true
+          gh workflow run arm64-port-coverage-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port || true
