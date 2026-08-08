@@ -1,135 +1,33 @@
 name: ARM64 port - merge exact source authority v3
 
 on:
-  push:
-    branches: [arm64-port]
-    paths:
-      - '.github/workflows/arm64-source-authority-v3.yml'
-      - 'arm64/scripts/merge_exact_source_authority_v3.py'
-      - 'arm64/locks/reference/**'
-      - 'arm64/locks/sources-api-baseline/**'
-      - 'arm64/locks/sources/**'
-      - 'arm64/locks/vendor-pool-sources/**'
-      - 'arm64/locks/wayback-sources/**'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   actions: write
 
 concurrency:
-  group: hancom-gooroom-33-source-authority-v3
+  group: hancom-gooroom-33-source-authority-legacy-redirect
   cancel-in-progress: true
 
 jobs:
-  merge:
+  redirect:
+    name: Redirect legacy v3 requests to canonical source authority v5
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
     steps:
-      - name: Check out all exact source evidence
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: arm64-port
-          fetch-depth: 0
-
-      - name: Merge signed DSC and exact Git authorities without substitution
-        id: merge
-        shell: bash
-        run: |
-          set -uxo pipefail
-          rm -rf work/source-authority-v3
-          mkdir -p work/source-authority-v3
-          arguments=(
-            --reference arm64/locks/reference/amd64-reference.json
-            --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json
-            --output-dir work/source-authority-v3
-          )
-          for lock in \
-            arm64/locks/sources-api-baseline/source-lock.json \
-            arm64/locks/sources/source-lock.json; do
-            if [ -f "$lock" ]; then
-              arguments+=(--git-lock "$lock")
-            fi
-          done
-          wayback=arm64/locks/wayback-sources/wayback-source-release-lock.json
-          if [ -f "$wayback" ]; then
-            arguments+=(--wayback-release-lock "$wayback")
-          fi
-          set +e
-          python3 arm64/scripts/merge_exact_source_authority_v3.py \
-            "${arguments[@]}"
-          rc=$?
-          set -e
-          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
-          find work/source-authority-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
-            | sort -z | xargs -0 sha256sum \
-            > work/source-authority-v3/LOCKSUMS.sha256
-          cat work/source-authority-v3/effective-source-lock-summary.json
-
-      - name: Upload complete source authority and blockers
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: hancom-gooroom-3.3-source-authority-v3
-          path: work/source-authority-v3
-          if-no-files-found: error
-          retention-days: 30
-          compression-level: 9
-
-      - name: Commit authoritative source selection before enforcing it
-        if: always()
-        shell: bash
-        run: |
-          set -euxo pipefail
-          rm -rf arm64/locks/effective-sources-v3
-          mkdir -p arm64/locks/effective-sources-v3
-          cp -a work/source-authority-v3/. arm64/locks/effective-sources-v3/
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add arm64/locks/effective-sources-v3
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'Merge exact signed and Git source authority v3'
-          for attempt in 1 2 3 4; do
-            git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then
-              exit 0
-            fi
-            sleep $((attempt * 3))
-          done
-          exit 1
-
-      - name: Dispatch build consumers for every resolved exact source
-        if: always()
+      - name: Dispatch the only canonical source-authority producer
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euxo pipefail
-          test -f work/source-authority-v3/effective-source-lock.json
-          dispatch() {
-            local workflow="$1"
-            shift
-            for attempt in 1 2 3; do
-              if gh workflow run "$workflow" \
-                --repo '${{ github.repository }}' \
-                --ref arm64-port "$@"; then
-                return 0
-              fi
-              sleep $((attempt * 5))
-            done
-            return 1
-          }
-          dispatch arm64-baseline-rebuild-evidence.yml || true
-          dispatch arm64-native-rebuild-backlog.yml -f limit=6 || true
-          dispatch arm64-port-coverage.yml || true
-
-      - name: Enforce no unresolved native source after persisting evidence
-        if: always()
-        shell: bash
-        run: |
-          set -euxo pipefail
-          test '${{ steps.merge.outputs.exit_code }}' = '0'
-          jq -e '.build_allowed == true and .rebuild_blocker_count == 0' \
-            work/source-authority-v3/effective-source-lock-summary.json
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
+          {
+            echo '## Legacy source-authority v3 redirected'
+            echo
+            echo 'This workflow no longer writes `arm64/locks/effective-sources-v3`.'
+            echo 'The canonical v5 controller was dispatched instead.'
+          } >> "$GITHUB_STEP_SUMMARY"
