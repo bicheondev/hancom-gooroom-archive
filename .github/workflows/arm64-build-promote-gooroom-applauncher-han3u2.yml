@@ -1,0 +1,318 @@
+name: ARM64 port - build and promote reconstructed Gooroom applauncher han3u2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml'
+      - 'arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh'
+      - 'arm64/scripts/verify_gooroom_applauncher_arm64.py'
+      - 'arm64/scripts/promote_gooroom_applauncher_han3u2.py'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-promote-applauncher-han3u2
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT: 20230730T235959Z
+  SOURCE: gooroom-applauncher-applet
+  VERSION: 0.4.0+grm3u1+han3u2
+  SOURCE_RUN_ID: '31251842558'
+  SOURCE_RUN_SHA: 183f2c3660a052c11eeee502a6376ff192fbece9
+  SOURCE_ARTIFACT_ID: '9020244055'
+  SOURCE_ARTIFACT_NAME: gooroom-applauncher-han3u2-source-lineage-31251842558
+  SOURCE_ARTIFACT_DIGEST: sha256:0fca7ce9c9ee09ea4c4f137aa525c2a1f8fd55b480e96e866d6afd94998b6d71
+  SOURCE_ARCHIVE_SHA256: d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7
+  RECONSTRUCTED_TREE_SHA: 9b0cacfee8fb3118e4c497e590e2a310d8bc5c29
+  ARM64_ARTIFACT_NAME: gooroom-applauncher-han3u2-exact-arm64-v1
+
+jobs:
+  arm64-build:
+    name: Build and verify the reconstructed source natively on ARM64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    outputs:
+      artifact_id: ${{ steps.upload.outputs['artifact-id'] }}
+    steps:
+      - name: Check out exact builder and verifier revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify native host and install historical-rootfs tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This build must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git jq python3 xz-utils
+          bash -n arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh
+          python3 -m py_compile \
+            arm64/scripts/verify_gooroom_applauncher_arm64.py \
+            arm64/scripts/promote_gooroom_applauncher_han3u2.py
+
+      - name: Download the successful strict AMD64 source-verification artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/source-authority
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Revalidate source artifact identity and strict equivalence claims
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          metadata=work/source-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$SOURCE_ARTIFACT_ID" \
+            --arg name "$SOURCE_ARTIFACT_NAME" \
+            --arg digest "$SOURCE_ARTIFACT_DIGEST" \
+            --argjson run_id "$SOURCE_RUN_ID" \
+            --arg head_sha "$SOURCE_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $head_sha
+            ' "$metadata" >/dev/null
+          echo "$SOURCE_ARCHIVE_SHA256  work/source-authority/reconstructed-source.tar.gz" \
+            | sha256sum --check --strict
+          jq -e '
+            .verification_complete == true
+            and .source_relationship_valid == true
+            and .source_lineage_validated == true
+            and .elf_semantic_match == true
+            and .normalized_elf_identity == true
+            and .elf_nondeterministic_metadata_only == true
+            and .payload_reproducible_identity == true
+            and .claims.functional_elf_identity_claimed == true
+            and .claims.byte_identity_claimed == false
+            and .elf_reproducibility.unexpected_differing_byte_count == 0
+            and .elf_reproducibility.differing_sections == [
+              ".gnu_debuglink",
+              ".note.gnu.build-id"
+            ]
+          ' work/source-authority/verification.json >/dev/null
+
+      - name: Build the exact reconstructed source in a clean ARM64 snapshot rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/arm64-build
+          sudo bash arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh \
+            arm64 \
+            work/source-authority/reconstructed-source.tar.gz \
+            work/arm64-build \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" work/arm64-build
+
+      - name: Verify every DEB, ELF, export, and embedded Hancom resource
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact=work/arm64-artifact
+          rm -rf "$artifact"
+          mkdir -p "$artifact/debs" "$artifact/metadata"
+          cp work/arm64-build/debs/*.deb "$artifact/debs/"
+          cp -a work/arm64-build/metadata/. "$artifact/metadata/" || true
+          python3 arm64/scripts/verify_gooroom_applauncher_arm64.py \
+            --deb-dir "$artifact/debs" \
+            --output-dir "$artifact"
+          jq -e '
+            .verified == true
+            and .source == "gooroom-applauncher-applet"
+            and .source_version == "0.4.0+grm3u1+han3u2"
+            and .target_architecture == "arm64"
+            and .main_package_count == 1
+            and (.wrong_architecture_executables | length) == 0
+            and .runtime_module.missing_exports == []
+            and .runtime_module.gresource_sha256 == "2abe1443baba5103770ecf92c27dab0d5b5c5443f503ec3ab6c4287b7b77c3a8"
+          ' "$artifact/verification-summary.json" >/dev/null
+          jq -n \
+            --arg source "$SOURCE" \
+            --arg version "$VERSION" \
+            --arg snapshot "$SNAPSHOT" \
+            --arg tree "$RECONSTRUCTED_TREE_SHA" \
+            --arg archive_sha "$SOURCE_ARCHIVE_SHA256" '
+              {
+                schema: 2,
+                source: $source,
+                source_version: $version,
+                source_type: "verified-reconstructed-git-tree",
+                repository: "gooroom/gooroom-applauncher-applet",
+                base_commit_sha: "f2b5bf5909289796360a64526110d55e41c6f41f",
+                candidate_commit_sha: "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+                candidate_tree_sha: "b46c94d465fcae8779a060373ea70650ad484351",
+                reconstructed_tree_sha: $tree,
+                source_archive_sha256: $archive_sha,
+                target_architecture: "arm64",
+                debian_snapshot: $snapshot,
+                build_mode: "native-arm64-clean-historical-rootfs",
+                source_authority: "strict-reproducible-amd64-functional-equivalence"
+              }
+          ' > "$artifact/build-lock.json"
+          cp work/source-artifact-metadata.json "$artifact/source-artifact-metadata.json"
+          (
+            cd "$artifact"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+
+      - name: Upload verified native ARM64 packages
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARM64_ARTIFACT_NAME }}
+          path: work/arm64-artifact
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload native build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-applauncher-han3u2-arm64-diagnostics-${{ github.run_id }}
+          path: |
+            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+  promote:
+    name: Persist reconstructed source authority and ARM64 result
+    needs: arm64-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install promotion prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          python3 -m py_compile arm64/scripts/promote_gooroom_applauncher_han3u2.py
+
+      - name: Download source-verification authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/promote/source
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download this run's verified ARM64 artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.ARM64_ARTIFACT_NAME }}
+          path: work/promote/arm64
+
+      - name: Revalidate artifact identities and generate promotion records
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARM64_ARTIFACT_ID: ${{ needs.arm64-build.outputs.artifact_id }}
+        run: |
+          set -euxo pipefail
+          test -n "$ARM64_ARTIFACT_ID"
+          metadata=work/promote/arm64-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARM64_ARTIFACT_ID}" \
+            -o "$metadata"
+          arm_digest="$(jq -r '.digest' "$metadata")"
+          jq -e \
+            --argjson id "$ARM64_ARTIFACT_ID" \
+            --arg name "$ARM64_ARTIFACT_NAME" \
+            --argjson run_id "$GITHUB_RUN_ID" '
+              .id == $id
+              and .name == $name
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and (.digest | startswith("sha256:"))
+            ' "$metadata" >/dev/null
+          (cd work/promote/arm64 && sha256sum --check SHA256SUMS)
+          python3 arm64/scripts/promote_gooroom_applauncher_han3u2.py \
+            --source-artifact work/promote/source \
+            --arm64-artifact work/promote/arm64 \
+            --repository-root . \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arm64-artifact-id "$ARM64_ARTIFACT_ID" \
+            --arm64-artifact-name "$ARM64_ARTIFACT_NAME" \
+            --arm64-artifact-digest "$arm_digest"
+          result=arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "gooroom-applauncher-applet"
+            and .source_version == "0.4.0+grm3u1+han3u2"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .tree_sha == "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29"
+          ' "$result" >/dev/null
+          jq -e '
+            [.sources[]
+             | select(.source == "gooroom-applauncher-applet"
+                      and .source_version == "0.4.0+grm3u1+han3u2"
+                      and .status == "resolved"
+                      and .verification.passed == true)]
+            | length == 1
+          ' arm64/locks/reconstructed-sources/source-locks.json >/dev/null
+
+      - name: Commit exact source, ARM64 result, and evidence locks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2 \
+            arm64/locks/gooroom-applauncher-han3u2-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          if git diff --cached --quiet; then
+            echo 'Applauncher promotion records are already current.'
+            exit 0
+          fi
+          git commit -m 'Promote verified gooroom-applauncher han3u2 ARM64 build'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
