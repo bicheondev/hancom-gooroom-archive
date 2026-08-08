@@ -46,36 +46,63 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Validate and run exact deep-diff extraction
+      - name: Correct provisional symbol assumptions and run exact extraction
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
-          bash -n arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh
+          mkdir -p work
+          runner=work/run-gooroom-applauncher-han3u2-deep-diff.sh
+          cp arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh "$runner"
+
+          python3 - "$runner" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          replacements = {
+              'for symbol in dragsource_initialize applauncher_icon_get_path; do':
+                  'for symbol in applauncher_appitem_get_path applauncher_appitem_get_drag_surface; do',
+              "awk '$8 == \"dragsource_initialize\" || $8 == \"applauncher_icon_get_path\" {print}'":
+                  "awk '$8 == \"applauncher_appitem_get_path\" || $8 == \"applauncher_appitem_get_drag_surface\" {print}'",
+              '- Confirmed Hancom-only exports: `dragsource_initialize`, `applauncher_icon_get_path`':
+                  '- Confirmed Hancom-only exports: `applauncher_appitem_get_path`, `applauncher_appitem_get_drag_surface`',
+              '        "applauncher_icon_get_path",\n        "dragsource_initialize",':
+                  '        "applauncher_appitem_get_drag_surface",\n        "applauncher_appitem_get_path",',
+              'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n[[':
+                  'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n'
+                  'export ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \\\n'
+                  '  ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \\\n'
+                  '  TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \\\n'
+                  '  BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE\n\n[[',
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one occurrence, found {count}: {old!r}')
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          bash -n "$runner"
           rm -rf work/deep-diff
-
-          # Imported environment variables retain their export attribute when
-          # the child script replaces these placeholders with lock-file data.
-          # Exporting a real placeholder, rather than an unset name, also
-          # ensures the variables are present in Python subprocesses.
-          for evidence_var in \
-            ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \
-            ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \
-            TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \
-            BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE RETRIEVAL; do
-            export "${evidence_var}=__loaded_from_input_lock__"
-          done
-
-          bash arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh \
-            "$INPUT_LOCK" \
-            work/deep-diff
+          bash "$runner" "$INPUT_LOCK" work/deep-diff
           jq -e '
             .audit_complete == true and
             .analysis_status == "deep-diff-collected" and
             .claims.source_status == "comparison-only" and
             .claims.reconstruction_status == "not-attempted" and
-            .claims.byte_identity_claimed == false
+            .claims.byte_identity_claimed == false and
+            .hancom_only_exports_required == [
+              "applauncher_appitem_get_drag_surface",
+              "applauncher_appitem_get_path"
+            ]
           ' work/deep-diff/manifest.json >/dev/null
+          diff -u <(printf '%s\n' \
+            applauncher_appitem_get_drag_surface \
+            applauncher_appitem_get_path) \
+            work/deep-diff/target-only-exports.txt
 
       - name: Upload deep-diff evidence
         if: always()
