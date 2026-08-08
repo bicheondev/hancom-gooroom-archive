@@ -14,7 +14,7 @@ on:
         default: '31224081719'
 
 permissions:
-  actions: read
+  actions: write
   contents: write
 
 concurrency:
@@ -140,10 +140,10 @@ jobs:
           set -euxo pipefail
           gh workflow run arm64-recover-exact-package-pool.yml \
             --repo "$GITHUB_REPOSITORY" \
-            --ref arm64-port || true
+            --ref arm64-port
           gh workflow run arm64-port-coverage.yml \
             --repo "$GITHUB_REPOSITORY" \
-            --ref arm64-port || true
+            --ref arm64-port
           gh workflow run arm64-port-coverage-v2.yml \
             --repo "$GITHUB_REPOSITORY" \
-            --ref arm64-port || true
+            --ref arm64-port
