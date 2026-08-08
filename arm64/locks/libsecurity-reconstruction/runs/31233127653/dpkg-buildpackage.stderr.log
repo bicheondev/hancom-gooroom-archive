@@ -1,0 +1,21 @@
+ dpkg-source --before-build .
+ debian/rules clean
+dh: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_clean: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+ debian/rules build-arch
+dh: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+ debian/rules binary-arch
+dh: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_install: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_installdocs: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_compress: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_missing: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_strip: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_makeshlibs: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_shlibdeps: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dh_installdeb: warning: Compatibility levels before 10 are deprecated (level 9 in use)
+dpkg-gencontrol: warning: package gooroom-libsecurity-extensions: substitution variable ${shlibs:Depends} unused, but is defined
+ dpkg-genbuildinfo --build=any
+ dpkg-genchanges --build=any >../gooroom-libsecurity-extensions_0.1.7+grm3u1_arm64.changes
+dpkg-genchanges: info: binary-only arch-specific upload (source code and arch-indep packages not included)
+ dpkg-source --after-build .
