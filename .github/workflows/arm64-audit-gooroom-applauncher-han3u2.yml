@@ -1,0 +1,284 @@
+name: ARM64 port - audit Gooroom applauncher Hancom delta
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-applauncher-han3u2.yml'
+      - 'arm64/scripts/audit_hancom_delta.py'
+      - 'arm64/scripts/tests/test_audit_hancom_delta.py'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/REQUESTED'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-applauncher-han3u2
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: debian:bullseye
+    env:
+      LOCK_DIR: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2
+      INPUT_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json
+
+    steps:
+      - name: Install bootstrap tools
+        run: |
+          set -euxo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            bash ca-certificates curl git jq python3 unzip
+
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install audit and build tools
+        run: |
+          set -euxo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils build-essential debhelper devscripts dpkg-dev equivs \
+            fakeroot file pkg-config
+          rm -rf /var/lib/apt/lists/*
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          test "$(dpkg --print-architecture)" = amd64
+
+      - name: Validate auditor tests
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile \
+            arm64/scripts/audit_hancom_delta.py \
+            arm64/scripts/tests/test_audit_hancom_delta.py
+          python3 -m unittest discover \
+            -s arm64/scripts/tests \
+            -p 'test_audit_hancom_delta.py' \
+            -v
+
+      - name: Load immutable input lock
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          lock = json.loads(Path(os.environ['INPUT_LOCK']).read_text(encoding='utf-8'))
+          expected_claims = {
+              'source_status': 'comparison-only',
+              'reconstruction_status': 'not-attempted',
+              'byte_identity_claimed': False,
+          }
+          if lock.get('claims') != expected_claims:
+              raise SystemExit(f"unsafe claims: {lock.get('claims')!r}")
+          values = {
+              'ARTIFACT_ID': lock['artifact']['id'],
+              'ARTIFACT_NAME': lock['artifact']['name'],
+              'ARTIFACT_SIZE': lock['artifact']['size_in_bytes'],
+              'ARTIFACT_DIGEST': lock['artifact']['digest'].removeprefix('sha256:'),
+              'ARTIFACT_RUN_ID': lock['artifact']['workflow_run_id'],
+              'ARTIFACT_HEAD_BRANCH': lock['artifact']['head_branch'],
+              'ARTIFACT_HEAD_SHA': lock['artifact']['head_sha'],
+              'TARGET_URL': lock['target']['url'],
+              'TARGET_FILENAME': lock['target']['filename'],
+              'TARGET_SHA256': lock['target']['sha256'],
+              'TARGET_PACKAGE': lock['target']['package'],
+              'TARGET_VERSION': lock['target']['version'],
+              'BASE_REPOSITORY': lock['base_source']['repository'],
+              'BASE_VERSION': lock['base_source']['version'],
+              'BASE_COMMIT': lock['base_source']['commit'],
+              'BASE_TREE': lock['base_source']['tree'],
+          }
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              for key, value in values.items():
+                  stream.write(f'{key}={value}\n')
+          PY
+
+      - name: Validate exact package-pool authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p work
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-all-errors \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+            -o work/artifact-metadata.json
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          data = json.loads(Path('work/artifact-metadata.json').read_text())
+          expected = {
+              'id': int(os.environ['ARTIFACT_ID']),
+              'name': os.environ['ARTIFACT_NAME'],
+              'size_in_bytes': int(os.environ['ARTIFACT_SIZE']),
+              'digest': 'sha256:' + os.environ['ARTIFACT_DIGEST'],
+              'expired': False,
+          }
+          mismatch = {
+              key: {'actual': data.get(key), 'expected': value}
+              for key, value in expected.items()
+              if data.get(key) != value
+          }
+          run = data.get('workflow_run') or {}
+          run_expected = {
+              'id': int(os.environ['ARTIFACT_RUN_ID']),
+              'head_branch': os.environ['ARTIFACT_HEAD_BRANCH'],
+              'head_sha': os.environ['ARTIFACT_HEAD_SHA'],
+          }
+          run_mismatch = {
+              key: {'actual': run.get(key), 'expected': value}
+              for key, value in run_expected.items()
+              if run.get(key) != value
+          }
+          if mismatch or run_mismatch:
+              raise SystemExit(
+                  f'artifact authority mismatch: metadata={mismatch}, run={run_mismatch}'
+              )
+          PY
+
+      - name: Retrieve and verify exact target AMD64 package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          TARGET_DEB=work/target.deb
+          retrieval=direct-url
+          if ! curl --fail --show-error --location \
+              --retry 4 --retry-delay 2 --retry-all-errors \
+              "$TARGET_URL" -o "$TARGET_DEB" \
+              || ! echo "${TARGET_SHA256}  ${TARGET_DEB}" | sha256sum --check --strict; then
+            retrieval=exact-artifact-fallback
+            rm -f "$TARGET_DEB"
+            curl --fail --silent --show-error --location \
+              --retry 4 --retry-all-errors \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+              -o work/package-pool.zip
+            test "$(stat -c '%s' work/package-pool.zip)" = "$ARTIFACT_SIZE"
+            echo "${ARTIFACT_DIGEST}  work/package-pool.zip" | sha256sum --check --strict
+            mkdir -p work/package-pool
+            unzip -q work/package-pool.zip -d work/package-pool
+            mapfile -t matches < <(find work/package-pool -type f -name "$TARGET_FILENAME" -print)
+            test "${#matches[@]}" -eq 1
+            cp "${matches[0]}" "$TARGET_DEB"
+            echo "${TARGET_SHA256}  ${TARGET_DEB}" | sha256sum --check --strict
+          fi
+          echo "$retrieval" > work/retrieval.txt
+          echo "TARGET_DEB=${TARGET_DEB}" >> "$GITHUB_ENV"
+          test "$(dpkg-deb -f "$TARGET_DEB" Package)" = "$TARGET_PACKAGE"
+          test "$(dpkg-deb -f "$TARGET_DEB" Version)" = "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$TARGET_DEB" Architecture)" = amd64
+          source_field="$(dpkg-deb -f "$TARGET_DEB" Source || true)"
+          test "${source_field%% *}" = "$TARGET_PACKAGE"
+
+      - name: Fetch and verify public base authority
+        run: |
+          set -euxo pipefail
+          rm -rf work/base-source
+          git init -q work/base-source
+          git -C work/base-source remote add origin "https://github.com/${BASE_REPOSITORY}.git"
+          git -C work/base-source fetch --no-tags --depth=1 origin "$BASE_COMMIT"
+          git -C work/base-source checkout -q --detach FETCH_HEAD
+          test "$(git -C work/base-source rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C work/base-source rev-parse HEAD^{tree})" = "$BASE_TREE"
+          test "$(dpkg-parsechangelog -lwork/base-source/debian/changelog -SVersion)" = "$BASE_VERSION"
+          test "$(dpkg-parsechangelog -lwork/base-source/debian/changelog -SSource)" = "$TARGET_PACKAGE"
+
+      - name: Build public AMD64 baseline
+        run: |
+          set -euxo pipefail
+          cd work/base-source
+          mk-build-deps --install --remove \
+            --tool 'apt-get -y --no-install-recommends' debian/control
+          export DEB_BUILD_OPTIONS='nocheck parallel=2'
+          export SOURCE_DATE_EPOCH="$(dpkg-parsechangelog -STimestamp)"
+          dpkg-buildpackage -us -uc -b 2>&1 | tee ../base-build.log
+          cd ../..
+          mapfile -t matches < <(
+            find work -maxdepth 1 -type f \
+              -name "${TARGET_PACKAGE}_${BASE_VERSION}_amd64.deb" -print
+          )
+          test "${#matches[@]}" -eq 1
+          BASE_DEB="${matches[0]}"
+          echo "BASE_DEB=${BASE_DEB}" >> "$GITHUB_ENV"
+          test "$(dpkg-deb -f "$BASE_DEB" Package)" = "$TARGET_PACKAGE"
+          test "$(dpkg-deb -f "$BASE_DEB" Version)" = "$BASE_VERSION"
+          test "$(dpkg-deb -f "$BASE_DEB" Architecture)" = amd64
+
+      - name: Generate comparison-only evidence
+        run: |
+          set -euxo pipefail
+          rm -f "$LOCK_DIR/audit.json" "$LOCK_DIR/audit-summary.md"
+          python3 arm64/scripts/audit_hancom_delta.py \
+            --target-deb "$TARGET_DEB" \
+            --base-deb "$BASE_DEB" \
+            --input-lock "$INPUT_LOCK" \
+            --output-dir "$LOCK_DIR"
+          jq -e '
+            .audit_complete == true and
+            .source_status == "comparison-only" and
+            .reconstruction_status == "not-attempted" and
+            .byte_identity_claimed == false
+          ' "$LOCK_DIR/audit.json" >/dev/null
+
+      - name: Commit deterministic evidence lock
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR/audit.json" "$LOCK_DIR/audit-summary.md"
+          if git diff --cached --quiet; then
+            echo 'Evidence lock is unchanged.'
+            exit 0
+          fi
+          git commit -m 'Audit Gooroom applauncher Hancom delta'
+          for attempt in 1 2 3; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 5))
+          done
+          echo 'Failed to publish evidence after three attempts' >&2
+          exit 1
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-applauncher-han3u2-audit-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+          path: |
+            ${{ env.LOCK_DIR }}/input-lock.json
+            ${{ env.LOCK_DIR }}/REQUESTED
+            ${{ env.LOCK_DIR }}/audit.json
+            ${{ env.LOCK_DIR }}/audit-summary.md
+            work/artifact-metadata.json
+            work/retrieval.txt
+            work/base-build.log
