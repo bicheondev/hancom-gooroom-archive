@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 145,
     "workflow_name_count": 145,
-    "referenced_local_file_count": 225,
+    "referenced_local_file_count": 227,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -2364,9 +2364,12 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
+        "arm64/locks/reconstructed-sources/source-locks.json",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
+        "arm64/locks/verified-build-sources/source-lock.json",
         "arm64/locks/wayback-sources/wayback-source-release-lock.json",
+        "arm64/scripts/finalize_effective_source_authority.py",
         "arm64/scripts/merge_exact_source_authority_v3.py"
       ]
     },
@@ -3125,7 +3128,8 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
       ".github/workflows/arm64-port-coverage.yml",
-      ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
+      ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/locks/recovered-package-pool/latest/artifact-lock.json": [
       ".github/workflows/arm64-archaeology-recovered-package-blockers.yml"
@@ -3251,6 +3255,9 @@
       ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
+    ],
+    "arm64/locks/verified-build-sources/source-lock.json": [
+      ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/locks/wayback-sources/fast-rebuild-blockers.json": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
@@ -3480,6 +3487,9 @@
     ],
     "arm64/scripts/finalize_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
+    ],
+    "arm64/scripts/finalize_effective_source_authority.py": [
+      ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
