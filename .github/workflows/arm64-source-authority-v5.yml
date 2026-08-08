@@ -6,12 +6,15 @@ on:
     paths:
       - '.github/workflows/arm64-source-authority-v5.yml'
       - 'arm64/scripts/merge_exact_source_authority_v3.py'
+      - 'arm64/scripts/finalize_effective_source_authority.py'
       - 'arm64/locks/reference/**'
       - 'arm64/locks/sources-api-baseline/**'
       - 'arm64/locks/sources/**'
       - 'arm64/locks/sources-exhaustive/**'
       - 'arm64/locks/vendor-pool-sources/**'
       - 'arm64/locks/wayback-sources/**'
+      - 'arm64/locks/verified-build-sources/**'
+      - 'arm64/locks/reconstructed-sources/**'
       - 'arm64/keys/source-signing/**'
   workflow_dispatch:
 
@@ -20,7 +23,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: hancom-gooroom-33-source-authority-v4
+  group: hancom-gooroom-33-source-authority-v5
   cancel-in-progress: true
 
 jobs:
@@ -33,23 +36,24 @@ jobs:
       resolved_count: ${{ steps.merge.outputs.resolved_count }}
       blocker_count: ${{ steps.merge.outputs.blocker_count }}
     steps:
-      - name: Check out every exact source evidence set
+      - name: Check out every exact and independently verified source proof
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Merge every Git lock plus signed DSC authority fail closed
+      - name: Merge exact authorities and finalize verified overlays fail closed
         id: merge
         shell: bash
         run: |
           set -uxo pipefail
-          rm -rf work/source-authority-v5
-          mkdir -p work/source-authority-v5
+          output=work/source-authority-v5
+          rm -rf "$output"
+          mkdir -p "$output"
           arguments=(
             --reference arm64/locks/reference/amd64-reference.json
             --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json
-            --output-dir work/source-authority-v5
+            --output-dir "$output"
           )
           mapfile -t git_locks < <(
             find arm64/locks -mindepth 2 -maxdepth 2 -type f \
@@ -64,28 +68,62 @@ jobs:
           if [ -f "$wayback" ]; then
             arguments+=(--wayback-release-lock "$wayback")
           fi
+
           set +e
           python3 arm64/scripts/merge_exact_source_authority_v3.py \
             "${arguments[@]}"
-          rc=$?
+          exact_rc=$?
           set -e
-          summary=work/source-authority-v5/effective-source-lock-summary.json
-          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+
+          finalize=(
+            --base-lock "$output/effective-source-lock.json"
+            --output-dir "$output"
+          )
+          verified=arm64/locks/verified-build-sources/source-lock.json
+          reconstructed=arm64/locks/reconstructed-sources/source-locks.json
+          if [ -f "$verified" ]; then
+            finalize+=(--verified-build-lock "$verified")
+          fi
+          if [ -f "$reconstructed" ]; then
+            finalize+=(--reconstructed-locks "$reconstructed")
+          fi
+
+          set +e
+          python3 arm64/scripts/finalize_effective_source_authority.py \
+            "${finalize[@]}"
+          final_rc=$?
+          set -e
+
+          summary="$output/effective-source-lock-summary.json"
+          echo "exact_exit_code=$exact_rc" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$final_rc" >> "$GITHUB_OUTPUT"
           echo "build_allowed=$(jq -r '.build_allowed' "$summary")" >> "$GITHUB_OUTPUT"
           echo "signed_dsc_count=$(jq -r '.signed_dsc_resolved_count // 0' "$summary")" >> "$GITHUB_OUTPUT"
           echo "resolved_count=$(jq -r '.resolved_count // 0' "$summary")" >> "$GITHUB_OUTPUT"
           echo "blocker_count=$(jq -r '.rebuild_blocker_count // 0' "$summary")" >> "$GITHUB_OUTPUT"
+
           jq -n \
             --argjson git_lock_count "${#git_locks[@]}" \
             --argjson git_locks "$(printf '%s\n' "${git_locks[@]}" | jq -Rsc 'split("\n")[:-1]')" \
-            '{schema:1,git_lock_count:$git_lock_count,git_locks:$git_locks}' \
-            > work/source-authority-v5/input-locks.json
-          find work/source-authority-v5 -type f ! -name LOCKSUMS.sha256 -print0 \
+            --arg verified_build_lock "$verified" \
+            --arg reconstructed_source_lock "$reconstructed" \
+            --argjson exact_merge_exit_code "$exact_rc" \
+            --argjson finalizer_exit_code "$final_rc" \
+            '{
+              schema: 2,
+              git_lock_count: $git_lock_count,
+              git_locks: $git_locks,
+              verified_build_lock: $verified_build_lock,
+              reconstructed_source_lock: $reconstructed_source_lock,
+              exact_merge_exit_code: $exact_merge_exit_code,
+              finalizer_exit_code: $finalizer_exit_code
+            }' > "$output/input-locks.json"
+          find "$output" -type f ! -name LOCKSUMS.sha256 -print0 \
             | sort -z | xargs -0 sha256sum \
-            > work/source-authority-v5/LOCKSUMS.sha256
+            > "$output/LOCKSUMS.sha256"
           cat "$summary"
 
-      - name: Upload merged authority, inputs, and exact blockers
+      - name: Upload canonical authority, overlays, inputs, and blockers
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -95,7 +133,7 @@ jobs:
           retention-days: 30
           compression-level: 9
 
-      - name: Commit authority v5 before any native build dispatch
+      - name: Commit canonical authority before any native build dispatch
         if: always()
         shell: bash
         run: |
@@ -109,7 +147,7 @@ jobs:
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Merge exhaustive Git and signed DSC source authority v5'
+          git commit -m 'Finalize canonical exact and verified source authority v5'
           for attempt in 1 2 3 4; do
             git pull --rebase origin arm64-port
             if git push origin HEAD:arm64-port; then
@@ -119,7 +157,7 @@ jobs:
           done
           exit 1
 
-      - name: Dispatch native builds against the newly selected authorities
+      - name: Dispatch consumers against the finalized canonical authority
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -142,6 +180,9 @@ jobs:
             --ref arm64-port \
             -f mode=backlog \
             -f limit=6 || true
+          gh workflow run arm64-port-coverage.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port || true
           gh workflow run arm64-port-coverage-v2.yml \
             --repo '${{ github.repository }}' \
             --ref arm64-port || true
@@ -151,5 +192,6 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          test '${{ steps.merge.outputs.exit_code }}' = '0'
           jq -e '.build_allowed == true and .rebuild_blocker_count == 0' \
             work/source-authority-v5/effective-source-lock-summary.json
