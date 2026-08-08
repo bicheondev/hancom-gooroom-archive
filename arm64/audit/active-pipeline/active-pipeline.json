@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 147,
-    "workflow_name_count": 147,
-    "referenced_local_file_count": 231,
+    "workflow_count": 148,
+    "workflow_name_count": 148,
+    "referenced_local_file_count": 233,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -101,6 +101,24 @@
         "arm64/locks/recovered-package-pool/latest/artifact-lock.json",
         "arm64/locks/recovered-package-pool/latest/compact-blockers.json",
         "arm64/scripts/targeted_source_archaeology.py"
+      ]
+    },
+    {
+      "filename": "arm64-audit-gooroom-applauncher-han3u2.yml",
+      "path": ".github/workflows/arm64-audit-gooroom-applauncher-han3u2.yml",
+      "name": "ARM64 port - audit Gooroom applauncher Hancom delta",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_hancom_delta.py",
+        "arm64/scripts/tests/test_audit_hancom_delta.py"
       ]
     },
     {
@@ -3324,6 +3342,9 @@
       ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-audit-gooroom-greeter-han3u2-v3.yml"
     ],
+    "arm64/scripts/audit_hancom_delta.py": [
+      ".github/workflows/arm64-audit-gooroom-applauncher-han3u2.yml"
+    ],
     "arm64/scripts/audit_package_plan_inventory.py": [
       ".github/workflows/arm64-package-plan-audit.yml"
     ],
@@ -3814,6 +3835,9 @@
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/scripts/tests/test_audit_hancom_delta.py": [
+      ".github/workflows/arm64-audit-gooroom-applauncher-han3u2.yml"
     ],
     "arm64/scripts/validate_arm64_source_outputs_v3.py": [
       ".github/workflows/arm64-build-qtbase-targeted.yml",
