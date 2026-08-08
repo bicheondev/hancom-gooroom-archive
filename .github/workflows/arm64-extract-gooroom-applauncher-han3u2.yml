@@ -53,7 +53,17 @@ jobs:
           set -euxo pipefail
           bash -n arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh
           rm -rf work/deep-diff
-          bash -a arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh \
+
+          # Mark only the evidence variables as exported. Their values are
+          # loaded and validated by the child script; avoiding `bash -a`
+          # prevents shell-internal variables from contaminating libtoolize.
+          export \
+            ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \
+            ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \
+            TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \
+            BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE RETRIEVAL
+
+          bash arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh \
             "$INPUT_LOCK" \
             work/deep-diff
           jq -e '
