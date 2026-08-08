@@ -1,19 +1,8 @@
 {
-  "schema": 4,
-  "policy": "exact-signed-dsc-then-exact-git-then-verified-build-selection-then-verified-reconstruction",
-  "source_target_count": 74,
-  "resolved_count": 59,
-  "signed_dsc_resolved_count": 0,
-  "git_resolved_count": 58,
-  "arch_replace_count": 1,
-  "unresolved_count": 14,
-  "rebuild_blocker_count": 8,
-  "build_allowed": false,
-  "wayback_release_lock_present": true,
-  "wayback_release_complete": false,
-  "verified_build_git_resolved_count": 4,
-  "reconstructed_resolved_count": 1,
-  "verified_build_overlays": [
+  "schema": 1,
+  "verified_build_authority": "arm64/locks/verified-build-sources/source-lock.json",
+  "reconstructed_authority": "arm64/locks/reconstructed-sources/source-locks.json",
+  "verified_build_applied": [
     {
       "source": "cups-pk-helper",
       "source_version": "0.2.6-1ubuntu3+grm3u1",
@@ -47,7 +36,7 @@
       "result_path": "arm64/locks/rebuild-results/historical-import-v3/policykit-1/0.105-31+nDeb11u1+grm3u1/result.json"
     }
   ],
-  "reconstructed_overlays": [
+  "reconstructed_applied": [
     {
       "source": "gooroom-greeter",
       "source_version": "0.3.1+grm3u1+han3u2",
