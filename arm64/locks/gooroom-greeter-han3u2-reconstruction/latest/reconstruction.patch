@@ -1,0 +1,27 @@
+diff --git a/debian/changelog b/debian/changelog
+index 0ef223bb017d29d7e737cd794f74cc29602d4017..0466eb189767bc55e3a67370c7080d38c2502de2 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,10 @@
++gooroom-greeter (0.3.1+grm3u1+han3u2) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [daff60c9] [HGOOROOM-171]Fixed Laterbutton actable when the message a password change for security pop up
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:02:02 +0900
++
+ gooroom-greeter (0.3.1+grm3u1+han3u1) unstable; urgency=medium
+ 
+   [ boyeon.choi ]
+diff --git a/src/greeter-window.c b/src/greeter-window.c
+index d10ec59f65ad380f0d576b79f557481e38369d0f..44e80b6516e9c45096dd5cf6d11f0b2e769e352f 100644
+--- a/src/greeter-window.c
++++ b/src/greeter-window.c
+@@ -459,6 +459,7 @@ run_password_changing_dialog (GreeterWindow *window,
+ 			lightdm_greeter_respond (priv->lightdm, "chpasswd_no");
+ #endif
+ 		}
++		return;
+ 	}
+ 
+ out:
