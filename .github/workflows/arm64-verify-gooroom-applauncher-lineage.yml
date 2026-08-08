@@ -8,6 +8,7 @@ on:
       - '.github/workflows/arm64-verify-gooroom-applauncher-lineage.yml'
       - 'arm64/scripts/run_gooroom_applauncher_lineage_build.sh'
       - 'arm64/scripts/verify_gooroom_applauncher_lineage.py'
+      - 'arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py'
       - 'arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py'
       - 'arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py'
       - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
@@ -57,6 +58,7 @@ jobs:
           bash -n arm64/scripts/run_gooroom_applauncher_lineage_build.sh
           python3 -m py_compile \
             arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
             arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
             arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
 
@@ -85,12 +87,21 @@ jobs:
           chmod +x \
             arm64/scripts/run_gooroom_applauncher_lineage_build.sh \
             arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
             arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
             arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
 
           mkdir -p work
           runner=work/run-gooroom-applauncher-lineage-build-with-hancom-delta.sh
           cp arm64/scripts/run_gooroom_applauncher_lineage_build.sh "$runner"
+
+          # The build runner resolves its base verifier relative to $0.  Since
+          # this workflow intentionally runs a patched copy from work/, keep
+          # the locked verifier beside that copy instead of silently resolving
+          # a different path.
+          cp arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            work/verify_gooroom_applauncher_lineage.py
+
           python3 - "$runner" <<'PY'
           from pathlib import Path
           import sys
@@ -122,11 +133,40 @@ jobs:
           PY
           bash -n "$runner"
 
-          rm -rf work/gooroom-applauncher-lineage
+          output=work/gooroom-applauncher-lineage
+          rm -rf "$output"
           "$runner" \
             "$INPUT_LOCK" \
             "$LINEAGE_LOCK" \
-            work/gooroom-applauncher-lineage
+            "$output"
+
+          python3 arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
+            --target-deb "$output/target.deb" \
+            --rebuilt-deb "$output/rebuilt.deb" \
+            --verification-json "$output/verification.json" \
+            --summary "$output/verification-summary.md"
+
+          jq -e '
+            .verification_complete == true and
+            .source_relationship_valid == true and
+            .source_lineage_validated == true and
+            .elf_semantic_match == true and
+            .normalized_elf_identity == true and
+            .elf_nondeterministic_metadata_only == true and
+            .payload_reproducible_identity == true and
+            .claims.source_status == "public-direct-parent-lineage-validated" and
+            .claims.reconstruction_status == "built-and-reproducibly-validated" and
+            .claims.functional_elf_identity_claimed == true and
+            (.claims.byte_identity_claimed == .package_byte_identity) and
+            (.elf_byte_identity == .elf_reproducibility.raw_byte_identity) and
+            .elf_reproducibility.unexpected_differing_byte_count == 0 and
+            .elf_reproducibility.raw_differing_byte_count > 0 and
+            .elf_reproducibility.differing_sections == [
+              ".gnu_debuglink",
+              ".note.gnu.build-id"
+            ] and
+            .payload_reproducibility.non_elf_payload_byte_identity == true
+          ' "$output/verification.json" >/dev/null
 
       - name: Upload source-lineage evidence
         if: always()
