@@ -1,0 +1,207 @@
+name: ARM64 port - promote verified Gooroom browser artifact
+
+on:
+  workflow_run:
+    workflows:
+      - ARM64 port - build exact Gooroom browser
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful exact Gooroom browser build run to promote
+        required: true
+        default: '31223754157'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-gooroom-browser-artifact
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'arm64-port')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out current canonical authority and promotion policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve and lock the successful source run and artifact
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.source_run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id="$EVENT_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id="$INPUT_RUN_ID"
+          fi
+          case "$run_id" in
+            ''|*[!0-9]*) echo 'A numeric source run id is required.' >&2; exit 1 ;;
+          esac
+
+          mkdir -p work/promote-gooroom-browser
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" \
+            > work/promote-gooroom-browser/source-run.json
+          jq -e '
+            .name == "ARM64 port - build exact Gooroom browser"
+            and .path == ".github/workflows/arm64-build-wave5-browser.yml"
+            and .head_branch == "arm64-port"
+            and .status == "completed"
+            and .conclusion == "success"
+          ' work/promote-gooroom-browser/source-run.json >/dev/null
+
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
+            --jq '.artifacts[]' \
+            | jq -s '
+                map(select(.name == "gooroom-browser-exact-arm64-wave5"))
+                | if length == 1 then .[0] else error("expected exactly one browser artifact") end
+              ' > work/promote-gooroom-browser/artifact-metadata.json
+          jq -e '
+            .expired == false
+            and (.id | type == "number")
+            and (.size_in_bytes > 0)
+            and (.digest | test("^sha256:[0-9a-f]{64}$"))
+          ' work/promote-gooroom-browser/artifact-metadata.json >/dev/null
+
+          artifact_id="$(jq -r '.id' work/promote-gooroom-browser/artifact-metadata.json)"
+          artifact_digest="$(jq -r '.digest' work/promote-gooroom-browser/artifact-metadata.json)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_digest=$artifact_digest" >> "$GITHUB_OUTPUT"
+          echo "run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download exact browser build artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-browser-exact-arm64-wave5
+          path: work/promote-gooroom-browser/payload
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify immutable checksums at the original locked paths
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=work/promote-gooroom-browser/payload
+          test -f "$target/build-lock.json"
+          test -f "$target/source-lock-evidence.json"
+          test -f "$target/verification-summary.json"
+          test -f "$target/SHA256SUMS"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils dpkg-dev file jq python3
+          python3 -m py_compile arm64/scripts/promote_verified_git_arm64_artifact.py
+
+          # The build manifest records the original runner-relative root.
+          # Recreate that path alias and verify the untouched manifest.
+          test ! -e work/gooroom-browser-arm64
+          ln -s "$(realpath "$target")" work/gooroom-browser-arm64
+          sha256sum --check "$target/SHA256SUMS"
+
+      - name: Independently rescan every DEB and executable payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          result_dir=arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3
+          result="$result_dir/result.json"
+          mkdir -p "$result_dir"
+          python3 arm64/scripts/promote_verified_git_arm64_artifact.py \
+            --source-lock arm64/locks/effective-sources-v3/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --artifact-dir work/promote-gooroom-browser/payload \
+            --source gooroom-browser \
+            --run-id '${{ steps.source.outputs.run_id }}' \
+            --run-url '${{ steps.source.outputs.run_url }}' \
+            --artifact-name gooroom-browser-exact-arm64-wave5 \
+            --result-path "$result"
+
+          jq -n \
+            --argjson schema 1 \
+            --argjson source_run_id '${{ steps.source.outputs.run_id }}' \
+            --arg source_run_url '${{ steps.source.outputs.run_url }}' \
+            --argjson artifact_id '${{ steps.source.outputs.artifact_id }}' \
+            --arg artifact_name gooroom-browser-exact-arm64-wave5 \
+            --arg artifact_digest '${{ steps.source.outputs.artifact_digest }}' \
+            --argjson artifact_size "$(jq -r '.size_in_bytes' work/promote-gooroom-browser/artifact-metadata.json)" \
+            --arg source_run_head_sha "$(jq -r '.head_sha' work/promote-gooroom-browser/source-run.json)" \
+            '{
+              schema:$schema,
+              source_run_id:$source_run_id,
+              source_run_url:$source_run_url,
+              source_run_head_sha:$source_run_head_sha,
+              artifact_id:$artifact_id,
+              artifact_name:$artifact_name,
+              artifact_digest:$artifact_digest,
+              artifact_size:$artifact_size,
+              exact_artifact_locked:true
+            }' > "$result_dir/artifact-lock.json"
+
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "gooroom-browser"
+            and .source_version == "3.5.0-1+grm3u3"
+            and .repository_full_name == "gooroom/gooroom-browser"
+            and .commit_sha == "829ad92a98f523a79c7b30f3d5b604bfaef03eb0"
+            and .tree_sha == "4a5e691645dad54a2a9636dcc21870c66418f978"
+            and .verification.wrong_architecture_executable_count == 0
+            and ([.verification.packages[].architecture] | all(. == "arm64" or . == "all"))
+            and ([.verification.packages[].x86_payload_count] | add == 0)
+            and ([.verification.packages[].foreign_payload_count] | add == 0)
+          ' "$result" >/dev/null
+          jq -e '.exact_artifact_locked == true' "$result_dir/artifact-lock.json" >/dev/null
+
+      - name: Commit exact browser ARM64 evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          result_dir=arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$result_dir"
+          if git diff --cached --quiet; then
+            echo 'The verified browser result is already current.'
+          else
+            git commit -m 'Promote verified Gooroom browser ARM64 build'
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                break
+              fi
+              if [ "$attempt" = 6 ]; then
+                exit 1
+              fi
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Refresh exact package recovery and every coverage gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-port-coverage.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-port-coverage-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
