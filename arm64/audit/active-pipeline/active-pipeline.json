@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 151,
-    "workflow_name_count": 151,
+    "workflow_count": 152,
+    "workflow_name_count": 152,
     "referenced_local_file_count": 242,
     "error_count": 0,
-    "warning_count": 41,
+    "warning_count": 39,
     "passed": true
   },
   "workflows": [
@@ -1963,6 +1963,26 @@
       ]
     },
     {
+      "filename": "arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
+      "path": ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
+      "name": "ARM64 port - promote verified Gooroom applauncher han3u2 artifact",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/scripts/promote_gooroom_applauncher_han3u2.py"
+      ]
+    },
+    {
       "filename": "arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
       "path": ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
       "name": "ARM64 port - promote verified Gooroom applauncher han3u2 artifacts",
@@ -3230,6 +3250,7 @@
     ],
     "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml"
     ],
     "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json": [
@@ -3244,6 +3265,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
       ".github/workflows/arm64-port-coverage.yml",
+      ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
       ".github/workflows/arm64-source-authority-v5.yml"
@@ -3692,6 +3714,7 @@
     ],
     "arm64/scripts/promote_gooroom_applauncher_han3u2.py": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml"
     ],
     "arm64/scripts/promote_gooroom_greeter_han3u2.py": [
@@ -4053,11 +4076,6 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
-      "local_path": "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-build-qtbase-targeted.yml",
       "local_path": "arm64/locks/targeted-sources/qtbase-opensource-src/5.15.2+dfsg-9+grm3u1/targeted-source-lock.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -4175,11 +4193,6 @@
     {
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
-      "local_path": "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
