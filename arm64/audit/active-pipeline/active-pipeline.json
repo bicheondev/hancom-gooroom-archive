@@ -2311,44 +2311,22 @@
       "path": ".github/workflows/arm64-source-authority-v3.yml",
       "name": "ARM64 port - merge exact source authority v3",
       "events": [
-        "push",
         "workflow_dispatch"
       ],
       "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/sources-api-baseline/source-lock.json",
-        "arm64/locks/sources/source-lock.json",
-        "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
-        "arm64/locks/wayback-sources/wayback-source-release-lock.json",
-        "arm64/scripts/merge_exact_source_authority_v3.py"
-      ]
+      "uses": [],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-source-authority-v4.yml",
       "path": ".github/workflows/arm64-source-authority-v4.yml",
       "name": "ARM64 port - exact source authority controller v4",
       "events": [
-        "push",
         "workflow_dispatch"
       ],
       "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/locks/reference/amd64-reference.json",
-        "arm64/locks/sources-api-baseline/source-lock.json",
-        "arm64/locks/sources/source-lock.json",
-        "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json",
-        "arm64/locks/wayback-sources/wayback-source-release-lock.json",
-        "arm64/scripts/merge_exact_source_authority_v3.py"
-      ]
+      "uses": [],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-source-authority-v5.yml",
@@ -3176,8 +3154,6 @@
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
       ".github/workflows/arm64-retry-wave1-full-binary.yml",
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-source-fork-history.yml",
       ".github/workflows/arm64-source-lock-exhaustive.yml",
@@ -3219,15 +3195,11 @@
       ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       ".github/workflows/arm64-retry-wave1-full-binary.yml",
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-lock.yml"
     ],
     "arm64/locks/sources/source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
-      ".github/workflows/arm64-merge-effective-source-lock.yml",
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml"
+      ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/locks/stage0-recovery/release-lock.json": [
       ".github/workflows/arm64-recovery-stage0-v1.yml",
@@ -3250,8 +3222,6 @@
     ],
     "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
@@ -3269,8 +3239,6 @@
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
     "arm64/locks/wayback-sources/wayback-source-release-lock.json": [
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
     ],
@@ -3544,8 +3512,6 @@
       ".github/workflows/arm64-merge-effective-source-lock.yml"
     ],
     "arm64/scripts/merge_exact_source_authority_v3.py": [
-      ".github/workflows/arm64-source-authority-v3.yml",
-      ".github/workflows/arm64-source-authority-v4.yml",
       ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/scripts/merge_exact_source_locks.py": [
