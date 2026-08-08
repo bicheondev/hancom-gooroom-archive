@@ -191,7 +191,9 @@ jobs:
           test "$(dpkg-deb -f "$TARGET_DEB" Version)" = "$TARGET_VERSION"
           test "$(dpkg-deb -f "$TARGET_DEB" Architecture)" = amd64
           source_field="$(dpkg-deb -f "$TARGET_DEB" Source || true)"
-          test "${source_field%% *}" = "$TARGET_PACKAGE"
+          source_name="${source_field%% *}"
+          test -n "$source_name" || source_name="$TARGET_PACKAGE"
+          test "$source_name" = "$TARGET_PACKAGE"
 
       - name: Fetch and verify public base authority
         run: |
