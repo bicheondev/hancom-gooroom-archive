@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 145,
     "workflow_name_count": 145,
-    "referenced_local_file_count": 227,
+    "referenced_local_file_count": 229,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -514,7 +514,7 @@
     {
       "filename": "arm64-build-reconstructed-libsecurity-extensions-v2.yml",
       "path": ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml",
-      "name": "ARM64 port - build reconstructed exact libsecurity extensions",
+      "name": "ARM64 port - build verified reconstructed libsecurity extensions",
       "events": [
         "push",
         "workflow_dispatch"
@@ -525,7 +525,9 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
+        "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json",
         "arm64/scripts/build_reconstructed_libsecurity_extensions_arm64_v2.sh",
+        "arm64/scripts/promote_reconstructed_libsecurity_result.py",
         "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py"
       ]
     },
@@ -3102,6 +3104,9 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
     ],
+    "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json": [
+      ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
+    ],
     "arm64/locks/reconstructed-sources/source-locks.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
@@ -3549,6 +3554,9 @@
     "arm64/scripts/promote_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
+    ],
+    "arm64/scripts/promote_reconstructed_libsecurity_result.py": [
+      ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
     ],
     "arm64/scripts/promote_source_archive_lock.py": [
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
