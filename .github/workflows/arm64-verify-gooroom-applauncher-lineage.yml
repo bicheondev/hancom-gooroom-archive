@@ -1,0 +1,83 @@
+name: ARM64 port - verify Gooroom applauncher source lineage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-verify-gooroom-applauncher-lineage.yml'
+      - 'arm64/scripts/run_gooroom_applauncher_lineage_build.sh'
+      - 'arm64/scripts/verify_gooroom_applauncher_lineage.py'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/source-lineage-lock.json'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-verify-applauncher-lineage
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: debian:bullseye
+    env:
+      INPUT_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json
+      LINEAGE_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/source-lineage-lock.json
+
+    steps:
+      - name: Install deterministic build and verification tools
+        run: |
+          set -euxo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            bash binutils build-essential ca-certificates curl debhelper devscripts \
+            diffutils dpkg-dev equivs fakeroot file git gzip jq pkg-config \
+            python3 tar unzip xz-utils
+
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate reconstruction tooling
+        run: |
+          set -euxo pipefail
+          bash -n arm64/scripts/run_gooroom_applauncher_lineage_build.sh
+          python3 -m py_compile \
+            arm64/scripts/verify_gooroom_applauncher_lineage.py
+          jq -e '.schema == 1 and .claims.byte_identity_claimed == false' \
+            "$LINEAGE_LOCK" >/dev/null
+
+      - name: Reconstruct, build, and compare the public lineage candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/run_gooroom_applauncher_lineage_build.sh \
+            arm64/scripts/verify_gooroom_applauncher_lineage.py
+          rm -rf work/gooroom-applauncher-lineage
+          arm64/scripts/run_gooroom_applauncher_lineage_build.sh \
+            "$INPUT_LOCK" \
+            "$LINEAGE_LOCK" \
+            work/gooroom-applauncher-lineage
+
+      - name: Upload source-lineage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-applauncher-han3u2-source-lineage-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+          path: work/gooroom-applauncher-lineage
