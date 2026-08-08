@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 150,
     "workflow_name_count": 150,
-    "referenced_local_file_count": 238,
+    "referenced_local_file_count": 239,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -2874,7 +2874,8 @@
         "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py",
         "arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py",
         "arm64/scripts/run_gooroom_applauncher_lineage_build.sh",
-        "arm64/scripts/verify_gooroom_applauncher_lineage.py"
+        "arm64/scripts/verify_gooroom_applauncher_lineage.py",
+        "arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py"
       ]
     },
     {
@@ -3940,6 +3941,9 @@
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
     "arm64/scripts/verify_gooroom_applauncher_lineage.py": [
+      ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
+    ],
+    "arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
     ],
     "arm64/scripts/verify_gooroom_greeter_arm64.py": [
