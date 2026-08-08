@@ -1,0 +1,75 @@
+name: ARM64 port - extract Gooroom applauncher Hancom deep diff
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-extract-gooroom-applauncher-han3u2.yml'
+      - 'arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-extract-applauncher-han3u2
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: debian:bullseye
+    env:
+      INPUT_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json
+
+    steps:
+      - name: Install deterministic audit and build tools
+        run: |
+          set -euxo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            bash binutils build-essential ca-certificates curl debhelper devscripts \
+            diffutils dpkg-dev equivs fakeroot file git gzip jq pkg-config \
+            python3 tar unzip xz-utils
+
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate and run exact deep-diff extraction
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          bash -n arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh
+          rm -rf work/deep-diff
+          bash -a arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh \
+            "$INPUT_LOCK" \
+            work/deep-diff
+          jq -e '
+            .audit_complete == true and
+            .analysis_status == "deep-diff-collected" and
+            .claims.source_status == "comparison-only" and
+            .claims.reconstruction_status == "not-attempted" and
+            .claims.byte_identity_claimed == false
+          ' work/deep-diff/manifest.json >/dev/null
+
+      - name: Upload deep-diff evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-applauncher-han3u2-deep-diff-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+          path: work/deep-diff
