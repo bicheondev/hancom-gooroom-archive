@@ -9,6 +9,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+RECONSTRUCTED_SOURCE_TYPES = {
+    "reconstructed-git-tree",
+    "verified-reconstructed-git-tree",
+}
+
 
 def load_optional(path: Path | None) -> dict[str, Any]:
     if path is None or not path.exists():
@@ -45,14 +50,24 @@ def latest_results(root: Path) -> dict[tuple[str, str], tuple[dict[str, Any], Pa
     return {key: (row, path) for key, (row, path, _) in rows.items()}
 
 
+def normalize_source_type(value: Any) -> str:
+    source_type = str(value or "git")
+    if source_type in RECONSTRUCTED_SOURCE_TYPES:
+        return "reconstructed-git-tree"
+    return source_type
+
+
 def authority_identity(source_row: dict[str, Any]) -> tuple[str, str] | None:
     selected = source_row.get("selected")
     if not isinstance(selected, dict):
         return None
-    source_type = selected.get("type", "git")
+    source_type = normalize_source_type(selected.get("type", "git"))
     if source_type == "git":
         value = selected.get("tree_sha")
         return ("git", value) if value else None
+    if source_type == "reconstructed-git-tree":
+        value = selected.get("tree_sha") or selected.get("reconstructed_tree_sha")
+        return ("reconstructed-git-tree", value) if value else None
     if source_type == "dsc":
         dsc = selected.get("dsc") if isinstance(selected.get("dsc"), dict) else {}
         value = dsc.get("sha256")
@@ -67,7 +82,7 @@ def result_identity(result: dict[str, Any]) -> tuple[str, str] | None:
         if isinstance(result.get("source_lock_evidence"), dict)
         else {}
     )
-    source_type = (
+    source_type = normalize_source_type(
         result.get("source_type")
         or build_lock.get("source_type")
         or evidence.get("source_type")
@@ -80,6 +95,13 @@ def result_identity(result: dict[str, Any]) -> tuple[str, str] | None:
             or evidence.get("tree_sha")
         )
         return ("git", value) if value else None
+    if source_type == "reconstructed-git-tree":
+        value = (
+            result.get("tree_sha")
+            or build_lock.get("reconstructed_tree_sha")
+            or evidence.get("reconstructed_tree_sha")
+        )
+        return ("reconstructed-git-tree", value) if value else None
     if source_type == "dsc":
         dsc = build_lock.get("dsc") if isinstance(build_lock.get("dsc"), dict) else {}
         if not dsc:
@@ -89,14 +111,31 @@ def result_identity(result: dict[str, Any]) -> tuple[str, str] | None:
     return None
 
 
-def verification_passed(result_path: Path) -> bool:
+def embedded_verification_passed(result: dict[str, Any]) -> bool:
+    if result.get("verification_passed") is True:
+        return True
+    for key in ("verification", "verification_summary"):
+        value = result.get(key)
+        if not isinstance(value, dict):
+            continue
+        summary = nested_summary(value)
+        if any(summary.get(field) is True for field in ("passed", "verified")):
+            return True
+    return False
+
+
+def verification_passed(result: dict[str, Any], result_path: Path) -> bool:
+    if embedded_verification_passed(result):
+        return True
     path = result_path.parent / "verification.json"
     if not path.exists():
         return False
     try:
-        return json.loads(path.read_text(encoding="utf-8")).get("passed") is True
+        document = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return False
+    summary = nested_summary(document)
+    return any(summary.get(field) is True for field in ("passed", "verified"))
 
 
 def source_status_rows(lock: dict[str, Any]) -> list[dict[str, Any]]:
@@ -193,7 +232,7 @@ def main() -> int:
                 }
             )
             continue
-        if result.get("passed") is not True or not verification_passed(path):
+        if result.get("passed") is not True or not verification_passed(result, path):
             native_blockers.append(
                 {
                     "source": key[0],
