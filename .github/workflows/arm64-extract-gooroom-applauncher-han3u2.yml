@@ -61,27 +61,29 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
-          replacements = {
-              'for symbol in dragsource_initialize applauncher_icon_get_path; do':
-                  'for symbol in applauncher_appitem_get_path applauncher_appitem_get_drag_surface; do',
-              "awk '$8 == \"dragsource_initialize\" || $8 == \"applauncher_icon_get_path\" {print}'":
-                  "awk '$8 == \"applauncher_appitem_get_path\" || $8 == \"applauncher_appitem_get_drag_surface\" {print}'",
-              '- Confirmed Hancom-only exports: `dragsource_initialize`, `applauncher_icon_get_path`':
-                  '- Confirmed Hancom-only exports: `applauncher_appitem_get_path`, `applauncher_appitem_get_drag_surface`',
-              '        "applauncher_icon_get_path",\n        "dragsource_initialize",':
-                  '        "applauncher_appitem_get_drag_surface",\n        "applauncher_appitem_get_path",',
-              'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n[[':
-                  'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n'
-                  'export ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \\\n'
-                  '  ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \\\n'
-                  '  TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \\\n'
-                  '  BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE\n\n[[',
+          symbol_replacements = {
+              'dragsource_initialize': 'applauncher_appitem_get_path',
+              'applauncher_icon_get_path': 'applauncher_appitem_get_drag_surface',
           }
-          for old, new in replacements.items():
+          for old, new in symbol_replacements.items():
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'expected one occurrence, found {count}: {old!r}')
+              if count < 3:
+                  raise SystemExit(
+                      f'expected at least three provisional references, found {count}: {old}'
+                  )
               text = text.replace(old, new)
+
+          marker = 'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n[['
+          replacement = (
+              'BASE_TREE="$(jq -r \'.base_source.tree\' "$INPUT_LOCK")"\n\n'
+              'export ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \\\n'
+              '  ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \\\n'
+              '  TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \\\n'
+              '  BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE\n\n[['
+          )
+          if text.count(marker) != 1:
+              raise SystemExit('could not locate the authority export insertion point')
+          text = text.replace(marker, replacement)
           path.write_text(text, encoding='utf-8')
           PY
 
