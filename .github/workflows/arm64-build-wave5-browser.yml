@@ -5,28 +5,38 @@ on:
     branches: [arm64-port]
     paths:
       - '.github/workflows/arm64-build-wave5-browser.yml'
-      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64_component_compat.sh'
+      - 'arm64/scripts/run_locked_source_arm64_component_ccache.sh'
       - 'arm64/scripts/prepare_composite_source_chroot.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
-      - 'arm64/locks/source-components/**'
-      - 'arm64/locks/effective-sources/**'
-      - 'arm64/locks/reference/**'
+      - 'arm64/locks/source-components/gooroom-browser.json'
+      - 'arm64/locks/reference/amd64-reference.json'
   workflow_dispatch:
+    inputs:
+      round:
+        description: Rolling compiler-cache build round
+        required: true
+        default: '1'
 
 permissions:
+  actions: write
   contents: read
 
 concurrency:
-  group: hancom-gooroom-33-arm64-build-browser
-  cancel-in-progress: true
+  group: hancom-gooroom-33-arm64-build-browser-resumable
+  cancel-in-progress: false
+
+env:
+  ROUND: ${{ inputs.round || '1' }}
+  CACHE_PREFIX: hancom-gooroom-browser-arm64-ccache-v1-829ad92-a9fd234e
+  CACHE_DIR: ${{ github.workspace }}/work/gooroom-browser-ccache
 
 jobs:
   browser:
-    name: gooroom-browser
+    name: gooroom-browser round ${{ inputs.round || '1' }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 360
+    timeout-minutes: 355
 
     steps:
       - name: Check out exact locks and builders
@@ -40,6 +50,10 @@ jobs:
           case "$(uname -m)" in
             aarch64|arm64) ;;
             *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          case "$ROUND" in
+            1|2|3|4) ;;
+            *) echo "round must be between 1 and 4: $ROUND" >&2; exit 1 ;;
           esac
           docker version
           docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
@@ -71,29 +85,61 @@ jobs:
           sudo swapon --show || true
           df -h / /mnt
 
-      - name: Build exact locked Gooroom browser source for ARM64
+      - name: Restore the newest exact-source compiler cache
+        id: restore-ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ env.CACHE_PREFIX }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ env.CACHE_PREFIX }}-
+
+      - name: Preflight every asserted wrapper transformation
+        env:
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
+          HANCOM_GOOROOM_CCACHE_DIR: ${{ env.CACHE_DIR }}
+          HANCOM_GOOROOM_CCACHE_MAXSIZE: 5G
+          HANCOM_GOOROOM_BUILD_JOBS: '3'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_component_compat.sh \
+            arm64/scripts/run_locked_source_arm64_component_ccache.sh \
+            arm64/scripts/prepare_composite_source_chroot.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
+          bash -n arm64/scripts/run_locked_source_arm64_component_ccache.sh
+          set +e
+          arm64/scripts/run_locked_source_arm64_component_ccache.sh
+          rc=$?
+          set -e
+          test "$rc" -eq 64
+
+      - name: Build exact locked Gooroom browser source with a rolling cache
+        id: build
         env:
           HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
           HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
+          HANCOM_GOOROOM_CCACHE_DIR: ${{ env.CACHE_DIR }}
+          HANCOM_GOOROOM_CCACHE_MAXSIZE: 5G
           HANCOM_GOOROOM_BUILD_JOBS: '3'
           SOURCE_NAME: gooroom-browser
+        shell: bash
         run: |
           set -euxo pipefail
           ulimit -c 0
-          chmod +x \
-            arm64/scripts/build_locked_source_arm64_v2.sh \
-            arm64/scripts/run_locked_source_arm64.sh \
-            arm64/scripts/run_locked_source_arm64_component_compat.sh \
-            arm64/scripts/prepare_composite_source_chroot.sh \
-            arm64/scripts/verify_locked_arm64_build.sh
+          mkdir -p "$CACHE_DIR"
           rm -rf work/gooroom-browser-arm64
 
           heartbeat() {
             while sleep 60; do
-              echo "=== browser build heartbeat $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+              echo "=== browser build round $ROUND heartbeat $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
               free -h
               df -h / /mnt
+              du -sh "$CACHE_DIR" 2>/dev/null || true
               docker stats --no-stream || true
             done
           }
@@ -101,28 +147,105 @@ jobs:
           heartbeat_pid=$!
           trap 'kill "$heartbeat_pid" 2>/dev/null || true' EXIT
 
-          arm64/scripts/run_locked_source_arm64_component_compat.sh \
-            arm64/locks/effective-sources/effective-source-lock.json \
-            gooroom-browser \
-            work/gooroom-browser-arm64
+          set +e
+          timeout --signal=TERM --kill-after=120s 285m \
+            arm64/scripts/run_locked_source_arm64_component_ccache.sh \
+              arm64/locks/effective-sources-v3/effective-source-lock.json \
+              gooroom-browser \
+              work/gooroom-browser-arm64
+          rc=$?
+          set -e
+          kill "$heartbeat_pid" 2>/dev/null || true
+          trap - EXIT
+
+          complete=false
+          hard_failure=false
+          if [ "$rc" -eq 0 ] \
+             && find work/gooroom-browser-arm64 -maxdepth 1 -type f -name '*.deb' \
+                  -print -quit | grep -q .; then
+            complete=true
+          elif [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ] || [ "$rc" -eq 143 ]; then
+            echo "Round $ROUND reached the graceful cache-save boundary (rc=$rc)."
+          else
+            hard_failure=true
+            echo "Browser build stopped before the graceful boundary (rc=$rc)." >&2
+          fi
+
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+          echo "hard_failure=$hard_failure" >> "$GITHUB_OUTPUT"
+          echo "build_rc=$rc" >> "$GITHUB_OUTPUT"
+          echo "cache_ready=true" >> "$GITHUB_OUTPUT"
+          du -sh "$CACHE_DIR" || true
+          find work/gooroom-browser-arm64 -maxdepth 2 -type f -printf '%p %s bytes\n' \
+            | sort | tail -100 || true
+
+      - name: Save the updated rolling compiler cache
+        if: always() && steps.build.outputs.cache_ready == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ env.CACHE_PREFIX }}-${{ github.run_id }}
+
+      - name: Upload partial-round diagnostics
+        if: always() && steps.build.outputs.complete != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-browser-arm64-ccache-round-${{ env.ROUND }}-${{ github.run_id }}
+          path: work/gooroom-browser-arm64
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 9
 
       - name: Verify browser source, version, architecture, and payload machine types
+        if: steps.build.outputs.complete == 'true'
         env:
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
           HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
         run: |
           set -euxo pipefail
           arm64/scripts/verify_locked_arm64_build.sh \
-            arm64/locks/effective-sources/effective-source-lock.json \
+            arm64/locks/effective-sources-v3/effective-source-lock.json \
             gooroom-browser \
             work/gooroom-browser-arm64
 
-      - name: Upload exact browser DEBs and diagnostics
-        if: always()
+      - name: Upload exact browser DEBs and verification evidence
+        if: steps.build.outputs.complete == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: gooroom-browser-exact-arm64-wave5
           path: work/gooroom-browser-arm64
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           compression-level: 9
+
+      - name: Dispatch the next cache round when compilation is incomplete
+        if: >-
+          steps.build.outputs.complete != 'true' &&
+          steps.build.outputs.hard_failure != 'true' &&
+          fromJSON(env.ROUND) < 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          next_round=$((ROUND + 1))
+          gh workflow run arm64-build-wave5-browser.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port \
+            -f round="$next_round"
+
+      - name: Preserve fail-closed incomplete or hard-failure conclusion
+        if: steps.build.outputs.complete != 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ '${{ steps.build.outputs.hard_failure }}' = true ]; then
+            echo "Exact browser build failed before its cache boundary (rc=${{ steps.build.outputs.build_rc }})." >&2
+          elif [ "$ROUND" -lt 4 ]; then
+            echo "Round $ROUND was saved and round $((ROUND + 1)) was dispatched." >&2
+          else
+            echo 'Four bounded cache rounds completed without producing the exact browser DEBs.' >&2
+          fi
+          exit 1
