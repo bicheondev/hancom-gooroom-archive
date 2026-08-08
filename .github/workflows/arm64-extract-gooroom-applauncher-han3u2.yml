@@ -54,14 +54,17 @@ jobs:
           bash -n arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh
           rm -rf work/deep-diff
 
-          # Mark only the evidence variables as exported. Their values are
-          # loaded and validated by the child script; avoiding `bash -a`
-          # prevents shell-internal variables from contaminating libtoolize.
-          export \
+          # Imported environment variables retain their export attribute when
+          # the child script replaces these placeholders with lock-file data.
+          # Exporting a real placeholder, rather than an unset name, also
+          # ensures the variables are present in Python subprocesses.
+          for evidence_var in \
             ARTIFACT_ID ARTIFACT_NAME ARTIFACT_SIZE ARTIFACT_DIGEST \
             ARTIFACT_RUN_ID ARTIFACT_HEAD_BRANCH ARTIFACT_HEAD_SHA \
             TARGET_URL TARGET_FILENAME TARGET_SHA256 TARGET_PACKAGE TARGET_VERSION \
-            BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE RETRIEVAL
+            BASE_REPOSITORY BASE_VERSION BASE_COMMIT BASE_TREE RETRIEVAL; do
+            export "${evidence_var}=__loaded_from_input_lock__"
+          done
 
           bash arm64/scripts/run_gooroom_applauncher_han3u2_deep_diff.sh \
             "$INPUT_LOCK" \
