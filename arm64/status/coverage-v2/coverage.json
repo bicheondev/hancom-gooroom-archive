@@ -5,13 +5,13 @@
     "reference_package_count": 1279,
     "reference_source_count": 800,
     "source_target_count": 74,
-    "source_resolved_count": 54,
-    "git_source_count": 54,
+    "source_resolved_count": 59,
+    "git_source_count": 58,
     "signed_dsc_source_count": 0,
-    "source_blocker_count": 13,
-    "native_rebuild_source_count": 35,
-    "native_rebuild_passed_count": 31,
-    "native_rebuild_blocker_count": 4,
+    "source_blocker_count": 8,
+    "native_rebuild_source_count": 40,
+    "native_rebuild_passed_count": 35,
+    "native_rebuild_blocker_count": 5,
     "normalized_package_count": 0,
     "normalized_status_counts": {},
     "expected_rebuilt_package_count": 0,
@@ -31,14 +31,6 @@
   },
   "source_blockers": [
     {
-      "source": "cups-pk-helper",
-      "source_version": "0.2.6-1ubuntu3+grm3u1",
-      "role": "rebuild-arm64",
-      "status": "ambiguous-exact-git-source",
-      "provenance": "conflicting-exact-git-trees",
-      "reason": "exact-source-authority-unresolved"
-    },
-    {
       "source": "gnome-flashback",
       "source_version": "3.38.0-2+grm3u2+han3u4",
       "role": "rebuild-arm64",
@@ -57,14 +49,6 @@
     {
       "source": "gooroom-dockbarx-applet",
       "source_version": "0.3.1+grm3u1+han3u1",
-      "role": "rebuild-arm64",
-      "status": "unresolved-exact-source",
-      "provenance": null,
-      "reason": "exact-source-authority-unresolved"
-    },
-    {
-      "source": "gooroom-greeter",
-      "source_version": "0.3.1+grm3u1+han3u2",
       "role": "rebuild-arm64",
       "status": "unresolved-exact-source",
       "provenance": null,
@@ -95,35 +79,11 @@
       "reason": "exact-source-authority-unresolved"
     },
     {
-      "source": "gooroom-software",
-      "source_version": "3.30.6+5+grm3u6",
-      "role": "rebuild-arm64",
-      "status": "ambiguous-exact-git-source",
-      "provenance": "conflicting-exact-git-trees",
-      "reason": "exact-source-authority-unresolved"
-    },
-    {
-      "source": "lightdm",
-      "source_version": "1.26.0-7+grm3u1",
-      "role": "rebuild-arm64",
-      "status": "ambiguous-exact-git-source",
-      "provenance": "conflicting-exact-git-trees",
-      "reason": "exact-source-authority-unresolved"
-    },
-    {
       "source": "linux",
       "source_version": "5.10.179-1+grm3u1",
       "role": "rebuild-arm64",
       "status": "unresolved-exact-source",
       "provenance": null,
-      "reason": "exact-source-authority-unresolved"
-    },
-    {
-      "source": "policykit-1",
-      "source_version": "0.105-31+nDeb11u1+grm3u1",
-      "role": "rebuild-arm64",
-      "status": "ambiguous-exact-git-source",
-      "provenance": "conflicting-exact-git-trees",
       "reason": "exact-source-authority-unresolved"
     },
     {
@@ -152,6 +112,16 @@
       "authority": [
         "git",
         "23fece2fc9e01cc75e10884e0206f3fd09982804"
+      ],
+      "actions_run_id": "31101738881",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881"
+    },
+    {
+      "source": "cups-pk-helper",
+      "source_version": "0.2.6-1ubuntu3+grm3u1",
+      "authority": [
+        "git",
+        "8e016f0c497e909186752f250d49ca1efb0ce561"
       ],
       "actions_run_id": "31101738881",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31101738881"
@@ -287,6 +257,16 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102922971"
     },
     {
+      "source": "gooroom-software",
+      "source_version": "3.30.6+5+grm3u6",
+      "authority": [
+        "git",
+        "5181988d917696bc0159edae219f1dcb5dd5fe09"
+      ],
+      "actions_run_id": "31103830214",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214"
+    },
+    {
       "source": "gtk+2.0",
       "source_version": "2.24.33-2+grm3u1",
       "authority": [
@@ -345,6 +325,16 @@
       ],
       "actions_run_id": "31104940988",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31104940988"
+    },
+    {
+      "source": "lightdm",
+      "source_version": "1.26.0-7+grm3u1",
+      "authority": [
+        "git",
+        "aef7445a73e7240dc68bf83edf506ad5f1bd0ce3"
+      ],
+      "actions_run_id": "31103830214",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103830214"
     },
     {
       "source": "metacity",
@@ -427,6 +417,16 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31103220338"
     },
     {
+      "source": "policykit-1",
+      "source_version": "0.105-31+nDeb11u1+grm3u1",
+      "authority": [
+        "git",
+        "c636768dd74927fb948b0c4527966a110de5516b"
+      ],
+      "actions_run_id": "31089491039",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039"
+    },
+    {
       "source": "synaptic",
       "source_version": "0.90.2+grm3u3",
       "authority": [
@@ -468,6 +468,15 @@
       "actions_run_id": "31102459428",
       "build_outcome": "failure",
       "verify_outcome": "skipped"
+    },
+    {
+      "source": "gooroom-greeter",
+      "source_version": "0.3.1+grm3u1+han3u2",
+      "reason": "latest-exact-authority-build-not-verified",
+      "authority": null,
+      "actions_run_id": "31228368554",
+      "build_outcome": "success",
+      "verify_outcome": "success"
     },
     {
       "source": "gooroom-libsecurity-extensions",
