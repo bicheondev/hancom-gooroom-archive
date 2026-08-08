@@ -43,22 +43,23 @@ jobs:
           esac
           docker version
           docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          nproc
           free -h
           df -h
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             git jq dpkg-dev ca-certificates file python3
 
-      - name: Provision bounded swap for the heavyweight native compile
+      - name: Provision bounded swap for the three-job native compile
         shell: bash
         run: |
           set -euxo pipefail
           swap_file=/mnt/hancom-gooroom-browser.swap
           total_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
           available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
-          if [ "$total_swap_mb" -lt 2048 ] && [ "$available_mb" -ge 12288 ]; then
+          if [ "$total_swap_mb" -lt 4096 ] && [ "$available_mb" -ge 20480 ]; then
             sudo rm -f "$swap_file"
-            sudo fallocate -l 4G "$swap_file"
+            sudo fallocate -l 8G "$swap_file"
             sudo chmod 600 "$swap_file"
             if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
               sudo sysctl -w vm.swappiness=15 || true
@@ -75,7 +76,7 @@ jobs:
           HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
           HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
-          HANCOM_GOOROOM_BUILD_JOBS: '2'
+          HANCOM_GOOROOM_BUILD_JOBS: '3'
           SOURCE_NAME: gooroom-browser
         run: |
           set -euxo pipefail
