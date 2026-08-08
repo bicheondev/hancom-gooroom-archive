@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 149,
-    "workflow_name_count": 149,
-    "referenced_local_file_count": 238,
+    "workflow_count": 150,
+    "workflow_name_count": 150,
+    "referenced_local_file_count": 242,
     "error_count": 0,
-    "warning_count": 39,
+    "warning_count": 40,
     "passed": true
   },
   "workflows": [
@@ -463,6 +463,32 @@
         "arm64/scripts/build_locked_source_arm64.sh",
         "arm64/scripts/run_p7zip_full_binary_arm64.sh",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      "path": ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      "name": "ARM64 port - build and promote reconstructed Gooroom applauncher han3u2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh",
+        "arm64/scripts/promote_gooroom_applauncher_han3u2.py",
+        "arm64/scripts/verify_gooroom_applauncher_arm64.py"
       ]
     },
     {
@@ -3182,6 +3208,9 @@
     "arm64/locks/rebuild-results/gnome-control-center/1_3.38.4-1_grm3u9/result.json": [
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml"
     ],
+    "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json": [
+      ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
+    ],
     "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
@@ -3192,6 +3221,7 @@
     "arm64/locks/reconstructed-sources/source-locks.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
+      ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
       ".github/workflows/arm64-source-authority-v5.yml"
@@ -3394,6 +3424,9 @@
     ],
     "arm64/scripts/build_final_arm64_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
+    ],
+    "arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh": [
+      ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
     ],
     "arm64/scripts/build_gooroom_greeter_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
@@ -3634,6 +3667,9 @@
     ],
     "arm64/scripts/probe_wayback_blocker_dsc.py": [
       ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
+    ],
+    "arm64/scripts/promote_gooroom_applauncher_han3u2.py": [
+      ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
     ],
     "arm64/scripts/promote_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
@@ -3919,6 +3955,9 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
+    "arm64/scripts/verify_gooroom_applauncher_arm64.py": [
+      ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
+    ],
     "arm64/scripts/verify_gooroom_applauncher_lineage.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
     ],
@@ -3988,6 +4027,11 @@
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
       "local_path": "arm64/locks/final-rootfs-v2/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      "local_path": "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
