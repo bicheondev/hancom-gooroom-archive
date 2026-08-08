@@ -1,0 +1,123 @@
+name: ARM64 port - promote verified Gooroom greeter han3u2 artifacts
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml'
+      - 'arm64/scripts/promote_gooroom_greeter_han3u2.py'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Workflow run containing the verified source and ARM64 artifacts
+        required: true
+        default: '31228368554'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-greeter-han3u2-artifacts
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '31228368554' }}
+  VERSION: 0.3.1+grm3u1+han3u2
+
+jobs:
+  promote:
+    name: Recover hidden debug payload and promote immutable evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out current ARM64 evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download verified source authority from the successful build run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-greeter-han3u2-verified-source-v2
+          path: work/promote/source
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download verified ARM64 build from the successful build run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gooroom-greeter-han3u2-exact-arm64-v2
+          path: work/promote/arm64
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Restore upload-artifact-excluded debug build-id payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          debug_deb="$(find work/promote/arm64/debs -maxdepth 1 -type f \
+            -name 'gooroom-greeter-dbgsym_*_arm64.deb' -print -quit)"
+          test -n "$debug_deb"
+          mkdir -p work/promote/arm64/extracted/gooroom-greeter-dbgsym
+          dpkg-deb -x "$debug_deb" \
+            work/promote/arm64/extracted/gooroom-greeter-dbgsym
+          missing_build_id="$(awk '
+            /\/\.build-id\// {
+              line=$0
+              sub(/^[[:xdigit:]]+[[:space:]]+\*?/, "", line)
+              print line
+              exit
+            }
+          ' work/promote/arm64/SHA256SUMS)"
+          test -n "$missing_build_id"
+          test -f "work/promote/arm64/$missing_build_id"
+
+      - name: Verify and generate immutable promotion records
+        shell: bash
+        env:
+          SOURCE_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ env.SOURCE_RUN_ID }}
+        run: |
+          set -euxo pipefail
+          (cd work/promote/source && sha256sum --check LOCKSUMS.sha256)
+          (cd work/promote/arm64 && sha256sum --check SHA256SUMS)
+          python3 arm64/scripts/promote_gooroom_greeter_han3u2.py \
+            --source-artifact work/promote/source \
+            --arm64-artifact work/promote/arm64 \
+            --repository-root . \
+            --run-id "$SOURCE_RUN_ID" \
+            --run-url "$SOURCE_RUN_URL"
+          result=arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "gooroom-greeter"
+            and .source_version == "0.3.1+grm3u1+han3u2"
+          ' "$result" >/dev/null
+
+      - name: Commit exact source and ARM64 result locks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2 \
+            arm64/locks/gooroom-greeter-han3u2-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          if git diff --cached --quiet; then
+            echo 'Verified promotion records are already current.'
+            exit 0
+          fi
+          git commit -m 'Promote verified gooroom-greeter han3u2 ARM64 build'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
