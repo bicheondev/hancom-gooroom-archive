@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 144,
-    "workflow_name_count": 144,
+    "workflow_count": 145,
+    "workflow_name_count": 145,
     "referenced_local_file_count": 225,
     "error_count": 1,
-    "warning_count": 46,
+    "warning_count": 48,
     "passed": false
   },
   "workflows": [
@@ -1898,6 +1898,26 @@
       ]
     },
     {
+      "filename": "arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      "path": ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      "name": "ARM64 port - promote verified Gooroom greeter han3u2 artifacts",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/scripts/promote_gooroom_greeter_han3u2.py"
+      ]
+    },
+    {
       "filename": "arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "name": "ARM64 port - promote verified Gooroom libsecurity source lock v1",
@@ -3098,12 +3118,14 @@
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
     "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json": [
-      ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
+      ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
+      ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
     ],
     "arm64/locks/reconstructed-sources/source-locks.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
-      ".github/workflows/arm64-port-coverage.yml"
+      ".github/workflows/arm64-port-coverage.yml",
+      ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
     ],
     "arm64/locks/recovered-package-pool/latest/artifact-lock.json": [
       ".github/workflows/arm64-archaeology-recovered-package-blockers.yml"
@@ -3549,7 +3571,8 @@
       ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
     ],
     "arm64/scripts/promote_gooroom_greeter_han3u2.py": [
-      ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
+      ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
+      ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
     ],
     "arm64/scripts/promote_source_archive_lock.py": [
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
@@ -4033,6 +4056,16 @@
     },
     {
       "path": ".github/workflows/arm64-port-coverage.yml",
+      "local_path": "arm64/locks/reconstructed-sources/source-locks.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      "local_path": "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
       "local_path": "arm64/locks/reconstructed-sources/source-locks.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
