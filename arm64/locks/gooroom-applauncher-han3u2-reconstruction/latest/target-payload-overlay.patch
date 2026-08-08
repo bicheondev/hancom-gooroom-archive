@@ -1,0 +1,426 @@
+diff --git a/data/gooroom-applauncher-applet.svg b/data/gooroom-applauncher-applet.svg
+index c130f00..27674c7 100644
+--- a/data/gooroom-applauncher-applet.svg
++++ b/data/gooroom-applauncher-applet.svg
+@@ -1,13 +1,11 @@
+-<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+-    <g transform="translate(4 4)" fill="none" fill-rule="evenodd">
+-        <rect fill="#FFF" x="12" y="12" width="4" height="4" rx="2"/>
+-        <rect fill="#FFF" x="6" y="12" width="4" height="4" rx="2"/>
+-        <rect fill="#EC1B23" y="12" width="4" height="4" rx="2"/>
+-        <rect fill="#FFF" x="12" y="6" width="4" height="4" rx="2"/>
+-        <rect fill="#F69332" x="6" y="6" width="4" height="4" rx="2"/>
+-        <rect fill="#9A50D7" y="6" width="4" height="4" rx="2"/>
+-        <rect fill="#00A4E4" x="12" width="4" height="4" rx="2"/>
+-        <rect fill="#52D14A" x="6" width="4" height="4" rx="2"/>
+-        <rect fill="#0079FF" width="4" height="4" rx="2"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<path fill-rule="evenodd" clip-rule="evenodd" d="M16 16V20H20V16H16Z" fill="#B2B2B2"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M10 16V20H14V16H10Z" fill="#B2B2B2"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M4 16V20H8V16H4Z" fill="#EC1B23"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M16 10V14H20V10H16Z" fill="#B2B2B2"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M10 10V14H14V10H10Z" fill="#F69332"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M4 10V14H8V10H4Z" fill="#7C51A0"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M16 4V8H20V4H16Z" fill="#00A4E4"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4V8H14V4H10Z" fill="#4FB748"/>
++<path fill-rule="evenodd" clip-rule="evenodd" d="M4 4V8H8V4H4Z" fill="#005DC4"/>
+ </svg>
+diff --git a/data/style.css b/data/style.css
+index e6ec271..ff610af 100644
+--- a/data/style.css
++++ b/data/style.css
+@@ -32,16 +32,17 @@
+   border-radius: 10px;
+   color: #000100;
+   min-width: 215px;
+-  min-height: 24px;
++  min-height: 34px;
+   border-image: radial-gradient(circle farthest-corner at center, rgba(255, 255, 255, 0.5) 100%, transparent) 0 0 1/0 0 1px;
+   background-color: transparent;
++  box-shadow: none;
+ }
+ 
+ #search-entry:focus {
+   border-radius: 10px;
+-  border: solid 1px #3e6ddc;
++  border:solid 1px #3e6ddc;
+   min-width: 215px;
+-  min-height: 24px;
++  min-height: 34px;
+ }
+ 
+ #scrolled_window {
+@@ -78,12 +79,18 @@
+   background-color: rgba(90, 135, 188, 0.33);
+ }
+ 
++#separator {
++  border-right: none;
++  margin: 0px;
++}
++
+ #app-item-box {
+   background-color: rgba(255, 255, 255, 0);
+   color: #000100;
+ }
+ 
+ #inner_box_appitem {
++  margin: 0px;
+   padding: 5px;
+   border-radius: 12px;
+   box-shadow: inset 1px 1px 20px 0 rgba(0, 0, 0, 0.3);
+diff --git a/debian/changelog b/debian/changelog
+index 773ec60..686eb2f 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,18 @@
++gooroom-applauncher-applet (0.4.0+grm3u1+han3u2) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [cf3e553f] Added drag and drop function
++  * [311e9c5a] Add a new icon theme for Hancom Gooroom 3.3
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:13:25 +0900
++
++gooroom-applauncher-applet (0.4.0+grm3u1+han3u1) unstable; urgency=medium
++
++  [ subin.kim ]
++  * [f2794f52] Updated style.css
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Mon, 20 Jun 2022 09:23:58 +0900
++
+ gooroom-applauncher-applet (0.4.0+grm3u1) unstable; urgency=medium
+ 
+   [ subin.kim ]
+diff --git a/src/applauncher-applet.c b/src/applauncher-applet.c
+index bb67879..fa9e09b 100644
+--- a/src/applauncher-applet.c
++++ b/src/applauncher-applet.c
+@@ -58,6 +58,7 @@
+ struct _GooroomApplauncherAppletPrivate
+ {
+ 	GtkWidget         *button;
++	GtkSettings       *settings;
+ 
+ 	ApplauncherWindow *popup_window;
+ };
+@@ -746,6 +747,62 @@ monitors_changed_cb (GdkScreen *screen,
+ 	destroy_popup_window (GOOROOM_APPLAUNCHER_APPLET (data));
+ }
+ 
++static void
++set_style (GSettings *settings, gchar *icon_theme)
++{
++	GtkCssProvider *provider;
++
++	provider = gtk_css_provider_new ();
++
++	if (g_strrstr (icon_theme, "style1")) {
++		gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style1.css");
++		g_settings_set_string (settings, "gtk-theme", "Arc-Lighter");
++	} else if (g_strrstr (icon_theme, "style4")) {
++		gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style2.css");
++		g_settings_set_string (settings, "gtk-theme", "Arc-Darker");
++	} else if (g_strrstr (icon_theme, "style5")) {
++		gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style3.css");
++		g_settings_set_string (settings, "gtk-theme", "Arc-Dark");
++	} else if (g_strrstr (icon_theme, "Hancom-Gooroom-Numix-Circle")) {
++		gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style.css");
++		g_settings_set_string (settings, "gtk-theme", "Colloid-light");
++	} else {
++		gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style.css");
++		g_settings_set_string (settings, "gtk-theme", "Flat-Remix-GTK-Blue-Darker");
++	}
++
++	gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
++	                                           GTK_STYLE_PROVIDER (provider),
++	                                           GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
++	g_object_unref (provider);
++}
++
++static void
++icon_theme_changed_cb (GObject    *object,
++                       GParamSpec *pspec,
++                       gpointer    data)
++{
++	GSettings *settings;
++	gchar *icon_theme;
++
++	settings = g_settings_new ("org.gnome.desktop.interface");
++
++	if (object) {
++		GValue value = G_VALUE_INIT;
++
++		g_value_init (&value, pspec->value_type);
++		g_object_get_property (object, pspec->name, &value);
++		icon_theme = g_strdup_value_contents (&value);
++		g_value_unset (&value);
++	} else {
++		icon_theme = g_strdup (g_settings_get_string (settings, "icon-theme"));
++	}
++
++	set_style (settings, icon_theme);
++	g_object_unref (settings);
++	g_free (icon_theme);
++}
++
+ static void
+ gooroom_applauncher_applet_realize (GtkWidget *widget)
+ {
+@@ -837,23 +894,22 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
+ 	gtk_button_set_relief (GTK_BUTTON (priv->button), GTK_RELIEF_NONE);
+ 	gtk_container_add (GTK_CONTAINER (applet), priv->button);
+ 
++	priv->settings = gtk_widget_get_settings (GTK_WIDGET (applet));
++
+ 	icon = gtk_image_new_from_icon_name ("gooroom-applauncher-applet", GTK_ICON_SIZE_LARGE_TOOLBAR);
+ 	gtk_image_set_pixel_size (GTK_IMAGE (icon), TRAY_ICON_SIZE);
+ 	gtk_container_add (GTK_CONTAINER (priv->button), icon);
+ 
++	icon_theme_changed_cb (NULL, NULL, NULL);
++
+ 	g_signal_connect (G_OBJECT (priv->button), "toggled",
+                       G_CALLBACK (on_applet_button_toggled), applet);
+ 
+ 	g_signal_connect (gdk_display_get_default_screen (display), "monitors-changed",
+                       G_CALLBACK (monitors_changed_cb), applet);
+ 
+-	GtkCssProvider *provider;
+-	provider = gtk_css_provider_new ();
+-	gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style.css");
+-    gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+-                                               GTK_STYLE_PROVIDER (provider),
+-                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+-    g_object_unref (provider);
++	g_signal_connect (priv->settings, "notify::gtk-icon-theme-name",
++                      G_CALLBACK (icon_theme_changed_cb), NULL);
+ }
+ 
+ static void
+diff --git a/src/applauncher-indicator.c b/src/applauncher-indicator.c
+index 9c83ac6..7e2d3aa 100644
+--- a/src/applauncher-indicator.c
++++ b/src/applauncher-indicator.c
+@@ -178,7 +178,7 @@ applauncher_indicator_append (ApplauncherIndicator *indicator)
+ 	gtk_widget_set_name (item, "indicator-button");
+ 	gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (item), FALSE);
+ 	icon = gtk_image_new_from_icon_name ("radio-symbolic", GTK_ICON_SIZE_BUTTON);
+-	gtk_image_set_pixel_size (GTK_IMAGE (icon), 16);
++	gtk_image_set_pixel_size (GTK_IMAGE (icon), 6);
+ 	gtk_container_add (GTK_CONTAINER (item), icon);
+ 
+ 	gtk_box_pack_start (GTK_BOX (indicator), item, FALSE, FALSE, 0);
+diff --git a/src/applauncher-window.ui b/src/applauncher-window.ui
+index b1d4509..161865e 100644
+--- a/src/applauncher-window.ui
++++ b/src/applauncher-window.ui
+@@ -1,53 +1,52 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<!-- Generated with glade 3.22.1 -->
++<!-- Generated with glade 3.38.2 -->
+ <interface domain="gooroom-applauncher-applet">
+   <requires lib="gtk+" version="3.20"/>
+   <template class="ApplauncherWindow" parent="GtkWindow">
+     <property name="name">ApplauncherWindow</property>
+-    <property name="can_focus">False</property>
+-    <property name="border_width">10</property>
++    <property name="can-focus">False</property>
++    <property name="border-width">10</property>
+     <property name="resizable">False</property>
+     <property name="modal">True</property>
+-    <property name="type_hint">popup-menu</property>
+-    <property name="skip_taskbar_hint">True</property>
+-    <property name="skip_pager_hint">True</property>
+-    <property name="accept_focus">False</property>
+-    <property name="focus_on_map">False</property>
++    <property name="type-hint">popup-menu</property>
++    <property name="skip-taskbar-hint">True</property>
++    <property name="skip-pager-hint">True</property>
++    <property name="accept-focus">False</property>
++    <property name="focus-on-map">False</property>
+     <property name="decorated">False</property>
+     <property name="deletable">False</property>
+-    <child>
+-      <placeholder/>
+-    </child>
+     <child>
+       <object class="GtkBox" id="box_content">
+         <property name="name">box_content</property>
+         <property name="visible">True</property>
+-        <property name="can_focus">False</property>
+-        <property name="spacing">10</property>
++        <property name="can-focus">False</property>
+         <child>
+           <object class="GtkBox" id="left_box_toplevel">
+             <property name="name">directory-item-box</property>
+             <property name="visible">True</property>
+-            <property name="can_focus">False</property>
++            <property name="can-focus">False</property>
+             <property name="orientation">vertical</property>
+             <child>
+               <object class="GtkBox" id="inner_box_diritem">
+                 <property name="name">inner_box_diritem</property>
+-                <property name="width_request">224</property>
++                <property name="width-request">224</property>
+                 <property name="visible">True</property>
+-                <property name="can_focus">False</property>
++                <property name="can-focus">False</property>
+                 <property name="orientation">vertical</property>
+                 <property name="spacing">20</property>
+                 <child>
+                   <object class="GtkEntry" id="ent_search">
+                     <property name="name">search-entry</property>
+                     <property name="visible">True</property>
+-                    <property name="can_focus">True</property>
+-                    <property name="width_chars">0</property>
++                    <property name="can-focus">True</property>
++                    <property name="has-frame">False</property>
++                    <property name="width-chars">0</property>
+                     <property name="xalign">0.05000000074505806</property>
+-                    <property name="primary_icon_name">edit-find-symbolic</property>
+-                    <property name="secondary_icon_name">edit-clear-symbolic</property>
+-                    <property name="placeholder_text" translatable="yes">Type to search…</property>
++                    <property name="shadow-type">none</property>
++                    <property name="primary-icon-name">edit-find-symbolic</property>
++                    <property name="secondary-icon-name">edit-clear-symbolic</property>
++                    <property name="placeholder-text" translatable="yes">Type to search…</property>
++                    <property name="input-purpose">alpha</property>
+                   </object>
+                   <packing>
+                     <property name="expand">False</property>
+@@ -59,17 +58,17 @@
+                   <object class="GtkScrolledWindow" id="scrolled_window">
+                     <property name="name">scrolled_window</property>
+                     <property name="visible">True</property>
+-                    <property name="can_focus">True</property>
+-                    <property name="hscrollbar_policy">never</property>
++                    <property name="can-focus">True</property>
++                    <property name="hscrollbar-policy">never</property>
+                     <child>
+                       <object class="GtkViewport">
+                         <property name="visible">True</property>
+-                        <property name="can_focus">False</property>
++                        <property name="can-focus">False</property>
+                         <child>
+                           <object class="GtkBox" id="lbx_dirs">
+                             <property name="name">lbx_dirs</property>
+                             <property name="visible">True</property>
+-                            <property name="can_focus">False</property>
++                            <property name="can-focus">False</property>
+                             <property name="valign">start</property>
+                             <property name="orientation">vertical</property>
+                             <property name="spacing">10</property>
+@@ -114,27 +113,28 @@
+           <object class="GtkBox" id="app-item-box">
+             <property name="name">app-item-box</property>
+             <property name="visible">True</property>
+-            <property name="can_focus">False</property>
++            <property name="can-focus">False</property>
+             <property name="orientation">vertical</property>
+             <child>
+               <object class="GtkEventBox" id="event_box_appitem">
+                 <property name="visible">True</property>
+-                <property name="can_focus">False</property>
++                <property name="can-focus">False</property>
+                 <child>
+                   <object class="GtkBox" id="inner_box_appitem">
+                     <property name="name">inner_box_appitem</property>
+                     <property name="visible">True</property>
+-                    <property name="can_focus">False</property>
++                    <property name="can-focus">False</property>
+                     <child>
++                      <!-- n-columns=3 n-rows=3 -->
+                       <object class="GtkGrid" id="grid">
+                         <property name="name">grid</property>
+                         <property name="visible">True</property>
+-                        <property name="can_focus">False</property>
+-                        <property name="margin_left">30</property>
+-                        <property name="margin_top">40</property>
+-                        <property name="margin_bottom">40</property>
+-                        <property name="row_spacing">30</property>
+-                        <property name="column_spacing">10</property>
++                        <property name="can-focus">False</property>
++                        <property name="margin-left">30</property>
++                        <property name="margin-top">40</property>
++                        <property name="margin-bottom">40</property>
++                        <property name="row-spacing">30</property>
++                        <property name="column-spacing">10</property>
+                         <child>
+                           <placeholder/>
+                         </child>
+@@ -173,14 +173,14 @@
+                       <object class="GtkStack" id="stk_bottom">
+                         <property name="name">stk_bottom</property>
+                         <property name="visible">True</property>
+-                        <property name="can_focus">False</property>
++                        <property name="can-focus">False</property>
+                         <property name="valign">center</property>
+-                        <property name="transition_duration">0</property>
++                        <property name="transition-duration">0</property>
+                         <child>
+                           <object class="GtkLabel" id="label_app_name">
+                             <property name="name">label_app_name</property>
+                             <property name="visible">True</property>
+-                            <property name="can_focus">False</property>
++                            <property name="can-focus">False</property>
+                           </object>
+                           <packing>
+                             <property name="name">fake</property>
+@@ -209,9 +209,42 @@
+           <packing>
+             <property name="expand">True</property>
+             <property name="fill">True</property>
++            <property name="pack-type">end</property>
+             <property name="position">1</property>
+           </packing>
+         </child>
++        <child>
++          <object class="GtkBox">
++            <property name="name">separator</property>
++            <property name="visible">True</property>
++            <property name="can-focus">False</property>
++            <property name="halign">start</property>
++            <property name="orientation">vertical</property>
++            <child>
++              <placeholder/>
++            </child>
++            <child>
++              <object class="GtkSeparator">
++                <property name="visible">True</property>
++                <property name="can-focus">False</property>
++                <property name="orientation">vertical</property>
++              </object>
++              <packing>
++                <property name="expand">False</property>
++                <property name="fill">True</property>
++                <property name="position">1</property>
++              </packing>
++            </child>
++            <child>
++              <placeholder/>
++            </child>
++          </object>
++          <packing>
++            <property name="expand">False</property>
++            <property name="fill">True</property>
++            <property name="position">2</property>
++          </packing>
++        </child>
+       </object>
+     </child>
+     <style>
+diff --git a/src/gresource.xml b/src/gresource.xml
+index a898cce..833431b 100644
+--- a/src/gresource.xml
++++ b/src/gresource.xml
+@@ -9,6 +9,9 @@
+ 
+   <gresource prefix="/kr/gooroom/applauncher/data">
+ 	<file alias="gooroom-applauncher-applet">../data/gooroom-applauncher-applet.svg</file>
++	<file compressed="true" alias="style1.css">../data/style1.css</file>
++	<file compressed="true" alias="style2.css">../data/style2.css</file>
++	<file compressed="true" alias="style3.css">../data/style3.css</file>
+ 	<file compressed="true" alias="style.css">../data/style.css</file>
+   </gresource>
+ </gresources>

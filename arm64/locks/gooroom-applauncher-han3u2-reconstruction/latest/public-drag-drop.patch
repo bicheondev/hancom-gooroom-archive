@@ -1,0 +1,376 @@
+diff --git a/src/applauncher-appitem.c b/src/applauncher-appitem.c
+index 213c7b9..31bc6f4 100644
+--- a/src/applauncher-appitem.c
++++ b/src/applauncher-appitem.c
+@@ -36,13 +36,14 @@ struct _ApplauncherAppItemPrivate
+ 	GtkWidget *tooltip;
+ 
+ 	int icon_size;
++
++	const gchar *path;
+ };
+ 
+ 
+ 
+ G_DEFINE_TYPE_WITH_PRIVATE (ApplauncherAppItem, applauncher_appitem, GTK_TYPE_BUTTON);
+ 
+-
+ static gboolean
+ query_tooltip_cb (GtkWidget  *widget,
+                   gint        x,
+@@ -112,9 +113,7 @@ applauncher_appitem_new (int size)
+ 	ApplauncherAppItem *item;
+ 
+ 	item = g_object_new (APPLAUNCHER_TYPE_APPITEM, NULL);
+-
+ 	item->priv->icon_size = size;
+-
+ 	return item;
+ }
+ 
+@@ -122,7 +121,8 @@ void
+ applauncher_appitem_change_app (ApplauncherAppItem *item,
+                                 GIcon              *icon,
+                                 const gchar        *name,
+-                                const gchar        *tooltip)
++                                const gchar        *tooltip,
++                                const gchar        *path)
+ {
+ 	glong size;
+ 	gchar buf[1024] = {0,};
+@@ -166,4 +166,106 @@ applauncher_appitem_change_app (ApplauncherAppItem *item,
+ 	}
+ 	// Tooltip
+ 	gtk_label_set_text (GTK_LABEL (priv->tooltip), buf);
++	// Desktop file path
++	priv->path = path;
++}
++
++const gchar*
++applauncher_appitem_get_path (ApplauncherAppItem *item)
++{
++  ApplauncherAppItemPrivate *priv;
++	priv = applauncher_appitem_get_instance_private (item);
++
++  return priv->path;
++}
++
++cairo_surface_t *
++applauncher_appitem_get_drag_surface (ApplauncherAppItem *item)
++{
++  GtkWidget *widget;
++  cairo_t *cr;
++  cairo_surface_t *surface;
++  cairo_surface_t *drag_surface;
++  GtkStyleContext *context;
++
++  ApplauncherAppItemPrivate *priv;
++	priv = applauncher_appitem_get_instance_private (item);
++
++  widget = GTK_WIDGET (priv->appitem_inner_box);
++
++  context = gtk_widget_get_style_context (GTK_WIDGET (widget));
++  gtk_style_context_save (context);
++
++  surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
++                                               CAIRO_CONTENT_COLOR_ALPHA,
++                                               priv->icon_size * 2,
++                                               priv->icon_size * 2);
++  cr = cairo_create (surface);
++
++  //Icon
++  GIcon *gicon;
++  gtk_image_get_gicon (GTK_IMAGE(priv->icon), &gicon, NULL);
++
++  const gchar *icon_name;
++  icon_name = g_icon_to_string (gicon);
++
++  GtkIconTheme *theme;
++  theme = gtk_icon_theme_get_default();
++  GtkIconInfo *info = gtk_icon_theme_lookup_icon (theme, icon_name, priv->icon_size,GTK_ICON_LOOKUP_FORCE_SVG);
++
++  GdkPixbuf *pixbuf = gtk_icon_info_load_icon (info, NULL);
++
++  drag_surface = gdk_cairo_surface_create_from_pixbuf (pixbuf,
++                                                       gtk_widget_get_scale_factor (GTK_WIDGET (widget)),
++                                                       gtk_widget_get_window (GTK_WIDGET (widget)));
++  gtk_render_icon_surface (context, cr, drag_surface, priv->icon_size / 2, 0);
++
++  if (info != NULL) {
++    g_object_unref (info);
++  }
++
++  if (pixbuf != NULL) {
++      g_object_unref (pixbuf);
++  }
++
++  cairo_surface_destroy (drag_surface);
++
++  //Text
++  GString *str;
++  const gchar *text;
++  PangoLayout *text_layout;
++  PangoContext *pcontext;
++
++  pcontext = gtk_widget_create_pango_context (GTK_WIDGET(priv->label));
++
++  text_layout = pango_layout_new (pcontext);
++
++  text = gtk_label_get_text (priv->label);
++
++  pango_layout_set_text (text_layout, text, -1);
++  pango_layout_set_auto_dir (text_layout, TRUE);
++
++  pango_cairo_update_layout (cr, text_layout);
++
++  pango_layout_set_alignment (text_layout, PANGO_ALIGN_CENTER);
++  pango_layout_set_spacing (text_layout, 0);
++  pango_layout_set_wrap (text_layout, PANGO_WRAP_WORD_CHAR);
++
++  PangoFontDescription *desc;
++  desc = pango_font_description_copy (pango_context_get_font_description (pcontext));
++  pango_layout_set_font_description (text_layout, desc);
++  pango_font_description_free (desc);
++
++  pango_layout_set_width (text_layout, (priv->icon_size * 2 ) * PANGO_SCALE);
++  pango_layout_set_height (text_layout, 2);
++
++  gtk_render_layout (context, cr, 0, 60, text_layout);
++
++  if (text_layout != NULL) {
++    g_object_unref (text_layout);
++  }
++
++  cairo_destroy (cr);
++  gtk_style_context_restore (context);
++  return surface;
+ }
+diff --git a/src/applauncher-appitem.h b/src/applauncher-appitem.h
+index 6253161..f79036d 100644
+--- a/src/applauncher-appitem.h
++++ b/src/applauncher-appitem.h
+@@ -56,8 +56,11 @@ ApplauncherAppItem *applauncher_appitem_new        (int size);
+ void                applauncher_appitem_change_app (ApplauncherAppItem *item,
+                                                     GIcon              *icon,
+                                                     const gchar        *name,
+-                                                    const gchar        *tooltip);
++                                                    const gchar        *tooltip,
++                                                    const gchar        *path);
+ 
++cairo_surface_t    *applauncher_appitem_get_drag_surface (ApplauncherAppItem *item);
++const gchar        *applauncher_appitem_get_path (ApplauncherAppItem *item);
+ 
+ 
+ G_END_DECLS
+diff --git a/src/applauncher-window.c b/src/applauncher-window.c
+index 797dd21..e39e3c3 100644
+--- a/src/applauncher-window.c
++++ b/src/applauncher-window.c
+@@ -104,6 +104,9 @@ struct _ApplauncherWindowPrivate
+ 	guint idle_directory_changed_id;
+ 
+ 	GdkDevice *grab_pointer;
++
++	gboolean *draging;
++	gboolean *drag_copied;
+ };
+ 
+ enum {
+@@ -242,6 +245,10 @@ get_all_applications_from_dir (GMenuTreeDirectory  *directory,
+ 	GMenuTreeIter *iter;
+ 	GMenuTreeItemType next_type;
+ 
++	if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (directory), "chrome-apps.directory")) {
++		return list;
++	}
++
+ 	iter = gmenu_tree_directory_iter (directory);
+ 
+ 	while ((next_type = gmenu_tree_iter_next (iter)) != GMENU_TREE_ITEM_INVALID) {
+@@ -475,7 +482,7 @@ update_grid (ApplauncherWindow *window)
+ 				ApplauncherAppItem *item = g_list_nth_data (priv->grid_children, pos);
+ 				if (item) {
+ 					gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
+-					applauncher_appitem_change_app (item, NULL, NULL, NULL);
++					applauncher_appitem_change_app (item, NULL, NULL, NULL, NULL);
+ 				}
+ 			}
+ 		}
+@@ -512,18 +519,19 @@ update_grid (ApplauncherWindow *window)
+ 				GIcon *icon = g_app_info_get_icon (app_info);
+ 				const gchar *name = g_app_info_get_name (app_info);
+ 				const gchar *desc = g_app_info_get_description (app_info);
++				const gchar *path = g_desktop_app_info_get_filename (app_info);
+ 
+ 				gtk_widget_set_sensitive (GTK_WIDGET (item), TRUE);
+ 				if (desc == NULL || g_strcmp0 (desc, "") == 0) {
+-					applauncher_appitem_change_app (item, icon, name, name);
++					applauncher_appitem_change_app (item, icon, name, name, path);
+ 				} else {
+ 					gchar *tooltip = g_strdup_printf ("%s:\n%s", name, desc);
+-					applauncher_appitem_change_app (item, icon, name, tooltip);
++					applauncher_appitem_change_app (item, icon, name, tooltip, path);
+ 					g_free (tooltip);
+ 				}
+ 			} else { // fill with a blank one
+ 				gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
+-				applauncher_appitem_change_app (item, NULL, NULL, NULL);
++				applauncher_appitem_change_app (item, NULL, NULL, NULL, NULL);
+ 			}
+ 
+ 			item_iter++;
+@@ -899,9 +907,10 @@ get_max_size_of_appitem (ApplauncherWindow *window)
+ 			if (app_info) {
+ 				GIcon *icon = g_app_info_get_icon (app_info);
+ 				const gchar *name = g_app_info_get_name (app_info);
++				const gchar *path = g_desktop_app_info_get_filename (app_info);
+ 
+ 				ApplauncherAppItem *item = applauncher_appitem_new (window->priv->icon_size);
+-				applauncher_appitem_change_app (item, icon, name, NULL);
++				applauncher_appitem_change_app (item, icon, name, NULL, path);
+ 				gtk_widget_show (GTK_WIDGET (item));
+ 
+ 				gtk_grid_attach (GTK_GRID (window->priv->grid), GTK_WIDGET (item), 0, 0, 1, 1);
+@@ -932,6 +941,9 @@ populate_dirs (ApplauncherWindow *window)
+ 
+ 		GIcon *icon;
+ 		const char *name;
++		if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (dir), "chrome-apps.directory"))
++			continue;
++
+ 		if (gmenu_tree_directory_get_desktop_file_path (dir) != NULL) {
+ 			icon = gmenu_tree_directory_get_icon (dir);
+ 			name = gmenu_tree_directory_get_name (dir);
+@@ -1046,6 +1058,81 @@ get_rows_and_columns (ApplauncherWindow *window,
+ 	gtk_widget_set_size_request (priv->grid, 0, 0);
+ }
+ 
++enum {
++  TARGET_GNOME_URI_LIST,
++};
++
++static const GtkTargetEntry target_table[] = {
++  { (char *)"x-special/gnome-icon-list",  0, TARGET_GNOME_URI_LIST },
++};
++
++static void
++drag_begin (GtkWidget      *widget,
++            GdkDragContext *context,
++            gpointer        data)
++{
++	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
++	ApplauncherWindowPrivate *priv = window->priv;
++	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
++
++	cairo_surface_t *surface = applauncher_appitem_get_drag_surface (item);
++	cairo_surface_set_device_offset (surface, -DEFAULT_ICON_SIZE, -DEFAULT_ICON_SIZE);
++	gtk_drag_set_icon_surface (context, surface);
++	cairo_surface_destroy (surface);
++
++	priv->draging = TRUE;
++
++	gtk_widget_set_sensitive (GTK_BUTTON (widget), FALSE);
++}
++
++static void
++drag_data_get (GtkWidget *widget,
++               GdkDragContext *context,
++               GtkSelectionData *selection_data,
++               guint info,
++               guint32 time,
++               gpointer data)
++{
++
++	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
++	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
++	ApplauncherWindowPrivate *priv = window->priv;
++
++	const gchar *path;
++	path = applauncher_appitem_get_path (item);
++
++	GString *result;
++	result = g_string_new (NULL);
++
++	g_string_append_printf (result, "file://%s\r%d:%d:%hu:%hu\r\n",
++                          path, 0, 0, DEFAULT_ICON_SIZE, DEFAULT_ICON_SIZE);
++
++	gtk_selection_data_set (selection_data,
++                          gtk_selection_data_get_target (selection_data),
++                          8, (guchar *) result->str, result->len);
++	g_string_free (result, TRUE);
++
++	priv->drag_copied = TRUE;
++}
++
++static void
++drag_end (GtkWidget        *widget,
++          GdkDragContext   *context,
++          gpointer         data)
++{
++	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
++	ApplauncherWindowPrivate *priv = window->priv;
++
++	if (priv->drag_copied) {
++		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
++		priv->drag_copied = FALSE;
++		priv->draging = FALSE;
++	}
++
++	gtk_widget_set_sensitive (GTK_BUTTON (widget), TRUE);
++}
++
++
+ static void
+ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
+ {
+@@ -1058,6 +1145,9 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
+ 		GtkWidget *item = GTK_WIDGET (l->data);
+ 		if (item) {
+ 			g_signal_handlers_disconnect_by_func (item, on_appitem_button_clicked_cb, window);
++			g_signal_handlers_disconnect_by_func (item, drag_begin, window);
++			g_signal_handlers_disconnect_by_func (item, drag_data_get, window);
++			g_signal_handlers_disconnect_by_func (item, drag_end, window);
+ 			gtk_widget_destroy (GTK_WIDGET (item));
+ 			item = NULL;
+ 		}
+@@ -1087,6 +1177,14 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
+ 			priv->grid_children = g_list_append (priv->grid_children, item);
+ 
+ 			g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (on_appitem_button_clicked_cb), window);
++
++			//Drag & Drop
++			gtk_drag_source_set (GTK_WIDGET(item), GDK_BUTTON1_MASK,
++                           target_table, G_N_ELEMENTS (target_table), GDK_ACTION_COPY);
++
++			g_signal_connect (GTK_WIDGET(item), "drag_begin", G_CALLBACK (drag_begin), window);
++			g_signal_connect (GTK_WIDGET(item), "drag_data_get", G_CALLBACK (drag_data_get), window);
++			g_signal_connect (GTK_WIDGET(item), "drag_end", G_CALLBACK (drag_end), window);
+ 		}
+ 	}
+ }
+@@ -1255,7 +1353,15 @@ applauncher_window_focus_out_event (GtkWidget     *widget,
+ 
+ 	ungrab_pointer (window);
+ 
+-	g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
++	if (!priv->draging)
++	{
++		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
++	}
++	else
++	{
++		grab_pointer (window);
++		priv->draging = FALSE;
++	}
+ 
+ 	return GTK_WIDGET_CLASS (applauncher_window_parent_class)->focus_out_event (widget, event);
+ }
+@@ -1282,6 +1388,8 @@ applauncher_window_init (ApplauncherWindow *window)
+ 	priv->grid_y = DEFAULT_GRID_Y;
+ 	priv->icon_size = DEFAULT_ICON_SIZE;
+ 	priv->grab_pointer = NULL;
++	priv->draging = FALSE;
++	priv->drag_copied = FALSE;
+ 
+ 	GdkMonitor *m = gdk_display_get_primary_monitor (gdk_display_get_default ());
+ 	gdk_monitor_get_geometry (m, &priv->workarea);
