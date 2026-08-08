@@ -1,0 +1,218 @@
+{
+  "schema": 4,
+  "batch": "verified-existing-workflow-artifact-promotion",
+  "actions_run_id": "31224081719",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31224081719",
+  "artifact_name": "gnome-control-center-exact-arm64-with-accountsservice",
+  "source": "gnome-control-center",
+  "source_version": "1:3.38.4-1+grm3u9",
+  "source_type": "git",
+  "authority_provenance": "github-exact-commit",
+  "repository_full_name": "gooroom/gnome-control-center",
+  "commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
+  "tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
+  "required_native_packages": [
+    "gnome-control-center"
+  ],
+  "reused_all_packages": [],
+  "build_outcome": "success",
+  "build_exit_code": "0",
+  "verify_outcome": "success",
+  "job_passed": true,
+  "verification_passed": true,
+  "passed": true,
+  "deb_artifacts": [
+    {
+      "filename": "gnome-control-center-dbgsym_3.38.4-1+grm3u9_arm64.deb",
+      "size": 2153344,
+      "sha256": "afb17f0ff82a66e3203a7a1d3daab0b68f3d3122e30c6977cca37d0e1fb55059",
+      "package": "gnome-control-center-dbgsym",
+      "version": "1:3.38.4-1+grm3u9",
+      "architecture": "arm64",
+      "parsed_source": "gnome-control-center",
+      "parsed_source_version": "1:3.38.4-1+grm3u9",
+      "source_field": "gnome-control-center",
+      "executable_elf_count": 4,
+      "aarch64_elf_count": 4,
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0
+    },
+    {
+      "filename": "gnome-control-center_3.38.4-1+grm3u9_arm64.deb",
+      "size": 1599216,
+      "sha256": "1b258955fa89af52769e6a1f570d85afc4e80ff7164b5fab59499220b9c6efd4",
+      "package": "gnome-control-center",
+      "version": "1:3.38.4-1+grm3u9",
+      "architecture": "arm64",
+      "parsed_source": "gnome-control-center",
+      "parsed_source_version": "1:3.38.4-1+grm3u9",
+      "source_field": "",
+      "executable_elf_count": 3,
+      "aarch64_elf_count": 3,
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0
+    }
+  ],
+  "verification_errors": [],
+  "verification_warnings": [],
+  "verification": {
+    "passed": true,
+    "policy": "canonical-exact-git-artifact-independent-arm64-rescan",
+    "wrong_architecture_executable_count": 0,
+    "packages": [
+      {
+        "filename": "gnome-control-center-dbgsym_3.38.4-1+grm3u9_arm64.deb",
+        "size": 2153344,
+        "sha256": "afb17f0ff82a66e3203a7a1d3daab0b68f3d3122e30c6977cca37d0e1fb55059",
+        "package": "gnome-control-center-dbgsym",
+        "version": "1:3.38.4-1+grm3u9",
+        "architecture": "arm64",
+        "parsed_source": "gnome-control-center",
+        "parsed_source_version": "1:3.38.4-1+grm3u9",
+        "source_field": "gnome-control-center",
+        "executable_elf_count": 4,
+        "aarch64_elf_count": 4,
+        "x86_payload_count": 0,
+        "foreign_payload_count": 0
+      },
+      {
+        "filename": "gnome-control-center_3.38.4-1+grm3u9_arm64.deb",
+        "size": 1599216,
+        "sha256": "1b258955fa89af52769e6a1f570d85afc4e80ff7164b5fab59499220b9c6efd4",
+        "package": "gnome-control-center",
+        "version": "1:3.38.4-1+grm3u9",
+        "architecture": "arm64",
+        "parsed_source": "gnome-control-center",
+        "parsed_source_version": "1:3.38.4-1+grm3u9",
+        "source_field": "",
+        "executable_elf_count": 3,
+        "aarch64_elf_count": 3,
+        "x86_payload_count": 0,
+        "foreign_payload_count": 0
+      }
+    ],
+    "artifact_verification_summary": {
+      "schema": 3,
+      "source": "gnome-control-center",
+      "source_version": "1:3.38.4-1+grm3u9",
+      "commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
+      "tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
+      "source_composition_mode": "git-only",
+      "upstream_source": null,
+      "expected_architecture_dependent_packages": [
+        "gnome-control-center"
+      ],
+      "produced_binary_packages": [
+        "gnome-control-center",
+        "gnome-control-center-dbgsym"
+      ],
+      "architecture_all_policy": "reuse exact verified AMD64 Architecture: all binaries",
+      "deb_count": 2,
+      "wrong_architecture_executable_count": 0,
+      "verified": true
+    },
+    "local_dependency_chain": {
+      "schema": 2,
+      "policy": "exact-locally-built-source-dependency-repository",
+      "injection_contract": "HANCOM_GOOROOM_DEPENDENCY_REPOSITORY",
+      "target_source": "gnome-control-center",
+      "dependency_source": {
+        "source": "accountsservice",
+        "source_version": "0.6.55-3+grm3u1",
+        "repository": "gooroom/accountsservice",
+        "commit_sha": "706c15ce56c8facdad9733989d305840ad109de8",
+        "tree_sha": "4efcdc4c26fe2ca5bfc4d009e0ab918fbf06f91d"
+      },
+      "packages": [
+        {
+          "package": "accountsservice",
+          "version": "0.6.55-3+grm3u1",
+          "architecture": "arm64",
+          "source": "accountsservice",
+          "source_version": "0.6.55-3+grm3u1",
+          "filename": "accountsservice_0.6.55-3+grm3u1_arm64.deb",
+          "size": 89164,
+          "sha256": "2f64ce63cb666be87ac5aff05934d0d81845bd8d4cdc20489b316f234ce68eb8"
+        },
+        {
+          "package": "gir1.2-accountsservice-1.0",
+          "version": "0.6.55-3+grm3u1",
+          "architecture": "arm64",
+          "source": "accountsservice",
+          "source_version": "0.6.55-3+grm3u1",
+          "filename": "gir1.2-accountsservice-1.0_0.6.55-3+grm3u1_arm64.deb",
+          "size": 18148,
+          "sha256": "1ca2416864b373c260b89a1786d5484173d3b5282509ecf75bfa2f48f735167f"
+        },
+        {
+          "package": "libaccountsservice-dev",
+          "version": "0.6.55-3+grm3u1",
+          "architecture": "arm64",
+          "source": "accountsservice",
+          "source_version": "0.6.55-3+grm3u1",
+          "filename": "libaccountsservice-dev_0.6.55-3+grm3u1_arm64.deb",
+          "size": 25492,
+          "sha256": "e6aa640197cecb2fba52b70f335ba0cc4a40921c1366a5b4fd7321339e02b461"
+        },
+        {
+          "package": "libaccountsservice0",
+          "version": "0.6.55-3+grm3u1",
+          "architecture": "arm64",
+          "source": "accountsservice",
+          "source_version": "0.6.55-3+grm3u1",
+          "filename": "libaccountsservice0_0.6.55-3+grm3u1_arm64.deb",
+          "size": 79104,
+          "sha256": "cf9cd9140af096579185bc6f39e5f99a06f5e82a0cb159030e76c183f1bc64e4"
+        }
+      ]
+    }
+  },
+  "build_lock": {
+    "schema": 5,
+    "source": "gnome-control-center",
+    "source_version": "1:3.38.4-1+grm3u9",
+    "repository": "gooroom/gnome-control-center",
+    "commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
+    "tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
+    "source_archive_sha256": "960f0c99e3e177eb639710d032d75e62c3898198c93bfb306efc86394f4d3f6e",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gnome-control-center"
+    ],
+    "dependency_repository_packages_sha256": "21fb5087888f945ac76ffdaa9d5acdaf25d7e2cf82566c1673bf439eb88bb05e",
+    "produced_binary_packages": [
+      "gnome-control-center",
+      "gnome-control-center-dbgsym"
+    ],
+    "binary_package_policy": "AMD64 reference packages whose Architecture is not all",
+    "source_composition": {
+      "mode": "git-only"
+    }
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gnome-control-center",
+    "source_version": "1:3.38.4-1+grm3u9",
+    "repository": "gooroom/gnome-control-center",
+    "commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
+    "tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
+    "verified_commit_sha": "55fd48f9dbf8d2bee0dea33478ed20e4867c9cbc",
+    "verified_tree_sha": "e4b8dd73f8668f6a30ac3fe333665b78cfa2d0f0",
+    "deterministic_source_archive_sha256": "960f0c99e3e177eb639710d032d75e62c3898198c93bfb306efc86394f4d3f6e"
+  },
+  "promotion": {
+    "source_lock": "arm64/locks/effective-sources-v3/effective-source-lock.json",
+    "reference": "arm64/locks/reference/amd64-reference.json",
+    "artifact_directory": "work/promote-gnome-control-center/gnome-control-center-arm64",
+    "independent_deb_rescan": true,
+    "dependency_source": "accountsservice",
+    "dependency_version": "0.6.55-3+grm3u1",
+    "required_local_packages": [
+      "libaccountsservice-dev",
+      "libaccountsservice0"
+    ]
+  }
+}
