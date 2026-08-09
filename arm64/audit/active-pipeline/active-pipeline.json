@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 153,
     "workflow_name_count": 153,
-    "referenced_local_file_count": 243,
+    "referenced_local_file_count": 245,
     "error_count": 0,
-    "warning_count": 39,
+    "warning_count": 40,
     "passed": true
   },
   "workflows": [
@@ -1900,11 +1900,13 @@
         "arm64/rebuild-batches.json",
         "arm64/scripts/merge_reconstructed_source_locks.py",
         "arm64/scripts/report_arm64_port_coverage.py",
+        "arm64/scripts/resolve_verified_source_recovery_blockers.py",
         "arm64/source-recovery-blockers.json",
         "arm64/status/build-blockers.json",
         "arm64/status/coverage.json",
         "arm64/status/source-blockers.json",
         "arm64/status/source-recovery-required.json",
+        "arm64/status/source-recovery-resolutions.json",
         "arm64/status/summary.json"
       ]
     },
@@ -3812,6 +3814,9 @@
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-vendor-source-archive-lock.yml"
     ],
+    "arm64/scripts/resolve_verified_source_recovery_blockers.py": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
     "arm64/scripts/run_dsc_source_arm64.sh": [
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml"
     ],
@@ -4069,6 +4074,9 @@
     "arm64/status/source-recovery-required.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/status/source-recovery-resolutions.json": [
+      ".github/workflows/arm64-port-coverage.yml"
+    ],
     "arm64/status/summary.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ]
@@ -4213,6 +4221,11 @@
     {
       "path": ".github/workflows/arm64-port-coverage-v2.yml",
       "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage.yml",
+      "local_path": "arm64/status/source-recovery-resolutions.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
