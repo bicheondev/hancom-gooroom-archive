@@ -167,13 +167,20 @@ if [ -f "$COMPONENT_LOCK" ]; then
   for key in dsc orig debian; do
     expected_name="$(jq -er --arg key "$key" '.upstream.files[$key].name' "$COMPONENT_LOCK")"
     expected_size="$(jq -er --arg key "$key" '.upstream.files[$key].size' "$COMPONENT_LOCK")"
+    expected_sha1="$(jq -er --arg key "$key" '.upstream.files[$key].sha1' "$COMPONENT_LOCK")"
     expected_sha256="$(jq -er --arg key "$key" '.upstream.files[$key].sha256' "$COMPONENT_LOCK")"
     awk -F '\t' \
       -v key="$key" \
       -v name="$expected_name" \
       -v size="$expected_size" \
-      -v sha="$expected_sha256" '
-        $1 == key && $2 == name && $3 == size && $4 == sha { found = 1 }
+      -v sha1="$expected_sha1" \
+      -v sha256="$expected_sha256" '
+        NF == 5
+        && $1 == key
+        && $2 == name
+        && $3 == size
+        && $4 == sha1
+        && $5 == sha256 { found = 1 }
         END { exit found ? 0 : 1 }
       ' "$OUTPUT_DIR/upstream-source-members.tsv" || {
         echo "composite source member evidence mismatch for $key" >&2
