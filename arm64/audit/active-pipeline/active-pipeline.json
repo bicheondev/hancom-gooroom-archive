@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 154,
     "workflow_name_count": 154,
-    "referenced_local_file_count": 246,
+    "referenced_local_file_count": 247,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -906,6 +906,7 @@
       ],
       "referenced_local_files": [
         "arm64/locks/effective-sources-v3/effective-source-lock.json",
+        "arm64/scripts/patch_gooroom_browser_arm64_packaging.py",
         "arm64/scripts/prepare_composite_source_chroot.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/run_locked_source_arm64_component_ccache.sh",
@@ -3735,6 +3736,9 @@
     ],
     "arm64/scripts/normalize_debian_arm64_map_v2.py": [
       ".github/workflows/arm64-normalize-package-map.yml"
+    ],
+    "arm64/scripts/patch_gooroom_browser_arm64_packaging.py": [
+      ".github/workflows/arm64-build-wave5-browser.yml"
     ],
     "arm64/scripts/prepare_composite_source_chroot.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
