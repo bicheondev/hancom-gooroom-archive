@@ -1,0 +1,209 @@
+name: ARM64 port - audit exact Gooroom guide vendor package history v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-guide-han3u1-v2.yml'
+      - 'arm64/scripts/audit_packaged_payload_against_git.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-gooroom-guide-han3u1-v2
+  cancel-in-progress: true
+
+env:
+  VENDOR_BINARY_RUN_ID: '31097604490'
+  VENDOR_BINARY_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+  TARGET_SOURCE: gooroom-guide
+  TARGET_VERSION: 0.5.3+grm3u1+han3u1
+  TARGET_ARCHITECTURE: amd64
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact locks and reusable auditor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file git jq python3
+          python3 -m py_compile arm64/scripts/audit_packaged_payload_against_git.py
+
+      - name: Acquire and verify the exact AMD64 package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/gooroom-guide-audit-v2
+          rm -rf "$base"
+          mkdir -p "$base"/{download,target,rootfs,control,evidence,git}
+
+          gh run download "$VENDOR_BINARY_RUN_ID" \
+            --repo '${{ github.repository }}' \
+            --name "$VENDOR_BINARY_ARTIFACT" \
+            --dir "$base/download"
+
+          target="$base/download/vendor-debs/$TARGET_FILENAME"
+          test -f "$target"
+          record="$(jq -cer \
+            --arg package "$TARGET_SOURCE" \
+            --arg version "$TARGET_VERSION" \
+            --arg architecture "$TARGET_ARCHITECTURE" '
+              [.packages[] | select(
+                .package == $package
+                and .version == $version
+                and .architecture == $architecture
+                and .status == "verified"
+              )]
+              | if length == 1 then .[0]
+                else error("verified vendor lock is not unique") end
+            ' arm64/locks/vendor-binaries/vendor-binary-lock.json)"
+          expected_sha="$(jq -er '.actual_sha256' <<<"$record")"
+          expected_size="$(jq -er '.actual_size' <<<"$record")"
+          expected_filename="$(jq -er '.local_filename' <<<"$record")"
+          test "$expected_filename" = "$TARGET_FILENAME"
+          test "$(stat -c '%s' "$target")" = "$expected_size"
+          printf '%s  %s\n' "$expected_sha" "$target" | sha256sum --check --strict
+
+          cp "$target" "$base/target/$TARGET_FILENAME"
+          printf '%s\n' "$record" | jq . > "$base/evidence/vendor-binary-lock-record.json"
+          (
+            cd "$base/target"
+            sha256sum "$TARGET_FILENAME" > ../evidence/target-deb.sha256
+          )
+          dpkg-deb -x "$base/target/$TARGET_FILENAME" "$base/rootfs"
+          dpkg-deb -e "$base/target/$TARGET_FILENAME" "$base/control"
+          dpkg-deb -f "$base/target/$TARGET_FILENAME" \
+            Package Version Architecture Source Installed-Size Depends Recommends \
+            > "$base/evidence/control-fields.txt"
+          test "$(dpkg-deb -f "$base/target/$TARGET_FILENAME" Package)" = "$TARGET_SOURCE"
+          test "$(dpkg-deb -f "$base/target/$TARGET_FILENAME" Version)" = "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$base/target/$TARGET_FILENAME" Architecture)" = "$TARGET_ARCHITECTURE"
+          rm -rf "$base/download"
+
+      - name: Recover packaged changelog and payload evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/gooroom-guide-audit-v2
+          find "$base/rootfs/usr/share/doc" -type f -name 'changelog*.gz' -print0 2>/dev/null \
+            | while IFS= read -r -d '' path; do
+                name="$(basename "$path" .gz)"
+                gzip -cd "$path" > "$base/evidence/packaged-${name}.txt"
+              done
+          find "$base/rootfs/usr/share/doc" -type f -name copyright -print0 2>/dev/null \
+            | while IFS= read -r -d '' path; do
+                cp "$path" "$base/evidence/packaged-copyright.txt"
+              done
+          find "$base/rootfs" -type f -print0 | sort -z | xargs -0 file \
+            > "$base/evidence/file-report.txt"
+          grep -E 'ELF|PE32|Mach-O' "$base/evidence/file-report.txt" \
+            > "$base/evidence/native-payload-report.txt" || true
+
+      - name: Mirror all plausible public source histories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          clone_root=work/gooroom-guide-audit-v2/git
+          while IFS='|' read -r key url; do
+            set +e
+            git clone --mirror "$url" "$clone_root/$key.git" \
+              > "$clone_root/$key.clone.stdout" \
+              2> "$clone_root/$key.clone.stderr"
+            rc=$?
+            set -e
+            printf '%s\n' "$rc" > "$clone_root/$key.clone.exit-code"
+            if [ "$rc" -ne 0 ]; then
+              rm -rf "$clone_root/$key.git"
+            fi
+          done <<'EOF'
+          hancomgooroom|https://github.com/hancomgooroom/gooroom-guide.git
+          hancom-io|https://github.com/hancom-io/gooroom-guide.git
+          gooroom|https://github.com/gooroom/gooroom-guide.git
+          EOF
+
+      - name: Correlate package payload and complete Git histories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/gooroom-guide-audit-v2
+          python3 arm64/scripts/audit_packaged_payload_against_git.py \
+            --rootfs "$base/rootfs" \
+            --control "$base/control" \
+            --evidence "$base/evidence" \
+            --git-root "$base/git" \
+            --source "$TARGET_SOURCE" \
+            --version "$TARGET_VERSION"
+          jq -e \
+            --arg source "$TARGET_SOURCE" \
+            --arg version "$TARGET_VERSION" \
+            --arg architecture "$TARGET_ARCHITECTURE" '
+              .source == $source
+              and .source_version == $version
+              and .package == $source
+              and .package_version == $version
+              and .architecture == $architecture
+              and .packaged_changelog_target_entry_count == 1
+              and (.repositories_cloned | length) > 0
+            ' "$base/evidence/summary.json" >/dev/null
+
+      - name: Seal the compact audit with relative paths
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/gooroom-guide-audit-v2/evidence
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload exact package history evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-0.5.3-grm3u1-han3u1-payload-audit-v2
+          path: work/gooroom-guide-audit-v2/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable current audit evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/gooroom-guide-han3u1-audit/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/gooroom-guide-audit-v2/evidence/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit exact Gooroom guide vendor package history'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
