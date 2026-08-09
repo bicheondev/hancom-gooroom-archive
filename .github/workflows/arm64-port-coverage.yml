@@ -7,6 +7,7 @@ on:
       - '.github/workflows/arm64-port-coverage.yml'
       - 'arm64/scripts/report_arm64_port_coverage.py'
       - 'arm64/scripts/merge_reconstructed_source_locks.py'
+      - 'arm64/scripts/resolve_verified_source_recovery_blockers.py'
       - 'arm64/rebuild-batches.json'
       - 'arm64/source-recovery-blockers.json'
       - 'arm64/locks/reference/**'
@@ -49,8 +50,11 @@ jobs:
           test -f "$base_lock"
           test -f arm64/source-recovery-blockers.json
 
-          rm -rf work/port-coverage work/effective-source-lock.json
-          mkdir -p work
+          rm -rf \
+            work/port-coverage \
+            work/effective-source-lock.json \
+            work/source-recovery-blockers.filtered.json
+          mkdir -p work/port-coverage
           lock="$base_lock"
           reconstructed=arm64/locks/reconstructed-sources/source-locks.json
           if [ -f "$reconstructed" ]; then
@@ -61,12 +65,27 @@ jobs:
             lock=work/effective-source-lock.json
           fi
 
+          python3 arm64/scripts/resolve_verified_source_recovery_blockers.py \
+            --blockers arm64/source-recovery-blockers.json \
+            --rebuild-results arm64/locks/rebuild-results \
+            --output work/source-recovery-blockers.filtered.json \
+            --resolutions-output work/port-coverage/source-recovery-resolutions.json
+          jq -e '
+            .original_blocker_count >= .blocker_count
+            and .resolved_count == (.resolved | length)
+            and .blocker_count == (.sources | length)
+          ' work/source-recovery-blockers.filtered.json >/dev/null
+          jq -e '
+            .remaining_blocker_count >= 0
+            and .resolved_count == (.resolutions | length)
+          ' work/port-coverage/source-recovery-resolutions.json >/dev/null
+
           python3 arm64/scripts/report_arm64_port_coverage.py \
             --reference arm64/locks/reference/amd64-reference.json \
             --source-lock "$lock" \
             --rebuild-plan arm64/rebuild-batches.json \
             --rebuild-results arm64/locks/rebuild-results \
-            --source-recovery-blockers arm64/source-recovery-blockers.json \
+            --source-recovery-blockers work/source-recovery-blockers.filtered.json \
             --output-dir work/port-coverage
           find work/port-coverage -type f ! -name LOCKSUMS.sha256 -print0 \
             | sort -z \
@@ -78,9 +97,15 @@ jobs:
             echo
             echo "- Source authority: \`$lock\`"
             echo "- Base authority: \`$base_lock\`"
+            echo '- Source-recovery gate: strict persisted ARM64 reconstruction verification'
             echo
             echo '```json'
             cat work/port-coverage/summary.json
+            echo '```'
+            echo
+            echo '### Resolved source-recovery gates'
+            echo '```json'
+            cat work/port-coverage/source-recovery-resolutions.json
             echo '```'
             echo
             echo '### Source recovery required'
@@ -124,6 +149,7 @@ jobs:
             source-blockers.json \
             build-blockers.json \
             source-recovery-required.json \
+            source-recovery-resolutions.json \
             LOCKSUMS.sha256; do
             cp "work/port-coverage/$name" "arm64/status/$name"
           done
@@ -138,6 +164,7 @@ jobs:
             arm64/status/source-blockers.json \
             arm64/status/build-blockers.json \
             arm64/status/source-recovery-required.json \
+            arm64/status/source-recovery-resolutions.json \
             arm64/status/LOCKSUMS.sha256
           if git diff --cached --quiet; then
             exit 0
