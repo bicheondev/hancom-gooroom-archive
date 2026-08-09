@@ -5,6 +5,7 @@ on:
     branches: [arm64-port]
     paths:
       - '.github/workflows/arm64-build-wave5-browser.yml'
+      - 'arm64/scripts/patch_gooroom_browser_arm64_packaging.py'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/run_locked_source_arm64_component_compat.sh'
       - 'arm64/scripts/run_locked_source_arm64_component_ccache.sh'
@@ -62,7 +63,7 @@ jobs:
           df -h
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            git jq dpkg-dev ca-certificates file python3
+            binutils git jq dpkg-dev ca-certificates file python3
 
       - name: Provision bounded swap for the three-job native compile
         shell: bash
@@ -110,6 +111,14 @@ jobs:
             arm64/scripts/run_locked_source_arm64_component_ccache.sh \
             arm64/scripts/prepare_composite_source_chroot.sh \
             arm64/scripts/verify_locked_arm64_build.sh
+          python3 -m py_compile \
+            arm64/scripts/patch_gooroom_browser_arm64_packaging.py
+          python3 arm64/scripts/patch_gooroom_browser_arm64_packaging.py \
+            arm64/scripts/run_locked_source_arm64.sh
+          grep -Fq \
+            'gooroom-browser-arm64-packaging-compatibility.json' \
+            arm64/scripts/run_locked_source_arm64.sh
+          bash -n arm64/scripts/run_locked_source_arm64.sh
           bash -n arm64/scripts/run_locked_source_arm64_component_ccache.sh
           set +e
           arm64/scripts/run_locked_source_arm64_component_ccache.sh
@@ -202,12 +211,77 @@ jobs:
         env:
           HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
           HANCOM_GOOROOM_SOURCE_COMPONENT_LOCK_DIR: ${{ github.workspace }}/arm64/locks/source-components
+        shell: bash
         run: |
           set -euxo pipefail
+          output=work/gooroom-browser-arm64
           arm64/scripts/verify_locked_arm64_build.sh \
             arm64/locks/effective-sources-v3/effective-source-lock.json \
             gooroom-browser \
-            work/gooroom-browser-arm64
+            "$output"
+
+          compatibility="$output/gooroom-browser-arm64-packaging-compatibility.json"
+          test -f "$compatibility"
+          jq -e '
+            .schema == 1
+            and .source == "gooroom-browser"
+            and .target_architecture == "arm64"
+            and .policy == "replace-packaged-prebuilt-crashpad-with-same-build-native-output"
+            and .original_install_source == "debian/setups/chrome_crashpad_handler usr/lib/gooroom-browser"
+            and .replacement_install_source == "out/Release/chrome_crashpad_handler usr/lib/gooroom-browser"
+            and .source_or_version_changed == false
+            and .byte_identity_claimed == false
+            and .native_build_output_required == true
+            and (.original_payload_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$compatibility" >/dev/null
+
+          mapfile -t browser_debs < <(
+            for deb in "$output"/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = gooroom-browser ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#browser_debs[@]}" -eq 1
+          browser_deb="${browser_debs[0]}"
+          test "$(dpkg-deb -f "$browser_deb" Version)" = '3.5.0-1+grm3u3'
+          test "$(dpkg-deb -f "$browser_deb" Architecture)" = arm64
+
+          root="$(mktemp -d)"
+          trap 'rm -rf "$root"' EXIT
+          dpkg-deb -x "$browser_deb" "$root"
+          handler="$root/usr/lib/gooroom-browser/chrome_crashpad_handler"
+          test -f "$handler"
+          test -x "$handler"
+          handler_file="$(file -b "$handler")"
+          printf '%s\n' "$handler_file"
+          grep -Eq '^ELF 64-bit .*ARM aarch64' <<<"$handler_file"
+          readelf -h "$handler" | grep -Eq 'Machine:[[:space:]]+AArch64'
+          handler_sha256="$(sha256sum "$handler" | awk '{print $1}')"
+
+          jq -n \
+            --arg package_file "$(basename "$browser_deb")" \
+            --arg package_sha256 "$(sha256sum "$browser_deb" | awk '{print $1}')" \
+            --arg handler_path /usr/lib/gooroom-browser/chrome_crashpad_handler \
+            --arg handler_file "$handler_file" \
+            --arg handler_sha256 "$handler_sha256" \
+            '{
+              schema: 1,
+              source: "gooroom-browser",
+              source_version: "3.5.0-1+grm3u3",
+              package: "gooroom-browser",
+              architecture: "arm64",
+              package_file: $package_file,
+              package_sha256: $package_sha256,
+              handler_path: $handler_path,
+              handler_file: $handler_file,
+              handler_sha256: $handler_sha256,
+              handler_machine: "AArch64",
+              prebuilt_downstream_handler_installed: false,
+              verified: true
+            }' > "$output/gooroom-browser-crashpad-verification.json"
+          rm -rf "$root"
+          trap - EXIT
 
       - name: Upload exact browser DEBs and verification evidence
         if: steps.build.outputs.complete == 'true'
