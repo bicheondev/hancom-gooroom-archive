@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 159,
-    "workflow_name_count": 159,
-    "referenced_local_file_count": 250,
+    "workflow_count": 160,
+    "workflow_name_count": 160,
+    "referenced_local_file_count": 251,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -2344,6 +2344,24 @@
       ]
     },
     {
+      "filename": "arm64-recover-exact-source-archives.yml",
+      "path": ".github/workflows/arm64-recover-exact-source-archives.yml",
+      "name": "ARM64 port - recover exact source archives",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/recover_exact_source_archives.py"
+      ]
+    },
+    {
       "filename": "arm64-recover-exact-vendor-sources-v2.yml",
       "path": ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       "name": "ARM64 port - recover exact signed vendor sources v2",
@@ -3908,6 +3926,9 @@
     "arm64/scripts/recover_exact_arm64_package_pool_v2.py": [
       ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-recover-exact-package-pool.yml"
+    ],
+    "arm64/scripts/recover_exact_source_archives.py": [
+      ".github/workflows/arm64-recover-exact-source-archives.yml"
     ],
     "arm64/scripts/recover_exact_vendor_sources_v2.py": [
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml"
