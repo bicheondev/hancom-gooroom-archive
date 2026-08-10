@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 158,
-    "workflow_name_count": 158,
-    "referenced_local_file_count": 249,
+    "workflow_count": 159,
+    "workflow_name_count": 159,
+    "referenced_local_file_count": 250,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -2399,6 +2399,28 @@
       ]
     },
     {
+      "filename": "arm64-recover-from-signed-sources-index-v2.yml",
+      "path": ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml",
+      "name": "ARM64 port - recover exact sources from signed Sources indexes v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/recover_from_signed_sources_index_v1.py",
+        "arm64/scripts/recover_from_signed_sources_index_v2.py",
+        "arm64/scripts/recover_vendor_sources_wayback.py",
+        "arm64/status/source-blockers.json"
+      ]
+    },
+    {
       "filename": "arm64-recovery-stage0-v1.yml",
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "name": "ARM64 port - build verified recovery stage-0 ISO",
@@ -3434,6 +3456,7 @@
       ".github/workflows/arm64-recover-exact-package-pool.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
       ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
+      ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml",
       ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
       ".github/workflows/arm64-retry-wave1-full-binary.yml",
       ".github/workflows/arm64-source-authority-v5.yml",
@@ -3890,9 +3913,14 @@
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml"
     ],
     "arm64/scripts/recover_from_signed_sources_index_v1.py": [
-      ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml"
+      ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
+      ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml"
+    ],
+    "arm64/scripts/recover_from_signed_sources_index_v2.py": [
+      ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml"
     ],
     "arm64/scripts/recover_vendor_sources_wayback.py": [
+      ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml",
       ".github/workflows/arm64-wayback-source-recovery.yml"
     ],
@@ -4184,7 +4212,8 @@
     ],
     "arm64/status/source-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml",
-      ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml"
+      ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
+      ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml"
     ],
     "arm64/status/source-recovery-required.json": [
       ".github/workflows/arm64-port-coverage.yml"
