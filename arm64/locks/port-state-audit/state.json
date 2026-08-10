@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-3.3-arm64-port-state-audit-v1",
-  "generated_at": "2026-08-06T10:33:00.450914Z",
+  "generated_at": "2026-08-10T14:18:41.346088Z",
   "status": "in-progress",
   "reference": {
     "iso_sha256": "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a",
@@ -15,19 +15,19 @@
     "source_count": 74,
     "status_counts": {
       "arch-replace": 1,
-      "resolved": 55,
-      "unresolved-exact-source": 18
+      "resolved": 59,
+      "unresolved-exact-source": 14
     },
-    "exact_git_source_count": 55,
+    "exact_git_source_count": 59,
     "native_source_count": 54,
-    "unresolved_native_source_count": 11
+    "unresolved_native_source_count": 10
   },
   "native_builds": {
     "passed_source_count": 0,
     "passed_sources": [],
     "failed_source_count": 0,
     "failed_sources": [],
-    "resolved_unbuilt_source_count": 43,
+    "resolved_unbuilt_source_count": 44,
     "resolved_unbuilt_sources": [
       "accountsservice",
       "celluloid",
@@ -66,6 +66,7 @@
       "nautilus",
       "network-manager",
       "network-manager-applet",
+      "nimf",
       "p7zip",
       "pam-gooroom",
       "policykit-1",
@@ -80,7 +81,7 @@
         "path": "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/arm64/locks/build-wave1-v4/summary.json",
         "schema": "hancom-gooroom-arm64-build-wave1-v4-evidence",
         "status": "failed",
-        "generated_at": "2026-08-06T10:28:29.260439Z",
+        "generated_at": "2026-08-07T04:55:45.309494Z",
         "expected_sources": [
           "accountsservice",
           "file-roller",
@@ -108,11 +109,93 @@
         "workflow_run": {
           "workflow_name": "ARM64 port - build and record exact package wave 1 v4",
           "repository": "bicheondev/hancom-gooroom-archive",
-          "run_id": "31093188433",
+          "run_id": "31148784669",
           "run_attempt": "1",
           "head_branch": "arm64-port",
-          "head_sha": "cf75aa75b5070113ce185610ba11590b4d38b245",
-          "url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31093188433"
+          "head_sha": "0f88944831f977b422fab46df9e7b7f607a235f0",
+          "url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148784669"
+        }
+      },
+      {
+        "path": "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/arm64/locks/build-wave2-v2/summary.json",
+        "schema": "hancom-gooroom-arm64-build-wave2-v2-evidence",
+        "status": "failed",
+        "generated_at": "2026-08-07T05:02:37.667995Z",
+        "expected_sources": [
+          "adduser",
+          "arc-icon-theme",
+          "debian-system-adjustments",
+          "eog",
+          "flat-remix-gtk-theme",
+          "gooroom-agent-service",
+          "gooroom-archive-keyring",
+          "gooroom-artwork-common"
+        ],
+        "recorded_sources": [],
+        "missing_sources": [
+          "adduser",
+          "arc-icon-theme",
+          "debian-system-adjustments",
+          "eog",
+          "flat-remix-gtk-theme",
+          "gooroom-agent-service",
+          "gooroom-archive-keyring",
+          "gooroom-artwork-common"
+        ],
+        "failed_sources": [],
+        "packages": [],
+        "reasons": [
+          "missing source evidence: adduser, arc-icon-theme, debian-system-adjustments, eog, flat-remix-gtk-theme, gooroom-agent-service, gooroom-archive-keyring, gooroom-artwork-common"
+        ],
+        "workflow_run": {
+          "workflow_name": "ARM64 port - select build and record exact package wave 2 v2",
+          "repository": "bicheondev/hancom-gooroom-archive",
+          "run_id": "31148784673",
+          "run_attempt": "1",
+          "head_branch": "arm64-port",
+          "head_sha": "0f88944831f977b422fab46df9e7b7f607a235f0",
+          "url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148784673"
+        }
+      },
+      {
+        "path": "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/arm64/locks/build-wave2-v3/summary.json",
+        "schema": "hancom-gooroom-arm64-build-wave2-v3-evidence",
+        "status": "failed",
+        "generated_at": "2026-08-07T04:57:22.856351Z",
+        "expected_sources": [
+          "adduser",
+          "arc-icon-theme",
+          "debian-system-adjustments",
+          "eog",
+          "flat-remix-gtk-theme",
+          "gooroom-agent-service",
+          "gooroom-archive-keyring",
+          "gooroom-artwork-common"
+        ],
+        "recorded_sources": [],
+        "missing_sources": [
+          "adduser",
+          "arc-icon-theme",
+          "debian-system-adjustments",
+          "eog",
+          "flat-remix-gtk-theme",
+          "gooroom-agent-service",
+          "gooroom-archive-keyring",
+          "gooroom-artwork-common"
+        ],
+        "failed_sources": [],
+        "packages": [],
+        "reasons": [
+          "missing source evidence: adduser, arc-icon-theme, debian-system-adjustments, eog, flat-remix-gtk-theme, gooroom-agent-service, gooroom-archive-keyring, gooroom-artwork-common"
+        ],
+        "workflow_run": {
+          "workflow_name": "ARM64 port - select build and record exact package wave 2 v3",
+          "repository": "bicheondev/hancom-gooroom-archive",
+          "run_id": "31148784667",
+          "run_attempt": "1",
+          "head_branch": "arm64-port",
+          "head_sha": "0f88944831f977b422fab46df9e7b7f607a235f0",
+          "url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148784667"
         }
       }
     ]
@@ -140,7 +223,7 @@
   "blockers": [
     {
       "type": "unresolved-native-source",
-      "count": 11,
+      "count": 10,
       "sources": [
         "gnome-flashback",
         "gooroom-applauncher-applet",
@@ -151,13 +234,12 @@
         "gooroom-session-manager",
         "linux",
         "linux-signed-amd64",
-        "nimf",
         "qtbase-opensource-src"
       ]
     },
     {
       "type": "resolved-native-source-not-yet-built",
-      "count": 43,
+      "count": 44,
       "sources": [
         "accountsservice",
         "celluloid",
@@ -196,6 +278,7 @@
         "nautilus",
         "network-manager",
         "network-manager-applet",
+        "nimf",
         "p7zip",
         "pam-gooroom",
         "policykit-1",
@@ -783,7 +866,7 @@
     {
       "source": "gooroom-agent-service",
       "source_version": "0.4.8+grm3u1",
-      "status": "unresolved-exact-source",
+      "status": "resolved",
       "role": "reuse-all",
       "native_binary_count": 0,
       "architecture_all_binary_count": 1,
@@ -794,7 +877,18 @@
           "architecture": "all"
         }
       ],
-      "selected": null,
+      "selected": {
+        "type": "git",
+        "repository_full_name": "gooroom/gooroom-agent-service",
+        "commit_sha": "e36c9c0934710e2d70cb1f7dcb1507410edfea52",
+        "tree_sha": "c0e8dd80095abd6c81659006b783f1ec1c278d4c",
+        "ref_kind": "tag",
+        "ref_name": "gooroom/0.4.8+grm3u1",
+        "match_scope": "ref-tip",
+        "source_archive": "https://github.com/gooroom/gooroom-agent-service/archive/e36c9c0934710e2d70cb1f7dcb1507410edfea52.tar.gz",
+        "declared_source": "gooroom-agent-service",
+        "declared_version": "0.4.8+grm3u1"
+      },
       "reason": null
     },
     {
@@ -1112,7 +1206,7 @@
     {
       "source": "gooroom-info",
       "source_version": "3.3.0+grm3u1",
-      "status": "unresolved-exact-source",
+      "status": "resolved",
       "role": "reuse-all",
       "native_binary_count": 0,
       "architecture_all_binary_count": 1,
@@ -1123,7 +1217,18 @@
           "architecture": "all"
         }
       ],
-      "selected": null,
+      "selected": {
+        "type": "git",
+        "repository_full_name": "gooroom/gooroom-info",
+        "commit_sha": "ee417b75cfe8a442f4876591ce0ca3814f595bc2",
+        "tree_sha": "c0d97f030de5d86080ac67ed3210eb6f80b018b7",
+        "ref_kind": "tag",
+        "ref_name": "gooroom/3.3.0+grm3u1",
+        "match_scope": "ref-tip",
+        "source_archive": "https://github.com/gooroom/gooroom-info/archive/ee417b75cfe8a442f4876591ce0ca3814f595bc2.tar.gz",
+        "declared_source": "gooroom-info",
+        "declared_version": "3.3.0+grm3u1"
+      },
       "reason": null
     },
     {
@@ -1502,7 +1607,7 @@
     {
       "source": "gooroomsystem",
       "source_version": "1.1.3+grm3u1",
-      "status": "unresolved-exact-source",
+      "status": "resolved",
       "role": "reuse-all",
       "native_binary_count": 0,
       "architecture_all_binary_count": 1,
@@ -1513,7 +1618,18 @@
           "architecture": "all"
         }
       ],
-      "selected": null,
+      "selected": {
+        "type": "git",
+        "repository_full_name": "gooroom/gooroomsystem",
+        "commit_sha": "4ffafbff7cfd57191b24a9621acfd36ef97b4aa5",
+        "tree_sha": "c5d4e1311b16547ff077c8adc86c34549cdf0110",
+        "ref_kind": "tag",
+        "ref_name": "gooroom/1.1.3+grm3u1",
+        "match_scope": "ref-tip",
+        "source_archive": "https://github.com/gooroom/gooroomsystem/archive/4ffafbff7cfd57191b24a9621acfd36ef97b4aa5.tar.gz",
+        "declared_source": "gooroomsystem",
+        "declared_version": "1.1.3+grm3u1"
+      },
       "reason": null
     },
     {
@@ -2027,7 +2143,7 @@
     {
       "source": "nimf",
       "source_version": "2023.06.30+grm3u1",
-      "status": "unresolved-exact-source",
+      "status": "resolved",
       "role": "rebuild-arm64",
       "native_binary_count": 3,
       "architecture_all_binary_count": 0,
@@ -2046,7 +2162,18 @@
         }
       ],
       "architecture_all_binary_packages": [],
-      "selected": null,
+      "selected": {
+        "type": "git",
+        "repository_full_name": "gooroom/nimf",
+        "commit_sha": "583ad8b183db06a84c6b85a80fe132583566909d",
+        "tree_sha": "a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d",
+        "ref_kind": "tag",
+        "ref_name": "gooroom/2023.06.30+grm3u1",
+        "match_scope": "ref-tip",
+        "source_archive": "https://github.com/gooroom/nimf/archive/583ad8b183db06a84c6b85a80fe132583566909d.tar.gz",
+        "declared_source": "nimf",
+        "declared_version": "2023.06.30+grm3u1"
+      },
       "reason": null
     },
     {

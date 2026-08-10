@@ -1,6 +1,6 @@
 # Hancom Gooroom 3.3 ARM64 port state
 
-Generated: `2026-08-06T10:33:00.450914Z`
+Generated: `2026-08-10T14:18:41.346088Z`
 Status: **in-progress**
 
 ## Reference fidelity
@@ -13,11 +13,11 @@ Status: **in-progress**
 ## Exact source and native builds
 
 - Effective source rows: `74`
-- Exact Git sources: `55`
+- Exact Git sources: `59`
 - Native source rows: `54`
 - Passed native source builds: `0`
 - Failed native source builds: `0`
-- Resolved but not yet built: `43`
+- Resolved but not yet built: `44`
 
 ## Boot gates
 
@@ -26,10 +26,10 @@ Status: **in-progress**
 
 ## Current blockers
 
-- **unresolved-native-source**: 11
-  - `gnome-flashback`, `gooroom-applauncher-applet`, `gooroom-dockbarx-applet`, `gooroom-greeter`, `gooroom-guide`, `gooroom-integration-applet`, `gooroom-session-manager`, `linux`, `linux-signed-amd64`, `nimf`, `qtbase-opensource-src`
-- **resolved-native-source-not-yet-built**: 43
-  - `accountsservice`, `celluloid`, `cups-pk-helper`, `dpkg`, `eog`, `file-roller`, `gdebi`, `gedit`, `gnome-bluetooth`, `gnome-control-center`, `gnome-panel`, `gnome-screenshot`, `gnome-settings-daemon`, `gooroom-browser`, `gooroom-dockbarx`, `gooroom-indicator-applet`, `gooroom-libsecurity-extensions`, `gooroom-logout`, `gooroom-notice-applet`, `gooroom-notifyd`, `gooroom-resource-access-control`, `gooroom-security-status-tools`, `gooroom-showdesktop-applet`, `gooroom-software`, `gtk+2.0`, `gtk+3.0`, `hancom-toolkit`, `hancom-viewer-installer`, `hancomgrm-adjustments-utils`, `libnma`, `lightdm`, `live-config`, `metacity`, `mousetweaks`, `nautilus`, `network-manager`, `network-manager-applet`, `p7zip`, `pam-gooroom`, `policykit-1`, `synaptic`, `system-config-printer`, `yelp`
+- **unresolved-native-source**: 10
+  - `gnome-flashback`, `gooroom-applauncher-applet`, `gooroom-dockbarx-applet`, `gooroom-greeter`, `gooroom-guide`, `gooroom-integration-applet`, `gooroom-session-manager`, `linux`, `linux-signed-amd64`, `qtbase-opensource-src`
+- **resolved-native-source-not-yet-built**: 44
+  - `accountsservice`, `celluloid`, `cups-pk-helper`, `dpkg`, `eog`, `file-roller`, `gdebi`, `gedit`, `gnome-bluetooth`, `gnome-control-center`, `gnome-panel`, `gnome-screenshot`, `gnome-settings-daemon`, `gooroom-browser`, `gooroom-dockbarx`, `gooroom-indicator-applet`, `gooroom-libsecurity-extensions`, `gooroom-logout`, `gooroom-notice-applet`, `gooroom-notifyd`, `gooroom-resource-access-control`, `gooroom-security-status-tools`, `gooroom-showdesktop-applet`, `gooroom-software`, `gtk+2.0`, `gtk+3.0`, `hancom-toolkit`, `hancom-viewer-installer`, `hancomgrm-adjustments-utils`, `libnma`, `lightdm`, `live-config`, `metacity`, `mousetweaks`, `nautilus`, `network-manager`, `network-manager-applet`, `nimf`, `p7zip`, `pam-gooroom`, `policykit-1`, `synaptic`, `system-config-printer`, `yelp`
 - **minimal-arm64-uefi-boot-not-passed**
 - **stage0-desktop-arm64-uefi-boot-not-passed**
 
