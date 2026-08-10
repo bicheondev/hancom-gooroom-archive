@@ -195,11 +195,11 @@ jobs:
           path: ${{ env.CACHE_DIR }}
           key: ${{ env.CACHE_PREFIX }}-${{ github.run_id }}
 
-      - name: Upload partial-round diagnostics
-        if: always() && steps.build.outputs.complete != 'true'
+      - name: Upload browser output before fail-closed verification
+        if: always() && steps.build.outputs.cache_ready == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: gooroom-browser-arm64-ccache-round-${{ env.ROUND }}-${{ github.run_id }}
+          name: gooroom-browser-preverification-arm64-${{ env.ROUND }}-${{ github.run_id }}
           path: work/gooroom-browser-arm64
           if-no-files-found: warn
           include-hidden-files: true
