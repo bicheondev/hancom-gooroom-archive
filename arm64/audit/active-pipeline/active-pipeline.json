@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 167,
-    "workflow_name_count": 167,
-    "referenced_local_file_count": 258,
+    "workflow_count": 168,
+    "workflow_name_count": 168,
+    "referenced_local_file_count": 260,
     "error_count": 1,
-    "warning_count": 39,
+    "warning_count": 40,
     "passed": false
   },
   "workflows": [
@@ -2678,6 +2678,25 @@
       ]
     },
     {
+      "filename": "arm64-seal-recovered-source-bundles.yml",
+      "path": ".github/workflows/arm64-seal-recovered-source-bundles.yml",
+      "name": "ARM64 port - seal recovered exact source bundles",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json",
+        "arm64/locks/reference-apt-source-recovery/latest/summary.json",
+        "arm64/scripts/prepare_recovered_source_bundles.py"
+      ]
+    },
+    {
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
@@ -3562,8 +3581,12 @@
     "arm64/locks/recovered-rootfs/rootfs-verification.json": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
     ],
+    "arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json": [
+      ".github/workflows/arm64-seal-recovered-source-bundles.yml"
+    ],
     "arm64/locks/reference-apt-source-recovery/latest/summary.json": [
-      ".github/workflows/arm64-probe-reference-apt-dsc-pools.yml"
+      ".github/workflows/arm64-probe-reference-apt-dsc-pools.yml",
+      ".github/workflows/arm64-seal-recovered-source-bundles.yml"
     ],
     "arm64/locks/reference/amd64-reference.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
@@ -3997,6 +4020,9 @@
     ],
     "arm64/scripts/prepare_rebuild_release_assets_v2.py": [
       ".github/workflows/arm64-publish-rebuild-packages.yml"
+    ],
+    "arm64/scripts/prepare_recovered_source_bundles.py": [
+      ".github/workflows/arm64-seal-recovered-source-bundles.yml"
     ],
     "arm64/scripts/probe_exact_dsc_pool_candidates.py": [
       ".github/workflows/arm64-probe-reference-apt-dsc-pools.yml"
@@ -4559,6 +4585,11 @@
     {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-seal-recovered-source-bundles.yml",
+      "local_path": "arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
