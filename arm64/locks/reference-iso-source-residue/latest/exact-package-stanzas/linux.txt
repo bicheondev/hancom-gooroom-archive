@@ -1,0 +1,835 @@
+Package: bpftool
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 1055
+Depends: libc6 (>= 2.26), libcap2 (>= 1:2.10), libelf1 (>= 0.142), zlib1g (>= 1:1.2.3.3)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: devel
+Filename: pool/main/l/linux/bpftool_5.10.179-1+grm3u1_amd64.deb
+Size: 771432
+SHA256: c5bcd6759b0033cec993442688430baaebaa05115c2f9fb2c63b1ea2cb382cf1
+SHA1: df1f483f9642130d1f2cdd42695e61acd3c7cff4
+MD5sum: b1b0a8725b8058d510aa49d2ddaee332
+Description: Inspection and simple manipulation of BPF programs and maps
+ The bpftool command allows for inspection and simple modification of
+ Berkeley Packet Filter (BPF) objects on the system.
+
+Package: bpftool-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 618
+Depends: bpftool (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/bpftool-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 586712
+SHA256: a1591215c7817686b438e3329f23eeba3e9b0d3c1df557a61cdd3cbe828f5d8f
+SHA1: 294102d0f6867466610ce880941aaa2a4db2ae65
+MD5sum: 91c2cad53adc7ba83535c383933172cf
+Description: debug symbols for bpftool
+Build-Ids: 8b192bf917ad6222a8a1d4f34faa351687f5657c
+
+Package: hyperv-daemons
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 679
+Pre-Depends: init-system-helpers (>= 1.54~)
+Depends: lsb-base, libc6 (>= 2.4)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: admin
+Filename: pool/main/l/linux/hyperv-daemons_5.10.179-1+grm3u1_amd64.deb
+Size: 604408
+SHA256: aa93cf7f3789230efff81a9700a2c7c56d7d266a79d0e7504b22c4cead2ed94f
+SHA1: b903d80ae5d2bd8a91b9b2df669b508456a82c7e
+MD5sum: e453cac9e5c5f957ac483c7fdf380e10
+Description: Support daemons for Linux running on Hyper-V
+ Suite of daemons for Linux guests running on Hyper-V, consisting of
+ hv_fcopy_daemon, hv_kvp_daemon and hv_vss_daemon.
+ .
+ hv_fcopy_daemon provides the file copy service, allowing the host to copy
+ files into the guest.
+ .
+ hv_kvp_daemon provides the key-value pair (KVP) service, allowing the host
+ to get and set the IP networking configuration of the guest.  (This
+ requires helper scripts which are not currently included.)
+ .
+ hv_vss_daemon provides the volume shadow copy service (VSS), allowing the
+ host to freeze the guest filesystems while taking a snapshot.
+
+Package: hyperv-daemons-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 78
+Depends: hyperv-daemons (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/hyperv-daemons-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 47872
+SHA256: 1ccf316d63eefc1d8c0bf7174560c33b1a0f75e75af8edf8d2e50d29cb5c21f8
+SHA1: c82a2678d54c99ee5e72a0e307b8147709a670e8
+MD5sum: d99e6f8c1062408e23281707026732c4
+Description: debug symbols for hyperv-daemons
+Build-Ids: b2043bbecb697270a1610660947d9ec5348a4150 cdbc8bb2ac9816ccf075e471e1cdc4cd2bd0200c d6825f851c23d4fb2bdb3b36acd60ccdcb26bc4b
+
+Package: libcpupower-dev
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 599
+Depends: libcpupower1 (= 5.10.179-1+grm3u1)
+Conflicts: libcpufreq-dev
+Replaces: libcpufreq-dev
+Provides: libcpufreq-dev
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: libdevel
+Filename: pool/main/l/linux/libcpupower-dev_5.10.179-1+grm3u1_amd64.deb
+Size: 588872
+SHA256: 20bb2f591a90e5a83c1c6a3f54128f61a125c1f139e64311ad9233c28fc9c297
+SHA1: c73a97b9fc1bbd68a1a21606ca7feb76d60572d6
+MD5sum: a0d780ce523c75bfb1ea22b2650d917b
+Description: CPU frequency and voltage scaling tools for Linux (development files)
+ libcpupower is a library for inspecting and controlling cpufreq and
+ cpuidle tunables.
+ .
+ This package is needed to compile programs against libcpupower.
+
+Package: libcpupower1
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 622
+Depends: libc6 (>= 2.7)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: libs
+Filename: pool/main/l/linux/libcpupower1_5.10.179-1+grm3u1_amd64.deb
+Size: 594276
+SHA256: 39b549a8b4e2a5c25647e3d2a79d4d6da77c0a03c2bd975364789386d4ca3415
+SHA1: 4281e04fd92deeb7b7fb44f757f7e0ffef2565c5
+MD5sum: df00c5e2c7d076931cc39f3a57498df0
+Description: CPU frequency and voltage scaling tools for Linux (libraries)
+ libcpupower is a library for inspecting and controlling cpufreq and
+ cpuidle tunables.
+ .
+ This package contains the shared library.
+
+Package: libcpupower1-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 37
+Depends: libcpupower1 (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/libcpupower1-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 21904
+SHA256: 7bdb831ad781b29aaeb5cfb4bde6a530181703c6add7500a56f33f8897d3c566
+SHA1: e0218131ee4d19fe31d319e67e2852d6a80be284
+MD5sum: f6f51fb4e404894927c1d5350690c37d
+Description: debug symbols for libcpupower1
+Build-Ids: a3997eed4b905a9490cdfb8fffd436a2bbb7e6f1
+
+Package: linux-compiler-gcc-10-x86
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 588
+Depends: gcc-10
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-compiler-gcc-10-x86_5.10.179-1+grm3u1_amd64.deb
+Size: 587048
+SHA256: 40a10af609d8bc10dfdeb7c1472c1bfed62850915ddb43d114e980227ef51b9e
+SHA1: a2c7ef29f1269838b6d353b31e01b33291106b77
+MD5sum: 97a9ef3bd447790904647d0695ed6667
+Description: Compiler for Linux on x86 (meta-package)
+ This package depends on GCC of the appropriate version and architecture
+ for Linux on amd64, i386 and x32.
+
+Package: linux-config-5.10
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 709
+Recommends: linux-source-5.10
+Multi-Arch: same
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-config-5.10_5.10.179-1+grm3u1_amd64.deb
+Size: 708800
+SHA256: 8060e187de8587b97953534a73beef12b342893788724a805dd62cbbd99ccd08
+SHA1: 437d4c32d0c794eb54a8eb73100d0a6d3dae7922
+MD5sum: 97d30f599bc0a39f2cc5c9f7e8590dea
+Description: Debian kernel configurations for Linux 5.10
+ This package contains the configuration files used to build the official
+ Debian kernel files, but without references to Debian's signing
+ certificates.
+ .
+ These can be used as a basis for configuring custom kernels.
+
+Package: linux-cpupower
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 905
+Depends: libc6 (>= 2.17), libcap2 (>= 1:2.10), libcpupower1 (>= 5.5.8-1~exp1), libpci3 (>= 1:3.5.1)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: admin
+Filename: pool/main/l/linux/linux-cpupower_5.10.179-1+grm3u1_amd64.deb
+Size: 693448
+SHA256: 9574bc4189fbb642c110f31e6cd9c6ff858c8c194b8da6fa75e942f209afab25
+SHA1: f94ba11beea031d750068d7def95781aa6bd83a9
+MD5sum: 3abd485b6b9e538db8e83df46e8e8313
+Description: CPU power management tools for Linux
+ The cpupower command allows inspection and control of cpufreq and cpuidle
+ tunables for hardware that supports these features.  It replaces
+ "cpufreq-info" and "cpufreq-set" in cpufrequtils.
+ .
+ The turbostat command reports topology, frequency, idle power-state
+ statistics, temperature and power consumption information as provided
+ by the CPU.
+ .
+ The x86_energy_perf_policy command sets a general policy on some Intel
+ CPU models for the relative importance of performance versus energy
+ savings.
+
+Package: linux-cpupower-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 230
+Depends: linux-cpupower (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-cpupower-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 185468
+SHA256: 0ceaf5d7ee67054b6143c76079001d69eee0e8004709107bd5881f6d16145065
+SHA1: c2f92bb38584a4644cada4004da52833677ffcec
+MD5sum: c048e76555e31128ae9c934e9821fca5
+Description: debug symbols for linux-cpupower
+Build-Ids: 0f3a4959dfa0334f65a0607213cdb7418ce65deb 51b0bb6101a51dd10ba39890f814161358ac034a a7872730187684ab29b464d0f0e6a2834505438b
+
+Package: linux-doc
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 10
+Depends: linux-doc-5.10 (= 5.10.179-1+grm3u1)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: doc
+Filename: pool/main/l/linux/linux-doc_5.10.179-1+grm3u1_all.deb
+Size: 1112
+SHA256: 6c9a21be4da136dfebd25aa3a2e698c13b4d1faaf47dd0f7cd4b19169827e42f
+SHA1: a3b2a53041b0ad81651fae12f34f19604f1053e5
+MD5sum: f1453409ad056dcf3515878380868675
+Description: Linux kernel specific documentation (meta-package)
+ This package depends on the package containing the documentation for the
+ latest Linux kernel.
+
+Package: linux-doc-5.10
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 163476
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: doc
+Filename: pool/main/l/linux/linux-doc-5.10_5.10.179-1+grm3u1_all.deb
+Size: 30349620
+SHA256: 8e6642ddea84149dee73912e63a55530fc403a0eb31d285822a981507a966b5f
+SHA1: 556c20b1e355af05f6df9eb43a8d2ca2118004f7
+MD5sum: db05f9fd486104d82c6578610a9b9095
+Description: Linux kernel specific documentation for version 5.10
+ This package provides the various README files and HTML documentation for
+ the Linux kernel version 5.10.  Plenty of information, including the
+ descriptions of various kernel subsystems, filesystems, driver-specific
+ notes and the like.  An index to the documentation is installed as
+ /usr/share/doc/linux-doc-5.10/html/index.html.
+
+Package: linux-headers-5.10.0-23-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 5640
+Depends: linux-headers-5.10.0-23-common (= 5.10.179-1+grm3u1), linux-kbuild-5.10 (>= 5.10.179-1+grm3u1), linux-compiler-gcc-10-x86
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-headers-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 1109760
+SHA256: f0b397bf7880bc5b52901f73aac5296707e6e1eebd6c629e765b299de439d400
+SHA1: 8f75f3cfedd9ae146b4796a713c16b27082e9031
+MD5sum: 375b80c725fe547842cde2662c6c087b
+Description: Header files for Linux 5.10.0-23-amd64
+ This package provides the architecture-specific kernel header files for
+ Linux kernel 5.10.0-23-amd64, generally used for building out-of-tree
+ kernel modules.  These files are going to be installed into
+ /usr/src/linux-headers-5.10.0-23-amd64, and can be used for building
+ modules that load into the kernel provided by the
+ linux-image-5.10.0-23-amd64 package.
+
+Package: linux-headers-5.10.0-23-cloud-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 3245
+Depends: linux-headers-5.10.0-23-common (= 5.10.179-1+grm3u1), linux-kbuild-5.10 (>= 5.10.179-1+grm3u1), linux-compiler-gcc-10-x86
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-headers-5.10.0-23-cloud-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 858216
+SHA256: 74648eb7ecae094ab77ee2cb88cd63f89835ee79e7861b556a99636cb5ca2467
+SHA1: 7a0fffcd096212ed73a6a62767284862dddf5ef6
+MD5sum: 2aee763d7a8baff5ba29fc661c3dbc09
+Description: Header files for Linux 5.10.0-23-cloud-amd64
+ This package provides the architecture-specific kernel header files for
+ Linux kernel 5.10.0-23-cloud-amd64, generally used for building
+ out-of-tree kernel modules.  These files are going to be installed into
+ /usr/src/linux-headers-5.10.0-23-cloud-amd64, and can be used for building
+ modules that load into the kernel provided by the
+ linux-image-5.10.0-23-cloud-amd64 package.
+
+Package: linux-headers-5.10.0-23-common
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 52069
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-headers-5.10.0-23-common_5.10.179-1+grm3u1_all.deb
+Size: 9105416
+SHA256: f738d353ba68d2fb9d341220f6c08b282ad53444844f5431fee91d4a1d254f9b
+SHA1: 731c326473a0742e58d303ce3330389ebd5a9d2e
+MD5sum: ae5046227a8282b77af9632ebb6c711a
+Description: Common header files for Linux 5.10.0-23
+ This package provides the common kernel header files for Linux kernel
+ version 5.10.0-23, generally used for building out-of-tree kernel modules.
+ To obtain a complete set of headers you also need to install the
+ linux-headers-5.10.0-23-(flavour) package, matching the flavour of the
+ kernel you intend the build for.
+
+Package: linux-headers-5.10.0-23-common-rt
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 40936
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-headers-5.10.0-23-common-rt_5.10.179-1+grm3u1_all.deb
+Size: 7440944
+SHA256: c2acaf8b193bb9d8b9c778c995326d9d0738a1772f4304346f8986e59f2cec9c
+SHA1: c4463a8477780fdb513cb47eaf1c45fd30b18687
+MD5sum: 2b1e3f881ef2867fd8c3abf2893ac6fd
+Description: Common header files for Linux 5.10.0-23-rt
+ This package provides the common kernel header files for Linux kernel
+ version 5.10.0-23 with the PREEMPT_RT featureset, generally used for
+ building out-of-tree kernel modules.  To obtain a complete set of headers
+ you also need to install the linux-headers-5.10.0-23-(flavour) package,
+ matching the flavour of the kernel you intend the build for.
+
+Package: linux-headers-5.10.0-23-rt-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 5625
+Depends: linux-headers-5.10.0-23-common-rt (= 5.10.179-1+grm3u1), linux-kbuild-5.10 (>= 5.10.179-1+grm3u1), linux-compiler-gcc-10-x86
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-headers-5.10.0-23-rt-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 1109476
+SHA256: 07e34245b76a2d89f87c074e04c192f30922cb62d4678fd6fbf54b5baf7c14c9
+SHA1: 11e0ae21797f48190fd9fd61ed0f918d54b8d697
+MD5sum: 6cd9d454369913048d7b20b280e3530b
+Description: Header files for Linux 5.10.0-23-rt-amd64
+ This package provides the architecture-specific kernel header files for
+ Linux kernel 5.10.0-23-rt-amd64, generally used for building out-of-tree
+ kernel modules.  These files are going to be installed into
+ /usr/src/linux-headers-5.10.0-23-rt-amd64, and can be used for building
+ modules that load into the kernel provided by the
+ linux-image-5.10.0-23-rt-amd64 package.
+
+Package: linux-image-5.10.0-23-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 305533
+Depends: kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool
+Recommends: firmware-linux-free, apparmor
+Suggests: linux-doc-5.10, debian-kernel-handbook, grub-pc | grub-efi-amd64 | extlinux
+Conflicts: linux-image-5.10.0-23-amd64
+Breaks: fwupdate (<< 12-7), initramfs-tools (<< 0.120+deb8u2), wireless-regdb (<< 2019.06.03-1~), xserver-xorg-input-vmmouse (<< 1:13.0.99)
+Replaces: linux-image-5.10.0-23-amd64
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 54380584
+SHA256: 4c2f3b7dbb9f70dc429c2aa250a69a6475fa992cd8a2366dd420d16a1cd90748
+SHA1: 6bd8e4f42f332e2446a73d429493244ba05da550
+MD5sum: 7fb340b153fc3ce5fc5be2c8511dbaf2
+Description: Linux 5.10 for 64-bit PCs
+ The Linux kernel 5.10 and modules for use on PCs with AMD64, Intel 64 or
+ VIA Nano processors.
+
+Package: linux-image-5.10.0-23-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 5636449
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-image-5.10.0-23-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 797396848
+SHA256: 5ef05adb82c25e26bc1379a1128cac5428dbb3a549dd1fc33d532c87aa5b7f7e
+SHA1: 2affc7d0d451fcc90ea92d859c252a0b89c930ea
+MD5sum: 89de01d4ad7b7e0ae45c74c7d9f2e323
+Description: Debug symbols for linux-image-5.10.0-23-amd64
+ This package provides the detached debug symbols for the Linux kernel and
+ modules in linux-image-5.10.0-23-amd64.
+
+Package: linux-image-5.10.0-23-cloud-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 81186
+Depends: kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool
+Recommends: firmware-linux-free, apparmor
+Suggests: linux-doc-5.10, debian-kernel-handbook, grub-pc | grub-efi-amd64 | extlinux
+Conflicts: linux-image-5.10.0-23-cloud-amd64
+Breaks: fwupdate (<< 12-7), initramfs-tools (<< 0.120+deb8u2), wireless-regdb (<< 2019.06.03-1~), xserver-xorg-input-vmmouse (<< 1:13.0.99)
+Replaces: linux-image-5.10.0-23-cloud-amd64
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-5.10.0-23-cloud-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 20550228
+SHA256: 6ccd010c5d9f86ae351ab97fcc4f8ec4a95e3dcf99da5da049502b377781aea4
+SHA1: eee1d8bebb26229a6ecb858c07b52b6805529eb7
+MD5sum: 7781bc388638c0a648a6d5cea47eed45
+Description: Linux 5.10 for x86-64 cloud
+ The Linux kernel 5.10 and modules for use on cloud platforms including
+ Amazon EC2, Microsoft Azure, and Google Compute Engine.
+
+Package: linux-image-5.10.0-23-cloud-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 1778276
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-image-5.10.0-23-cloud-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 259568608
+SHA256: 93ac313f0581bcf9502de2df63a91c420a8d40b28c02403f932296cfba2290cc
+SHA1: 330c994d83ba701c93df1aa5003480c37d4294fa
+MD5sum: 777eede4c95a00319eba1fb88c896ca5
+Description: Debug symbols for linux-image-5.10.0-23-cloud-amd64
+ This package provides the detached debug symbols for the Linux kernel and
+ modules in linux-image-5.10.0-23-cloud-amd64.
+
+Package: linux-image-5.10.0-23-rt-amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 308304
+Depends: kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool
+Recommends: firmware-linux-free, apparmor
+Suggests: linux-doc-5.10, debian-kernel-handbook, grub-pc | grub-efi-amd64 | extlinux
+Conflicts: linux-image-5.10.0-23-rt-amd64
+Breaks: fwupdate (<< 12-7), initramfs-tools (<< 0.120+deb8u2), wireless-regdb (<< 2019.06.03-1~), xserver-xorg-input-vmmouse (<< 1:13.0.99)
+Replaces: linux-image-5.10.0-23-rt-amd64
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-5.10.0-23-rt-amd64_5.10.179-1+grm3u1_amd64.deb
+Size: 54731144
+SHA256: e100f6fe87a0d3c6a90496c5402a9ae0734d8504bf4f2b9d284f72668c9825d8
+SHA1: 9b631fece0b5d623678cb93b9a50a55264aa7d55
+MD5sum: 42797f103c881592d3038266081d25c7
+Description: Linux 5.10 for 64-bit PCs, PREEMPT_RT
+ The Linux kernel 5.10 and modules for use on PCs with AMD64, Intel 64 or
+ VIA Nano processors.
+ .
+ This kernel includes the PREEMPT_RT realtime patch set.
+
+Package: linux-image-5.10.0-23-rt-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 5642249
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-image-5.10.0-23-rt-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 792028732
+SHA256: 934688e51db3f0639b35d0cb53d596367a3b2f7ac4f6aca18ce0f266ea5dd0a0
+SHA1: 6c9a1484e0d995941da7d53994ada72a07704d62
+MD5sum: c3ed9042ff5256f1a9abf35c8d021699
+Description: Debug symbols for linux-image-5.10.0-23-rt-amd64
+ This package provides the detached debug symbols for the Linux kernel and
+ modules in linux-image-5.10.0-23-rt-amd64.
+
+Package: linux-image-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 13
+Depends: linux-image-5.10.0-23-amd64-dbg (= 5.10.179-1+grm3u1)
+Provides: linux-latest-image-dbg
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 1336
+SHA256: 1db21bd25c02646a7af5b94a27ec5163bba6b51fa2d63e719abe2d96c54b8462
+SHA1: 6edddbb41b7d551c9e175341c6be6160f4382bac
+MD5sum: 4c7d24d5b4d50c1414ce9a51e5ab3f83
+Description: Debugging symbols for Linux amd64 configuration (meta-package)
+ This package depends on the detached debugging symbols for the latest
+ Linux kernel amd64 configuration.
+
+Package: linux-image-cloud-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 13
+Depends: linux-image-5.10.0-23-cloud-amd64-dbg (= 5.10.179-1+grm3u1)
+Provides: linux-latest-image-dbg
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-cloud-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 1360
+SHA256: 91345244bedb0d050ccaec9b2facc833c8a11dc90c46dd33cc37a23fd62a944e
+SHA1: b9efbdb290f09c7e22600a751d908c95a50b390f
+MD5sum: 1d624b097cea5dedb8e840445b17ad2b
+Description: Debugging symbols for Linux cloud-amd64 configuration (meta-package)
+ This package depends on the detached debugging symbols for the latest
+ Linux kernel cloud-amd64 configuration.
+
+Package: linux-image-rt-amd64-dbg
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 13
+Depends: linux-image-5.10.0-23-rt-amd64-dbg (= 5.10.179-1+grm3u1)
+Provides: linux-latest-image-dbg
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-image-rt-amd64-dbg_5.10.179-1+grm3u1_amd64.deb
+Size: 1360
+SHA256: c3b2e08d19be6f04f5b667484da1cb27abf317d296894af93fa272a36092ebc9
+SHA1: 0ecfd09f8fa7a71242f20b993e3c7bd581b6113b
+MD5sum: d896e00663123e5c81a9b465dcf9de9e
+Description: Debugging symbols for Linux rt-amd64 configuration (meta-package)
+ This package depends on the detached debugging symbols for the latest
+ Linux kernel rt-amd64 configuration.
+
+Package: linux-kbuild-5.10
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 1689
+Depends: libc6 (>= 2.14), libelf1 (>= 0.142), libssl1.1 (>= 1.1.0)
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-kbuild-5.10_5.10.179-1+grm3u1_amd64.deb
+Size: 833228
+SHA256: f867d537d058bee60907f0217dc16dd02297082aa66ffd62499c6ef61d2110dd
+SHA1: 3616a9a08b34769a1fd91f728c2afb7594ce75db
+MD5sum: 1d9277d279e8969be8207390a7c75485
+Description: Kbuild infrastructure for Linux 5.10
+ This package provides the kbuild infrastructure for the headers packages
+ for Linux kernel version 5.10.
+
+Package: linux-kbuild-5.10-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 929
+Depends: linux-kbuild-5.10 (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-kbuild-5.10-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 768044
+SHA256: a9bca1dddfe278125399cedf6f83d476016280fd8a0b3cf06696e22b6601173f
+SHA1: 144f2ec5e079ae5f361fcdb5d1a3f82de2cc6365
+MD5sum: e9050105056b7c95dbf3b41d77c9cdad
+Description: debug symbols for linux-kbuild-5.10
+Build-Ids: 13e0f1453a4aa8770b95bf01aab5cf0db33b7127 347ee2fb89eba9cdc102906dbb0fb8f0a29676ce 36926f97f6cf184aacb7951fec90934cb7f3756a 3f6b63e2de1dd7eb4039e95c92ea1820780bfa8c 70f74a37dbae3bfb5d711d75d9faefcaff7c8998 803358c82e1d0caf2c2ef0f86b810bba51b08e51 86c85172e289e34a1d4bcb20b43fe4857a2139b2 8c8a290d857efc47f89d979cd3478660a02c2443 9240ba6337a5e6d9c2e33feeb9fc25140ae417af a0c1a35862df4581131385c8678a96388ebc5262 af424d310739408ca7e24146fe21b3ae7bcda81e bc85bc6b4b37a961214ad3e6f8dbc47cee874d79 cb7b473763b97c15d896a812258a360fbeeaf26a db41051bfca574bfc4cba2c031424e9c93098871 ea4844c73db490480738d4c6d7f41dadb4c4101f
+
+Package: linux-libc-dev
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 5885
+Multi-Arch: same
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: devel
+Filename: pool/main/l/linux/linux-libc-dev_5.10.179-1+grm3u1_amd64.deb
+Size: 1618908
+SHA256: a18dc2b1fc72a6a8bc14ff1ea4ae861903cd625923971186f918bdd213660dfc
+SHA1: f0d7076b11db473a6410693aa2b912191eb7c372
+MD5sum: a17a9e2142ce2e9759def00c528ed8b5
+Description: Linux support headers for userspace development
+ This package provides userspaces headers from the Linux kernel.  These
+ headers are used by the installed headers for GNU libc and other system
+ libraries.
+
+Package: linux-perf
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 10
+Depends: linux-perf-5.10 (= 5.10.179-1+grm3u1)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-perf_5.10.179-1+grm3u1_amd64.deb
+Size: 1128
+SHA256: 980a2fee10672e342f3c35beb15c99c7aa64c09bd2e78cb11811b180c986edcb
+SHA1: 212c244527dc1a549826fa314357431f80c97abd
+MD5sum: 70726946b561f972db5c143f70889ac6
+Description: Performance analysis tools for Linux (meta-package)
+ This package depends on the package containing the 'perf' performance
+ analysis tools for the latest Linux kernel.
+
+Package: linux-perf-5.10
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 9505
+Depends: libbabeltrace1 (>= 1.5.4), libc6 (>= 2.28), libcap2 (>= 1:2.10), libdw1 (>= 0.157), libelf1 (>= 0.144), liblzma5 (>= 5.1.1alpha+20120614), libnuma1 (>= 2.0.11), libopencsd0 (>= 0.14.4), libperl5.32 (>= 5.32.0~rc1), libpython3.9 (>= 3.9.1), libslang2 (>= 2.2.4), libunwind8, zlib1g (>= 1:1.2.3.3), perl:any, python3:any
+Recommends: linux-base
+Suggests: linux-doc-5.10
+Conflicts: linux-tools-5.10
+Replaces: linux-tools-5.10
+Provides: linux-tools-5.10
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: devel
+Filename: pool/main/l/linux/linux-perf-5.10_5.10.179-1+grm3u1_amd64.deb
+Size: 2347844
+SHA256: 9534e7799d7af5e8fac9f489f28ad1f3f6476365bdba29144c251ab0809c75b1
+SHA1: b1012e87fe4d65e87aab8ae4ac54108758f5f8d5
+MD5sum: eef4cc1a0d9ca08612b9c9876e0d2ddc
+Description: Performance analysis tools for Linux 5.10
+ This package contains the 'perf' performance analysis tools for Linux
+ kernel version 5.10.
+ .
+ The linux-base package contains a 'perf' command which will invoke the
+ appropriate version for the running kernel.
+
+Package: linux-perf-5.10-dbgsym
+Source: linux
+Version: 5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 6441
+Depends: linux-perf-5.10 (= 5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/linux-perf-5.10-dbgsym_5.10.179-1+grm3u1_amd64.deb
+Size: 6245240
+SHA256: b3c544775ef90fb99b7b52cf119478a7bb7fc8aafddf881327853b746fc82fcc
+SHA1: 548b71413d4eb99bd9460fc54495144e4d866a7c
+MD5sum: 7a3be4c9fc92d979288b5563641974e9
+Description: debug symbols for linux-perf-5.10
+Build-Ids: 0db11eed0cf698a1b5159709ded785d48b34b1ed 14fa906e4da194cf24b867a061dcc03f4133f7ce 3438f041f59c98ce501e382f0eeb78674caf1611 3946a0e77fb49f23e9b795553b19313e9bfaaa3d 713a37daadd8a2a995367b06ae1715b5920dc1f9 813fb8b95d7108a853897f27339e183df708020d 89644d26fd0e50def1fd47015dbafffa9d2028af 8f696b8ccdee101482f6f3261881df0477a0faeb 926945d2894976ce33d026bdc2f6872502fa1a56 9352b3d33fcc6c837fc49f58e1d6fa82627b183b b67baaa0fe1bdee3fa4c3d024c1e5c2c7e477fa4 b6c244bfe0a7d16adbe5b04f301eaf1162fdd09c bb08ef14bf282d2c9c25fde991576f02a4d8aae6 c0a583db5cadd3b19e2d8b11395b287cf4c3fd12 c61f60c928ff47991390c5a2f514c13c41fbdad5
+
+Package: linux-source
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 10
+Depends: linux-source-5.10 (= 5.10.179-1+grm3u1)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-source_5.10.179-1+grm3u1_all.deb
+Size: 1100
+SHA256: aea23425568f6938e79e01830deccc13cc803f1dbecc70c1861030fb5f00d281
+SHA1: 47e300dd368c8c18a7e379050a157590e2451b27
+MD5sum: cc6a7c54530e775a47a1f9b2c2d038f4
+Description: Linux kernel source (meta-package)
+ This package depends on packages containing the sources of the latest
+ Linux kernel.
+
+Package: linux-source-5.10
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 118462
+Depends: binutils, xz-utils
+Recommends: libc6-dev | libc-dev, gcc, make, bc, bison, flex, linux-config-5.10
+Suggests: libncurses-dev | ncurses-dev, qtbase5-dev, pkg-config
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: kernel
+Filename: pool/main/l/linux/linux-source-5.10_5.10.179-1+grm3u1_all.deb
+Size: 121325742
+SHA256: 8a616eef3a67fdc4e27eec7d4eb9d7e6025e8d03d39553908fd8a1f8d3c25d5f
+SHA1: cfb271534f2cdb6eb21fc0b57c7d72d0170b6316
+MD5sum: f89290458eea2e14ad71d201c1dfa273
+Description: Linux kernel source for version 5.10 with Debian patches
+ This package provides source code for the Linux kernel version 5.10. This
+ source closely tracks official Linux kernel releases.  Debian's
+ modifications to that source consist of security fixes, bug fixes, and
+ features that have already been (or are believed to be) accepted by the
+ upstream maintainers.
+
+Package: linux-support-5.10.0-23
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: all
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 1654
+Depends: python3:any
+Multi-Arch: foreign
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: devel
+Filename: pool/main/l/linux/linux-support-5.10.0-23_5.10.179-1+grm3u1_all.deb
+Size: 635212
+SHA256: 9100b2763d9ea1b2b4a8af78290b9e0ddcb7ee83bdde6f47273ce8d984a3a0a6
+SHA1: b5830d4722faa5f7c8f8ca8780b5b21c42cdb9a0
+MD5sum: 7cb1c43b98b8a7d23f904350353f9112
+Description: Support files for Linux 5.10
+ This package provides support files for the Linux kernel build, e.g.
+ scripts to handle ABI information and for generation of build system meta
+ data.
+
+Package: usbip
+Source: linux (5.10.179-1+grm3u1)
+Version: 2.0+5.10.179-1+grm3u1
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 735
+Depends: usb.ids, libc6 (>= 2.7), libudev1 (>= 183), libwrap0 (>= 7.6-4~)
+Homepage: https://www.kernel.org/
+Priority: optional
+Section: admin
+Filename: pool/main/l/linux/usbip_2.0+5.10.179-1+grm3u1_amd64.deb
+Size: 627820
+SHA256: bd9602a586e2d0bebdebb3223320f15e1287a1ff5789bbfeca214483c8700f43
+SHA1: 946e3eeeb883ee24337bc5116f1908e63703f098
+MD5sum: 9263627bc6c43d9b063ec6742408e49a
+Description: USB device sharing system over IP network
+ USB/IP is a system for sharing USB devices over the network.
+ .
+ To share USB devices between computers with their full functionality,
+ USB/IP encapsulates "USB requests" into IP packets and transmits them
+ between computers.
+ .
+ Original USB device drivers and applications can be used for remote USB
+ devices without any modification of them.  A computer can use remote USB
+ devices as if they were directly attached.
+ .
+ Currently USB/IP provides no access control or encryption.  It should only
+ be used in trusted environments.
+ .
+ This package provides the server component 'usbipd' and the client tool
+ 'usbip'.
+
+Package: usbip-dbgsym
+Source: linux (5.10.179-1+grm3u1)
+Version: 2.0+5.10.179-1+grm3u1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 140
+Depends: usbip (= 2.0+5.10.179-1+grm3u1)
+Priority: optional
+Section: debug
+Filename: pool/main/l/linux/usbip-dbgsym_2.0+5.10.179-1+grm3u1_amd64.deb
+Size: 109460
+SHA256: 8018a47fceb2952009806151fd7da185f4f521cbf4de3b27c69c2366e344d5fc
+SHA1: 16ee11e5cfe9b210f09072cf414274da6aaf072d
+MD5sum: ea364dd61a8d8849c827f084eccc6e0d
+Description: debug symbols for usbip
+Build-Ids: 38d205e85c3506e1243706d77d9fd576d2a6f8c1 e1eb866a817865946e146a1167d0f653b0a14b57
+
+Package: linux-image-5.10.0-23-amd64
+Status: install ok installed
+Priority: optional
+Section: kernel
+Installed-Size: 305533
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Architecture: amd64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Replaces: linux-image-5.10.0-23-amd64
+Depends: kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool
+Recommends: firmware-linux-free, apparmor
+Suggests: linux-doc-5.10, debian-kernel-handbook, grub-pc | grub-efi-amd64 | extlinux
+Breaks: fwupdate (<< 12-7), initramfs-tools (<< 0.120+deb8u2), wireless-regdb (<< 2019.06.03-1~), xserver-xorg-input-vmmouse (<< 1:13.0.99)
+Conflicts: linux-image-5.10.0-23-amd64
+Description: Linux 5.10 for 64-bit PCs
+ The Linux kernel 5.10 and modules for use on PCs with AMD64, Intel 64 or
+ VIA Nano processors.
+Homepage: https://www.kernel.org/
