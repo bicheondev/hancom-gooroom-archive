@@ -1,0 +1,85 @@
+name: ARM64 maintenance - preserve browser output before verification
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-patch-browser-preverification-artifact.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-browser-preverification-artifact-patch
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out current ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Replace the incomplete-only upload with an untrusted pre-verification upload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-build-wave5-browser.yml')
+          source = path.read_text(encoding='utf-8')
+          old = """      - name: Upload partial-round diagnostics
+        if: always() && steps.build.outputs.complete != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-browser-arm64-ccache-round-${{ env.ROUND }}-${{ github.run_id }}
+          path: work/gooroom-browser-arm64
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 9
+"""
+          new = """      - name: Upload browser output before fail-closed verification
+        if: always() && steps.build.outputs.cache_ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-browser-preverification-arm64-${{ env.ROUND }}-${{ github.run_id }}
+          path: work/gooroom-browser-arm64
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 9
+"""
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one exact upload block, found {count}')
+          path.write_text(source.replace(old, new), encoding='utf-8')
+          PY
+          grep -Fq 'gooroom-browser-preverification-arm64-' \
+            .github/workflows/arm64-build-wave5-browser.yml
+          test "$(grep -Fc 'name: gooroom-browser-preverification-arm64-' \
+            .github/workflows/arm64-build-wave5-browser.yml)" -eq 1
+
+      - name: Commit the fail-closed diagnostic transport and remove this one-shot workflow
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git rm .github/workflows/arm64-patch-browser-preverification-artifact.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-build-wave5-browser.yml
+          git commit -m 'Preserve Gooroom browser output before verification'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
