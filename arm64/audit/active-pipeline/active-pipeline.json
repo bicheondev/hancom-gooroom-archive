@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 170,
-    "workflow_name_count": 170,
-    "referenced_local_file_count": 264,
+    "workflow_count": 171,
+    "workflow_name_count": 171,
+    "referenced_local_file_count": 266,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -2359,6 +2359,25 @@
       ]
     },
     {
+      "filename": "arm64-reconcile-exact-source-authority-v3.yml",
+      "path": ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml",
+      "name": "ARM64 port - reconcile exact source authority v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/recovered-source-bundles/latest/summary.json",
+        "arm64/locks/source-candidate-amd64-comparisons/latest/summary.json",
+        "arm64/scripts/reconcile_exact_source_authority_v3.py",
+        "arm64/status/summary.json"
+      ]
+    },
+    {
       "filename": "arm64-recover-exact-package-pool.yml",
       "path": ".github/workflows/arm64-recover-exact-package-pool.yml",
       "name": "ARM64 port - recover exact package pool from artifacts",
@@ -3625,6 +3644,7 @@
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
     ],
     "arm64/locks/recovered-source-bundles/latest/summary.json": [
+      ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml",
       ".github/workflows/arm64-validate-source-candidates-against-amd64.yml"
     ],
     "arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json": [
@@ -3697,6 +3717,9 @@
     "arm64/locks/rootfs/verification.json": [
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
+    "arm64/locks/source-candidate-amd64-comparisons/latest/summary.json": [
+      ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ],
     "arm64/locks/sources-api-baseline/source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -4113,6 +4136,9 @@
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
       ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml"
     ],
+    "arm64/scripts/reconcile_exact_source_authority_v3.py": [
+      ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
+    ],
     "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
     ],
@@ -4472,7 +4498,8 @@
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/status/summary.json": [
-      ".github/workflows/arm64-port-coverage.yml"
+      ".github/workflows/arm64-port-coverage.yml",
+      ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ]
   },
   "errors": [
