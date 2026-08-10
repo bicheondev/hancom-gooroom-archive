@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 164,
-    "workflow_name_count": 164,
+    "workflow_count": 165,
+    "workflow_name_count": 165,
     "referenced_local_file_count": 255,
     "error_count": 1,
     "warning_count": 39,
@@ -1979,6 +1979,21 @@
       "referenced_local_files": [
         "arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh"
       ]
+    },
+    {
+      "filename": "arm64-probe-reference-source-index-availability.yml",
+      "path": ".github/workflows/arm64-probe-reference-source-index-availability.yml",
+      "name": "ARM64 port - probe reference source index availability",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-probe-wayback-blocker-dsc.yml",
