@@ -1,0 +1,307 @@
+name: ARM64 port - seal recovered exact source bundles
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-seal-recovered-source-bundles.yml'
+      - 'arm64/scripts/prepare_recovered_source_bundles.py'
+      - 'arm64/locks/reference-apt-dsc-pool-probe/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-recovered-source-bundles
+  cancel-in-progress: true
+
+env:
+  AUTHORIZED_RELEASE: arm64-exact-source-archives-v1
+  CANDIDATE_RELEASE: arm64-exact-source-candidates-v1
+
+jobs:
+  seal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install bundle and release tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq python3 zstd
+          python3 -m py_compile arm64/scripts/prepare_recovered_source_bundles.py
+          gh --version
+
+      - name: Synchronize completed recovery authorities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for path in \
+            arm64/locks/reference-apt-source-recovery/latest/summary.json \
+            arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json; do
+            for attempt in $(seq 1 40); do
+              git fetch origin arm64-port
+              if git cat-file -e "origin/arm64-port:$path" 2>/dev/null; then
+                directory="${path%/summary.json}"
+                git checkout origin/arm64-port -- "$directory"
+                break
+              fi
+              sleep 15
+            done
+            test -f "$path"
+            jq -e '.schema == 1 and .target_count == 7' "$path" >/dev/null
+          done
+
+      - name: Download the latest successful complete recovery artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/recovered-source-bundles/input/{historical,dsc}
+
+          historical_run="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow arm64-recover-reference-apt-sources.yml \
+            --branch arm64-port \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          dsc_run="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow arm64-probe-reference-apt-dsc-pools.yml \
+            --branch arm64-port \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')"
+          test -n "$historical_run"
+          test -n "$dsc_run"
+          printf '%s\n' "$historical_run" > work/recovered-source-bundles/historical-run-id
+          printf '%s\n' "$dsc_run" > work/recovered-source-bundles/dsc-run-id
+
+          gh run download "$historical_run" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-reference-apt-source-recovery \
+            --dir work/recovered-source-bundles/input/historical
+          gh run download "$dsc_run" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-reference-apt-dsc-pool-probe \
+            --dir work/recovered-source-bundles/input/dsc
+
+          test -f work/recovered-source-bundles/input/historical/summary.json
+          test -f work/recovered-source-bundles/input/dsc/summary.json
+          (
+            cd work/recovered-source-bundles/input/historical
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          (
+            cd work/recovered-source-bundles/input/dsc
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Prepare deterministic authorized and quarantined bundles
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/recovered-source-bundles/output
+          rm -rf "$output"
+          mkdir -p "$output"
+          python3 arm64/scripts/prepare_recovered_source_bundles.py \
+            --historical-artifact work/recovered-source-bundles/input/historical \
+            --dsc-artifact work/recovered-source-bundles/input/dsc \
+            --output-dir "$output"
+          jq -e '
+            .schema == 1
+            and .conflict_count >= 0
+            and .authorized_bundle_count >= 0
+            and .candidate_bundle_count >= 0
+            and .release_upload_performed == false
+          ' "$output/summary.json" >/dev/null
+          cat "$output/SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create immutable release containers when material exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/recovered-source-bundles/output
+          authorized_count="$(jq -r '.authorized_bundle_count' "$output/summary.json")"
+          candidate_count="$(jq -r '.candidate_bundle_count' "$output/summary.json")"
+
+          if [ "$authorized_count" -gt 0 ]; then
+            if ! gh release view "$AUTHORIZED_RELEASE" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$AUTHORIZED_RELEASE" \
+                --repo "$GITHUB_REPOSITORY" \
+                --title 'ARM64 exact source archives v1' \
+                --notes 'Exact source archives authorized by the locked historical APT checksum chain or the locked reference-ISO keyring.' \
+                --prerelease
+            fi
+            while IFS= read -r file; do
+              gh release upload "$AUTHORIZED_RELEASE" "$file" \
+                --repo "$GITHUB_REPOSITORY" \
+                --clobber
+            done < <(find "$output/bundles/authorized" -maxdepth 1 -type f -name '*.tar.zst' | LC_ALL=C sort)
+          fi
+
+          if [ "$candidate_count" -gt 0 ]; then
+            if ! gh release view "$CANDIDATE_RELEASE" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$CANDIDATE_RELEASE" \
+                --repo "$GITHUB_REPOSITORY" \
+                --title 'ARM64 exact source candidates v1' \
+                --notes 'Quarantined complete exact source archives awaiting AMD64 reconstruction comparison. These are not build authority.' \
+                --prerelease
+            fi
+            while IFS= read -r file; do
+              gh release upload "$CANDIDATE_RELEASE" "$file" \
+                --repo "$GITHUB_REPOSITORY" \
+                --clobber
+            done < <(find "$output/bundles/candidate" -maxdepth 1 -type f -name '*.tar.zst' | LC_ALL=C sort)
+          fi
+
+      - name: Lock uploaded release assets against local bundle hashes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/recovered-source-bundles/output
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$AUTHORIZED_RELEASE" \
+            > "$output/authorized-release.json" 2>/dev/null || printf '{}\n' > "$output/authorized-release.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$CANDIDATE_RELEASE" \
+            > "$output/candidate-release.json" 2>/dev/null || printf '{}\n' > "$output/candidate-release.json"
+
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          from pathlib import Path
+
+          output = Path('work/recovered-source-bundles/output')
+          plan = json.loads((output / 'bundle-plan.json').read_text())
+          releases = {
+              'authorized': json.loads((output / 'authorized-release.json').read_text()),
+              'candidate': json.loads((output / 'candidate-release.json').read_text()),
+          }
+          locked = []
+          for row in plan:
+              assets = {asset['name']: asset for asset in releases[row['category']].get('assets', [])}
+              asset = assets.get(row['asset_name'])
+              if asset is None:
+                  raise SystemExit(f"uploaded asset missing: {row['asset_name']}")
+              if int(asset['size']) != int(row['bundle_size']):
+                  raise SystemExit(f"asset size mismatch: {row['asset_name']}")
+              api_digest = asset.get('digest') or ''
+              if api_digest and api_digest != 'sha256:' + row['bundle_sha256']:
+                  raise SystemExit(f"asset digest mismatch: {row['asset_name']}")
+              locked.append({
+                  **row,
+                  'release_tag': (
+                      'arm64-exact-source-archives-v1'
+                      if row['category'] == 'authorized'
+                      else 'arm64-exact-source-candidates-v1'
+                  ),
+                  'asset_id': asset['id'],
+                  'asset_size': asset['size'],
+                  'asset_api_digest': api_digest,
+                  'asset_url': asset['url'],
+                  'browser_download_url': asset['browser_download_url'],
+              })
+          (output / 'release-assets.json').write_text(
+              json.dumps(locked, indent=2) + '\n', encoding='utf-8'
+          )
+          summary = json.loads((output / 'summary.json').read_text())
+          summary['release_upload_performed'] = bool(locked)
+          summary['release_asset_count'] = len(locked)
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+          jq -e '.release_asset_count == (.authorized_bundle_count + .candidate_bundle_count)' \
+            "$output/summary.json" >/dev/null
+
+      - name: Seal complete bundle and release evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/recovered-source-bundles/output
+          find "$output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete sealed bundle evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-recovered-source-bundles
+          path: work/recovered-source-bundles/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 1
+
+      - name: Commit compact recovered-source bundle authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/recovered-source-bundles/output
+          compact=work/recovered-source-bundles/compact
+          destination=arm64/locks/recovered-source-bundles/latest
+          rm -rf "$compact" "$destination"
+          mkdir -p "$compact" "$destination"
+          for file in \
+            SUMMARY.md \
+            summary.json \
+            validations.json \
+            conflicts.json \
+            bundle-plan.json \
+            release-assets.json \
+            authorized-release.json \
+            candidate-release.json \
+            FILE-INVENTORY.tsv; do
+            test -f "$source/$file"
+            cp "$source/$file" "$compact/$file"
+          done
+          printf 'historical_run_id=%s\ndsc_run_id=%s\n' \
+            "$(cat work/recovered-source-bundles/historical-run-id)" \
+            "$(cat work/recovered-source-bundles/dsc-run-id)" \
+            > "$compact/upstream-runs.txt"
+          (
+            cd "$compact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cp -a "$compact/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Recovered-source bundle authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Seal recovered exact source bundles'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
