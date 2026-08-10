@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 169,
-    "workflow_name_count": 169,
-    "referenced_local_file_count": 261,
+    "workflow_count": 170,
+    "workflow_name_count": 170,
+    "referenced_local_file_count": 264,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -3148,6 +3148,32 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-validate-source-candidates-against-amd64.yml",
+      "path": ".github/workflows/arm64-validate-source-candidates-against-amd64.yml",
+      "name": "ARM64 port - validate source candidates against exact AMD64 packages",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/recovered-source-bundles/latest/summary.json",
+        "arm64/scripts/compare_built_debs_to_reference.py",
+        "arm64/scripts/prepare_reference_debs_for_candidates.py",
+        "arm64/scripts/recover_exact_sources_from_reference_apt.py"
+      ]
+    },
+    {
       "filename": "arm64-vendor-binary-lock.yml",
       "path": ".github/workflows/arm64-vendor-binary-lock.yml",
       "name": "ARM64 port - lock exact historical vendor binaries",
@@ -3598,6 +3624,9 @@
     "arm64/locks/recovered-rootfs/rootfs-verification.json": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
     ],
+    "arm64/locks/recovered-source-bundles/latest/summary.json": [
+      ".github/workflows/arm64-validate-source-candidates-against-amd64.yml"
+    ],
     "arm64/locks/reference-apt-dsc-pool-probe/latest/summary.json": [
       ".github/workflows/arm64-seal-recovered-source-bundles.yml"
     ],
@@ -3936,6 +3965,9 @@
       ".github/workflows/arm64-infrastructure-retry-v3.yml",
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
+    "arm64/scripts/compare_built_debs_to_reference.py": [
+      ".github/workflows/arm64-validate-source-candidates-against-amd64.yml"
+    ],
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
     ],
@@ -4041,6 +4073,9 @@
     "arm64/scripts/prepare_recovered_source_bundles.py": [
       ".github/workflows/arm64-seal-recovered-source-bundles.yml"
     ],
+    "arm64/scripts/prepare_reference_debs_for_candidates.py": [
+      ".github/workflows/arm64-validate-source-candidates-against-amd64.yml"
+    ],
     "arm64/scripts/probe_exact_dsc_pool_candidates.py": [
       ".github/workflows/arm64-probe-reference-apt-dsc-pools.yml"
     ],
@@ -4112,7 +4147,8 @@
     ],
     "arm64/scripts/recover_exact_sources_from_reference_apt.py": [
       ".github/workflows/arm64-probe-reference-apt-dsc-pools.yml",
-      ".github/workflows/arm64-recover-reference-apt-sources.yml"
+      ".github/workflows/arm64-recover-reference-apt-sources.yml",
+      ".github/workflows/arm64-validate-source-candidates-against-amd64.yml"
     ],
     "arm64/scripts/recover_exact_sources_from_reference_release.py": [
       ".github/workflows/arm64-recover-reference-release-sources.yml"
