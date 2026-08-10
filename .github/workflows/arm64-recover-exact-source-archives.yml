@@ -1,0 +1,170 @@
+name: ARM64 port - recover exact source archives
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-exact-source-archives.yml'
+      - 'arm64/scripts/recover_exact_source_archives.py'
+      - 'arm64/locks/reference-iso-source-residue/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-source-archive-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current ARM64 authority and recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install compressed APT index tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl file jq lz4 python3 xz-utils zstd
+          python3 -m py_compile arm64/scripts/recover_exact_source_archives.py
+          python3 arm64/scripts/recover_exact_source_archives.py --help >/dev/null
+
+      - name: Lock reference ISO source-residue evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          reference=arm64/locks/reference-iso-source-residue/latest
+          test -d "$reference"
+          test -f "$reference/summary.json"
+          test -f "$reference/LOCKSUMS.sha256"
+          (
+            cd "$reference"
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .schema == 1
+            and .iso.verified == true
+            and .target_count == 7
+            and .exact_source_index_target_count == 0
+            and .exact_source_archive_target_count == 0
+            and .exact_version_residue_only_target_count == 7
+            and .promotion_allowed == false
+          ' "$reference/summary.json" >/dev/null
+
+      - name: Probe live repositories and historical snapshots
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/exact-source-recovery
+          rm -rf "$base"
+          mkdir -p "$base"/{evidence,archives}
+          python3 arm64/scripts/recover_exact_source_archives.py \
+            --reference-evidence arm64/locks/reference-iso-source-residue/latest \
+            --evidence-dir "$base/evidence" \
+            --archive-dir "$base/archives"
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .exact_source_archive_recovered_count >= 0
+            and .unresolved_count >= 0
+            and (
+              .exact_source_archive_recovered_count + .unresolved_count
+              == .target_count
+            )
+            and .promotion_allowed == false
+          ' "$base/evidence/summary.json" >/dev/null
+
+      - name: Seal compact recovery evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/exact-source-recovery/evidence
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$evidence"
+          find "$evidence" -type f -printf '%P\t%s\n' | LC_ALL=C sort
+
+      - name: Write recovery report to the run summary
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=work/exact-source-recovery/evidence/summary.json
+          targets=work/exact-source-recovery/evidence/targets.tsv
+          {
+            echo '## Exact source archive recovery'
+            echo
+            echo '| Metric | Count |'
+            echo '|---|---:|'
+            echo "| Targets | $(jq -r '.target_count' "$summary") |"
+            echo "| Exact source-index targets | $(jq -r '.exact_source_stanza_target_count' "$summary") |"
+            echo "| Fully recovered exact source archives | $(jq -r '.exact_source_archive_recovered_count' "$summary") |"
+            echo "| Unresolved | $(jq -r '.unresolved_count' "$summary") |"
+            echo "| Network attempts | $(jq -r '.network_attempt_count' "$summary") |"
+            echo "| Wayback CDX queries | $(jq -r '.wayback_cdx_query_count' "$summary") |"
+            echo "| Recovered bytes | $(jq -r '.recovered_archive_bytes' "$summary") |"
+            echo
+            echo '```text'
+            column -ts $'\t' "$targets" || cat "$targets"
+            echo '```'
+            echo
+            echo '> Recovery evidence is non-promoting. Package-layer authority changes only after a separate exact-source verifier accepts every .dsc member.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compact recovery evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-exact-source-recovery-evidence
+          path: work/exact-source-recovery/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Upload fully verified recovered source members
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-recovered-exact-source-archives
+          path: work/exact-source-recovery/archives
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Commit immutable current recovery evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/exact-source-recovery/evidence
+          destination=arm64/locks/exact-source-recovery/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Exact source recovery evidence is already current.'
+            exit 0
+          fi
+          git commit -m 'Record exact source archive recovery evidence'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
