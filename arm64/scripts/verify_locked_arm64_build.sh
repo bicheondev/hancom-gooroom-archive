@@ -175,12 +175,12 @@ if [ -f "$COMPONENT_LOCK" ]; then
       -v size="$expected_size" \
       -v sha1="$expected_sha1" \
       -v sha256="$expected_sha256" '
-        NF == 5
-        && $1 == key
-        && $2 == name
-        && $3 == size
-        && $4 == sha1
-        && $5 == sha256 { found = 1 }
+        (NF == 5 &&
+         $1 == key &&
+         $2 == name &&
+         $3 == size &&
+         $4 == sha1 &&
+         $5 == sha256) { found = 1 }
         END { exit found ? 0 : 1 }
       ' "$OUTPUT_DIR/upstream-source-members.tsv" || {
         echo "composite source member evidence mismatch for $key" >&2
