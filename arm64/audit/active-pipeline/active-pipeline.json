@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 163,
-    "workflow_name_count": 163,
-    "referenced_local_file_count": 254,
+    "workflow_count": 164,
+    "workflow_name_count": 164,
+    "referenced_local_file_count": 255,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -2477,6 +2477,23 @@
       ]
     },
     {
+      "filename": "arm64-recover-reference-release-sources.yml",
+      "path": ".github/workflows/arm64-recover-reference-release-sources.yml",
+      "name": "ARM64 port - recover exact sources from reference release locks",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/recover_exact_sources_from_reference_release.py"
+      ]
+    },
+    {
       "filename": "arm64-recovery-stage0-v1.yml",
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "name": "ARM64 port - build verified recovery stage-0 ISO",
@@ -3992,6 +4009,9 @@
     ],
     "arm64/scripts/recover_exact_source_archives_v2.py": [
       ".github/workflows/arm64-recover-exact-source-archives-v2.yml"
+    ],
+    "arm64/scripts/recover_exact_sources_from_reference_release.py": [
+      ".github/workflows/arm64-recover-reference-release-sources.yml"
     ],
     "arm64/scripts/recover_exact_vendor_sources_v2.py": [
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml"
