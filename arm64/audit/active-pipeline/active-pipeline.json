@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 155,
-    "workflow_name_count": 155,
+    "workflow_count": 156,
+    "workflow_name_count": 156,
     "referenced_local_file_count": 247,
     "error_count": 0,
     "warning_count": 39,
@@ -2098,6 +2098,25 @@
       ]
     },
     {
+      "filename": "arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
+      "path": ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
+      "name": "ARM64 port - promote revalidated Gooroom browser run 31397104534",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/scripts/promote_verified_git_arm64_artifact.py"
+      ]
+    },
+    {
       "filename": "arm64-publish-rebuild-packages.yml",
       "path": ".github/workflows/arm64-publish-rebuild-packages.yml",
       "name": "ARM64 port - publish verified rebuild package cache",
@@ -3162,6 +3181,7 @@
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
+      ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
       ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
@@ -3372,6 +3392,7 @@
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
+      ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
       ".github/workflows/arm64-qtbase-source-archive-build-v1.yml",
       ".github/workflows/arm64-recover-exact-package-pool.yml",
       ".github/workflows/arm64-recover-exact-vendor-sources-v2.yml",
@@ -3800,7 +3821,8 @@
     ],
     "arm64/scripts/promote_verified_git_arm64_artifact.py": [
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
-      ".github/workflows/arm64-promote-gooroom-browser-artifact.yml"
+      ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
+      ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
