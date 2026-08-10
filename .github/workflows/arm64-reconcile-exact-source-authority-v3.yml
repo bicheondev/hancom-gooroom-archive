@@ -1,0 +1,141 @@
+name: ARM64 port - reconcile exact source authority v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-reconcile-exact-source-authority-v3.yml'
+      - 'arm64/scripts/reconcile_exact_source_authority_v3.py'
+      - 'arm64/locks/recovered-source-bundles/latest/**'
+      - 'arm64/locks/source-candidate-amd64-comparisons/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-source-authority-v3
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install reconciliation tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq python3
+          python3 -m py_compile arm64/scripts/reconcile_exact_source_authority_v3.py
+
+      - name: Synchronize all upstream source-recovery authorities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          paths=(
+            arm64/locks/recovered-source-bundles/latest/summary.json
+            arm64/locks/source-candidate-amd64-comparisons/latest/summary.json
+          )
+          for path in "${paths[@]}"; do
+            for attempt in $(seq 1 40); do
+              git fetch origin arm64-port
+              if git cat-file -e "origin/arm64-port:$path" 2>/dev/null; then
+                directory="${path%/summary.json}"
+                git checkout origin/arm64-port -- "$directory"
+                break
+              fi
+              sleep 15
+            done
+            test -f "$path"
+          done
+          (
+            cd arm64/locks/recovered-source-bundles/latest
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          (
+            cd arm64/locks/source-candidate-amd64-comparisons/latest
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Reconcile exact source authority without granting build credit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/exact-source-authority-v3
+          rm -rf "$output"
+          mkdir -p "$output"
+          python3 arm64/scripts/reconcile_exact_source_authority_v3.py \
+            --reference-evidence arm64/locks/reference-iso-source-residue/latest \
+            --bundle-authority arm64/locks/recovered-source-bundles/latest \
+            --candidate-comparisons arm64/locks/source-candidate-amd64-comparisons/latest \
+            --base-status arm64/status/summary.json \
+            --output-dir "$output"
+          jq -e '
+            .schema == 3
+            and .reference_blocker_count == 7
+            and .native_arm64_build_credit_granted == false
+            and .projected_status.iso_assembly_allowed == false
+            and (
+              .newly_authorized_source_count
+              + .remaining_reference_source_blocker_count
+              == .reference_blocker_count
+            )
+          ' "$output/summary.json" >/dev/null
+          cat "$output/SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal exact source authority v3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/exact-source-authority-v3
+          find "$output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Commit exact source locks and v3 status overlay
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/exact-source-authority-v3
+          lock_destination=arm64/locks/exact-source-authority-v3
+          status_destination=arm64/status/source-recovery-v3
+          rm -rf "$lock_destination" "$status_destination"
+          mkdir -p "$lock_destination" "$status_destination"
+          if [ -d "$source/locks" ]; then
+            cp -a "$source/locks/." "$lock_destination/"
+          fi
+          for file in \
+            SUMMARY.md summary.json authorities.json authorities.tsv conflicts.json \
+            FILE-INVENTORY.tsv LOCKSUMS.sha256; do
+            cp "$source/$file" "$status_destination/$file"
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$lock_destination" "$status_destination"
+          if git diff --cached --quiet; then
+            echo 'Exact source authority v3 is already current.'
+            exit 0
+          fi
+          git commit -m 'Reconcile exact source authority v3'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
