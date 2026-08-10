@@ -10,8 +10,8 @@
     "signed_dsc_source_count": 0,
     "source_blocker_count": 7,
     "native_rebuild_source_count": 41,
-    "native_rebuild_passed_count": 40,
-    "native_rebuild_blocker_count": 1,
+    "native_rebuild_passed_count": 41,
+    "native_rebuild_blocker_count": 0,
     "normalized_package_count": 0,
     "normalized_status_counts": {},
     "expected_rebuilt_package_count": 0,
@@ -217,6 +217,16 @@
       ],
       "actions_run_id": "31268447673",
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31268447673"
+    },
+    {
+      "source": "gooroom-browser",
+      "source_version": "3.5.0-1+grm3u3",
+      "authority": [
+        "git",
+        "4a5e691645dad54a2a9636dcc21870c66418f978"
+      ],
+      "actions_run_id": "31397104534",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104534"
     },
     {
       "source": "gooroom-greeter",
@@ -489,20 +499,7 @@
       "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31089491039"
     }
   ],
-  "native_rebuild_blockers": [
-    {
-      "source": "gooroom-browser",
-      "source_version": "3.5.0-1+grm3u3",
-      "reason": "latest-exact-authority-build-not-verified",
-      "authority": [
-        "git",
-        "4a5e691645dad54a2a9636dcc21870c66418f978"
-      ],
-      "actions_run_id": "31102459428",
-      "build_outcome": "failure",
-      "verify_outcome": "skipped"
-    }
-  ],
+  "native_rebuild_blockers": [],
   "persistent_rebuilt_package_blockers": [],
   "acquisition_blockers": []
 }
