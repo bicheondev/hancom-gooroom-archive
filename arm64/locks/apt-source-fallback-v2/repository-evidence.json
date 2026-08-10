@@ -3,7 +3,7 @@
     "repository": "gooroom",
     "suite": "gooroom-3.0",
     "base_url": "https://update.hancomgooroom.com/gooroom",
-    "inrelease": "work/signed-sources-index/input/gooroom-3.0.InRelease",
+    "inrelease": "work/signed-sources-index-v2/input/gooroom-3.0.InRelease",
     "inrelease_size": 4149,
     "inrelease_sha256": "75925450ee9beca06b0bf33b8623df243a69386ae081466217324f82bd9c2366",
     "inrelease_signature": {
@@ -11,29 +11,77 @@
       "exit_code": 0,
       "diagnostic": "[GNUPG:] NEWSIG\n[GNUPG:] KEY_CONSIDERED 3253EEB810E267AAE2CFBB0C62E235CD3658AE47 0\n[GNUPG:] SIG_ID 7bF8vOssT/Nd3SK5Ls51JpXS4wc 2023-07-29 1690602005\n[GNUPG:] GOODSIG 62E235CD3658AE47 gooroom <gooroom@gooroom.kr>\n[GNUPG:] VALIDSIG 3253EEB810E267AAE2CFBB0C62E235CD3658AE47 2023-07-29 1690602005 0 4 0 1 10 01 3253EEB810E267AAE2CFBB0C62E235CD3658AE47\n\ngpgv: Signature made Sat Jul 29 03:40:05 2023 UTC\ngpgv:                using RSA key 3253EEB810E267AAE2CFBB0C62E235CD3658AE47\ngpgv: Good signature from \"gooroom <gooroom@gooroom.kr>\"",
       "keyrings": [
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-1.0.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-2.0.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-3.0.gpg"
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-1.0.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-2.0.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-3.0.gpg"
       ]
     },
     "usable": false,
-    "status": "invalid-inrelease-payload",
-    "error": "RecoveryError: suite/codename mismatch: None / gooroom-3.0"
+    "signed_release": {
+      "origin": "Gooroom",
+      "label": "",
+      "suite": "gooroom-3.0",
+      "codename": "gooroom-3.0",
+      "date": "Sat, 29 Jul 2023 03:40:05 UTC",
+      "architectures": "i386 amd64",
+      "components": "main"
+    },
+    "compressed_index_expected": {
+      "name": "main/source/Sources.gz",
+      "size": 51094,
+      "sha256": "09e1abccac1bcd86a430318caab0f0c68224f42a567b8cee7bcf308ed7f4a166"
+    },
+    "uncompressed_index_expected": {
+      "name": "main/source/Sources",
+      "size": 333374,
+      "sha256": "d9fb9527dd6dd52f7ecd4ff60762355ee55cd54c5623e2bb316b917065232131"
+    },
+    "index_download_attempts": [
+      {
+        "url": "https://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz",
+        "attempt": 1,
+        "status": "http-error",
+        "status_code": 404,
+        "error": "HTTP Error 404: Not Found",
+        "verified": false
+      },
+      {
+        "url": "http://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz",
+        "attempt": 1,
+        "status": "http-error",
+        "status_code": 404,
+        "error": "HTTP Error 404: Not Found",
+        "verified": false
+      },
+      {
+        "method": "wayback-cdx",
+        "original_url": "https://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz",
+        "capture_count": 0,
+        "error": null
+      },
+      {
+        "method": "wayback-cdx",
+        "original_url": "http://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz",
+        "capture_count": 0,
+        "error": null
+      }
+    ],
+    "status": "exact-sources-index-unavailable"
   },
   {
     "repository": "hancom",
     "suite": "hancom-3.0",
     "base_url": "https://update.hancomgooroom.com/hancom",
-    "inrelease": "work/signed-sources-index/input/hancom-3.0.InRelease",
+    "inrelease": "work/signed-sources-index-v2/input/hancom-3.0.InRelease",
     "inrelease_size": 6749,
     "inrelease_sha256": "c9a7b25df05665eb7d5fbdca2c576aaf415b769795723d27c12a25b971a81dd7",
     "inrelease_signature": {
@@ -41,18 +89,18 @@
       "exit_code": 0,
       "diagnostic": "[GNUPG:] NEWSIG\n[GNUPG:] KEY_CONSIDERED 3253EEB810E267AAE2CFBB0C62E235CD3658AE47 0\n[GNUPG:] SIG_ID 9PU9/fhhvQwC8pV5e6j4ZsIzfZc 2023-08-01 1690849863\n[GNUPG:] GOODSIG 62E235CD3658AE47 gooroom <gooroom@gooroom.kr>\n[GNUPG:] VALIDSIG 3253EEB810E267AAE2CFBB0C62E235CD3658AE47 2023-08-01 1690849863 0 4 0 1 10 01 3253EEB810E267AAE2CFBB0C62E235CD3658AE47\n\ngpgv: Signature made Tue Aug  1 00:31:03 2023 UTC\ngpgv:                using RSA key 3253EEB810E267AAE2CFBB0C62E235CD3658AE47\ngpgv: Good signature from \"gooroom <gooroom@gooroom.kr>\"",
       "keyrings": [
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bookworm-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-bullseye-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-security-automatic.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/debian-archive-buster-stable.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-1.0.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-2.0.gpg",
-        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index/input/keyrings/gooroom-archive-3.0.gpg"
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bookworm-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-bullseye-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-security-automatic.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/debian-archive-buster-stable.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-1.0.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-2.0.gpg",
+        "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/signed-sources-index-v2/input/keyrings/gooroom-archive-3.0.gpg"
       ]
     },
     "usable": false,
@@ -91,6 +139,18 @@
         "status_code": 404,
         "error": "HTTP Error 404: Not Found",
         "verified": false
+      },
+      {
+        "method": "wayback-cdx",
+        "original_url": "https://update.hancomgooroom.com/hancom/dists/hancom-3.0/main/source/Sources.gz",
+        "capture_count": 0,
+        "error": "URLError: <urlopen error [Errno 111] Connection refused>"
+      },
+      {
+        "method": "wayback-cdx",
+        "original_url": "http://update.hancomgooroom.com/hancom/dists/hancom-3.0/main/source/Sources.gz",
+        "capture_count": 0,
+        "error": null
       }
     ],
     "status": "exact-sources-index-unavailable"
