@@ -33,35 +33,44 @@ jobs:
           from pathlib import Path
 
           path = Path('.github/workflows/arm64-build-wave5-browser.yml')
-          source = path.read_text(encoding='utf-8')
-          old = """      - name: Upload partial-round diagnostics
-        if: always() && steps.build.outputs.complete != 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: gooroom-browser-arm64-ccache-round-${{ env.ROUND }}-${{ github.run_id }}
-          path: work/gooroom-browser-arm64
-          if-no-files-found: warn
-          include-hidden-files: true
-          retention-days: 14
-          compression-level: 9
-"""
-          new = """      - name: Upload browser output before fail-closed verification
-        if: always() && steps.build.outputs.cache_ready == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: gooroom-browser-preverification-arm64-${{ env.ROUND }}-${{ github.run_id }}
-          path: work/gooroom-browser-arm64
-          if-no-files-found: warn
-          include-hidden-files: true
-          retention-days: 14
-          compression-level: 9
-"""
-          count = source.count(old)
-          if count != 1:
-              raise SystemExit(f'expected one exact upload block, found {count}')
-          path.write_text(source.replace(old, new), encoding='utf-8')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          start_marker = '      - name: Upload partial-round diagnostics'
+          try:
+              start = lines.index(start_marker)
+          except ValueError as error:
+              raise SystemExit('exact partial diagnostic step is missing') from error
+
+          end = None
+          for index in range(start + 1, len(lines)):
+              if lines[index].startswith('      - name: '):
+                  end = index
+                  break
+          if end is None:
+              raise SystemExit('next workflow step was not found')
+
+          expression_open = '$' + '{{'
+          replacement = [
+              '      - name: Upload browser output before fail-closed verification',
+              "        if: always() && steps.build.outputs.cache_ready == 'true'",
+              '        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
+              '        with:',
+              f'          name: gooroom-browser-preverification-arm64-{expression_open} env.ROUND }}}}-{expression_open} github.run_id }}}}',
+              '          path: work/gooroom-browser-arm64',
+              '          if-no-files-found: warn',
+              '          include-hidden-files: true',
+              '          retention-days: 14',
+              '          compression-level: 9',
+              '',
+          ]
+          updated = lines[:start] + replacement + lines[end:]
+          text = '\n'.join(updated) + '\n'
+          if text.count('gooroom-browser-preverification-arm64-') != 1:
+              raise SystemExit('pre-verification artifact name is not unique')
+          if 'Upload partial-round diagnostics' in text:
+              raise SystemExit('legacy incomplete-only step survived')
+          path.write_text(text, encoding='utf-8')
           PY
-          grep -Fq 'gooroom-browser-preverification-arm64-' \
+          grep -Fq 'gooroom-browser-preverification-arm64-${{ env.ROUND }}-${{ github.run_id }}' \
             .github/workflows/arm64-build-wave5-browser.yml
           test "$(grep -Fc 'name: gooroom-browser-preverification-arm64-' \
             .github/workflows/arm64-build-wave5-browser.yml)" -eq 1
