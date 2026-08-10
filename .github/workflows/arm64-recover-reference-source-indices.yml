@@ -1,0 +1,116 @@
+name: ARM64 port - recover exact reference source indices
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-reference-source-indices.yml'
+      - 'arm64/scripts/recover_locked_apt_source_indices.py'
+      - 'arm64/locks/reference-iso-source-residue/latest/selected-text/*InRelease.txt'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-source-index-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact reference evidence and recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify recovery code and immutable InRelease inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/recover_locked_apt_source_indices.py
+          gooroom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt
+          hancom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt
+          test -s "$gooroom"
+          test -s "$hancom"
+          grep -Fq '09e1abccac1bcd86a430318caab0f0c68224f42a567b8cee7bcf308ed7f4a166 51094 main/source/Sources.gz' "$gooroom"
+          grep -Fq '5898f493b7ae9c750dbd11c80325bde5a3778357500d9acda24cc6e4e41c6a58 7142 main/source/Sources.gz' "$hancom"
+
+      - name: Recover only byte-identical signed-release source indices
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/reference-source-index-recovery
+          mkdir -p work/reference-source-index-recovery
+          python3 arm64/scripts/recover_locked_apt_source_indices.py \
+            --gooroom-inrelease arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt \
+            --hancom-inrelease arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt \
+            --output-dir work/reference-source-index-recovery \
+            --timeout 12
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .resolved_index_count >= 0
+            and .resolved_index_count <= 2
+            and .exact_target_stanza_count >= 0
+            and .promotion_allowed == false
+          ' work/reference-source-index-recovery/summary.json >/dev/null
+
+      - name: Seal complete positive or negative evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/reference-source-index-recovery
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Exact source-index recovery'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact indices or complete negative evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-source-index-recovery
+          path: work/reference-source-index-recovery
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable current source-index recovery evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-source-index-recovery
+          destination=arm64/locks/reference-source-index-recovery/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Recover exact Hancom Gooroom 3.3 source indices'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
