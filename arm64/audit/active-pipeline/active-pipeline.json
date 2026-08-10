@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 155,
-    "workflow_name_count": 155,
+    "workflow_count": 154,
+    "workflow_name_count": 154,
     "referenced_local_file_count": 247,
     "error_count": 0,
     "warning_count": 39,
@@ -1821,20 +1821,6 @@
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json"
       ]
-    },
-    {
-      "filename": "arm64-patch-browser-preverification-artifact.yml",
-      "path": ".github/workflows/arm64-patch-browser-preverification-artifact.yml",
-      "name": "ARM64 maintenance - preserve browser output before verification",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
     },
     {
       "filename": "arm64-pipeline-lint.yml",
