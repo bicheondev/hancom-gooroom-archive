@@ -1,20 +1,19 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-10T14:18:42Z",
+    "generated_at": "2026-08-10T16:52:21Z",
     "branch": "arm64-port",
-    "head_sha": "40b7250126e6e15817234d4d8030e9183d683d01",
+    "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 4,
-      "in_progress": 7,
-      "no-run": 87,
-      "queued": 2
+      "completed": 2,
+      "in_progress": 5,
+      "no-run": 93
     },
     "latest_run_conclusion_counts": {
       "failure": 1,
-      "none": 96,
-      "success": 3
+      "none": 98,
+      "success": 1
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -112,16 +111,16 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31397395184,
-        "run_number": 422,
+        "id": 31410825618,
+        "run_number": 437,
         "event": "push",
         "status": "completed",
-        "conclusion": "success",
-        "head_sha": "53a4553e3ea5cc0c2c4caf3621fc1c214ff106e8",
-        "created_at": "2026-08-10T14:17:57Z",
-        "updated_at": "2026-08-10T14:18:19Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397395184",
-        "display_title": "Promote revalidated Gooroom browser ARM64 packages"
+        "conclusion": "failure",
+        "head_sha": "9dd649a7662b1a36535ab7e691bac2afa5cdb342",
+        "created_at": "2026-08-10T16:48:10Z",
+        "updated_at": "2026-08-10T16:48:47Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31410825618",
+        "display_title": "Recover exact sources from reference release locks"
       }
     },
     {
@@ -136,18 +135,7 @@
       "name": "ARM64 port - audit exact Gooroom guide vendor package history v2",
       "path": ".github/workflows/arm64-audit-gooroom-guide-han3u1-v2.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31293710397,
-        "run_number": 2,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "35fd8059f758fce46037ab2fbb0730374969c7f4",
-        "created_at": "2026-08-09T04:02:36Z",
-        "updated_at": "2026-08-09T04:02:59Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31293710397",
-        "display_title": "Seal exact Gooroom guide payload audit correctly"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 330303837,
@@ -175,7 +163,36 @@
       "name": "ARM64 port - audit generated lock schemas",
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31411163504,
+        "run_number": 8,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+        "created_at": "2026-08-10T16:52:12Z",
+        "updated_at": "2026-08-10T16:52:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163504",
+        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+      }
+    },
+    {
+      "workflow_id": 331224984,
+      "name": "ARM64 port - audit reference ISO source residue",
+      "path": ".github/workflows/arm64-audit-reference-iso-source-residue.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31403186018,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "507687f8e8d26a36881cfd10e4677e04014e4366",
+        "created_at": "2026-08-10T15:22:02Z",
+        "updated_at": "2026-08-10T15:23:49Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31403186018",
+        "display_title": "Audit exact source residue in reference ISO"
+      }
     },
     {
       "workflow_id": 328539039,
@@ -238,36 +255,14 @@
       "name": "ARM64 port - build control center with exact accountsservice",
       "path": ".github/workflows/arm64-build-gnome-control-center.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104360,
-        "run_number": 10,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:51Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104360",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328476660,
       "name": "ARM64 port - build exact Gooroom browser",
       "path": ".github/workflows/arm64-build-wave5-browser.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397106645,
-        "run_number": 27,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:46Z",
-        "updated_at": "2026-08-10T14:14:50Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397106645",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328564306,
@@ -281,54 +276,21 @@
       "name": "ARM64 port - build exact libsecurity extensions",
       "path": ".github/workflows/arm64-build-libsecurity-extensions.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104400,
-        "run_number": 3,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:17:39Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104400",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328458282,
       "name": "ARM64 port - build exact package wave 1",
       "path": ".github/workflows/arm64-build-wave1.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397105066,
-        "run_number": 12,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:52Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397105066",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328543060,
       "name": "ARM64 port - build exact package wave 1 v2",
       "path": ".github/workflows/arm64-build-wave1-v2.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104354,
-        "run_number": 4,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:55Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104354",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328509525,
@@ -342,18 +304,7 @@
       "name": "ARM64 port - build exact package wave 2",
       "path": ".github/workflows/arm64-build-wave2.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104435,
-        "run_number": 8,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:57Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104435",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328514547,
@@ -367,36 +318,14 @@
       "name": "ARM64 port - build exact package wave 3",
       "path": ".github/workflows/arm64-build-wave3.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104443,
-        "run_number": 7,
-        "event": "push",
-        "status": "queued",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:45Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104443",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328476528,
       "name": "ARM64 port - build exact package wave 4",
       "path": ".github/workflows/arm64-build-wave4.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104326,
-        "run_number": 8,
-        "event": "push",
-        "status": "queued",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:45Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104326",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328528618,
@@ -493,13 +422,6 @@
       "workflow_id": 329039905,
       "name": "ARM64 port - dispatch user-aware source archaeology",
       "path": ".github/workflows/arm64-dispatch-source-archaeology.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328517066,
-      "name": "ARM64 port - drain exact-source native rebuild backlog",
-      "path": ".github/workflows/arm64-native-rebuild-backlog.yml",
       "state": "active",
       "latest_run": null
     },
@@ -614,16 +536,16 @@
       "path": ".github/workflows/arm64-index-rebuild-results-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31397434929,
-        "run_number": 5,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "f66f1da3a615592189dc3696a81246a6ed090058",
-        "created_at": "2026-08-10T14:18:23Z",
-        "updated_at": "2026-08-10T14:18:36Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397434929",
-        "display_title": "ARM64 port - index verified rebuild results v2"
+        "id": 31411163310,
+        "run_number": 6,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+        "created_at": "2026-08-10T16:52:12Z",
+        "updated_at": "2026-08-10T16:52:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163310",
+        "display_title": "Refresh coverage after verified Gooroom browser promotion"
       }
     },
     {
@@ -764,18 +686,7 @@
       "name": "ARM64 port - rebuild security status tools with exact vendor dependency",
       "path": ".github/workflows/arm64-build-security-status-tools.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31397104278,
-        "run_number": 11,
-        "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "25bbf49d588b5ea99e6b6c44a53600ee368955e0",
-        "created_at": "2026-08-10T14:14:45Z",
-        "updated_at": "2026-08-10T14:14:52Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104278",
-        "display_title": "Make composite member verification POSIX awk compatible"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 329697499,
@@ -803,7 +714,18 @@
       "name": "ARM64 port - retry dependency failures on verified package-cache changes v2",
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31411166288,
+        "run_number": 19,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+        "created_at": "2026-08-10T16:52:14Z",
+        "updated_at": "2026-08-10T16:52:17Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411166288",
+        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+      }
     },
     {
       "workflow_id": 328594078,
@@ -817,7 +739,18 @@
       "name": "ARM64 port - reverify baseline native rebuilds",
       "path": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 31411163157,
+        "run_number": 12,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+        "created_at": "2026-08-10T16:52:12Z",
+        "updated_at": "2026-08-10T16:52:17Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163157",
+        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+      }
     },
     {
       "workflow_id": 328535700,
@@ -846,16 +779,16 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 31397447111,
-        "run_number": 20,
-        "event": "workflow_dispatch",
+        "id": 31411163235,
+        "run_number": 21,
+        "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "c556f119ed21dcc4d12e239f75123e66d029f1c7",
-        "created_at": "2026-08-10T14:18:31Z",
-        "updated_at": "2026-08-10T14:18:38Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397447111",
-        "display_title": "ARM64 port - snapshot CI and phase-gate state"
+        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+        "created_at": "2026-08-10T16:52:12Z",
+        "updated_at": "2026-08-10T16:52:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163235",
+        "display_title": "Refresh coverage after verified Gooroom browser promotion"
       }
     },
     {
@@ -878,7 +811,7 @@
       "exists": true,
       "path": "arm64/audit/active-pipeline/summary.json",
       "values": {
-        "passed": true
+        "passed": false
       }
     },
     "workflow_secrets": {
