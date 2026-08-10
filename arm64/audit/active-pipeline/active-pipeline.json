@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 156,
-    "workflow_name_count": 156,
-    "referenced_local_file_count": 247,
+    "workflow_count": 157,
+    "workflow_name_count": 157,
+    "referenced_local_file_count": 248,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -217,6 +217,23 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-audit-reference-iso-source-residue.yml",
+      "path": ".github/workflows/arm64-audit-reference-iso-source-residue.yml",
+      "name": "ARM64 port - audit reference ISO source residue",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/audit_reference_iso_source_residue.py"
+      ]
     },
     {
       "filename": "arm64-audit-vendor-payload-repacks.yml",
@@ -3526,6 +3543,9 @@
     ],
     "arm64/scripts/audit_packaged_payload_against_git.py": [
       ".github/workflows/arm64-audit-gooroom-guide-han3u1-v2.yml"
+    ],
+    "arm64/scripts/audit_reference_iso_source_residue.py": [
+      ".github/workflows/arm64-audit-reference-iso-source-residue.yml"
     ],
     "arm64/scripts/audit_workflow_secret_literals.py": [
       ".github/workflows/arm64-workflow-secret-audit.yml"
