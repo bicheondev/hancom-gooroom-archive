@@ -1,0 +1,320 @@
+name: ARM64 port - revalidate preserved Gooroom browser artifact
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-revalidate-gooroom-browser-preserved.yml'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/source-components/gooroom-browser.json'
+      - 'arm64/locks/effective-sources-v3/effective-source-lock.json'
+      - 'arm64/locks/reference/amd64-reference.json'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Failed build run whose preverification artifact must be revalidated
+        required: true
+        default: '31371705497'
+      source_artifact_name:
+        description: Preserved preverification artifact name
+        required: true
+        default: 'gooroom-browser-preverification-arm64-1-31371705497'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-revalidate-preserved-browser
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: ${{ inputs.source_run_id || '31371705497' }}
+  SOURCE_ARTIFACT_NAME: ${{ inputs.source_artifact_name || 'gooroom-browser-preverification-arm64-1-31371705497' }}
+  OUTPUT_DIR: work/gooroom-browser-arm64
+
+jobs:
+  revalidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out current fail-closed verification authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Install static package inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils dpkg-dev file jq python3
+          chmod +x arm64/scripts/verify_locked_arm64_build.sh
+          bash -n arm64/scripts/verify_locked_arm64_build.sh
+
+      - name: Download the preserved complete ARM64 build output
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: ${{ env.OUTPUT_DIR }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Lock source-run identity and artifact layout
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$SOURCE_RUN_ID" in
+            ''|*[!0-9]*) echo 'source run id must be numeric' >&2; exit 1 ;;
+          esac
+          test "$SOURCE_RUN_ID" = '31371705497'
+          test "$SOURCE_ARTIFACT_NAME" = 'gooroom-browser-preverification-arm64-1-31371705497'
+          test -f "$OUTPUT_DIR/build-lock.json"
+          test -f "$OUTPUT_DIR/source-lock-evidence.json"
+          test -f "$OUTPUT_DIR/upstream-source-evidence.json"
+          test -f "$OUTPUT_DIR/upstream-source-members.tsv"
+          test -f "$OUTPUT_DIR/gooroom-browser-arm64-packaging-compatibility.json"
+          test -f "$OUTPUT_DIR/gooroom-browser_3.5.0-1+grm3u3_arm64.deb"
+          test -f "$OUTPUT_DIR/gooroom-browser-dbgsym_3.5.0-1+grm3u3_arm64.deb"
+          test -f "$OUTPUT_DIR/SHA256SUMS"
+          mkdir -p work/gooroom-browser-revalidation
+          jq -n \
+            --argjson schema 1 \
+            --argjson source_run_id "$SOURCE_RUN_ID" \
+            --arg source_artifact_name "$SOURCE_ARTIFACT_NAME" \
+            --arg source_artifact_digest 'sha256:f1fc84f641476f67dfff77da9ca69a9a90ba55a0867b62e4911de2f841d166e7' \
+            --arg current_head "$GITHUB_SHA" \
+            '{
+              schema:$schema,
+              source_run_id:$source_run_id,
+              source_artifact_name:$source_artifact_name,
+              source_artifact_digest:$source_artifact_digest,
+              current_verification_head:$current_head
+            }' > work/gooroom-browser-revalidation/source-artifact-lock.json
+
+      - name: Re-run generic and browser-specific verification with complete logs
+        id: verify
+        shell: bash
+        run: |
+          set -uo pipefail
+          diagnostics=work/gooroom-browser-revalidation
+          output="$OUTPUT_DIR"
+          mkdir -p "$diagnostics" "$diagnostics/direct-file-reports"
+
+          set +e
+          bash -x arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources-v3/effective-source-lock.json \
+            gooroom-browser \
+            "$output" \
+            > >(tee "$diagnostics/generic-verifier.stdout.log") \
+            2> >(tee "$diagnostics/generic-verifier.stderr.log" >&2)
+          generic_rc=$?
+
+          bash -x -s -- "$output" "$diagnostics" \
+            > >(tee "$diagnostics/browser-verifier.stdout.log") \
+            2> >(tee "$diagnostics/browser-verifier.stderr.log" >&2) <<'BROWSER_VERIFY'
+          set -Eeuo pipefail
+          output="$1"
+          diagnostics="$2"
+          compatibility="$output/gooroom-browser-arm64-packaging-compatibility.json"
+          jq -e '
+            .schema == 1
+            and .source == "gooroom-browser"
+            and .target_architecture == "arm64"
+            and .policy == "replace-packaged-prebuilt-crashpad-with-same-build-native-output"
+            and .original_install_source == "debian/setups/chrome_crashpad_handler usr/lib/gooroom-browser"
+            and .replacement_install_source == "out/Release/chrome_crashpad_handler usr/lib/gooroom-browser"
+            and .source_or_version_changed == false
+            and .byte_identity_claimed == false
+            and .native_build_output_required == true
+            and (.original_payload_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$compatibility" > "$diagnostics/compatibility-verification.json"
+
+          mapfile -t browser_debs < <(
+            for deb in "$output"/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = gooroom-browser ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#browser_debs[@]}" -eq 1
+          browser_deb="${browser_debs[0]}"
+          test "$(dpkg-deb -f "$browser_deb" Version)" = '3.5.0-1+grm3u3'
+          test "$(dpkg-deb -f "$browser_deb" Architecture)" = arm64
+
+          root="$(mktemp -d)"
+          trap 'rm -rf "$root"' EXIT
+          dpkg-deb -x "$browser_deb" "$root"
+          handler="$root/usr/lib/gooroom-browser/chrome_crashpad_handler"
+          test -f "$handler"
+          test -x "$handler"
+          handler_file="$(file -b "$handler")"
+          printf '%s\n' "$handler_file" | tee "$diagnostics/crashpad-handler.file.txt"
+          readelf -h "$handler" > "$diagnostics/crashpad-handler.readelf.txt"
+          grep -Eq '^ELF 64-bit .*ARM aarch64' <<<"$handler_file"
+          grep -Eq 'Machine:[[:space:]]+AArch64' "$diagnostics/crashpad-handler.readelf.txt"
+          handler_sha256="$(sha256sum "$handler" | awk '{print $1}')"
+
+          jq -n \
+            --arg package_file "$(basename "$browser_deb")" \
+            --arg package_sha256 "$(sha256sum "$browser_deb" | awk '{print $1}')" \
+            --arg handler_path /usr/lib/gooroom-browser/chrome_crashpad_handler \
+            --arg handler_file "$handler_file" \
+            --arg handler_sha256 "$handler_sha256" \
+            '{
+              schema:1,
+              source:"gooroom-browser",
+              source_version:"3.5.0-1+grm3u3",
+              package:"gooroom-browser",
+              architecture:"arm64",
+              package_file:$package_file,
+              package_sha256:$package_sha256,
+              handler_path:$handler_path,
+              handler_file:$handler_file,
+              handler_sha256:$handler_sha256,
+              handler_machine:"AArch64",
+              prebuilt_downstream_handler_installed:false,
+              verified:true
+            }' | tee "$output/gooroom-browser-crashpad-verification.json" \
+              > "$diagnostics/gooroom-browser-crashpad-verification.json"
+          BROWSER_VERIFY
+          browser_rc=$?
+
+          bash -x -s -- "$output" "$diagnostics" \
+            > >(tee "$diagnostics/direct-audit.stdout.log") \
+            2> >(tee "$diagnostics/direct-audit.stderr.log" >&2) <<'DIRECT_AUDIT'
+          set -Eeuo pipefail
+          output="$1"
+          diagnostics="$2"
+
+          python3 - "$output" "$diagnostics" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          output = Path(sys.argv[1]).resolve()
+          diagnostics = Path(sys.argv[2]).resolve()
+          rows = []
+          for raw in (output / 'SHA256SUMS').read_text(encoding='utf-8').splitlines():
+              if not raw.strip():
+                  continue
+              expected, recorded = raw.split(None, 1)
+              candidate = output / Path(recorded).name
+              actual = hashlib.sha256(candidate.read_bytes()).hexdigest() if candidate.is_file() else None
+              rows.append({
+                  'recorded_path': recorded,
+                  'resolved_path': str(candidate),
+                  'expected_sha256': expected,
+                  'actual_sha256': actual,
+                  'passed': actual == expected,
+              })
+          result = {
+              'schema': 1,
+              'entry_count': len(rows),
+              'failed_count': sum(not row['passed'] for row in rows),
+              'entries': rows,
+          }
+          (diagnostics / 'portable-sha256-audit.json').write_text(
+              json.dumps(result, indent=2) + '\n', encoding='utf-8'
+          )
+          if result['failed_count']:
+              raise SystemExit(1)
+          PY
+
+          : > "$diagnostics/package-metadata.tsv"
+          : > "$diagnostics/foreign-executables.txt"
+          for deb in "$output"/*.deb; do
+            package="$(dpkg-deb -f "$deb" Package)"
+            version="$(dpkg-deb -f "$deb" Version)"
+            architecture="$(dpkg-deb -f "$deb" Architecture)"
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              "$(basename "$deb")" "$package" "$version" "$architecture" \
+              "$(sha256sum "$deb" | awk '{print $1}')" \
+              >> "$diagnostics/package-metadata.tsv"
+            root="$(mktemp -d)"
+            dpkg-deb -x "$deb" "$root"
+            report="$diagnostics/direct-file-reports/$(basename "$deb").txt"
+            find "$root" -type f -exec file -- '{}' + | sort > "$report"
+            grep -E \
+              'ELF (32|64)-bit .* (x86-64|Intel 80386)|PE32(\+)? executable .* (x86-64|Intel 80386)' \
+              "$report" >> "$diagnostics/foreign-executables.txt" || true
+            rm -rf "$root"
+          done
+          test ! -s "$diagnostics/foreign-executables.txt"
+          DIRECT_AUDIT
+          direct_rc=$?
+          set -e
+
+          passed=false
+          if [ "$generic_rc" -eq 0 ] && [ "$browser_rc" -eq 0 ] && [ "$direct_rc" -eq 0 ]; then
+            passed=true
+          fi
+          jq -n \
+            --argjson schema 1 \
+            --argjson source_run_id "$SOURCE_RUN_ID" \
+            --arg source_artifact_name "$SOURCE_ARTIFACT_NAME" \
+            --argjson generic_verifier_rc "$generic_rc" \
+            --argjson browser_verifier_rc "$browser_rc" \
+            --argjson direct_audit_rc "$direct_rc" \
+            --argjson passed "$passed" \
+            '{
+              schema:$schema,
+              source:"gooroom-browser",
+              source_version:"3.5.0-1+grm3u3",
+              source_run_id:$source_run_id,
+              source_artifact_name:$source_artifact_name,
+              generic_verifier_rc:$generic_verifier_rc,
+              browser_verifier_rc:$browser_verifier_rc,
+              direct_audit_rc:$direct_audit_rc,
+              passed:$passed
+            }' | tee "$diagnostics/revalidation-summary.json"
+          echo "generic_rc=$generic_rc" >> "$GITHUB_OUTPUT"
+          echo "browser_rc=$browser_rc" >> "$GITHUB_OUTPUT"
+          echo "direct_rc=$direct_rc" >> "$GITHUB_OUTPUT"
+          echo "passed=$passed" >> "$GITHUB_OUTPUT"
+
+      - name: Seal complete revalidation diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          diagnostics=work/gooroom-browser-revalidation
+          (
+            cd "$diagnostics"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete revalidation diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-browser-revalidation-diagnostics-${{ github.run_id }}
+          path: work/gooroom-browser-revalidation
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload exact browser packages only after all revalidation gates pass
+        if: steps.verify.outputs.passed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-browser-exact-arm64-wave5
+          path: work/gooroom-browser-arm64
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Preserve fail-closed revalidation conclusion
+        if: steps.verify.outputs.passed != 'true'
+        shell: bash
+        run: |
+          echo 'Preserved Gooroom browser output did not pass every revalidation gate.' >&2
+          echo 'generic=${{ steps.verify.outputs.generic_rc }} browser=${{ steps.verify.outputs.browser_rc }} direct=${{ steps.verify.outputs.direct_rc }}' >&2
+          exit 1
