@@ -3,16 +3,15 @@
     "schema": 3,
     "policy": "diagnostic-only-failure-classification",
     "latest_result_count": 42,
-    "passed_count": 41,
-    "failed_count": 1,
+    "passed_count": 42,
+    "failed_count": 0,
     "dependency_resolution_failure_count": 0,
     "source_recovery_required_count": 0,
-    "composite_source_required_count": 1,
+    "composite_source_required_count": 0,
     "infrastructure_transient_count": 0,
     "unknown_failure_count": 0,
     "category_counts": {
-      "composite-source-required": 1,
-      "passed": 41
+      "passed": 42
     }
   },
   "sources": [
@@ -240,20 +239,18 @@
     {
       "source": "gooroom-browser",
       "source_version": "3.5.0-1+grm3u3",
-      "actions_run_id": "31102459428",
-      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31102459428",
-      "batch": "infrastructure-retry-v3",
-      "passed": false,
-      "category": "composite-source-required",
-      "classification_evidence": [
-        "modulenotfounderror: no module named 'replace_gn_files'"
-      ],
-      "build_outcome": "failure",
-      "build_exit_code": "2",
-      "verify_outcome": "skipped",
+      "actions_run_id": "31397104534",
+      "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104534",
+      "batch": "verified-existing-workflow-artifact-promotion",
+      "passed": true,
+      "category": "passed",
+      "classification_evidence": [],
+      "build_outcome": "success",
+      "build_exit_code": "0",
+      "verify_outcome": "success",
       "dependency_repository_packages_sha256": null,
       "dependency_release_lock_sha256": null,
-      "retry_reason": "builder-infrastructure-changed",
+      "retry_reason": null,
       "result_path": "arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3/result.json"
     },
     {
