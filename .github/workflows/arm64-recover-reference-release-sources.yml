@@ -1,0 +1,156 @@
+name: ARM64 port - recover exact sources from reference release locks
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-reference-release-sources.yml'
+      - 'arm64/scripts/recover_exact_sources_from_reference_release.py'
+      - 'arm64/locks/reference-iso-source-residue/latest/selected-text/*InRelease.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-release-source-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Check out signed reference-release evidence and recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic recovery tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file jq python3
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_sources_from_reference_release.py
+
+      - name: Recover byte-identical source indices and source members
+        id: recover
+        shell: bash
+        run: |
+          set -uxo pipefail
+          output=work/reference-release-source-recovery
+          rm -rf "$output"
+          mkdir -p "$output"
+          gooroom_inrelease='arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt'
+          hancom_inrelease='arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt'
+          test -f "$gooroom_inrelease"
+          test -f "$hancom_inrelease"
+          set +e
+          python3 arm64/scripts/recover_exact_sources_from_reference_release.py \
+            --gooroom-inrelease "$gooroom_inrelease" \
+            --hancom-inrelease "$hancom_inrelease" \
+            --output-dir "$output" \
+            --timeout 20
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$output/recovery.exit-code"
+          if [ -f "$output/summary.json" ]; then
+            resolved_indices="$(jq -r '.resolved_index_count' "$output/summary.json")"
+            resolved_sources="$(jq -r '.resolved_source_count' "$output/summary.json")"
+          else
+            resolved_indices=0
+            resolved_sources=0
+            jq -n \
+              --argjson exit_code "$rc" \
+              '{
+                schema: 1,
+                status: "recovery-script-failed-before-summary",
+                exit_code: $exit_code,
+                resolved_index_count: 0,
+                resolved_source_count: 0,
+                promotion_allowed: false
+              }' > "$output/summary.json"
+            mkdir -p "$output/compact"
+            cp "$output/summary.json" "$output/compact/"
+          fi
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          echo "resolved_index_count=$resolved_indices" >> "$GITHUB_OUTPUT"
+          echo "resolved_source_count=$resolved_sources" >> "$GITHUB_OUTPUT"
+          jq . "$output/summary.json"
+
+      - name: Seal complete recovery output and compact authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-release-source-recovery
+          mkdir -p "$output/compact"
+          (
+            cd "$output"
+            find . -type f \
+              ! -path './compact/*' \
+              ! -name FULLSUMS.sha256 \
+              -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 -r sha256sum > FULLSUMS.sha256
+          )
+          (
+            cd "$output/compact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 -r sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$output" "$output/compact"
+
+      - name: Upload exact recovered indices, source archives, and negative evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-release-source-recovery
+          path: work/reference-release-source-recovery
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact byte-locked recovery authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-release-source-recovery/compact
+          destination=arm64/locks/reference-release-source-recovery/latest
+          test -f "$source/summary.json"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Reference-release source recovery authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Record exact reference-release source recovery'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce at least one byte-identical signed source index
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/reference-release-source-recovery/summary.json
+          test "$(jq -r '.resolved_index_count' \
+            work/reference-release-source-recovery/summary.json)" -gt 0
