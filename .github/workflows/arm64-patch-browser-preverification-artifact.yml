@@ -68,9 +68,13 @@ jobs:
               raise SystemExit('pre-verification artifact name is not unique')
           if 'Upload partial-round diagnostics' in text:
               raise SystemExit('legacy incomplete-only step survived')
+          if expression_open + ' env.ROUND }}' not in text:
+              raise SystemExit('round expression was not preserved literally')
+          if expression_open + ' github.run_id }}' not in text:
+              raise SystemExit('run-id expression was not preserved literally')
           path.write_text(text, encoding='utf-8')
           PY
-          grep -Fq 'gooroom-browser-preverification-arm64-${{ env.ROUND }}-${{ github.run_id }}' \
+          grep -Fq 'gooroom-browser-preverification-arm64-' \
             .github/workflows/arm64-build-wave5-browser.yml
           test "$(grep -Fc 'name: gooroom-browser-preverification-arm64-' \
             .github/workflows/arm64-build-wave5-browser.yml)" -eq 1
