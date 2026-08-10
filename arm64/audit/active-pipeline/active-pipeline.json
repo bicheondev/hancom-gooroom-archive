@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 162,
-    "workflow_name_count": 162,
-    "referenced_local_file_count": 253,
-    "error_count": 0,
+    "workflow_count": 163,
+    "workflow_name_count": 163,
+    "referenced_local_file_count": 254,
+    "error_count": 1,
     "warning_count": 39,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -2995,6 +2995,23 @@
       ]
     },
     {
+      "filename": "arm64-summarize-exact-source-recovery.yml",
+      "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
+      "name": "ARM64 port - consolidate exact source recovery",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/summarize_exact_source_recovery.py"
+      ]
+    },
+    {
       "filename": "arm64-summarize-recovered-package-blockers.yml",
       "path": ".github/workflows/arm64-summarize-recovered-package-blockers.yml",
       "name": "ARM64 port - summarize recovered package blockers",
@@ -4157,6 +4174,9 @@
     "arm64/scripts/summarize_arm64_port_coverage_v2.py": [
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
+    "arm64/scripts/summarize_exact_source_recovery.py": [
+      ".github/workflows/arm64-summarize-exact-source-recovery.yml"
+    ],
     "arm64/scripts/summarize_recovered_package_blockers.py": [
       ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
@@ -4292,7 +4312,13 @@
       ".github/workflows/arm64-port-coverage.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
+      "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
+      "reason": "referenced-local-code-missing"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
