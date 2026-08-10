@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 154,
-    "workflow_name_count": 154,
+    "workflow_count": 155,
+    "workflow_name_count": 155,
     "referenced_local_file_count": 247,
     "error_count": 0,
     "warning_count": 39,
@@ -2456,6 +2456,26 @@
       ]
     },
     {
+      "filename": "arm64-revalidate-gooroom-browser-preserved.yml",
+      "path": ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml",
+      "name": "ARM64 port - revalidate preserved Gooroom browser artifact",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-lock.json",
+        "arm64/scripts/verify_locked_arm64_build.sh"
+      ]
+    },
+    {
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
@@ -3141,7 +3161,8 @@
       ".github/workflows/arm64-port-coverage-v2.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
-      ".github/workflows/arm64-promote-gooroom-browser-artifact.yml"
+      ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
+      ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
@@ -4080,7 +4101,8 @@
       ".github/workflows/arm64-build-wave2.yml",
       ".github/workflows/arm64-build-wave3.yml",
       ".github/workflows/arm64-build-wave4.yml",
-      ".github/workflows/arm64-build-wave5-browser.yml"
+      ".github/workflows/arm64-build-wave5-browser.yml",
+      ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
