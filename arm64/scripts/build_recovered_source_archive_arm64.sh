@@ -89,10 +89,11 @@ docker run --rm \
 
     # bullseye-slim does not necessarily contain a CA trust store. Bootstrap it
     # from the image default HTTP repository before replacing the repository set
-    # with HTTPS snapshot.debian.org. This prevents a misleading empty-index
-    # failure before the exact historical source build even starts.
+    # with HTTPS snapshot.debian.org. Keep both bootstrap and build dependency
+    # installation explicitly noninteractive; DEBIAN_FRONTEND alone does not
+    # answer apt-get confirmation prompts.
     apt-get update
-    apt-get install --no-install-recommends ca-certificates
+    apt-get install -y --no-install-recommends ca-certificates
 
     cat >/etc/apt/apt.conf.d/99hancom-snapshot <<EOF
 Acquire::Check-Valid-Until "false";
@@ -113,7 +114,7 @@ EOF
 
     rm -rf /var/lib/apt/lists/*
     apt-get update
-    apt-get install --no-install-recommends \
+    apt-get install -y --no-install-recommends \
       apt-utils build-essential devscripts dpkg-dev equivs \
       fakeroot file git gnupg jq locales pkg-config python3 rsync xz-utils
 
