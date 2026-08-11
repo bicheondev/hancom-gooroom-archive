@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 181,
-    "workflow_name_count": 181,
-    "referenced_local_file_count": 280,
+    "workflow_count": 182,
+    "workflow_name_count": 182,
+    "referenced_local_file_count": 281,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -1405,6 +1405,23 @@
         "arm64/locks/sources-api-baseline/source-lock.json",
         "arm64/scripts/import_historical_arm64_artifacts_v2.py",
         "arm64/scripts/import_historical_arm64_artifacts_v3.py"
+      ]
+    },
+    {
+      "filename": "arm64-import-user-source-rescue.yml",
+      "path": ".github/workflows/arm64-import-user-source-rescue.yml",
+      "name": "ARM64 port - import user source rescue bundle",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_user_source_rescue_bundle.py"
       ]
     },
     {
@@ -4710,6 +4727,9 @@
     "arm64/scripts/verify_recovered_source_archive_arm64.py": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
       ".github/workflows/arm64-build-recovered-reference-sources.yml"
+    ],
+    "arm64/scripts/verify_user_source_rescue_bundle.py": [
+      ".github/workflows/arm64-import-user-source-rescue.yml"
     ],
     "arm64/source-recovery-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml"
