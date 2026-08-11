@@ -1,0 +1,277 @@
+name: ARM64 port - recover exact reference source archives
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-reference-source-archives.yml'
+      - 'arm64/scripts/recover_locked_source_archives.py'
+      - 'arm64/locks/reference-source-index-recovery/latest/**'
+  workflow_run:
+    workflows:
+      - 'ARM64 port - recover exact reference source indices'
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-source-archive-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current exact source-index authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact Debian source verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/recover_locked_source_archives.py
+
+      - name: Synchronize a just-completed source-index recovery commit
+        if: github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in $(seq 1 20); do
+            git fetch origin arm64-port
+            git reset --hard origin/arm64-port
+            if [ -f arm64/locks/reference-source-index-recovery/latest/summary.json ]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'The completed index workflow did not publish its authority.' >&2
+          exit 1
+
+      - name: Require byte-locked source-index evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          index=arm64/locks/reference-source-index-recovery/latest
+          test -f "$index/summary.json"
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .resolved_index_count >= 0
+            and .resolved_index_count <= 2
+            and .promotion_allowed == false
+          ' "$index/summary.json" >/dev/null
+          for repository in gooroom hancom; do
+            test -f "$index/$repository/result.json"
+          done
+
+      - name: Recover and verify exact DSC source sets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/reference-source-archive-recovery
+          mkdir -p work/reference-source-archive-recovery
+          timeout --signal=TERM --kill-after=30s 155m \
+            python3 arm64/scripts/recover_locked_source_archives.py \
+              --index-root arm64/locks/reference-source-index-recovery/latest \
+              --output-dir work/reference-source-archive-recovery \
+              --timeout 6
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .recovered_exact_source_archive_count >= 0
+            and .recovered_exact_source_archive_count <= 7
+            and .blocked_target_count == (.target_count - .recovered_exact_source_archive_count)
+          ' work/reference-source-archive-recovery/summary.json >/dev/null
+
+      - name: Compact committed evidence without discarding full artifact diagnostics
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          root = Path('work/reference-source-archive-recovery/compact')
+
+          def compact(value):
+              if isinstance(value, dict):
+                  return {
+                      key: compact(item)
+                      for key, item in value.items()
+                      if key not in {'attempts', 'cdx_evidence'}
+                  }
+              if isinstance(value, list):
+                  return [compact(item) for item in value]
+              return value
+
+          for path in sorted(root.rglob('*.json')):
+              value = json.loads(path.read_text(encoding='utf-8'))
+              path.write_text(
+                  json.dumps(compact(value), ensure_ascii=False, indent=2) + '\n',
+                  encoding='utf-8',
+              )
+          PY
+
+      - name: Generate exact user handoff commands for CI-inaccessible bytes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-source-archive-recovery
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import shlex
+          from pathlib import Path
+
+          root = Path('work/reference-source-archive-recovery')
+          handoff = json.loads((root / 'user-handoff.json').read_text(encoding='utf-8'))
+          items = list(handoff.get('locked_source_indices_needed', [])) + list(handoff.get('items_needed', []))
+          script = [
+              '#!/usr/bin/env bash',
+              'set -Eeuo pipefail',
+              '',
+              'OUT="${1:-hancom-gooroom-exact-source-handoff}"',
+              'mkdir -p "$OUT"',
+              '',
+              'fetch_locked() {',
+              '  local url="$1" name="$2" size="$3" sha="$4"',
+              '  local path="$OUT/$name"',
+              '  echo "==> $name"',
+              '  if ! curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 --output "$path.part" "$url"; then',
+              '    rm -f "$path.part"',
+              '    echo "MANUAL_BROWSER_REQUIRED $url" >&2',
+              '    return 0',
+              '  fi',
+              '  test "$(wc -c < "$path.part" | tr -d " ")" = "$size"',
+              '  printf "%s  %s\\n" "$sha" "$path.part" | sha256sum --check --strict',
+              '  mv "$path.part" "$path"',
+              '}',
+              '',
+          ]
+          seen = set()
+          for item in items:
+              url = item.get('url') or item.get('canonical_url')
+              name = item.get('filename')
+              size = item.get('size')
+              sha = item.get('sha256')
+              if not all((url, name, size is not None, sha)):
+                  continue
+              key = (str(name), str(sha))
+              if key in seen:
+                  continue
+              seen.add(key)
+              script.append(
+                  'fetch_locked '
+                  + ' '.join(shlex.quote(str(value)) for value in (url, name, size, sha))
+              )
+          script.extend(
+              [
+                  '',
+                  '(cd "$OUT" && find . -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)',
+                  '(cd "$OUT" && find . -maxdepth 1 -type f -printf "%f\\t%s\\n" | sort > SIZES.tsv)',
+                  'echo "Return the complete $OUT directory or its ZIP archive."',
+                  '',
+              ]
+          )
+          target = root / 'USER_RECOVER_EXACT_SOURCES.sh'
+          target.write_text('\n'.join(script), encoding='utf-8')
+          target.chmod(0o755)
+
+          readme = [
+              '# User handoff: exact Hancom Gooroom source material',
+              '',
+              'Run `./USER_RECOVER_EXACT_SOURCES.sh` on a machine or network that can reach the old Hancom Gooroom repository or an authenticated archive.',
+              '',
+              'A downloaded file is accepted only when both byte size and SHA-256 match the signed repository authority.',
+              'Do not substitute a similarly named Debian source package or a newer/older Git commit.',
+              '',
+              'Files still requiring browser or private-network retrieval:',
+          ]
+          for item in items:
+              readme.append(
+                  f"- `{item.get('filename') or item.get('source')}` — {item.get('reason', 'CI could not retrieve the locked bytes.')}"
+              )
+          (root / 'USER_HANDOFF.md').write_text('\n'.join(readme) + '\n', encoding='utf-8')
+          PY
+          bash -n "$output/USER_RECOVER_EXACT_SOURCES.sh"
+
+      - name: Seal full recovery and compact authority trees
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-source-archive-recovery
+          for directory in "$output" "$output/compact"; do
+            (
+              cd "$directory"
+              find . -type f ! -name LOCKSUMS.sha256 -print0 \
+                | LC_ALL=C sort -z \
+                | xargs -0 sha256sum > LOCKSUMS.sha256
+              sha256sum --check --strict LOCKSUMS.sha256
+            )
+          done
+          {
+            echo '## Exact source-archive recovery'
+            echo
+            echo '```json'
+            cat "$output/summary.json"
+            echo '```'
+            echo
+            echo '## User-side handoff'
+            echo
+            echo '```json'
+            cat "$output/user-handoff.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact source archives and complete retrieval evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-source-archive-recovery
+          path: work/reference-source-archive-recovery
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact exact authority and user handoff manifest
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-source-archive-recovery/compact
+          destination=arm64/locks/reference-source-archive-recovery/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          cp work/reference-source-archive-recovery/USER_HANDOFF.md "$destination/"
+          cp work/reference-source-archive-recovery/USER_RECOVER_EXACT_SOURCES.sh "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Recover exact Hancom Gooroom source archives'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
