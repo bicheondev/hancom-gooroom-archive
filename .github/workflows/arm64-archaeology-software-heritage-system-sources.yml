@@ -1,0 +1,115 @@
+name: ARM64 port - Software Heritage exact system-source archaeology
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-archaeology-software-heritage-system-sources.yml'
+      - 'arm64/scripts/archaeology_software_heritage_exact_sources.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-software-heritage-system-source-archaeology
+  cancel-in-progress: true
+
+jobs:
+  archaeology:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Check out exact package changelog evidence and archaeology code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify the Software Heritage archaeology program
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile \
+            arm64/scripts/archaeology_software_heritage_exact_sources.py
+
+      - name: Traverse archived Linux and QtBase packaging histories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/software-heritage-system-source-archaeology
+          mkdir -p work/software-heritage-system-source-archaeology
+          python3 arm64/scripts/archaeology_software_heritage_exact_sources.py \
+            --output-dir work/software-heritage-system-source-archaeology \
+            --timeout 25 \
+            --source linux \
+            --source qtbase-opensource-src
+          jq -e '
+            .schema == 1
+            and .target_count == 2
+            and .exact_revision_target_count >= 0
+            and .exact_revision_target_count <= 2
+            and .unresolved_target_count + .exact_revision_target_count == 2
+            and .promotion_allowed == false
+          ' work/software-heritage-system-source-archaeology/summary.json >/dev/null
+
+      - name: Seal complete positive or negative Software Heritage evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/software-heritage-system-source-archaeology
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Software Heritage exact system-source archaeology'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete archaeology evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-software-heritage-system-source-archaeology
+          path: work/software-heritage-system-source-archaeology
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Merge compact system-source evidence into current authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/software-heritage-system-source-archaeology
+          destination=arm64/locks/software-heritage-exact-source-archaeology/latest
+          mkdir -p "$destination"
+          for name in linux qtbase-opensource-src; do
+            rm -rf "$destination/$name"
+            cp -a "$source/$name" "$destination/$name"
+          done
+          cp "$source/summary.json" \
+            "$destination/system-summary.json"
+          cp "$source/LOCKSUMS.sha256" \
+            "$destination/system-LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit exact Linux and QtBase sources in Software Heritage'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
