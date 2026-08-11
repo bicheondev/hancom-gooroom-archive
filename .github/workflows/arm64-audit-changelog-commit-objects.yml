@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-audit-changelog-commit-objects.yml'
       - 'arm64/scripts/audit_changelog_commit_objects.py'
+      - 'arm64/scripts/filter_changelog_hash_collisions.py'
       - 'arm64/changelog-commit-targets.json'
       - 'arm64/locks/targeted-source-archaeology/results/**'
   workflow_dispatch:
@@ -35,7 +36,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             ca-certificates git jq python3
-          python3 -m py_compile arm64/scripts/audit_changelog_commit_objects.py
+          python3 -m py_compile \
+            arm64/scripts/audit_changelog_commit_objects.py \
+            arm64/scripts/filter_changelog_hash_collisions.py
           jq -e '
             .schema == 1
             and (.targets | length) == 7
@@ -62,8 +65,12 @@ jobs:
             --archaeology-root arm64/locks/targeted-source-archaeology/results \
             --output-dir work/changelog-commit-object-audit \
             --github-token "$GH_TOKEN"
+          python3 arm64/scripts/filter_changelog_hash_collisions.py \
+            --target-results work/changelog-commit-object-audit/target-results.json \
+            --summary work/changelog-commit-object-audit/summary.json \
+            --raw-output work/changelog-commit-object-audit/target-results-unfiltered.json
           jq -e '
-            .schema == 1
+            .schema == 2
             and .target_count == 7
             and .change_id_count == 13
             and (
@@ -72,6 +79,7 @@ jobs:
               + .unresolved_target_count
               == .target_count
             )
+            and .unrelated_global_hash_collision_count >= 0
             and .promotion_allowed == false
           ' work/changelog-commit-object-audit/summary.json >/dev/null
           jq -e '
