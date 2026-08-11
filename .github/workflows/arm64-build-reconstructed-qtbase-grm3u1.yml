@@ -1,0 +1,276 @@
+name: ARM64 port - build reconstructed QtBase grm3u1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml'
+      - 'arm64/scripts/build_recovered_source_archive_arm64.sh'
+      - 'arm64/scripts/verify_recovered_source_archive_arm64.py'
+      - 'arm64/scripts/verify_reconstructed_qtbase_arm64.py'
+      - 'arm64/locks/qtbase-grm3u1-reconstruction/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-reconstructed-qtbase-grm3u1
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  TARGET_VERSION: 5.15.2+dfsg-9+grm3u1
+  RECONSTRUCTION_WORKFLOW: arm64-reconstruct-build-qtbase-grm3u1.yml
+  RECONSTRUCTION_ARTIFACT: qtbase-5.15.2-dfsg-9-grm3u1-reconstructed-source
+  ARM64_ARTIFACT: qtbase-opensource-src-reconstructed-exact-arm64-${{ github.run_id }}
+  HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+  HANCOM_GOOROOM_BUILD_JOBS: '3'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 355
+    steps:
+      - name: Check out exact reconstruction authority and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 host and install deterministic host tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo "Native ARM64 runner required; got $(uname -m)" >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file gh jq python3
+          docker version
+          bash -n arm64/scripts/build_recovered_source_archive_arm64.sh
+          python3 -m py_compile \
+            arm64/scripts/verify_recovered_source_archive_arm64.py \
+            arm64/scripts/verify_reconstructed_qtbase_arm64.py
+          jq -e '
+            .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_status == "reconstructed-not-recovered-original-source"
+            and .byte_identity_claimed == false
+            and .promotion_allowed == false
+            and .claims.only_vendor_declared_code_patch_added == true
+            and .claims.lost_original_source_archive_recovered == false
+            and .claims.native_arm64_build_verified == false
+          ' arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json >/dev/null
+
+      - name: Resolve the successful artifact matching the committed authority
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          expected_authority="$(sha256sum arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json | awk '{print $1}')"
+          rm -rf work/qtbase-source-candidates work/qtbase-source
+          mkdir -p work/qtbase-source-candidates work/qtbase-source
+          selected_run=''
+          mapfile -t run_ids < <(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow "$RECONSTRUCTION_WORKFLOW" \
+              --branch arm64-port \
+              --status success \
+              --limit 20 \
+              --json databaseId \
+              --jq '.[].databaseId'
+          )
+          test "${#run_ids[@]}" -gt 0
+          for run_id in "${run_ids[@]}"; do
+            candidate="work/qtbase-source-candidates/$run_id"
+            rm -rf "$candidate"
+            mkdir -p "$candidate"
+            if ! gh run download "$run_id" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "$RECONSTRUCTION_ARTIFACT" \
+              --dir "$candidate"; then
+              continue
+            fi
+            test -f "$candidate/LOCKSUMS.sha256" || continue
+            test -f "$candidate/evidence/authority.json" || continue
+            if ! (cd "$candidate" && sha256sum --check --strict LOCKSUMS.sha256); then
+              continue
+            fi
+            actual_authority="$(sha256sum "$candidate/evidence/authority.json" | awk '{print $1}')"
+            if [ "$actual_authority" != "$expected_authority" ]; then
+              continue
+            fi
+            cp -a "$candidate/." work/qtbase-source/
+            selected_run="$run_id"
+            break
+          done
+          test -n "$selected_run"
+          echo "run_id=$selected_run" >> "$GITHUB_OUTPUT"
+          echo "authority_sha256=$expected_authority" >> "$GITHUB_OUTPUT"
+
+      - name: Verify every reconstructed source archive member
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=work/qtbase-source/evidence/authority.json
+          archive=work/qtbase-source/source-archive
+          test -d "$archive"
+          mapfile -t dscs < <(find "$archive" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#dscs[@]}" -eq 1
+          dsc="${dscs[0]}"
+          test "$(sed -n 's/^Source: //p' "$dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$dsc" | head -n1)" = "$TARGET_VERSION"
+          expected_dsc_sha="$(jq -er '.reconstruction.reconstructed_dsc_sha256' "$authority")"
+          test "$(sha256sum "$dsc" | awk '{print $1}')" = "$expected_dsc_sha"
+          while IFS=$'\t' read -r filename size digest; do
+            path="$archive/$filename"
+            test -f "$path"
+            test "$(stat -c '%s' "$path")" = "$size"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$digest"
+          done < <(jq -r '.reconstruction.archive_members[] | [.filename, (.size|tostring), .sha256] | @tsv' "$authority")
+          rm -rf work/source
+          mkdir -p work/source
+          cp -a "$archive/." work/source/
+
+      - name: Provision bounded swap for the native Qt build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          swap_file=/mnt/hancom-gooroom-qtbase-reconstruction.swap
+          available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
+          current_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
+          if [ "$current_swap_mb" -lt 8192 ] && [ "$available_mb" -ge 28672 ]; then
+            sudo rm -f "$swap_file"
+            sudo fallocate -l 16G "$swap_file"
+            sudo chmod 600 "$swap_file"
+            if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
+              sudo sysctl -w vm.swappiness=15 || true
+            else
+              sudo rm -f "$swap_file"
+            fi
+          fi
+          free -h
+          sudo swapon --show || true
+          df -h / /mnt
+
+      - name: Build exact-version reconstructed source on native ARM64
+        id: compile
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/local-repo work/output
+          mkdir -p work/local-repo work/output
+          arm64/scripts/build_recovered_source_archive_arm64.sh \
+            work/source \
+            work/local-repo \
+            work/output \
+            "$SOURCE_NAME" \
+            "$TARGET_VERSION"
+
+      - name: Upload build diagnostics even when compilation fails
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-reconstructed-arm64-diagnostics-${{ github.run_id }}
+          path: work/output
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 9
+
+      - name: Verify nine required ARM64 packages and every native payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_reconstructed_qtbase_arm64.py \
+            --output-dir work/output \
+            --reconstruction-authority work/qtbase-source/evidence/authority.json \
+            --generic-verifier arm64/scripts/verify_recovered_source_archive_arm64.py \
+            --result work/output/result.json \
+            --artifact-name "$ARM64_ARTIFACT"
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_status == "reconstructed-not-recovered-original-source"
+            and .required_package_count == 9
+            and .foreign_payload_count == 0
+            and .native_arm64_build_verified == true
+            and .original_source_archive_recovered == false
+            and .promotion_allowed == false
+            and .verified_core_payload.machine == 183
+            and .verified_core_payload.architecture == "arm64"
+          ' work/output/result.json >/dev/null
+          (
+            cd work/output
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload complete verified ARM64 QtBase packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARM64_ARTIFACT }}
+          path: work/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact verified ARM64 build authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/qtbase-grm3u1-arm64-build/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/output/result.json "$destination/"
+          cp work/output/SHA256SUMS "$destination/artifact-SHA256SUMS"
+          cp work/qtbase-source/evidence/authority.json "$destination/reconstruction-authority.json"
+          jq -n \
+            --arg reconstruction_run_id '${{ steps.source.outputs.run_id }}' \
+            --arg reconstruction_authority_sha256 '${{ steps.source.outputs.authority_sha256 }}' \
+            --arg build_run_id "$GITHUB_RUN_ID" \
+            --arg artifact_name "$ARM64_ARTIFACT" '
+              {
+                schema: 1,
+                source: "qtbase-opensource-src",
+                source_version: "5.15.2+dfsg-9+grm3u1",
+                source_status: "reconstructed-not-recovered-original-source",
+                reconstruction_run_id: $reconstruction_run_id,
+                reconstruction_authority_sha256: $reconstruction_authority_sha256,
+                build_run_id: $build_run_id,
+                artifact_name: $artifact_name,
+                native_arm64_build_verified: true,
+                source_gate_closed: false
+              }
+            ' > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Verify reconstructed QtBase grm3u1 ARM64 build'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
