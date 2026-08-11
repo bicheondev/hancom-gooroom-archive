@@ -5,7 +5,7 @@
     "workflow_count": 176,
     "workflow_name_count": 176,
     "referenced_local_file_count": 275,
-    "error_count": 1,
+    "error_count": 2,
     "warning_count": 39,
     "passed": false
   },
@@ -4631,6 +4631,11 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 36, column 1:\n    printf '%s\\n' \"$@\"\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 37, column 1:\n    EOF\n    ^"
+    },
     {
       "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
       "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
