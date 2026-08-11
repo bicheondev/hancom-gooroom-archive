@@ -167,7 +167,7 @@ jobs:
           set -euxo pipefail
           rm -rf work/local-repo work/output
           mkdir -p work/local-repo work/output
-          arm64/scripts/build_recovered_source_archive_arm64.sh \
+          bash arm64/scripts/build_recovered_source_archive_arm64.sh \
             work/source \
             work/local-repo \
             work/output \
