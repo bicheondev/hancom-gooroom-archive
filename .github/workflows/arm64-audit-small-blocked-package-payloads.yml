@@ -1,0 +1,153 @@
+name: ARM64 port - audit small blocked package payloads
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-small-blocked-package-payloads.yml'
+      - 'arm64/scripts/audit_blocked_package_payloads.py'
+      - 'arm64/scripts/audit_packaged_payload_against_git.py'
+      - 'arm64/changelog-commit-targets.json'
+      - 'arm64/locks/vendor-binaries/vendor-binary-lock.json'
+      - 'arm64/locks/targeted-source-archaeology/results/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-small-blocked-package-payload-audit
+  cancel-in-progress: true
+
+env:
+  VENDOR_BINARY_RUN_ID: '31097604490'
+  VENDOR_BINARY_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact binary and archaeology authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic Debian and Git inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+          python3 -m py_compile \
+            arm64/scripts/audit_blocked_package_payloads.py \
+            arm64/scripts/audit_packaged_payload_against_git.py
+          jq -e '
+            .summary.verified_count == 123
+            and .summary.unresolved_count == 0
+          ' arm64/locks/vendor-binaries/vendor-binary-lock.json >/dev/null
+
+      - name: Download the exact verified AMD64 vendor package pool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/small-blocked-package-payload-audit
+          mkdir -p work/small-blocked-package-payload-audit/{vendor,output}
+          gh run download "$VENDOR_BINARY_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_BINARY_ARTIFACT" \
+            --dir work/small-blocked-package-payload-audit/vendor
+          test "$(find work/small-blocked-package-payload-audit/vendor -type f -name '*.deb' | wc -l)" -ge 100
+
+      - name: Audit exact package payloads against complete public Git histories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/audit_blocked_package_payloads.py \
+            --targets arm64/changelog-commit-targets.json \
+            --vendor-dir work/small-blocked-package-payload-audit/vendor \
+            --vendor-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
+            --archaeology-root arm64/locks/targeted-source-archaeology/results \
+            --auditor arm64/scripts/audit_packaged_payload_against_git.py \
+            --output-dir work/small-blocked-package-payload-audit/output
+          jq -e '
+            .schema == 1
+            and .target_count == 4
+            and .audited_target_count == 4
+            and (
+              .data_script_candidate_count
+              + .bounded_native_candidate_count
+              + .complex_native_candidate_count
+              == .target_count
+            )
+            and all(.targets[];
+              .package_sha256 | test("^[0-9a-f]{64}$")
+            )
+            and all(.targets[]; .source_promotion_allowed == false)
+            and .source_promotion_allowed == false
+          ' work/small-blocked-package-payload-audit/output/summary.json >/dev/null
+          rm -rf work/small-blocked-package-payload-audit/vendor
+
+      - name: Seal compact reconstruction-planning evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/small-blocked-package-payload-audit/output
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Small source-blocked package payload audit'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+            echo
+            echo '```text'
+            cat "$evidence/targets.tsv"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete compact package-payload audits
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-small-blocked-package-payload-audits
+          path: work/small-blocked-package-payload-audit/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable current package-payload audit authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/small-blocked-package-payload-audit/output
+          destination=arm64/locks/blocked-package-payload-audits/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit exact payloads for small source-blocked packages'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
