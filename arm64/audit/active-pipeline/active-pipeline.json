@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 174,
-    "workflow_name_count": 174,
-    "referenced_local_file_count": 272,
+    "workflow_count": 175,
+    "workflow_name_count": 175,
+    "referenced_local_file_count": 274,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -688,6 +688,27 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/build_recovered_exact_arm64_rootfs.sh"
+      ]
+    },
+    {
+      "filename": "arm64-build-recovered-reference-sources.yml",
+      "path": ".github/workflows/arm64-build-recovered-reference-sources.yml",
+      "name": "ARM64 port - build recovered exact reference sources",
+      "events": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_recovered_source_archive_arm64.sh",
+        "arm64/scripts/verify_recovered_source_archive_arm64.py"
       ]
     },
     {
@@ -4000,6 +4021,9 @@
     "arm64/scripts/build_recovered_exact_arm64_rootfs.sh": [
       ".github/workflows/arm64-build-recovered-exact-rootfs.yml"
     ],
+    "arm64/scripts/build_recovered_source_archive_arm64.sh": [
+      ".github/workflows/arm64-build-recovered-reference-sources.yml"
+    ],
     "arm64/scripts/build_recovery_stage0_v1.sh": [
       ".github/workflows/arm64-recovery-stage0-v1.yml"
     ],
@@ -4555,6 +4579,9 @@
     ],
     "arm64/scripts/verify_locked_arm64_build_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
+    ],
+    "arm64/scripts/verify_recovered_source_archive_arm64.py": [
+      ".github/workflows/arm64-build-recovered-reference-sources.yml"
     ],
     "arm64/source-recovery-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml"
