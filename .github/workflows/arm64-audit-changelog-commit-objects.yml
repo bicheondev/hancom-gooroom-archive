@@ -1,0 +1,137 @@
+name: ARM64 port - audit changelog commit objects
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-changelog-commit-objects.yml'
+      - 'arm64/scripts/audit_changelog_commit_objects.py'
+      - 'arm64/changelog-commit-targets.json'
+      - 'arm64/locks/targeted-source-archaeology/results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-changelog-commit-object-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact changelog and prior archaeology evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic Git inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates git jq python3
+          python3 -m py_compile arm64/scripts/audit_changelog_commit_objects.py
+          jq -e '
+            .schema == 1
+            and (.targets | length) == 7
+            and all(.targets[];
+              (.source | length) > 0
+              and (.source_version | length) > 0
+              and (.change_ids | length) > 0
+              and (.change_ids | index(.final_change_id)) != null
+            )
+          ' arm64/changelog-commit-targets.json >/dev/null
+
+      - name: Search refs, pull refs, global commit index, and public forks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/changelog-commit-object-audit
+          mkdir -p work/changelog-commit-object-audit
+          python3 arm64/scripts/audit_changelog_commit_objects.py \
+            --targets arm64/changelog-commit-targets.json \
+            --archaeology-root arm64/locks/targeted-source-archaeology/results \
+            --output-dir work/changelog-commit-object-audit \
+            --github-token "$GH_TOKEN"
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .change_id_count == 14
+            and (
+              .exact_source_candidate_count
+              + .change_object_only_target_count
+              + .unresolved_target_count
+              == .target_count
+            )
+            and .promotion_allowed == false
+          ' work/changelog-commit-object-audit/summary.json >/dev/null
+          jq -e '
+            length == 7
+            and all(.[ ]; .promotion_allowed == false)
+          ' work/changelog-commit-object-audit/target-results.json >/dev/null
+
+      - name: Seal complete positive or negative archaeology evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/changelog-commit-object-audit
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Changelog commit-object archaeology'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+            echo
+            echo '```text'
+            cat "$evidence/targets.tsv"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete commit-object archaeology
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-changelog-commit-object-audit
+          path: work/changelog-commit-object-audit
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable current archaeology evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/changelog-commit-object-audit
+          destination=arm64/locks/changelog-commit-archaeology/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit changelog commit objects for blocked ARM64 sources'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
