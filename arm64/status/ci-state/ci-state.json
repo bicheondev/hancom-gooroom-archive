@@ -1,19 +1,20 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-10T16:52:21Z",
+    "generated_at": "2026-08-11T15:20:23Z",
     "branch": "arm64-port",
-    "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
+    "head_sha": "efb2955c618904be2eb04f8b1bc542d6f57b3df0",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 2,
-      "in_progress": 5,
-      "no-run": 93
+      "completed": 3,
+      "in_progress": 3,
+      "no-run": 91,
+      "queued": 3
     },
     "latest_run_conclusion_counts": {
       "failure": 1,
-      "none": 98,
-      "success": 1
+      "none": 97,
+      "success": 2
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -34,6 +35,42 @@
       "path": ".github/workflows/arm64-chain-progress-maintenance.yml",
       "state": "active",
       "latest_run": null
+    },
+    {
+      "workflow_id": 331936112,
+      "name": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "path": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31496996987,
+        "run_number": 2,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c6836345bdc6dd39b168328a33b9f29f1b4d0efb",
+        "created_at": "2026-08-11T13:35:49Z",
+        "updated_at": "2026-08-11T13:36:06Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31496996987",
+        "display_title": "Fix QtBase reconstruction path-fix dispatcher syntax"
+      }
+    },
+    {
+      "workflow_id": 332019388,
+      "name": "ARM64 port - Software Heritage exact app-source archaeology",
+      "path": ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31506155744,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "39522401df93eeb320c6008fab029ece0c370ae0",
+        "created_at": "2026-08-11T15:16:49Z",
+        "updated_at": "2026-08-11T15:19:09Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506155744",
+        "display_title": "Search Software Heritage for missing Hancom app source revisions"
+      }
     },
     {
       "workflow_id": 328569987,
@@ -111,17 +148,24 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31410825618,
-        "run_number": 437,
+        "id": 31506450906,
+        "run_number": 489,
         "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "9dd649a7662b1a36535ab7e691bac2afa5cdb342",
-        "created_at": "2026-08-10T16:48:10Z",
-        "updated_at": "2026-08-10T16:48:47Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31410825618",
-        "display_title": "Recover exact sources from reference release locks"
+        "status": "queued",
+        "conclusion": null,
+        "head_sha": "480db0d896b1abb24ea14ca6b4be41eb9fa6700a",
+        "created_at": "2026-08-11T15:20:07Z",
+        "updated_at": "2026-08-11T15:20:07Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506450906",
+        "display_title": "Recover exact source trees selected from Software Heritage"
       }
+    },
+    {
+      "workflow_id": 331601046,
+      "name": "ARM64 port - audit changelog commit objects",
+      "path": ".github/workflows/arm64-audit-changelog-commit-objects.yml",
+      "state": "active",
+      "latest_run": null
     },
     {
       "workflow_id": 329688190,
@@ -164,16 +208,16 @@
       "path": ".github/workflows/arm64-lock-schema-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 31411163504,
-        "run_number": 8,
+        "id": 31506458884,
+        "run_number": 9,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
-        "created_at": "2026-08-10T16:52:12Z",
-        "updated_at": "2026-08-10T16:52:15Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163504",
-        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+        "head_sha": "aaa369fb43fc384a8447f57587790b1fa27aad77",
+        "created_at": "2026-08-11T15:20:12Z",
+        "updated_at": "2026-08-11T15:20:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506458884",
+        "display_title": "Refresh ARM64 coverage after browser promotion and source audit"
       }
     },
     {
@@ -181,18 +225,14 @@
       "name": "ARM64 port - audit reference ISO source residue",
       "path": ".github/workflows/arm64-audit-reference-iso-source-residue.yml",
       "state": "active",
-      "latest_run": {
-        "id": 31403186018,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "507687f8e8d26a36881cfd10e4677e04014e4366",
-        "created_at": "2026-08-10T15:22:02Z",
-        "updated_at": "2026-08-10T15:23:49Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31403186018",
-        "display_title": "Audit exact source residue in reference ISO"
-      }
+      "latest_run": null
+    },
+    {
+      "workflow_id": 331604546,
+      "name": "ARM64 port - audit small blocked package payloads",
+      "path": ".github/workflows/arm64-audit-small-blocked-package-payloads.yml",
+      "state": "active",
+      "latest_run": null
     },
     {
       "workflow_id": 328539039,
@@ -356,23 +396,27 @@
       "latest_run": null
     },
     {
+      "workflow_id": 331940784,
+      "name": "ARM64 port - build reconstructed QtBase grm3u1",
+      "path": ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 31501210331,
+        "run_number": 4,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "4471576f4c2b8f711ad66effc749c75839b2de27",
+        "created_at": "2026-08-11T14:22:49Z",
+        "updated_at": "2026-08-11T14:31:02Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31501210331",
+        "display_title": "Build recovered sources in a snapshot-pure ARM64 rootfs"
+      }
+    },
+    {
       "workflow_id": 329236157,
       "name": "ARM64 port - build reconstructed exact libsecurity extensions",
       "path": ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328524227,
-      "name": "ARM64 port - build record and prove minimal UEFI live boot v3",
-      "path": ".github/workflows/arm64-minimal-boot-iso-v3.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328532179,
-      "name": "ARM64 port - build record and prove minimal UEFI live boot v4",
-      "path": ".github/workflows/arm64-minimal-boot-iso-v4.yml",
       "state": "active",
       "latest_run": null
     },
@@ -536,16 +580,16 @@
       "path": ".github/workflows/arm64-index-rebuild-results-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31411163310,
-        "run_number": 6,
+        "id": 31506458759,
+        "run_number": 7,
         "event": "push",
-        "status": "in_progress",
+        "status": "queued",
         "conclusion": null,
-        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
-        "created_at": "2026-08-10T16:52:12Z",
-        "updated_at": "2026-08-10T16:52:15Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163310",
-        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+        "head_sha": "aaa369fb43fc384a8447f57587790b1fa27aad77",
+        "created_at": "2026-08-11T15:20:12Z",
+        "updated_at": "2026-08-11T15:20:12Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506458759",
+        "display_title": "Refresh ARM64 coverage after browser promotion and source audit"
       }
     },
     {
@@ -626,13 +670,6 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328546068,
-      "name": "ARM64 port - monitor initial curated rebuild batches and advance",
-      "path": ".github/workflows/arm64-monitor-curated-batches.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 328528740,
       "name": "ARM64 port - normalize exact source builder v2",
       "path": ".github/workflows/arm64-builder-v2-maintenance.yml",
@@ -643,20 +680,6 @@
       "workflow_id": 328522338,
       "name": "ARM64 port - preserve live finalization evidence",
       "path": ".github/workflows/arm64-live-finalizer-maintenance.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328519021,
-      "name": "ARM64 port - prove minimal UEFI live boot chain",
-      "path": ".github/workflows/arm64-minimal-boot-iso.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328520106,
-      "name": "ARM64 port - prove minimal UEFI live boot chain v2",
-      "path": ".github/workflows/arm64-minimal-boot-iso-v2.yml",
       "state": "active",
       "latest_run": null
     },
@@ -715,16 +738,16 @@
       "path": ".github/workflows/arm64-dependency-retry-v2.yml",
       "state": "active",
       "latest_run": {
-        "id": 31411166288,
-        "run_number": 19,
+        "id": 31506458940,
+        "run_number": 20,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
-        "created_at": "2026-08-10T16:52:14Z",
-        "updated_at": "2026-08-10T16:52:17Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411166288",
-        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+        "head_sha": "aaa369fb43fc384a8447f57587790b1fa27aad77",
+        "created_at": "2026-08-11T15:20:12Z",
+        "updated_at": "2026-08-11T15:20:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506458940",
+        "display_title": "Refresh ARM64 coverage after browser promotion and source audit"
       }
     },
     {
@@ -740,16 +763,16 @@
       "path": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
       "state": "active",
       "latest_run": {
-        "id": 31411163157,
-        "run_number": 12,
+        "id": 31506458823,
+        "run_number": 13,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
-        "created_at": "2026-08-10T16:52:12Z",
-        "updated_at": "2026-08-10T16:52:17Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163157",
-        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+        "head_sha": "aaa369fb43fc384a8447f57587790b1fa27aad77",
+        "created_at": "2026-08-11T15:20:12Z",
+        "updated_at": "2026-08-11T15:20:15Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506458823",
+        "display_title": "Refresh ARM64 coverage after browser promotion and source audit"
       }
     },
     {
@@ -779,16 +802,16 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 31411163235,
-        "run_number": 21,
+        "id": 31506458806,
+        "run_number": 22,
         "event": "push",
-        "status": "in_progress",
+        "status": "queued",
         "conclusion": null,
-        "head_sha": "c62311d3afae3be2c782805a27beb073706e93a0",
-        "created_at": "2026-08-10T16:52:12Z",
-        "updated_at": "2026-08-10T16:52:15Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31411163235",
-        "display_title": "Refresh coverage after verified Gooroom browser promotion"
+        "head_sha": "aaa369fb43fc384a8447f57587790b1fa27aad77",
+        "created_at": "2026-08-11T15:20:12Z",
+        "updated_at": "2026-08-11T15:20:12Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31506458806",
+        "display_title": "Refresh ARM64 coverage after browser promotion and source audit"
       }
     },
     {
@@ -828,14 +851,14 @@
         "package_layer_ready": false,
         "iso_assembly_allowed": false,
         "source_blocker_count": 7,
-        "native_build_blocker_count": 8
+        "native_build_blocker_count": 7
       }
     },
     "rebuild_failures": {
       "exists": true,
       "path": "arm64/status/rebuild-failures/summary.json",
       "values": {
-        "failed_count": 1,
+        "failed_count": 0,
         "dependency_resolution_failure_count": 0
       }
     },
