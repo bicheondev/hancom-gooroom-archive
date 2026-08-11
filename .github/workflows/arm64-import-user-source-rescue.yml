@@ -1,0 +1,208 @@
+name: ARM64 port - import user source rescue bundle
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-import-user-source-rescue.yml'
+      - 'arm64/scripts/verify_user_source_rescue_bundle.py'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag containing the rescue ZIP
+        required: true
+        default: arm64-source-rescue-v1
+      asset_name:
+        description: Rescue ZIP asset name
+        required: true
+        default: source-rescue-output.zip
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-import-user-source-rescue
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'arm64-source-rescue-v1' }}
+  ASSET_NAME: ${{ inputs.asset_name || 'source-rescue-output.zip' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out immutable reference evidence and verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic archive and Debian inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file jq python3 unzip
+          gh --version
+          python3 -m py_compile arm64/scripts/verify_user_source_rescue_bundle.py
+
+      - name: Download the user-provided rescue asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/user-source-rescue
+          rm -rf "$base"
+          mkdir -p "$base"/{download,bundle,verified}
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ASSET_NAME" \
+            --dir "$base/download" \
+            --clobber
+          asset="$base/download/$ASSET_NAME"
+          test -f "$asset"
+          sha256sum "$asset" > "$base/asset.sha256"
+          stat -c '%n\t%s' "$asset" > "$base/asset.size.tsv"
+
+      - name: Extract without path traversal or special files
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import stat
+          import zipfile
+          from pathlib import Path, PurePosixPath
+
+          base = Path('work/user-source-rescue')
+          asset = base / 'download' / os.environ['ASSET_NAME']
+          destination = (base / 'bundle').resolve()
+          destination.mkdir(parents=True, exist_ok=True)
+          total = 0
+          with zipfile.ZipFile(asset) as archive:
+              for info in archive.infolist():
+                  path = PurePosixPath(info.filename)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe ZIP member: {info.filename}')
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  if mode and not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+                      raise SystemExit(f'special ZIP member is forbidden: {info.filename}')
+                  total += info.file_size
+                  if total > 12 * 1024 * 1024 * 1024:
+                      raise SystemExit('expanded rescue bundle exceeds 12 GiB')
+              archive.extractall(destination)
+          PY
+          find work/user-source-rescue/bundle -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/user-source-rescue/bundle-inventory.tsv
+
+      - name: Verify exact source indices and complete source-member sets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/user-source-rescue
+          gooroom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt
+          hancom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt
+          asset_sha256="$(awk '{print $1}' "$base/asset.sha256")"
+          python3 arm64/scripts/verify_user_source_rescue_bundle.py \
+            --bundle-dir "$base/bundle" \
+            --gooroom-inrelease "$gooroom" \
+            --hancom-inrelease "$hancom" \
+            --output-dir "$base/verified" \
+            --release-tag "$RELEASE_TAG" \
+            --asset-name "$ASSET_NAME" \
+            --asset-sha256 "$asset_sha256"
+          cp "$base/asset.sha256" "$base/verified/asset.sha256"
+          cp "$base/asset.size.tsv" "$base/verified/asset.size.tsv"
+          cp "$base/bundle-inventory.tsv" "$base/verified/bundle-inventory.tsv"
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .verified_source_index_count >= 0
+            and .verified_source_index_count <= 2
+            and .complete_source_count >= 0
+            and .iso_assembly_allowed == false
+            and (
+              (.complete_source_count > 0 and .effective_source_authority_update_allowed == true)
+              or
+              (.complete_source_count == 0 and .effective_source_authority_update_allowed == false)
+            )
+          ' "$base/verified/summary.json" >/dev/null
+
+      - name: Seal verification evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/user-source-rescue/verified
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## User source-rescue verification'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified source material and complete evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-verified-user-source-rescue
+          path: work/user-source-rescue/verified
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact locks without promoting incomplete sources
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/user-source-rescue/verified
+          destination=arm64/locks/user-source-rescue/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/asset.sha256" "$destination/"
+          cp "$source/asset.size.tsv" "$destination/"
+          cp "$source/bundle-inventory.tsv" "$destination/"
+          cp "$source/LOCKSUMS.sha256" "$destination/"
+          if [ -d "$source/source-locks" ]; then
+            cp -a "$source/source-locks" "$destination/"
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Verify user-supplied Hancom Gooroom source rescue'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Preserve fail-closed incomplete conclusion
+        shell: bash
+        run: |
+          set -euxo pipefail
+          complete="$(jq -r '.complete_source_count' work/user-source-rescue/verified/summary.json)"
+          if [ "$complete" -eq 0 ]; then
+            echo 'No complete exact source package was present in the uploaded bundle.' >&2
+            exit 1
+          fi
