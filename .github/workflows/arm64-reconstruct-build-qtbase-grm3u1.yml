@@ -1,4 +1,4 @@
-name: ARM64 port - reconstruct and build QtBase grm3u1
+name: ARM64 port - reconstruct QtBase grm3u1 source
 
 on:
   push:
@@ -6,9 +6,6 @@ on:
     paths:
       - '.github/workflows/arm64-reconstruct-build-qtbase-grm3u1.yml'
       - 'arm64/scripts/reconstruct_qtbase_grm3u1.py'
-      - 'arm64/scripts/verify_reconstructed_qtbase_arm64.py'
-      - 'arm64/scripts/build_recovered_source_archive_arm64.sh'
-      - 'arm64/scripts/verify_recovered_source_archive_arm64.py'
       - 'arm64/locks/vendor-binaries/vendor-binary-lock.json'
   workflow_dispatch:
 
@@ -17,8 +14,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: hancom-gooroom-33-reconstruct-build-qtbase-grm3u1
-  cancel-in-progress: false
+  group: hancom-gooroom-33-reconstruct-qtbase-grm3u1
+  cancel-in-progress: true
 
 env:
   SOURCE_NAME: qtbase-opensource-src
@@ -35,11 +32,8 @@ jobs:
   reconstruct:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    outputs:
-      reconstructed_dsc: ${{ steps.reconstruct.outputs.reconstructed_dsc }}
-      authority_sha256: ${{ steps.reconstruct.outputs.authority_sha256 }}
     steps:
-      - name: Check out exact reconstruction and verification code
+      - name: Check out exact reconstruction code and locks
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: arm64-port
@@ -51,12 +45,18 @@ jobs:
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            ca-certificates curl debian-keyring devscripts docker.io dpkg-dev \
+            ca-certificates debian-keyring devscripts docker.io dpkg-dev \
             file gh gnupg jq python3 quilt xz-utils
           docker version
-          python3 -m py_compile \
-            arm64/scripts/reconstruct_qtbase_grm3u1.py \
-            arm64/scripts/verify_reconstructed_qtbase_arm64.py
+          python3 -m py_compile arm64/scripts/reconstruct_qtbase_grm3u1.py
+
+      - name: Prepare deterministic reconstruction workspace
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/qtbase-grm3u1
+          rm -rf "$base"
+          mkdir -p "$base"/{vendor-download,vendor,base-source,security-source,reconstruction,evidence,source-archive,artifact}
 
       - name: Download and verify the exact AMD64 Gooroom QtBase package
         env:
@@ -65,8 +65,6 @@ jobs:
         run: |
           set -euxo pipefail
           base=work/qtbase-grm3u1
-          rm -rf "$base"
-          mkdir -p "$base"/{vendor-download,vendor,base-source,security-source,reconstruction,evidence,source-archive,artifact}
           gh run download "$VENDOR_RUN_ID" \
             --repo "$GITHUB_REPOSITORY" \
             --name "$VENDOR_ARTIFACT" \
@@ -96,7 +94,7 @@ jobs:
           printf '%s\n' "$record" | jq . > "$base/evidence/vendor-binary-lock-record.json"
           rm -rf "$base/vendor-download"
 
-      - name: Recover the exact signed Debian 5.15.2+dfsg-9 base source
+      - name: Recover the signed Debian 5.15.2+dfsg-9 base source from snapshot
         shell: bash
         run: |
           set -euxo pipefail
@@ -110,15 +108,15 @@ jobs:
             debian:bullseye-slim \
             bash -Eeuo pipefail -c '
               export DEBIAN_FRONTEND=noninteractive
-              cat >/etc/apt/apt.conf.d/99snapshot <<EOF
-Acquire::Check-Valid-Until "false";
-Acquire::Retries "8";
-Acquire::http::Timeout "60";
-Acquire::https::Timeout "60";
-EOF
-              cat >/etc/apt/sources.list <<EOF
-deb-src [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bullseye main
-EOF
+              printf "%s\n" \
+                "Acquire::Check-Valid-Until \"false\";" \
+                "Acquire::Retries \"8\";" \
+                "Acquire::http::Timeout \"60\";" \
+                "Acquire::https::Timeout \"60\";" \
+                > /etc/apt/apt.conf.d/99snapshot
+              printf "%s\n" \
+                "deb-src [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bullseye main" \
+                > /etc/apt/sources.list
               apt-get update
               apt-get install -y --no-install-recommends ca-certificates dpkg-dev
               cd /output
@@ -128,16 +126,16 @@ EOF
           mapfile -t dscs < <(find "$output" -maxdepth 1 -type f -name '*.dsc' -print)
           test "${#dscs[@]}" -eq 1
           base_dsc="${dscs[0]}"
-          test "$(dpkg-parsechangelog -l"$base_dsc" -S Source)" = "$SOURCE_NAME"
-          test "$(dpkg-parsechangelog -l"$base_dsc" -S Version)" = "$BASE_VERSION"
+          test "$(sed -n 's/^Source: //p' "$base_dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$base_dsc" | head -n1)" = "$BASE_VERSION"
           dscverify "$base_dsc" > "$base/evidence/base-dscverify.txt" 2>&1
           (
             cd "$output"
-            find . -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum \
-              > "$base/evidence/base-source-download.sha256"
+            find . -maxdepth 1 -type f -print0 | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > "$base/evidence/base-source-download.sha256"
           )
 
-      - name: Acquire the signed Debian security source containing the canonical CVE patch
+      - name: Acquire the signed Debian security source containing the CVE patch
         shell: bash
         run: |
           set -euxo pipefail
@@ -151,8 +149,8 @@ EOF
           mapfile -t dscs < <(find "$security" -maxdepth 1 -type f -name '*.dsc' -print)
           test "${#dscs[@]}" -eq 1
           security_dsc="${dscs[0]}"
-          test "$(dpkg-parsechangelog -l"$security_dsc" -S Source)" = "$SOURCE_NAME"
-          test "$(dpkg-parsechangelog -l"$security_dsc" -S Version)" = "$SECURITY_VERSION"
+          test "$(sed -n 's/^Source: //p' "$security_dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$security_dsc" | head -n1)" = "$SECURITY_VERSION"
           dscverify "$security_dsc" > "$base/evidence/security-dscverify.txt" 2>&1
           rm -rf "$base/security-tree"
           dpkg-source -x "$security_dsc" "$base/security-tree" \
@@ -164,12 +162,11 @@ EOF
           cp "$patch" "$base/evidence/CVE-2022-25255.signed-debian.diff"
           (
             cd "$security"
-            find . -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum \
-              > "$base/evidence/security-source-download.sha256"
+            find . -maxdepth 1 -type f -print0 | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > "$base/evidence/security-source-download.sha256"
           )
 
       - name: Reconstruct and round-trip the exact-version source archive
-        id: reconstruct
         shell: bash
         run: |
           set -euxo pipefail
@@ -183,15 +180,14 @@ EOF
             > "$base/evidence/base-dpkg-source.stdout.txt" \
             2> "$base/evidence/base-dpkg-source.stderr.txt"
           security_dsc="$(find "$base/security-source" -maxdepth 1 -type f -name '*.dsc' -print -quit)"
-          vendor="$base/vendor/$VENDOR_FILENAME"
-          patch="$base/security-tree/debian/patches/CVE-2022-25255.diff"
+          test -n "$security_dsc"
           python3 arm64/scripts/reconstruct_qtbase_grm3u1.py \
             --source-tree "$source_tree" \
             --base-source-dir "$base/reconstruction" \
             --base-dsc "$base_dsc" \
             --security-dsc "$security_dsc" \
-            --vendor-deb "$vendor" \
-            --cve-patch "$patch" \
+            --vendor-deb "$base/vendor/$VENDOR_FILENAME" \
+            --cve-patch "$base/security-tree/debian/patches/CVE-2022-25255.diff" \
             --output-dir "$base/evidence" \
             --archive-output-dir "$base/source-archive"
           jq -e '
@@ -204,12 +200,10 @@ EOF
             and .claims.lost_original_source_archive_recovered == false
             and .reconstruction.round_trip_verified == true
           ' "$base/evidence/authority.json" >/dev/null
-          reconstructed_dsc="$(find "$base/source-archive" -maxdepth 1 -type f -name '*.dsc' -printf '%f\n')"
-          test -n "$reconstructed_dsc"
-          echo "reconstructed_dsc=$reconstructed_dsc" >> "$GITHUB_OUTPUT"
-          echo "authority_sha256=$(sha256sum "$base/evidence/authority.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          mapfile -t reconstructed_dscs < <(find "$base/source-archive" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#reconstructed_dscs[@]}" -eq 1
 
-      - name: Seal and upload reconstruction source plus compact authority
+      - name: Seal and upload reconstructed source plus compact authority
         shell: bash
         run: |
           set -euxo pipefail
@@ -262,203 +256,6 @@ EOF
             exit 0
           fi
           git commit -m 'Record QtBase grm3u1 source reconstruction authority'
-          for attempt in 1 2 3 4 5 6; do
-            git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then
-              exit 0
-            fi
-            sleep $((attempt * 3))
-          done
-          exit 1
-
-  build-arm64:
-    needs: reconstruct
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 355
-    env:
-      ARTIFACT_NAME: qtbase-opensource-src-reconstructed-exact-arm64-${{ github.run_id }}
-      HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
-      HANCOM_GOOROOM_BUILD_JOBS: '3'
-    steps:
-      - name: Check out exact builders and verification policy
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: arm64-port
-          fetch-depth: 0
-
-      - name: Verify native ARM64 host and install host tooling
-        shell: bash
-        run: |
-          set -euxo pipefail
-          case "$(uname -m)" in
-            aarch64|arm64) ;;
-            *) echo 'Native ARM64 runner is required.' >&2; exit 1 ;;
-          esac
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            binutils ca-certificates docker.io dpkg-dev file gh jq python3
-          docker version
-          bash -n arm64/scripts/build_recovered_source_archive_arm64.sh
-          python3 -m py_compile \
-            arm64/scripts/verify_recovered_source_archive_arm64.py \
-            arm64/scripts/verify_reconstructed_qtbase_arm64.py
-
-      - name: Provision bounded swap for the native Qt build
-        shell: bash
-        run: |
-          set -euxo pipefail
-          swap_file=/mnt/hancom-gooroom-qtbase-reconstruction.swap
-          available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
-          current_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
-          if [ "$current_swap_mb" -lt 8192 ] && [ "$available_mb" -ge 28672 ]; then
-            sudo rm -f "$swap_file"
-            sudo fallocate -l 16G "$swap_file"
-            sudo chmod 600 "$swap_file"
-            if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
-              sudo sysctl -w vm.swappiness=15 || true
-            else
-              sudo rm -f "$swap_file"
-            fi
-          fi
-          free -h
-          df -h / /mnt
-
-      - name: Download the same-run reconstructed source artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euxo pipefail
-          rm -rf work/qtbase-reconstructed-download work/source work/local-repo work/output work/final-repository
-          mkdir -p work/{qtbase-reconstructed-download,source,local-repo,output,final-repository}
-          gh run download "$GITHUB_RUN_ID" \
-            --repo "$GITHUB_REPOSITORY" \
-            --name "$RECONSTRUCTION_ARTIFACT" \
-            --dir work/qtbase-reconstructed-download
-          test -f work/qtbase-reconstructed-download/evidence/authority.json
-          test "$(sha256sum work/qtbase-reconstructed-download/evidence/authority.json | awk '{print $1}')" = '${{ needs.reconstruct.outputs.authority_sha256 }}'
-          cp -a work/qtbase-reconstructed-download/source-archive/. work/source/
-          mapfile -t dscs < <(find work/source -maxdepth 1 -type f -name '*.dsc' -print)
-          test "${#dscs[@]}" -eq 1
-          test "$(basename "${dscs[0]}")" = '${{ needs.reconstruct.outputs.reconstructed_dsc }}'
-
-      - name: Assemble local repository from previously verified ARM64 artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euxo pipefail
-          repository_run="$(
-            gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow arm64-merge-final-package-repository-v2.yml \
-              --branch arm64-port \
-              --status success \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId // empty'
-          )"
-          if [ -n "$repository_run" ]; then
-            gh run download "$repository_run" \
-              --repo "$GITHUB_REPOSITORY" \
-              --dir work/final-repository || true
-          fi
-          python3 - <<'PY'
-          from __future__ import annotations
-          import hashlib
-          import shutil
-          from pathlib import Path
-
-          source = Path('work/final-repository')
-          destination = Path('work/local-repo')
-          destination.mkdir(parents=True, exist_ok=True)
-          identities = {}
-          for path in sorted(source.rglob('*.deb')):
-              digest = hashlib.sha256(path.read_bytes()).hexdigest()
-              previous = identities.get(path.name)
-              if previous is not None and previous != digest:
-                  raise SystemExit(f'conflicting package filename: {path.name}')
-              identities[path.name] = digest
-              target = destination / path.name
-              if not target.exists():
-                  shutil.copy2(path, target)
-          print(f'local verified DEB count: {len(identities)}')
-          PY
-
-      - name: Build the reconstructed exact-version QtBase source on native ARM64
-        id: compile
-        shell: bash
-        run: |
-          set -euxo pipefail
-          arm64/scripts/build_recovered_source_archive_arm64.sh \
-            work/source \
-            work/local-repo \
-            work/output \
-            "$SOURCE_NAME" \
-            "$TARGET_VERSION"
-
-      - name: Verify all required QtBase packages and native payloads
-        shell: bash
-        run: |
-          set -euxo pipefail
-          python3 arm64/scripts/verify_reconstructed_qtbase_arm64.py \
-            --output-dir work/output \
-            --reconstruction-authority work/qtbase-reconstructed-download/evidence/authority.json \
-            --generic-verifier arm64/scripts/verify_recovered_source_archive_arm64.py \
-            --result work/output/result.json \
-            --artifact-name "$ARTIFACT_NAME"
-          jq -e '
-            .passed == true
-            and .verification_passed == true
-            and .source == "qtbase-opensource-src"
-            and .source_version == "5.15.2+dfsg-9+grm3u1"
-            and .source_status == "reconstructed-not-recovered-original-source"
-            and .required_package_count == 9
-            and .foreign_payload_count == 0
-            and .native_arm64_build_verified == true
-            and .original_source_archive_recovered == false
-            and .promotion_allowed == false
-          ' work/output/result.json >/dev/null
-          (
-            cd work/output
-            find . -type f ! -name SHA256SUMS -print0 \
-              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
-            sha256sum --check --strict SHA256SUMS
-          )
-
-      - name: Upload complete verified ARM64 QtBase build
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: work/output
-          if-no-files-found: error
-          include-hidden-files: true
-          retention-days: 30
-          compression-level: 0
-
-      - name: Commit verified build authority without closing the source gate yet
-        shell: bash
-        run: |
-          set -euxo pipefail
-          destination=arm64/locks/qtbase-grm3u1-arm64-build/latest
-          rm -rf "$destination"
-          mkdir -p "$destination"
-          cp work/output/result.json "$destination/"
-          cp work/output/SHA256SUMS "$destination/artifact-SHA256SUMS"
-          cp work/qtbase-reconstructed-download/evidence/authority.json \
-            "$destination/reconstruction-authority.json"
-          (
-            cd "$destination"
-            find . -type f ! -name LOCKSUMS.sha256 -print0 \
-              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
-          )
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$destination"
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'Verify reconstructed QtBase grm3u1 ARM64 build'
           for attempt in 1 2 3 4 5 6; do
             git pull --rebase origin arm64-port
             if git push origin HEAD:arm64-port; then
