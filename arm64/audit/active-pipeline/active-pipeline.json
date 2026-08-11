@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 173,
     "workflow_name_count": 173,
-    "referenced_local_file_count": 269,
+    "referenced_local_file_count": 270,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -118,7 +118,8 @@
       ],
       "referenced_local_files": [
         "arm64/changelog-commit-targets.json",
-        "arm64/scripts/audit_changelog_commit_objects.py"
+        "arm64/scripts/audit_changelog_commit_objects.py",
+        "arm64/scripts/filter_changelog_hash_collisions.py"
       ]
     },
     {
@@ -4052,6 +4053,9 @@
     ],
     "arm64/scripts/filter_arm64_binary_lock_v2.py": [
       ".github/workflows/arm64-static-audit.yml"
+    ],
+    "arm64/scripts/filter_changelog_hash_collisions.py": [
+      ".github/workflows/arm64-audit-changelog-commit-objects.yml"
     ],
     "arm64/scripts/finalize_arm64_live_rootfs.sh": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
