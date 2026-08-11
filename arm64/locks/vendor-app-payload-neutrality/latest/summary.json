@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+  "target_count": 4,
+  "exact_deb_selected_count": 4,
+  "repack_candidate_count": 0,
+  "native_source_required_count": 4,
+  "candidate_packages": [],
+  "native_source_required_packages": [
+    "gooroom-dockbarx-applet",
+    "gooroom-guide",
+    "gooroom-integration-applet",
+    "gooroom-session-manager"
+  ],
+  "results": [
+    {
+      "schema": 1,
+      "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+      "package": "gooroom-dockbarx-applet",
+      "version": "0.3.1+grm3u1+han3u1",
+      "source": "gooroom-dockbarx-applet",
+      "source_version": "0.3.1+grm3u1+han3u1",
+      "selected_deb": "gooroom-dockbarx-applet_0.3.1+grm3u1+han3u1_amd64.deb",
+      "selected_deb_size": 14096,
+      "selected_deb_sha256": "9d810f3185babcd24e0d7c868586c930a8d39bcb7b0a01dee4d8cee02f440b0d",
+      "control_fields": {
+        "Package": "gooroom-dockbarx-applet",
+        "Version": "0.3.1+grm3u1+han3u1",
+        "Architecture": "amd64",
+        "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+        "Installed-Size": "71",
+        "Depends": "libc6 (>= 2.4), libglib2.0-0 (>= 2.44.0), libgnome-panel0 (>= 3.38.0), libgtk-3-0 (>= 3.20.0), libjson-c5 (>= 0.15), wget",
+        "Section": "gnome",
+        "Priority": "optional",
+        "Description": "An applet for the GNOME panel which embed DockbarX."
+      },
+      "parsed_source": "gooroom-dockbarx-applet",
+      "parsed_source_version": "0.3.1+grm3u1+han3u1",
+      "payload_scan": {
+        "native_payloads": [
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 23344,
+            "sha256": "3eb1e7829003c28d67d3da17883b0fcae08bc7fc38695cb21f8537a9079aedab"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 23272,
+            "sha256": "5a4f4fce755692720a8965f5e50c095992ec87111f723bce88b884eef70b07c9"
+          }
+        ],
+        "native_looking_suffixes": [],
+        "architecture_specific_paths": [
+          "/usr/lib/x86_64-linux-gnu",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py"
+        ],
+        "executable_scripts": [
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py",
+            "shebang": "#!/usr/bin/python3"
+          }
+        ],
+        "python_files": [
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py"
+        ]
+      },
+      "maintainer_script_audit": {
+        "scripts": [],
+        "architecture_references": []
+      },
+      "python_verification": {
+        "python_file_count": 1,
+        "compiled_count": 1,
+        "failures": []
+      },
+      "original_payload_manifest_sha256": "08ee69cb2fcaae8d59753e6630e33ff23cb8ccada575ff79b2e4ef39e9fe22c0",
+      "original_payload_entry_count": 20,
+      "repack_candidate": false,
+      "blocker_reasons": [
+        "native-payload-present",
+        "architecture-specific-path-present"
+      ],
+      "repacked": false,
+      "promotion_allowed": false,
+      "byte_identity_claimed_for_data_payload_only": false,
+      "original_source_recovered": false
+    },
+    {
+      "schema": 1,
+      "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+      "package": "gooroom-guide",
+      "version": "0.5.3+grm3u1+han3u1",
+      "source": "gooroom-guide",
+      "source_version": "0.5.3+grm3u1+han3u1",
+      "selected_deb": "gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb",
+      "selected_deb_size": 3620004,
+      "selected_deb_sha256": "80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142",
+      "control_fields": {
+        "Package": "gooroom-guide",
+        "Version": "0.5.3+grm3u1+han3u1",
+        "Architecture": "amd64",
+        "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+        "Installed-Size": "4704",
+        "Depends": "libc6 (>= 2.4), libgdk-pixbuf-2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.37.3), libgtk-3-0 (>= 3.21.4), libjson-glib-1.0-0 (>= 1.5.2), libgl1-mesa-dri",
+        "Section": "admin",
+        "Priority": "optional",
+        "Homepage": "https://git.gooroom.kr/gooroom-guide",
+        "Description": "The Gooroom Guide to provide convenience to users."
+      },
+      "parsed_source": "gooroom-guide",
+      "parsed_source_version": "0.5.3+grm3u1+han3u1",
+      "payload_scan": {
+        "native_payloads": [
+          {
+            "path": "/usr/bin/gooroom-guide",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 51336,
+            "sha256": "dce817f68de882b2cc903dc22416d85326636a810efc561cd790c51c35c9a8cf"
+          }
+        ],
+        "native_looking_suffixes": [],
+        "architecture_specific_paths": [],
+        "executable_scripts": [],
+        "python_files": []
+      },
+      "maintainer_script_audit": {
+        "scripts": [
+          {
+            "name": "postinst",
+            "size": 112,
+            "sha256": "d2df84edfa69de2875c6822c78207ac77470e775ae7805248248c6d855d45bff",
+            "shebang": ""
+          }
+        ],
+        "architecture_references": []
+      },
+      "python_verification": {
+        "python_file_count": 0,
+        "compiled_count": 0,
+        "failures": []
+      },
+      "original_payload_manifest_sha256": "3593123a2150a705cae0ed5d53340f57b163368bf2f4bbd8c649dc6143ee4d01",
+      "original_payload_entry_count": 54,
+      "repack_candidate": false,
+      "blocker_reasons": [
+        "native-payload-present"
+      ],
+      "repacked": false,
+      "promotion_allowed": false,
+      "byte_identity_claimed_for_data_payload_only": false,
+      "original_source_recovered": false
+    },
+    {
+      "schema": 1,
+      "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+      "package": "gooroom-integration-applet",
+      "version": "0.3.1+grm3u1+han3u3",
+      "source": "gooroom-integration-applet",
+      "source_version": "0.3.1+grm3u1+han3u3",
+      "selected_deb": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+      "selected_deb_size": 62392,
+      "selected_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "control_fields": {
+        "Package": "gooroom-integration-applet",
+        "Version": "0.3.1+grm3u1+han3u3",
+        "Architecture": "amd64",
+        "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+        "Installed-Size": "307",
+        "Depends": "dconf-gsettings-backend | gsettings-backend, libaccountsservice0 (>= 0.6.30), libc6 (>= 2.4), libcanberra-gtk3-0 (>= 0.25), libgdk-pixbuf-2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.44.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.38.0), libgtk-3-0 (>= 3.21.4), libjson-c5 (>= 0.15), libnimf1, libnotify4 (>= 0.7.0), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libstartup-notification0 (>= 0.4), libupower-glib3 (>= 0.99.8), libx11-6",
+        "Section": "gnome",
+        "Priority": "optional",
+        "Homepage": "http://gooroom.kr",
+        "Description": "Gooroom Integration Applet for the GNOME panel\nThe Gooroom Integration Applet is a applet for the GNOME panel which contains\na number of applet features(sound, battery, brightness, date & time...)."
+      },
+      "parsed_source": "gooroom-integration-applet",
+      "parsed_source_version": "0.3.1+grm3u1+han3u3",
+      "payload_scan": {
+        "native_payloads": [
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 211608,
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 14584,
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d"
+          }
+        ],
+        "native_looking_suffixes": [],
+        "architecture_specific_paths": [
+          "/usr/lib/x86_64-linux-gnu",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules",
+          "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "/usr/lib/x86_64-linux-gnu/nimf",
+          "/usr/lib/x86_64-linux-gnu/nimf/modules",
+          "/usr/lib/x86_64-linux-gnu/nimf/modules/services",
+          "/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so"
+        ],
+        "executable_scripts": [],
+        "python_files": []
+      },
+      "maintainer_script_audit": {
+        "scripts": [],
+        "architecture_references": []
+      },
+      "python_verification": {
+        "python_file_count": 0,
+        "compiled_count": 0,
+        "failures": []
+      },
+      "original_payload_manifest_sha256": "9474f312aacf666f5c8c5153fa082fb73e00fd0e476b839de755ebdbde17d82e",
+      "original_payload_entry_count": 67,
+      "repack_candidate": false,
+      "blocker_reasons": [
+        "native-payload-present",
+        "architecture-specific-path-present"
+      ],
+      "repacked": false,
+      "promotion_allowed": false,
+      "byte_identity_claimed_for_data_payload_only": false,
+      "original_source_recovered": false
+    },
+    {
+      "schema": 1,
+      "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+      "package": "gooroom-session-manager",
+      "version": "0.3.9+grm3u1+han3u2",
+      "source": "gooroom-session-manager",
+      "source_version": "0.3.9+grm3u1+han3u2",
+      "selected_deb": "gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb",
+      "selected_deb_size": 20328,
+      "selected_deb_sha256": "6cdc971c8258ae3e05a97b314128ca212141a7a8913c82ebf7690c79d3fc6c4d",
+      "control_fields": {
+        "Package": "gooroom-session-manager",
+        "Version": "0.3.9+grm3u1+han3u2",
+        "Architecture": "amd64",
+        "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+        "Installed-Size": "113",
+        "Depends": "libc6 (>= 2.4), libglib2.0-0 (>= 2.65.1), libgtk-3-0 (>= 3.0.0), libjson-c5 (>= 0.15), libnotify4 (>= 0.7.0)",
+        "Section": "misc",
+        "Priority": "optional",
+        "Description": "Session manager for the Gooroom environment."
+      },
+      "parsed_source": "gooroom-session-manager",
+      "parsed_source_version": "0.3.9+grm3u1+han3u2",
+      "payload_scan": {
+        "native_payloads": [
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 39848,
+            "sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-helper",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 14704,
+            "sha256": "b326f6d53741844e63c82d98706400789c8a96c22ffb9d733ba33ac50c0d5cc8"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-update-blacklist-helper",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 14752,
+            "sha256": "8f6306dbfd32eda6637b1f74b5024cf5424e321aeade10c6efd025d91dd83a27"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/grac-reload-helper",
+            "kind": "elf",
+            "machine": "x86_64",
+            "size": 14496,
+            "sha256": "b1327a0fa58c09a36b9ca9926f153ad8eb84f386707346b991eae2e99bfaab7a"
+          }
+        ],
+        "native_looking_suffixes": [],
+        "architecture_specific_paths": [
+          "/usr/lib/x86_64-linux-gnu",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-delete-helper",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-helper",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-update-blacklist-helper",
+          "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/grac-reload-helper"
+        ],
+        "executable_scripts": [
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-delete-helper",
+            "shebang": "#!/bin/sh"
+          }
+        ],
+        "python_files": []
+      },
+      "maintainer_script_audit": {
+        "scripts": [],
+        "architecture_references": []
+      },
+      "python_verification": {
+        "python_file_count": 0,
+        "compiled_count": 0,
+        "failures": []
+      },
+      "original_payload_manifest_sha256": "84d1aca554679f7a6ec8f54489bf9942ea1f204ae84d8352ee9e364cf67c6297",
+      "original_payload_entry_count": 25,
+      "repack_candidate": false,
+      "blocker_reasons": [
+        "native-payload-present",
+        "architecture-specific-path-present"
+      ],
+      "repacked": false,
+      "promotion_allowed": false,
+      "byte_identity_claimed_for_data_payload_only": false,
+      "original_source_recovered": false
+    }
+  ],
+  "promotion_allowed": false,
+  "next_gate": "explicit-architecture-replace-authority-and-native-arm64-install-smoke-test"
+}
