@@ -39,6 +39,7 @@ jobs:
           jq -e '
             .schema == 1
             and (.targets | length) == 7
+            and ([.targets[].change_ids[]] | unique | length) == 13
             and all(.targets[];
               .final_change_id as $final
               | (.source | length) > 0
@@ -64,7 +65,7 @@ jobs:
           jq -e '
             .schema == 1
             and .target_count == 7
-            and .change_id_count == 14
+            and .change_id_count == 13
             and (
               .exact_source_candidate_count
               + .change_object_only_target_count
