@@ -45,7 +45,7 @@ jobs:
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            ca-certificates debian-keyring devscripts docker.io dpkg-dev \
+            ca-certificates debian-keyring devscripts dpkg-dev \
             file gh gnupg jq python3 quilt xz-utils
           docker version
           python3 -m py_compile arm64/scripts/reconstruct_qtbase_grm3u1.py
