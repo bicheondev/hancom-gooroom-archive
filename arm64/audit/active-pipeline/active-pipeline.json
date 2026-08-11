@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 178,
-    "workflow_name_count": 178,
-    "referenced_local_file_count": 278,
+    "workflow_count": 179,
+    "workflow_name_count": 179,
+    "referenced_local_file_count": 279,
     "error_count": 1,
     "warning_count": 39,
     "passed": false
@@ -101,6 +101,23 @@
         "arm64/locks/recovered-package-pool/latest/artifact-lock.json",
         "arm64/locks/recovered-package-pool/latest/compact-blockers.json",
         "arm64/scripts/targeted_source_archaeology.py"
+      ]
+    },
+    {
+      "filename": "arm64-archaeology-software-heritage-app-sources.yml",
+      "path": ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      "name": "ARM64 port - Software Heritage exact app-source archaeology",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/archaeology_software_heritage_exact_sources.py"
       ]
     },
     {
@@ -3946,6 +3963,9 @@
     ],
     "arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py": [
       ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml"
+    ],
+    "arm64/scripts/archaeology_software_heritage_exact_sources.py": [
+      ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
       ".github/workflows/arm64-active-pipeline-audit.yml"
