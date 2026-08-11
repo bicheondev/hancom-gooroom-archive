@@ -108,6 +108,8 @@ jobs:
             debian:bullseye-slim \
             bash -Eeuo pipefail -c '
               export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates dpkg-dev
               printf "%s\n" \
                 "Acquire::Check-Valid-Until \"false\";" \
                 "Acquire::Retries \"8\";" \
@@ -117,8 +119,8 @@ jobs:
               printf "%s\n" \
                 "deb-src [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bullseye main" \
                 > /etc/apt/sources.list
+              rm -rf /var/lib/apt/lists/*
               apt-get update
-              apt-get install -y --no-install-recommends ca-certificates dpkg-dev
               cd /output
               apt-get source --download-only "qtbase-opensource-src=${BASE_VERSION}"
             '
