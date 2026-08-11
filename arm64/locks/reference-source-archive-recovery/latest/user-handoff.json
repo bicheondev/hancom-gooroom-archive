@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "generated_at": "2026-08-11T04:35:31.876470Z",
+  "policy": "user-may-supply-bytes-only-when-size-and-sha256-match-locked-authority",
+  "instructions": [
+    "Do not rename or modify downloaded source members before hashing.",
+    "A version string alone is not accepted; byte size and SHA-256 must both match.",
+    "Return all recovered files together with `sha256sum` and byte-size output."
+  ],
+  "locked_source_indices_needed": [
+    {
+      "kind": "locked-source-index",
+      "repository": "gooroom",
+      "url": "http://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz",
+      "filename": "gooroom-Sources.gz",
+      "size": 51094,
+      "sha256": "09e1abccac1bcd86a430318caab0f0c68224f42a567b8cee7bcf308ed7f4a166"
+    },
+    {
+      "kind": "locked-source-index",
+      "repository": "hancom",
+      "url": "http://update.hancomgooroom.com/hancom/dists/hancom-3.0/main/source/Sources.gz",
+      "filename": "hancom-Sources.gz",
+      "size": 7142,
+      "sha256": "5898f493b7ae9c750dbd11c80325bde5a3778357500d9acda24cc6e4e41c6a58"
+    }
+  ],
+  "items_needed": [
+    {
+      "kind": "exact-source-index",
+      "source": "gnome-flashback",
+      "version": "3.38.0-2+grm3u2+han3u4",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "gooroom-dockbarx-applet",
+      "version": "0.3.1+grm3u1+han3u1",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "gooroom-guide",
+      "version": "0.5.3+grm3u1+han3u1",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "gooroom-integration-applet",
+      "version": "0.3.1+grm3u1+han3u3",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "gooroom-session-manager",
+      "version": "0.3.9+grm3u1+han3u2",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "linux",
+      "version": "5.10.179-1+grm3u1",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    },
+    {
+      "kind": "exact-source-index",
+      "source": "qtbase-opensource-src",
+      "version": "5.15.2+dfsg-9+grm3u1",
+      "reason": "No byte-identical InRelease-locked Sources stanza was recovered in CI."
+    }
+  ]
+}
