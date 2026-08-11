@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-recover-reference-source-indices.yml'
       - 'arm64/scripts/recover_locked_apt_source_indices.py'
+      - 'arm64/scripts/common_crawl_exact_recovery.py'
       - 'arm64/locks/reference-iso-source-residue/latest/selected-text/*InRelease.txt'
   workflow_dispatch:
 
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   recover:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Check out exact reference evidence and recovery code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -32,7 +33,9 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          python3 -m py_compile arm64/scripts/recover_locked_apt_source_indices.py
+          python3 -m py_compile \
+            arm64/scripts/recover_locked_apt_source_indices.py \
+            arm64/scripts/common_crawl_exact_recovery.py
           gooroom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt
           hancom=arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt
           test -s "$gooroom"
@@ -41,30 +44,67 @@ jobs:
           grep -Fq '5898f493b7ae9c750dbd11c80325bde5a3778357500d9acda24cc6e4e41c6a58 7142 main/source/Sources.gz' "$hancom"
 
       - name: Recover only byte-identical signed-release source indices
+        id: recovery
+        continue-on-error: true
         shell: bash
         run: |
-          set -euxo pipefail
-          rm -rf work/reference-source-index-recovery
-          mkdir -p work/reference-source-index-recovery
+          set -uo pipefail
+          evidence=work/reference-source-index-recovery
+          rm -rf "$evidence"
+          mkdir -p "$evidence"
+          set +e
           python3 arm64/scripts/recover_locked_apt_source_indices.py \
             --gooroom-inrelease arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt \
             --hancom-inrelease arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt \
-            --output-dir work/reference-source-index-recovery \
-            --timeout 12
-          jq -e '
-            .schema == 1
-            and .target_count == 7
-            and .resolved_index_count >= 0
-            and .resolved_index_count <= 2
-            and .exact_target_stanza_count >= 0
-            and .promotion_allowed == false
-          ' work/reference-source-index-recovery/summary.json >/dev/null
+            --output-dir "$evidence" \
+            --timeout 12 \
+            > >(tee "$evidence/recovery.stdout.log") \
+            2> >(tee "$evidence/recovery.stderr.log" >&2)
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$evidence/recovery.exit-code"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
 
-      - name: Seal complete positive or negative evidence
+      - name: Validate exact positive or complete negative result
+        id: validation
+        if: always()
+        continue-on-error: true
         shell: bash
         run: |
           set -euxo pipefail
           evidence=work/reference-source-index-recovery
+          test -s "$evidence/summary.json"
+          jq -e '
+            .schema == 2
+            and .policy == "byte-identical-InRelease-locked-source-indices-only-including-Common-Crawl-WARC-payloads"
+            and .target_count == 7
+            and .resolved_index_count >= 0
+            and .resolved_index_count <= 2
+            and .exact_target_stanza_count >= 0
+            and .exact_target_stanza_count <= 7
+            and (.repositories | length) == 2
+            and all(
+              .repositories[];
+              .schema == 2
+              and (.repository == "gooroom" or .repository == "hancom")
+              and (.status == "resolved-byte-identical" or .status == "unresolved")
+              and .attempt_count >= 0
+              and .wayback_cdx_query_count >= 0
+              and .common_crawl_search_count >= 0
+              and .promotion_allowed == false
+            )
+            and .promotion_allowed == false
+          ' "$evidence/summary.json" >/dev/null
+          test "$(cat "$evidence/recovery.exit-code")" = 0
+
+      - name: Seal complete positive or negative evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/reference-source-index-recovery
+          test -d "$evidence"
           (
             cd "$evidence"
             find . -type f ! -name LOCKSUMS.sha256 -print0 \
@@ -72,15 +112,18 @@ jobs:
               | xargs -0 sha256sum > LOCKSUMS.sha256
             sha256sum --check --strict LOCKSUMS.sha256
           )
-          {
-            echo '## Exact source-index recovery'
-            echo
-            echo '```json'
-            cat "$evidence/summary.json"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$evidence/summary.json" ]; then
+            {
+              echo '## Exact source-index recovery'
+              echo
+              echo '```json'
+              cat "$evidence/summary.json"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload exact indices or complete negative evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: hancom-gooroom-3.3-reference-source-index-recovery
@@ -91,11 +134,13 @@ jobs:
           compression-level: 9
 
       - name: Commit immutable current source-index recovery evidence
+        if: always()
         shell: bash
         run: |
           set -euxo pipefail
           source=work/reference-source-index-recovery
           destination=arm64/locks/reference-source-index-recovery/latest
+          test -d "$source"
           rm -rf "$destination"
           mkdir -p "$destination"
           cp -a "$source/." "$destination/"
@@ -114,3 +159,11 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Preserve fail-closed recovery conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.recovery.outcome }}' = success
+          test '${{ steps.validation.outcome }}' = success
