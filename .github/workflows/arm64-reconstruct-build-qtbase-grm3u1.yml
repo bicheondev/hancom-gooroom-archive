@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          base=work/qtbase-grm3u1
+          base="$GITHUB_WORKSPACE/work/qtbase-grm3u1"
           security="$base/security-source"
           dsc_url='https://deb.debian.org/debian/pool/main/q/qtbase-opensource-src/qtbase-opensource-src_5.15.2+dfsg-9+deb11u1.dsc'
           (
