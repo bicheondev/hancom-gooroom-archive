@@ -1,0 +1,70 @@
+name: ARM64 port - dispatch QtBase reconstruction path fix
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-dispatch-qtbase-reconstruction-path-fix
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the exact temporary path compatibility layer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Prove the proxy delegates normally and fixes only the duplicated path shape
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/subprocess.py
+          temporary="$(mktemp -d)"
+          mkdir -p "$temporary/work/source"
+          cat > "$temporary/dpkg-source" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@"
+EOF
+          chmod +x "$temporary/dpkg-source"
+          PYTHONPATH="$GITHUB_WORKSPACE/arm64/scripts" \
+          PATH="$temporary:$PATH" \
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          result = subprocess.run(
+              ["dpkg-source", "-b", "work/source"],
+              cwd=Path("work"),
+              text=True,
+              stdout=subprocess.PIPE,
+              check=True,
+          )
+          assert result.stdout.splitlines() == ["-b", "source"], result.stdout
+          delegated = subprocess.run(
+              ["printf", "%s", "delegated"],
+              text=True,
+              stdout=subprocess.PIPE,
+              check=True,
+          )
+          assert delegated.stdout == "delegated"
+          PY
+          rm -rf "$temporary"
+
+      - name: Dispatch the existing exact QtBase reconstruction workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-reconstruct-build-qtbase-grm3u1.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
