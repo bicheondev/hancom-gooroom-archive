@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 176,
-    "workflow_name_count": 176,
-    "referenced_local_file_count": 275,
-    "error_count": 2,
+    "workflow_count": 177,
+    "workflow_name_count": 177,
+    "referenced_local_file_count": 276,
+    "error_count": 1,
     "warning_count": 39,
     "passed": false
   },
@@ -1102,6 +1102,22 @@
       "job_count": 1,
       "uses": [],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "path": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "name": "ARM64 port - dispatch QtBase reconstruction path fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/subprocess.py"
+      ]
     },
     {
       "filename": "arm64-dispatch-resolved-source-builds.yml",
@@ -4465,6 +4481,9 @@
     "arm64/scripts/select_next_native_rebuild_wave_v3.py": [
       ".github/workflows/arm64-native-rebuild-controller-v3.yml"
     ],
+    "arm64/scripts/subprocess.py": [
+      ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml"
+    ],
     "arm64/scripts/summarize_arm64_boot_attempt.py": [
       ".github/workflows/arm64-minimal-boot-iso-v3.yml",
       ".github/workflows/arm64-minimal-boot-iso-v4.yml",
@@ -4631,11 +4650,6 @@
     ]
   },
   "errors": [
-    {
-      "path": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 36, column 1:\n    printf '%s\\n' \"$@\"\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 37, column 1:\n    EOF\n    ^"
-    },
     {
       "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
       "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
