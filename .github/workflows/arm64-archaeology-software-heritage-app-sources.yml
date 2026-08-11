@@ -86,15 +86,26 @@ jobs:
           retention-days: 30
           compression-level: 9
 
-      - name: Commit immutable current Software Heritage archaeology authority
+      - name: Merge compact app-source evidence into current authority
         shell: bash
         run: |
           set -euxo pipefail
           source=work/software-heritage-app-source-archaeology
           destination=arm64/locks/software-heritage-exact-source-archaeology/latest
-          rm -rf "$destination"
           mkdir -p "$destination"
-          cp -a "$source/." "$destination/"
+          for name in \
+            gnome-flashback \
+            gooroom-dockbarx-applet \
+            gooroom-guide \
+            gooroom-integration-applet \
+            gooroom-session-manager; do
+            rm -rf "$destination/$name"
+            cp -a "$source/$name" "$destination/$name"
+          done
+          cp "$source/summary.json" \
+            "$destination/app-summary.json"
+          cp "$source/LOCKSUMS.sha256" \
+            "$destination/app-LOCKSUMS.sha256"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$destination"
