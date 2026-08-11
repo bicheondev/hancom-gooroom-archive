@@ -40,10 +40,11 @@ jobs:
             .schema == 1
             and (.targets | length) == 7
             and all(.targets[];
-              (.source | length) > 0
+              .final_change_id as $final
+              | (.source | length) > 0
               and (.source_version | length) > 0
               and (.change_ids | length) > 0
-              and (.change_ids | index(.final_change_id)) != null
+              and (.change_ids | index($final)) != null
             )
           ' arm64/changelog-commit-targets.json >/dev/null
 
@@ -74,7 +75,7 @@ jobs:
           ' work/changelog-commit-object-audit/summary.json >/dev/null
           jq -e '
             length == 7
-            and all(.[ ]; .promotion_allowed == false)
+            and all(.[]; .promotion_allowed == false)
           ' work/changelog-commit-object-audit/target-results.json >/dev/null
 
       - name: Seal complete positive or negative archaeology evidence
