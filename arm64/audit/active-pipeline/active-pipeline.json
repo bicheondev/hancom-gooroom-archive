@@ -5,9 +5,9 @@
     "workflow_count": 185,
     "workflow_name_count": 185,
     "referenced_local_file_count": 286,
-    "error_count": 3,
+    "error_count": 0,
     "warning_count": 39,
-    "passed": false
+    "passed": true
   },
   "workflows": [
     {
@@ -2884,7 +2884,7 @@
     {
       "filename": "arm64-restore-exact-source-consolidator.yml",
       "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
-      "name": "ARM64 port - restore exact source consolidator",
+      "name": "ARM64 port - materialize exact source consolidator scripts",
       "events": [
         "push"
       ],
@@ -4826,23 +4826,7 @@
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ]
   },
-  "errors": [
-    {
-      "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
-      "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
-      "local_path": "arm64/scripts/test_summarize_exact_source_recovery.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
-      "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
-      "reason": "referenced-local-code-missing"
-    }
-  ],
+  "errors": [],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
