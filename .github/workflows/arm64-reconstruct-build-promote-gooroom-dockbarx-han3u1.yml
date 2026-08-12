@@ -1,0 +1,532 @@
+name: ARM64 port - reconstruct, build, and promote Gooroom dockbarx han3u1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml'
+      - 'arm64/scripts/reconstruct_gooroom_dockbarx_han3u1.py'
+      - 'arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh'
+      - 'arm64/scripts/verify_gooroom_dockbarx_han3u1_amd64.py'
+      - 'arm64/scripts/verify_gooroom_dockbarx_arm64.py'
+      - 'arm64/scripts/promote_gooroom_dockbarx_han3u1.py'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reconstruct-build-promote-dockbarx-han3u1
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-dockbarx-applet
+  VERSION: 0.3.1+grm3u1+han3u1
+  BASE_REPOSITORY: gooroom/gooroom-dockbarx-applet
+  BASE_COMMIT: 9485507dcb027b1d146c5d3edf7a0f15fa13e558
+  BASE_TREE: 3c3fac8ab436e75fca8d366c85a20f1592a1a5ad
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_RUN_SHA: f5199ad765b7bd080b4452ecf4bfde785beb35da
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+  TARGET_FILENAME: gooroom-dockbarx-applet_0.3.1+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '14096'
+  TARGET_SHA256: 9d810f3185babcd24e0d7c868586c930a8d39bcb7b0a01dee4d8cee02f440b0d
+  SOURCE_ARTIFACT_NAME: gooroom-dockbarx-han3u1-verified-source-v1
+  ARM64_ARTIFACT_NAME: gooroom-dockbarx-han3u1-exact-arm64-v1
+
+jobs:
+  source-equivalence:
+    name: Reconstruct and verify the exact AMD64 source relationship
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the exact reconstruction implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic source, Debian, and ELF tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_gooroom_dockbarx_han3u1.py \
+            arm64/scripts/verify_gooroom_dockbarx_han3u1_amd64.py
+          bash -n arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh
+
+      - name: Download and revalidate the immutable vendor AMD64 authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/dockbarx-source
+          mkdir -p work/dockbarx-source/{vendor,authority,equivalence}
+          metadata=work/dockbarx-source/vendor-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+            ' "$metadata" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir work/dockbarx-source/vendor
+          mapfile -t targets < <(
+            find work/dockbarx-source/vendor -type f \
+              -name "$TARGET_FILENAME" -print
+          )
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" work/dockbarx-source/target.deb
+          test "$(stat -c '%s' work/dockbarx-source/target.deb)" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  work/dockbarx-source/target.deb" \
+            | sha256sum --check --strict -
+          test "$(dpkg-deb -f work/dockbarx-source/target.deb Package)" = "$SOURCE"
+          test "$(dpkg-deb -f work/dockbarx-source/target.deb Version)" = "$VERSION"
+          test "$(dpkg-deb -f work/dockbarx-source/target.deb Architecture)" = amd64
+
+      - name: Reconstruct the bounded han3u1 source over the exact public base
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/dockbarx-source
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$output/source"
+          git -C "$output/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$output/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          python3 arm64/scripts/reconstruct_gooroom_dockbarx_han3u1.py \
+            --repository "$output/source" \
+            --target-deb "$output/target.deb" \
+            --output-dir "$output/authority"
+          jq -e '
+            .source == "gooroom-dockbarx-applet"
+            and .source_version == "0.3.1+grm3u1+han3u1"
+            and .source_status == "verified-reconstructed-git-tree"
+            and .base_source.commit_sha == "9485507dcb027b1d146c5d3edf7a0f15fa13e558"
+            and .base_source.tree_sha == "3c3fac8ab436e75fca8d366c85a20f1592a1a5ad"
+            and .reconstruction.changed_paths == [
+              "debian/changelog",
+              "src/xfce4-dockbarx-plug.py"
+            ]
+            and .exact_payload_relationship.python_byte_identity_verified == true
+            and .exact_payload_relationship.changelog_byte_identity_verified == true
+            and .claims.lost_original_source_archive_recovered == false
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' "$output/authority/reconstruction-lock.json" >/dev/null
+          (cd "$output/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+      - name: Build the reconstructed source in a clean historical AMD64 rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/dockbarx-source
+          sudo bash arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh \
+            amd64 \
+            "$output/authority/reconstructed-source.tar.gz" \
+            "$output/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$output/amd64-build"
+          candidate=''
+          for deb in "$output"/amd64-build/debs/*.deb; do
+            if [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE" ]; then
+              candidate="$deb"
+            fi
+          done
+          test -n "$candidate"
+          cp "$candidate" "$output/candidate.deb"
+
+      - name: Enforce exact payload and normalized AMD64 ELF identity
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/dockbarx-source
+          python3 arm64/scripts/verify_gooroom_dockbarx_han3u1_amd64.py \
+            --target-deb "$output/target.deb" \
+            --candidate-deb "$output/candidate.deb" \
+            --output-dir "$output/equivalence"
+          jq -e '
+            .verified == true
+            and .control_fields_identical == true
+            and .same_path_set == true
+            and .non_elf_payload_identity == true
+            and .normalized_elf_identity == true
+            and .elf_file_count == 2
+            and .fatal_difference_count == 0
+          ' "$output/equivalence/summary.json" >/dev/null
+          cp "$output/equivalence/summary.json" \
+            "$output/authority/amd64-equivalence-summary.json"
+          cp "$output/equivalence/elf-comparison.json" \
+            "$output/authority/amd64-elf-comparison.json"
+          cp "$output/equivalence/non-elf-comparison.json" \
+            "$output/authority/amd64-non-elf-comparison.json"
+          cp "$output/equivalence/differences.json" \
+            "$output/authority/amd64-differences.json"
+          cp work/dockbarx-source/vendor-artifact-metadata.json \
+            "$output/authority/vendor-artifact-metadata.json"
+          jq -n \
+            --argjson artifact_id "$VENDOR_ARTIFACT_ID" \
+            --arg artifact_name "$VENDOR_ARTIFACT_NAME" \
+            --arg artifact_digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" \
+            --arg filename "$TARGET_FILENAME" \
+            --argjson size "$TARGET_SIZE" \
+            --arg sha256 "$TARGET_SHA256" '
+              {
+                schema: 1,
+                vendor_artifact: {
+                  run_id: $run_id,
+                  run_sha: $run_sha,
+                  artifact_id: $artifact_id,
+                  artifact_name: $artifact_name,
+                  artifact_digest: $artifact_digest
+                },
+                target: {
+                  package: "gooroom-dockbarx-applet",
+                  version: "0.3.1+grm3u1+han3u1",
+                  architecture: "amd64",
+                  filename: $filename,
+                  size: $size,
+                  sha256: $sha256
+                }
+              }
+            ' > "$output/authority/target-binary-lock.json"
+          jq '
+            .claims.amd64_equivalence_verified = true
+            | .amd64_equivalence = {
+                passed: true,
+                policy: "exact-control-and-non-elf-payload-plus-normalized-elf-byte-identity",
+                summary: "amd64-equivalence-summary.json"
+              }
+          ' "$output/authority/reconstruction-lock.json" \
+            > "$output/authority/reconstruction-lock.tmp"
+          mv "$output/authority/reconstruction-lock.tmp" \
+            "$output/authority/reconstruction-lock.json"
+          (
+            cd "$output/authority"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          rm -rf "$output/vendor" "$output/source" "$output/target.deb" \
+            "$output/candidate.deb"
+
+      - name: Upload the verified reconstructed source authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/dockbarx-source/authority
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload AMD64 diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-dockbarx-han3u1-amd64-diagnostics-${{ github.run_id }}
+          path: |
+            work/dockbarx-source/equivalence
+            work/dockbarx-source/amd64-build/build.log
+            work/dockbarx-source/amd64-build/debootstrap.log
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+  arm64-build:
+    name: Build and verify the reconstructed tree natively on ARM64
+    needs: source-equivalence
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    outputs:
+      artifact_id: ${{ steps.upload.outputs['artifact-id'] }}
+    steps:
+      - name: Check out the exact ARM64 builder and verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download the verified reconstructed source authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/source-authority
+
+      - name: Verify native host, tools, and source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file jq python3 xz-utils
+          bash -n arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh
+          python3 -m py_compile arm64/scripts/verify_gooroom_dockbarx_arm64.py
+          (cd work/source-authority && sha256sum --check --strict LOCKSUMS.sha256)
+          archive_sha="$(jq -r '.reconstruction.archive_sha256' \
+            work/source-authority/reconstruction-lock.json)"
+          echo "$archive_sha  work/source-authority/reconstructed-source.tar.gz" \
+            | sha256sum --check --strict -
+          jq -e '
+            .claims.amd64_equivalence_verified == true
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' work/source-authority/reconstruction-lock.json >/dev/null
+
+      - name: Build in a clean native ARM64 historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo bash arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh \
+            arm64 \
+            work/source-authority/reconstructed-source.tar.gz \
+            work/arm64-build \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" work/arm64-build
+
+      - name: Verify every ARM64 DEB, ELF, and exact data payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact=work/arm64-artifact
+          rm -rf "$artifact"
+          mkdir -p "$artifact/debs"
+          cp work/arm64-build/debs/*.deb "$artifact/debs/"
+          python3 arm64/scripts/verify_gooroom_dockbarx_arm64.py \
+            --deb-dir "$artifact/debs" \
+            --output-dir "$artifact"
+          jq -e '
+            .verified == true
+            and .source == "gooroom-dockbarx-applet"
+            and .source_version == "0.3.1+grm3u1+han3u1"
+            and .target_architecture == "arm64"
+            and .main_package_count == 1
+            and .debug_package_count == 1
+            and (.wrong_architecture_executables | length) == 0
+            and (.runtime_checks | length) == 2
+            and all(.runtime_checks[]; .verified == true)
+          ' "$artifact/verification-summary.json" >/dev/null
+          cp work/source-authority/reconstruction-lock.json "$artifact/"
+          cp work/source-authority/amd64-equivalence-summary.json "$artifact/"
+          tree="$(jq -r '.reconstruction.tree_sha' "$artifact/reconstruction-lock.json")"
+          archive_sha="$(jq -r '.reconstruction.archive_sha256' "$artifact/reconstruction-lock.json")"
+          jq -n \
+            --arg tree "$tree" \
+            --arg archive_sha "$archive_sha" \
+            --arg snapshot "$SNAPSHOT" '
+              {
+                schema: 2,
+                source: "gooroom-dockbarx-applet",
+                source_version: "0.3.1+grm3u1+han3u1",
+                repository: "gooroom/gooroom-dockbarx-applet",
+                base_commit_sha: "9485507dcb027b1d146c5d3edf7a0f15fa13e558",
+                base_tree_sha: "3c3fac8ab436e75fca8d366c85a20f1592a1a5ad",
+                reconstructed_tree_sha: $tree,
+                source_archive_sha256: $archive_sha,
+                target_architecture: "arm64",
+                debian_snapshot: $snapshot,
+                build_mode: "native-arm64-clean-historical-rootfs",
+                source_authority: "exact-public-base-byte-identical-script-changelog-and-normalized-amd64-elf"
+              }
+            ' > "$artifact/build-lock.json"
+          (
+            cd "$artifact"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload the verified native ARM64 packages
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARM64_ARTIFACT_NAME }}
+          path: work/arm64-artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload native build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-dockbarx-han3u1-arm64-diagnostics-${{ github.run_id }}
+          path: |
+            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+  promote:
+    name: Persist the reconstructed source and verified ARM64 authority
+    needs: [source-equivalence, arm64-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install promotion prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          python3 -m py_compile arm64/scripts/promote_gooroom_dockbarx_han3u1.py
+
+      - name: Download both verified authorities from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: gooroom-dockbarx-han3u1-*-v1
+          path: work/promote
+
+      - name: Revalidate the artifact contents and immutable ARM64 metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARM64_ARTIFACT_ID: ${{ needs.arm64-build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/promote/$SOURCE_ARTIFACT_NAME
+          arm=work/promote/$ARM64_ARTIFACT_NAME
+          test -d "$source"
+          test -d "$arm"
+          (cd "$source" && sha256sum --check --strict LOCKSUMS.sha256)
+          (cd "$arm" && sha256sum --check --strict SHA256SUMS)
+          test -n "$ARM64_ARTIFACT_ID"
+          metadata=work/promote/arm64-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARM64_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$ARM64_ARTIFACT_ID" \
+            --arg name "$ARM64_ARTIFACT_NAME" \
+            --argjson run_id "$GITHUB_RUN_ID" \
+            --arg run_sha "$GITHUB_SHA" '
+              .id == $id
+              and .name == $name
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+              and (.digest | startswith("sha256:"))
+            ' "$metadata" >/dev/null
+
+      - name: Generate and verify promotion records
+        env:
+          ARM64_ARTIFACT_ID: ${{ needs.arm64-build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/promote/$SOURCE_ARTIFACT_NAME
+          arm=work/promote/$ARM64_ARTIFACT_NAME
+          digest="$(jq -r '.digest' work/promote/arm64-artifact-metadata.json)"
+          python3 arm64/scripts/promote_gooroom_dockbarx_han3u1.py \
+            --source-artifact "$source" \
+            --arm64-artifact "$arm" \
+            --repository-root . \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --artifact-name "$ARM64_ARTIFACT_NAME" \
+            --artifact-id "$ARM64_ARTIFACT_ID" \
+            --artifact-digest "$digest"
+          result=arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1/result.json
+          jq -e '
+            .schema == 4
+            and .source == "gooroom-dockbarx-applet"
+            and .source_version == "0.3.1+grm3u1+han3u1"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .passed == true
+            and .verification_passed == true
+            and .job_passed == true
+            and (.deb_artifacts | length == 2)
+            and .source_lock_evidence.original_source_archive_recovered == false
+            and .source_lock_evidence.amd64_equivalence.verified == true
+          ' "$result" >/dev/null
+          jq -e '
+            [.sources[]
+             | select(.source == "gooroom-dockbarx-applet"
+                      and .source_version == "0.3.1+grm3u1+han3u1"
+                      and .status == "resolved"
+                      and .selected.type == "reconstructed-git-tree"
+                      and .verification.passed == true
+                      and .verification.native_arm64_build_verified == true
+                      and .verification.original_source_archive_recovered == false)]
+            | length == 1
+          ' arm64/locks/reconstructed-sources/source-locks.json >/dev/null
+
+      - name: Commit the exact reconstruction and native ARM64 result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1 \
+            arm64/locks/gooroom-dockbarx-han3u1-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          if git diff --cached --quiet; then
+            echo 'Dockbarx promotion records are already current.'
+          else
+            git commit -m 'Promote verified gooroom-dockbarx han3u1 ARM64 build'
+            pushed=false
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                pushed=true
+                break
+              fi
+              sleep $((attempt * 3))
+            done
+            test "$pushed" = true
+          fi
+
+      - name: Dispatch canonical source, rebuild, and package-pool consumers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
