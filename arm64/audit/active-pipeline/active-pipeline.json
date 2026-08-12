@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 185,
-    "workflow_name_count": 185,
-    "referenced_local_file_count": 290,
+    "workflow_count": 184,
+    "workflow_name_count": 184,
+    "referenced_local_file_count": 289,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -2874,23 +2874,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-software-heritage-throttling.yml",
-      "path": ".github/workflows/arm64-repair-software-heritage-throttling.yml",
-      "name": "ARM64 port - repair Software Heritage throttling",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/bootstrap/repair_software_heritage_throttling.py",
-        "arm64/scripts/archaeology_software_heritage_exact_sources.py"
-      ]
-    },
-    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -3661,9 +3644,6 @@
     "arm64/audit/lock-schemas.json": [
       ".github/workflows/arm64-lock-schema-audit.yml"
     ],
-    "arm64/bootstrap/repair_software_heritage_throttling.py": [
-      ".github/workflows/arm64-repair-software-heritage-throttling.yml"
-    ],
     "arm64/changelog-commit-targets.json": [
       ".github/workflows/arm64-audit-changelog-commit-objects.yml",
       ".github/workflows/arm64-audit-small-blocked-package-payloads.yml"
@@ -4082,8 +4062,7 @@
     "arm64/scripts/archaeology_software_heritage_exact_sources.py": [
       ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
       ".github/workflows/arm64-archaeology-software-heritage-authenticated.yml",
-      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml",
-      ".github/workflows/arm64-repair-software-heritage-throttling.yml"
+      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ],
     "arm64/scripts/audit_active_arm64_pipeline.py": [
       ".github/workflows/arm64-active-pipeline-audit.yml"
