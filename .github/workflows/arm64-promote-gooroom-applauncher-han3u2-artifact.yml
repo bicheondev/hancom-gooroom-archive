@@ -145,6 +145,91 @@ jobs:
             --arm64-artifact-digest "$ARM64_ARTIFACT_DIGEST"
 
           result=arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json
+          python3 - "$result" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          source = "gooroom-applauncher-applet"
+          version = "0.4.0+grm3u1+han3u2"
+          path = Path(sys.argv[1])
+          document = json.loads(path.read_text(encoding="utf-8"))
+
+          def normalize(value, label):
+              if not isinstance(value, list) or not value:
+                  raise SystemExit(f"{label} must be a non-empty array")
+              rows = []
+              for index, raw in enumerate(value):
+                  if not isinstance(raw, dict):
+                      raise SystemExit(f"{label}[{index}] must be an object")
+                  row = dict(raw)
+                  if row.get("source") != source:
+                      raise SystemExit(f"{label}[{index}] source mismatch")
+                  if row.get("version") != version:
+                      raise SystemExit(f"{label}[{index}] binary version mismatch")
+                  if row.get("architecture") != "arm64":
+                      raise SystemExit(f"{label}[{index}] architecture mismatch")
+                  current = row.get("source_version")
+                  if current not in (None, version):
+                      raise SystemExit(f"{label}[{index}] source-version mismatch")
+                  row["source_version"] = version
+                  rows.append(row)
+              return sorted(
+                  rows,
+                  key=lambda row: (
+                      row["package"],
+                      row["version"],
+                      row["architecture"],
+                      row["filename"],
+                      row["sha256"],
+                  ),
+              )
+
+          document["deb_artifacts"] = normalize(
+              document.get("deb_artifacts"), "deb_artifacts"
+          )
+          summary = document.get("verification_summary")
+          if not isinstance(summary, dict):
+              raise SystemExit("verification_summary must be an object")
+          summary["deb_artifacts"] = normalize(
+              summary.get("deb_artifacts"),
+              "verification_summary.deb_artifacts",
+          )
+
+          fields = (
+              "package",
+              "version",
+              "architecture",
+              "filename",
+              "sha256",
+              "size",
+              "source",
+              "source_version",
+          )
+          top = {tuple(row[field] for field in fields) for row in document["deb_artifacts"]}
+          nested = {
+              tuple(row[field] for field in fields)
+              for row in summary["deb_artifacts"]
+          }
+          if top != nested:
+              raise SystemExit("top-level and nested DEB evidence disagree")
+
+          path.write_text(
+              json.dumps(document, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          checksum_path = path.parent / "SHA256SUMS"
+          checksum_rows = []
+          for candidate in sorted(path.parent.rglob("*")):
+              if candidate.is_file() and candidate.name != checksum_path.name:
+                  digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+                  checksum_rows.append(
+                      f"{digest}  {candidate.relative_to(path.parent).as_posix()}\n"
+                  )
+          checksum_path.write_text("".join(checksum_rows), encoding="utf-8")
+          PY
+
           jq -e '
             .passed == true
             and .verification_passed == true
@@ -154,7 +239,19 @@ jobs:
             and .tree_sha == "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29"
             and .artifact_id == "9024895138"
             and .artifact_digest == "sha256:fc46684b4799d882d0d13cca83d987e6d8336492255be2e05b473145bc609870"
+            and (.deb_artifacts | length > 0)
+            and all(.deb_artifacts[];
+              .source == "gooroom-applauncher-applet"
+              and .source_version == "0.4.0+grm3u1+han3u2"
+              and .version == "0.4.0+grm3u1+han3u2"
+              and .architecture == "arm64")
+            and all(.verification_summary.deb_artifacts[];
+              .source == "gooroom-applauncher-applet"
+              and .source_version == "0.4.0+grm3u1+han3u2"
+              and .version == "0.4.0+grm3u1+han3u2"
+              and .architecture == "arm64")
           ' "$result" >/dev/null
+          (cd "$(dirname "$result")" && sha256sum --check SHA256SUMS)
           jq -e '
             [.sources[]
              | select(.source == "gooroom-applauncher-applet"
@@ -179,19 +276,21 @@ jobs:
             arm64/locks/reconstructed-sources/source-locks.json
           if git diff --cached --quiet; then
             echo 'Applauncher promotion records are already current.'
-            exit 0
+          else
+            git commit -m 'Promote verified gooroom-applauncher han3u2 ARM64 build'
+            pushed=false
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                pushed=true
+                break
+              fi
+              sleep $((attempt * 3))
+            done
+            test "$pushed" = true
           fi
-          git commit -m 'Promote verified gooroom-applauncher han3u2 ARM64 build'
-          for attempt in 1 2 3 4 5; do
-            git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then
-              exit 0
-            fi
-            sleep $((attempt * 3))
-          done
-          exit 1
 
-      - name: Dispatch canonical authority and package-pool consumers
+      - name: Dispatch canonical consumers and refresh the rebuild index
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -201,5 +300,8 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --ref arm64-port
           gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-index-rebuild-results-v2.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref arm64-port
