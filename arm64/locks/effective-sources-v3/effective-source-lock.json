@@ -3,17 +3,17 @@
     "schema": 4,
     "policy": "exact-signed-dsc-then-exact-git-then-verified-build-selection-then-verified-reconstruction",
     "source_target_count": 74,
-    "resolved_count": 60,
+    "resolved_count": 61,
     "signed_dsc_resolved_count": 0,
     "git_resolved_count": 58,
     "arch_replace_count": 1,
-    "unresolved_count": 13,
-    "rebuild_blocker_count": 7,
+    "unresolved_count": 12,
+    "rebuild_blocker_count": 6,
     "build_allowed": false,
     "wayback_release_lock_present": true,
     "wayback_release_complete": false,
     "verified_build_git_resolved_count": 4,
-    "reconstructed_resolved_count": 2,
+    "reconstructed_resolved_count": 3,
     "verified_build_overlays": [
       {
         "source": "cups-pk-helper",
@@ -56,6 +56,14 @@
         "base_commit_sha": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
         "reconstructed_tree_sha": "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29",
         "source_archive_sha256": "d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7"
+      },
+      {
+        "source": "gooroom-dockbarx-applet",
+        "source_version": "0.3.1+grm3u1+han3u1",
+        "repository_full_name": "gooroom/gooroom-dockbarx-applet",
+        "base_commit_sha": "9485507dcb027b1d146c5d3edf7a0f15fa13e558",
+        "reconstructed_tree_sha": "818db768fd755a5060266d05b4afe5e746a16da7",
+        "source_archive_sha256": "7cc5439757dbeae8fbb38ddc17ab38b7d4a69636b1b9d454e5724061c1aaf983"
       },
       {
         "source": "gooroom-greeter",
@@ -1851,13 +1859,38 @@
       "binary_architectures": [
         "amd64"
       ],
-      "status": "unresolved-exact-source",
-      "provenance": null,
-      "selected": null,
+      "status": "resolved",
+      "provenance": "verified-reconstructed-source",
+      "selected": {
+        "commit_sha": "9485507dcb027b1d146c5d3edf7a0f15fa13e558",
+        "declared_source": "gooroom-dockbarx-applet",
+        "declared_version": "0.3.1+grm3u1+han3u1",
+        "match_scope": "exact-public-base-plus-byte-identical-script-and-changelog-plus-normalized-amd64-elf",
+        "provenance": "exact-public-grm3u1-tree-plus-byte-identical-shipped-python-and-changelog-plus-normalized-amd64-elf-identity",
+        "ref_kind": "reconstructed-tree",
+        "ref_name": "0.3.1+grm3u1+han3u1",
+        "repository_full_name": "gooroom/gooroom-dockbarx-applet",
+        "source_archive_sha256": "7cc5439757dbeae8fbb38ddc17ab38b7d4a69636b1b9d454e5724061c1aaf983",
+        "tree_sha": "818db768fd755a5060266d05b4afe5e746a16da7",
+        "type": "reconstructed-git-tree"
+      },
       "git_candidate_count": 0,
       "signed_dsc_candidate_count": 0,
       "git_candidates": [],
-      "signed_dsc_candidates": []
+      "signed_dsc_candidates": [],
+      "reconstruction_evidence": {
+        "actions_run_id": "31600031524",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31600031524",
+        "amd64_non_elf_payload_identity_verified": true,
+        "amd64_normalized_elf_identity_verified": true,
+        "evidence_path": "arm64/locks/gooroom-dockbarx-han3u1-reconstruction/latest/reconstruction-lock.json",
+        "native_arm64_build_verified": true,
+        "original_source_archive_recovered": false,
+        "passed": true,
+        "authority_lock": "arm64/locks/reconstructed-sources/source-locks.json",
+        "original_status": "unresolved-exact-source",
+        "original_provenance": null
+      }
     },
     {
       "source": "gooroom-greeter",
@@ -4587,6 +4620,14 @@
         "base_commit_sha": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
         "reconstructed_tree_sha": "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29",
         "source_archive_sha256": "d92d75a144924fe84c5d2ccfa9794ccec7125f1640c00aaf3fffc783c6c877e7"
+      },
+      {
+        "source": "gooroom-dockbarx-applet",
+        "source_version": "0.3.1+grm3u1+han3u1",
+        "repository_full_name": "gooroom/gooroom-dockbarx-applet",
+        "base_commit_sha": "9485507dcb027b1d146c5d3edf7a0f15fa13e558",
+        "reconstructed_tree_sha": "818db768fd755a5060266d05b4afe5e746a16da7",
+        "source_archive_sha256": "7cc5439757dbeae8fbb38ddc17ab38b7d4a69636b1b9d454e5724061c1aaf983"
       },
       {
         "source": "gooroom-greeter",
