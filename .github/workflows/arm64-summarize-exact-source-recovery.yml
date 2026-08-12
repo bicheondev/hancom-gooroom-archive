@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/arm64-summarize-exact-source-recovery.yml'
       - 'arm64/scripts/summarize_exact_source_recovery.py'
+      - 'arm64/scripts/test_summarize_exact_source_recovery.py'
       - 'arm64/locks/reference-iso-source-residue/latest/**'
       - 'arm64/locks/exact-source-recovery-v2/latest/**'
       - 'arm64/locks/exact-source-commoncrawl/latest/**'
@@ -23,17 +24,25 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Check out current ARM64 recovery authorities
+      - name: Check out the triggering recovery authorities and consolidator
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: arm64-port
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Validate summarizer and build consolidated authority
+      - name: Run fail-closed consolidator regression tests
         shell: bash
         run: |
           set -euxo pipefail
-          python3 -m py_compile arm64/scripts/summarize_exact_source_recovery.py
+          python3 -m py_compile \
+            arm64/scripts/summarize_exact_source_recovery.py \
+            arm64/scripts/test_summarize_exact_source_recovery.py
+          python3 arm64/scripts/test_summarize_exact_source_recovery.py
+
+      - name: Validate authorities and build consolidated report
+        shell: bash
+        run: |
+          set -euxo pipefail
           output=work/consolidated-exact-source-recovery
           rm -rf "$output"
           mkdir -p "$output"
@@ -44,11 +53,23 @@ jobs:
             --output-dir "$output"
           jq -e '
             .schema == 1
+            and .policy == "consolidated-exact-source-recovery-non-promoting"
+            and .decision == "blocked"
+            and .input_authorities_verified == true
+            and .producer_runners_healthy == true
             and .target_count == 7
-            and (.recovered_pending_verification_count + .unresolved_count == 7)
+            and (
+              .recovered_pending_verification_count + .unresolved_count
+              == .target_count
+            )
             and .package_layer_promotion_allowed == false
             and .iso_assembly_allowed == false
           ' "$output/summary.json" >/dev/null
+          test -s "$output/target-results.json"
+          test -f "$output/recovered-source-manifest.json"
+          test -f "$output/unresolved-targets.json"
+          test -s "$output/input-authorities.json"
+          test -s "$output/REPORT.md"
 
       - name: Seal consolidated authority
         shell: bash
@@ -63,7 +84,7 @@ jobs:
             sha256sum --check --strict LOCKSUMS.sha256
           )
 
-      - name: Publish consolidated report in the run summary
+      - name: Publish consolidated authority in the run summary
         shell: bash
         run: |
           set -euxo pipefail
