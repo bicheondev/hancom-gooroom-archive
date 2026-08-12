@@ -32,17 +32,37 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import base64
+          import hashlib
           import zlib
 
           root = Path('arm64/bootstrap/exact-source-consolidator')
           outputs = {
-              root / 'summarizer.zlib.b64': Path('arm64/scripts/summarize_exact_source_recovery.py'),
-              root / 'tests.zlib.b64': Path('arm64/scripts/test_summarize_exact_source_recovery.py'),
-              root / 'workflow.zlib.b64': Path('.github/workflows/arm64-summarize-exact-source-recovery.yml'),
+              root / 'summarizer.zlib.b64': (
+                  Path('arm64/scripts/summarize_exact_source_recovery.py'),
+                  'd6f1de4cc53df60d2b17067651b78d4c04e29a949167e751b188f60861d4a756',
+              ),
+              root / 'tests.zlib.b64': (
+                  Path('arm64/scripts/test_summarize_exact_source_recovery.py'),
+                  '53fa88f9f2d4cb09dca3baf0bba7be38504bd5b5ca90ad02cd55212c1f378318',
+              ),
+              root / 'workflow.zlib.b64': (
+                  Path('.github/workflows/arm64-summarize-exact-source-recovery.yml'),
+                  'da6fe6382046a65059fbc068067ac04cc9d5c8e246d5ffbfe3e862590e5d6808',
+              ),
           }
-          for source, destination in outputs.items():
-              encoded = source.read_text(encoding='ascii').strip()
-              payload = zlib.decompress(base64.b64decode(encoded, validate=True))
+          for source, (destination, expected_sha256) in outputs.items():
+              encoded = ''.join(source.read_text(encoding='ascii').split())
+              if '=' in encoded:
+                  encoded = encoded[:encoded.index('=')]
+              encoded += '=' * (-len(encoded) % 4)
+              compressed = base64.b64decode(encoded, validate=True)
+              payload = zlib.decompress(compressed)
+              actual_sha256 = hashlib.sha256(payload).hexdigest()
+              if actual_sha256 != expected_sha256:
+                  raise SystemExit(
+                      f'{source}: decoded SHA-256 mismatch: '
+                      f'expected={expected_sha256} actual={actual_sha256}'
+                  )
               destination.parent.mkdir(parents=True, exist_ok=True)
               destination.write_bytes(payload)
           PY
