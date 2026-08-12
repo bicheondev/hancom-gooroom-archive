@@ -10,6 +10,7 @@ on:
       - 'arm64/changelog-commit-targets.json'
       - 'arm64/locks/vendor-binaries/vendor-binary-lock.json'
       - 'arm64/locks/targeted-source-archaeology/results/**'
+      - 'arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json'
   workflow_dispatch:
 
 permissions:
@@ -49,6 +50,32 @@ jobs:
             .summary.verified_count == 123
             and .summary.unresolved_count == 0
           ' arm64/locks/vendor-binaries/vendor-binary-lock.json >/dev/null
+
+      - name: Verify the four native app targets remain canonical blockers
+        shell: bash
+        run: |
+          set -euxo pipefail
+          blockers=arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json
+          test -f "$blockers"
+          jq -e '
+            [
+              .[]
+              | select(.source == "gooroom-dockbarx-applet"
+                    or .source == "gooroom-guide"
+                    or .source == "gooroom-integration-applet"
+                    or .source == "gooroom-session-manager")
+              | select(.role == "rebuild-arm64")
+              | select(.status == "unresolved-exact-source")
+            ]
+            | sort_by(.source)
+            | map([.source, .source_version])
+            == [
+              ["gooroom-dockbarx-applet", "0.3.1+grm3u1+han3u1"],
+              ["gooroom-guide", "0.5.3+grm3u1+han3u1"],
+              ["gooroom-integration-applet", "0.3.1+grm3u1+han3u3"],
+              ["gooroom-session-manager", "0.3.9+grm3u1+han3u2"]
+            ]
+          ' "$blockers" >/dev/null
 
       - name: Download the exact verified AMD64 vendor package pool
         env:
