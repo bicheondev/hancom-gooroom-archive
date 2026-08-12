@@ -4,8 +4,9 @@
 The rebuild index records an Actions run and artifact name for every verified
 DEB. Historical import jobs occasionally retained a short display name instead
 of the uploaded artifact's full name. This resolver never guesses an arbitrary
-artifact: it accepts the declared exact name, or one unique non-expired artifact
-whose name ends in the declared name and is prefixed by the locked source name.
+artifact: it accepts the declared exact name, then a unique source-qualified
+suffix match, or finally one unique non-expired artifact containing the locked
+source name.
 The downstream repository materializer still verifies every DEB by package,
 version, architecture, size, and SHA-256.
 """
@@ -109,13 +110,27 @@ def resolve_artifact(
             for prefix in prefixes
         )
     ]
-    if len(candidates) != 1:
+    if len(candidates) == 1:
+        return candidates[0], "unique-source-suffix"
+    if len(candidates) > 1:
         names = sorted(str(row["name"]) for row in candidates)
         raise RuntimeError(
             f"artifact name {declared!r} has {len(candidates)} "
             f"source-qualified suffix matches: {names}"
         )
-    return candidates[0], "unique-source-suffix"
+
+    source_candidates = [
+        row
+        for row in available
+        if any(prefix in row["name"] for prefix in prefixes)
+    ]
+    if len(source_candidates) != 1:
+        names = sorted(str(row["name"]) for row in source_candidates)
+        raise RuntimeError(
+            f"artifact name {declared!r} has {len(source_candidates)} "
+            f"source-qualified matches: {names}"
+        )
+    return source_candidates[0], "unique-source-qualified"
 
 
 def resolve_rows(
@@ -178,7 +193,7 @@ def main() -> int:
         json.dumps(
             {
                 "schema": 1,
-                "policy": "exact-or-unique-source-qualified-suffix-artifact-resolution",
+                "policy": "exact-or-unique-source-qualified-artifact-resolution",
                 "group_count": len(evidence),
                 "rewritten_group_count": sum(
                     row["resolution"] != "exact" for row in evidence
