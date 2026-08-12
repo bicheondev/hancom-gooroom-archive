@@ -1,0 +1,358 @@
+#!/usr/bin/env python3
+"""One-shot, fail-closed repair for Software Heritage request throttling."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected exactly one match, found {count}")
+    return text.replace(old, new, 1)
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        raise SystemExit(f"usage: {sys.argv[0]} TARGET")
+    path = Path(sys.argv[1])
+    text = path.read_text(encoding="utf-8")
+
+    text = replace_once(
+        text,
+        "import argparse\nimport hashlib\n",
+        "import argparse\nimport email.utils\nimport hashlib\nimport os\n",
+        "import insertion",
+    )
+
+    constant_anchor = "MAX_CONTENT_BYTES = 8 * 1024 * 1024\n"
+    constants = r'''
+DEFAULT_REQUEST_INTERVAL = 1.1
+DEFAULT_MAX_RETRIES = 8
+MAX_RETRY_WAIT_SECONDS = 300.0
+CACHEABLE_RESPONSE_BYTES = 4 * 1024 * 1024
+_REQUEST_INTERVAL = DEFAULT_REQUEST_INTERVAL
+_MAX_RETRIES = DEFAULT_MAX_RETRIES
+_NEXT_REQUEST_AT = 0.0
+_BEARER_TOKEN = os.environ.get("SWH_BEARER_TOKEN", "").strip()
+_REQUEST_CACHE: dict[tuple[str, str, str], tuple[bytes, dict[str, Any]]] = {}
+_REQUEST_STATS: dict[str, int] = {
+    "network_attempts": 0,
+    "cache_hits": 0,
+    "retries": 0,
+    "rate_limited_responses": 0,
+    "server_error_responses": 0,
+    "transport_errors": 0,
+    "retry_exhaustions": 0,
+}
+'''
+    text = replace_once(
+        text,
+        constant_anchor,
+        constant_anchor + constants,
+        "constant insertion",
+    )
+
+    start = text.index("def request_bytes(\n")
+    end = text.index("\n\ndef request_json(\n", start)
+    request_block = r'''def reset_request_state() -> None:
+    global _NEXT_REQUEST_AT
+    _NEXT_REQUEST_AT = 0.0
+    _REQUEST_CACHE.clear()
+    for key in _REQUEST_STATS:
+        _REQUEST_STATS[key] = 0
+
+
+def configure_request_policy(request_interval: float, max_retries: int) -> None:
+    global _REQUEST_INTERVAL, _MAX_RETRIES
+    if not 0.0 <= request_interval <= 60.0:
+        raise SystemExit("--request-interval must be between 0 and 60 seconds")
+    if not 0 <= max_retries <= 12:
+        raise SystemExit("--max-retries must be between 0 and 12")
+    _REQUEST_INTERVAL = float(request_interval)
+    _MAX_RETRIES = int(max_retries)
+    reset_request_state()
+
+
+def _header_value(headers: Any, name: str) -> str:
+    if headers is None:
+        return ""
+    try:
+        value = headers.get(name)
+    except Exception:
+        return ""
+    return str(value).strip() if value is not None else ""
+
+
+def _rate_limit_headers(headers: Any) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for header in (
+        "Retry-After",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+    ):
+        value = _header_value(headers, header)
+        if value:
+            result[header.lower()] = value
+    return result
+
+
+def _seconds_until_epoch(value: str) -> float | None:
+    try:
+        return max(0.0, float(value) - time.time())
+    except (TypeError, ValueError):
+        return None
+
+
+def _retry_after_seconds(value: str) -> float | None:
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        try:
+            parsed = email.utils.parsedate_to_datetime(value)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return max(0.0, parsed.timestamp() - time.time())
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+
+def _retry_delay(headers: Any, attempt: int) -> float:
+    candidates = [
+        max(_REQUEST_INTERVAL, min(MAX_RETRY_WAIT_SECONDS, 2.0 ** attempt)),
+    ]
+    retry_after = _retry_after_seconds(_header_value(headers, "Retry-After"))
+    if retry_after is not None:
+        candidates.append(retry_after)
+    reset_delay = _seconds_until_epoch(_header_value(headers, "X-RateLimit-Reset"))
+    if reset_delay is not None:
+        candidates.append(reset_delay)
+    return min(MAX_RETRY_WAIT_SECONDS, max(candidates))
+
+
+def _server_spacing(headers: Any) -> float:
+    remaining_text = _header_value(headers, "X-RateLimit-Remaining")
+    reset_text = _header_value(headers, "X-RateLimit-Reset")
+    if not remaining_text or not reset_text:
+        return 0.0
+    try:
+        remaining = int(remaining_text)
+    except ValueError:
+        return 0.0
+    reset_delay = _seconds_until_epoch(reset_text)
+    if reset_delay is None:
+        return 0.0
+    if remaining <= 0:
+        return min(MAX_RETRY_WAIT_SECONDS, reset_delay)
+    return min(60.0, reset_delay / remaining)
+
+
+def _pace_request() -> None:
+    global _NEXT_REQUEST_AT
+    current = time.monotonic()
+    if current < _NEXT_REQUEST_AT:
+        time.sleep(_NEXT_REQUEST_AT - current)
+        current = time.monotonic()
+    _NEXT_REQUEST_AT = current + _REQUEST_INTERVAL
+
+
+def _extend_next_request(headers: Any) -> None:
+    global _NEXT_REQUEST_AT
+    spacing = max(_REQUEST_INTERVAL, _server_spacing(headers))
+    _NEXT_REQUEST_AT = max(_NEXT_REQUEST_AT, time.monotonic() + spacing)
+
+
+def _request_headers(url: str, accept: str) -> dict[str, str]:
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": accept,
+        "Accept-Encoding": "identity",
+    }
+    if _BEARER_TOKEN and url.startswith("https://archive.softwareheritage.org/"):
+        headers["Authorization"] = f"Bearer {_BEARER_TOKEN}"
+    return headers
+
+
+def request_bytes(
+    url: str,
+    *,
+    timeout: int,
+    max_bytes: int,
+    accept: str,
+    method: str = "GET",
+) -> tuple[bytes | None, dict[str, Any]]:
+    cache_key = (method, url, accept)
+    if method == "GET" and cache_key in _REQUEST_CACHE:
+        body, cached_evidence = _REQUEST_CACHE[cache_key]
+        _REQUEST_STATS["cache_hits"] += 1
+        evidence = dict(cached_evidence)
+        evidence.update(
+            {
+                "cache_hit": True,
+                "elapsed_seconds": 0.0,
+                "attempt_count": 0,
+                "retry_history": [],
+            }
+        )
+        return body, evidence
+
+    retry_history: list[dict[str, Any]] = []
+    for attempt in range(_MAX_RETRIES + 1):
+        _pace_request()
+        request = urllib.request.Request(
+            url,
+            method=method,
+            headers=_request_headers(url, accept),
+        )
+        started = time.monotonic()
+        _REQUEST_STATS["network_attempts"] += 1
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                chunks: list[bytes] = []
+                size = 0
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > max_bytes:
+                        raise ValueError(f"response exceeded {max_bytes} bytes")
+                    chunks.append(chunk)
+                body = b"".join(chunks)
+                rate_headers = _rate_limit_headers(response.headers)
+                _extend_next_request(response.headers)
+                evidence: dict[str, Any] = {
+                    "url": url,
+                    "status": int(getattr(response, "status", 200)),
+                    "final_url": response.geturl(),
+                    "content_type": response.headers.get("Content-Type"),
+                    "link": response.headers.get("Link"),
+                    "size": len(body),
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "cache_hit": False,
+                    "attempt_count": attempt + 1,
+                    "retry_history": retry_history,
+                    "rate_limit": rate_headers,
+                }
+                if method == "GET" and len(body) <= CACHEABLE_RESPONSE_BYTES:
+                    _REQUEST_CACHE[cache_key] = (body, dict(evidence))
+                return body, evidence
+        except urllib.error.HTTPError as error:
+            status = int(error.code)
+            rate_headers = _rate_limit_headers(error.headers)
+            evidence = {
+                "url": url,
+                "status": status,
+                "error": str(error),
+                "elapsed_seconds": round(time.monotonic() - started, 3),
+                "attempt": attempt + 1,
+                "rate_limit": rate_headers,
+            }
+            retryable = status == 429 or 500 <= status < 600
+            if not retryable:
+                evidence["attempt_count"] = attempt + 1
+                evidence["retry_history"] = retry_history
+                return None, evidence
+            if status == 429:
+                _REQUEST_STATS["rate_limited_responses"] += 1
+            else:
+                _REQUEST_STATS["server_error_responses"] += 1
+            if attempt >= _MAX_RETRIES:
+                _REQUEST_STATS["retry_exhaustions"] += 1
+                raise RuntimeError(
+                    f"Software Heritage request retries exhausted: status={status} url={url}"
+                ) from error
+            delay = _retry_delay(error.headers, attempt)
+            evidence["retry_delay_seconds"] = round(delay, 3)
+            retry_history.append(evidence)
+            _REQUEST_STATS["retries"] += 1
+            time.sleep(delay)
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+            _REQUEST_STATS["transport_errors"] += 1
+            evidence = {
+                "url": url,
+                "status": None,
+                "error": repr(error),
+                "elapsed_seconds": round(time.monotonic() - started, 3),
+                "attempt": attempt + 1,
+            }
+            if attempt >= _MAX_RETRIES:
+                _REQUEST_STATS["retry_exhaustions"] += 1
+                raise RuntimeError(
+                    f"Software Heritage transport retries exhausted: url={url}"
+                ) from error
+            delay = min(
+                MAX_RETRY_WAIT_SECONDS,
+                max(_REQUEST_INTERVAL, 2.0 ** attempt),
+            )
+            evidence["retry_delay_seconds"] = round(delay, 3)
+            retry_history.append(evidence)
+            _REQUEST_STATS["retries"] += 1
+            time.sleep(delay)
+        except Exception as error:
+            raise RuntimeError(f"Software Heritage request failed closed: url={url}") from error
+
+    raise AssertionError("unreachable request retry loop")
+'''
+    text = text[:start] + request_block + text[end:]
+
+    parser_anchor = '    parser.add_argument("--timeout", type=int, default=30)\n'
+    text = replace_once(
+        text,
+        parser_anchor,
+        parser_anchor
+        + '    parser.add_argument("--request-interval", type=float, default=DEFAULT_REQUEST_INTERVAL)\n'
+        + '    parser.add_argument("--max-retries", type=int, default=DEFAULT_MAX_RETRIES)\n',
+        "parser insertion",
+    )
+
+    text = replace_once(
+        text,
+        '    args = parser.parse_args()\n\n    args.output_dir.mkdir(parents=True, exist_ok=True)\n',
+        '    args = parser.parse_args()\n\n'
+        '    configure_request_policy(args.request_interval, args.max_retries)\n'
+        '    args.output_dir.mkdir(parents=True, exist_ok=True)\n',
+        "request policy configuration",
+    )
+
+    text = replace_once(
+        text,
+        '        "policy": "software-heritage-history-discovery-exact-changelog-gate",\n'
+        '        "target_count": len(results),\n',
+        '        "policy": "software-heritage-history-discovery-exact-changelog-gate",\n'
+        '        "transport_complete": True,\n'
+        '        "request_policy": {\n'
+        '            "minimum_interval_seconds": _REQUEST_INTERVAL,\n'
+        '            "max_retries": _MAX_RETRIES,\n'
+        '            "authenticated": bool(_BEARER_TOKEN),\n'
+        '        },\n'
+        '        "request_stats": dict(_REQUEST_STATS),\n'
+        '        "target_count": len(results),\n',
+        "summary insertion",
+    )
+
+    required = (
+        "DEFAULT_REQUEST_INTERVAL = 1.1",
+        "def configure_request_policy(",
+        "status == 429 or 500 <= status < 600",
+        "Software Heritage request retries exhausted",
+        '"transport_complete": True',
+        '"request_stats": dict(_REQUEST_STATS)',
+    )
+    for token in required:
+        if token not in text:
+            raise SystemExit(f"required repair token missing: {token}")
+    if "except urllib.error.HTTPError as error:\n        return None" in text:
+        raise SystemExit("legacy non-retrying HTTP error path remains")
+
+    path.write_text(text, encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
