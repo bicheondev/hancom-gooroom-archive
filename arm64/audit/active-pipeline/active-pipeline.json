@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 184,
-    "workflow_name_count": 184,
+    "workflow_count": 185,
+    "workflow_name_count": 185,
     "referenced_local_file_count": 290,
     "error_count": 0,
     "warning_count": 39,
@@ -3534,6 +3534,25 @@
       ]
     },
     {
+      "filename": "arm64-verify-preserved-qtbase-run31501210331.yml",
+      "path": ".github/workflows/arm64-verify-preserved-qtbase-run31501210331.yml",
+      "name": "ARM64 port - verify preserved QtBase ARM64 build",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json",
+        "arm64/scripts/verify_reconstructed_qtbase_arm64.py",
+        "arm64/scripts/verify_recovered_source_archive_arm64.py"
+      ]
+    },
+    {
       "filename": "arm64-wave1-v3-record.yml",
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
       "name": "ARM64 port - record package wave 1 v3 evidence",
@@ -3842,7 +3861,8 @@
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json": [
-      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml"
+      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
+      ".github/workflows/arm64-verify-preserved-qtbase-run31501210331.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -4796,11 +4816,13 @@
       ".github/workflows/arm64-build-wave1-v2.yml"
     ],
     "arm64/scripts/verify_reconstructed_qtbase_arm64.py": [
-      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml"
+      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
+      ".github/workflows/arm64-verify-preserved-qtbase-run31501210331.yml"
     ],
     "arm64/scripts/verify_recovered_source_archive_arm64.py": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
-      ".github/workflows/arm64-build-recovered-reference-sources.yml"
+      ".github/workflows/arm64-build-recovered-reference-sources.yml",
+      ".github/workflows/arm64-verify-preserved-qtbase-run31501210331.yml"
     ],
     "arm64/scripts/verify_user_source_rescue_bundle.py": [
       ".github/workflows/arm64-import-user-source-rescue.yml"
