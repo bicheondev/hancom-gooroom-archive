@@ -6,12 +6,14 @@ on:
     paths:
       - '.github/workflows/arm64-build-wave1-v2.yml'
       - 'arm64/scripts/filter_arm64_binary_lock.py'
+      - 'arm64/scripts/test_filter_arm64_binary_lock.py'
       - 'arm64/scripts/run_locked_source_arm64_v2.sh'
       - 'arm64/scripts/verify_locked_arm64_build_v2.sh'
       - 'arm64/scripts/run_locked_source_arm64.sh'
       - 'arm64/scripts/build_locked_source_arm64_v2.sh'
       - 'arm64/scripts/verify_locked_arm64_build.sh'
       - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/amd64-reference.json'
   workflow_dispatch:
 
 permissions:
@@ -25,8 +27,29 @@ env:
   HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
 
 jobs:
+  filter-regression:
+    name: Validate source-lock filter semantics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the triggering lock/filter revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Run fail-closed filter regression tests
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/test_filter_arm64_binary_lock.py
+          python3 -m py_compile \
+            arm64/scripts/filter_arm64_binary_lock.py \
+            arm64/scripts/test_filter_arm64_binary_lock.py
+          bash -n arm64/scripts/verify_locked_arm64_build_v2.sh
+
   build:
     name: ${{ matrix.source }}
+    needs: filter-regression
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     strategy:
@@ -43,7 +66,7 @@ jobs:
       - name: Check out exact locks and builders
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: arm64-port
+          ref: ${{ github.sha }}
           fetch-depth: 1
 
       - name: Verify native ARM64 host and install verification tools
@@ -99,3 +122,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
+          include-hidden-files: true
