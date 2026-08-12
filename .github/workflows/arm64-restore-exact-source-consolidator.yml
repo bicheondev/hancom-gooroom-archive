@@ -1,0 +1,78 @@
+name: ARM64 port - restore exact source consolidator
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-restore-exact-source-consolidator.yml'
+      - 'arm64/bootstrap/exact-source-consolidator/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-restore-exact-source-consolidator
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact bootstrap revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Decode, validate, and stage final consolidator
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import zlib
+
+          root = Path('arm64/bootstrap/exact-source-consolidator')
+          outputs = {
+              root / 'summarizer.zlib.b64': Path('arm64/scripts/summarize_exact_source_recovery.py'),
+              root / 'tests.zlib.b64': Path('arm64/scripts/test_summarize_exact_source_recovery.py'),
+              root / 'workflow.zlib.b64': Path('.github/workflows/arm64-summarize-exact-source-recovery.yml'),
+          }
+          for source, destination in outputs.items():
+              encoded = source.read_text(encoding='ascii').strip()
+              payload = zlib.decompress(base64.b64decode(encoded, validate=True))
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              destination.write_bytes(payload)
+          PY
+          chmod 0755 \
+            arm64/scripts/summarize_exact_source_recovery.py \
+            arm64/scripts/test_summarize_exact_source_recovery.py
+          python3 -m py_compile \
+            arm64/scripts/summarize_exact_source_recovery.py \
+            arm64/scripts/test_summarize_exact_source_recovery.py
+          python3 arm64/scripts/test_summarize_exact_source_recovery.py
+
+      - name: Replace bootstrap with reviewed final files
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r \
+            arm64/bootstrap/exact-source-consolidator \
+            .github/workflows/arm64-restore-exact-source-consolidator.yml
+          git add \
+            arm64/scripts/summarize_exact_source_recovery.py \
+            arm64/scripts/test_summarize_exact_source_recovery.py \
+            .github/workflows/arm64-summarize-exact-source-recovery.yml
+          git commit -m 'Restore fail-closed exact source recovery consolidation'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
