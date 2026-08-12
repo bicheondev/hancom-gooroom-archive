@@ -9,6 +9,7 @@ on:
       - 'arm64/scripts/swh_rate_limited_transport.py'
       - 'arm64/scripts/run_rate_limited_swh_archaeology.py'
       - 'arm64/scripts/test_run_rate_limited_swh_archaeology.py'
+      - 'arm64/tests/test_software_heritage_request_policy.py'
   workflow_dispatch:
 
 permissions:
@@ -37,8 +38,10 @@ jobs:
             arm64/scripts/archaeology_software_heritage_exact_sources.py \
             arm64/scripts/swh_rate_limited_transport.py \
             arm64/scripts/run_rate_limited_swh_archaeology.py \
-            arm64/scripts/test_run_rate_limited_swh_archaeology.py
+            arm64/scripts/test_run_rate_limited_swh_archaeology.py \
+            arm64/tests/test_software_heritage_request_policy.py
           python3 arm64/scripts/test_run_rate_limited_swh_archaeology.py
+          python3 arm64/tests/test_software_heritage_request_policy.py
 
       - name: Traverse archived visits, snapshots, and revision histories
         shell: bash
@@ -138,6 +141,7 @@ jobs:
             'arm64/scripts/swh_rate_limited_transport.py'
             'arm64/scripts/run_rate_limited_swh_archaeology.py'
             'arm64/scripts/test_run_rate_limited_swh_archaeology.py'
+            'arm64/tests/test_software_heritage_request_policy.py'
           )
           for attempt in 1 2 3 4 5 6; do
             git fetch --no-tags origin arm64-port
