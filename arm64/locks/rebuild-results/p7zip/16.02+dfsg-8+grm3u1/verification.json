@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "p7zip",
+  "source_version": "16.02+dfsg-8+grm3u1",
+  "repository_full_name": "gooroom/p7zip",
+  "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
+  "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
+  "expected_native_binary_versions": {
+    "p7zip": "16.02+dfsg-8+grm3u1",
+    "p7zip-full": "16.02+dfsg-8+grm3u1"
+  },
+  "produced_package_count": 4,
+  "packages": [
+    {
+      "filename": "p7zip-dbgsym_16.02+dfsg-8+grm3u1_arm64.deb",
+      "sha256": "e55d6a86248dc2e711293eb1cf030c9ecc3fa718d2f63af4abbbd075bfc9f812",
+      "size": 2160068,
+      "package": "p7zip-dbgsym",
+      "version": "16.02+dfsg-8+grm3u1",
+      "architecture": "arm64",
+      "source_field": "p7zip",
+      "parsed_source": "p7zip",
+      "parsed_source_version": "16.02+dfsg-8+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "p7zip-full-dbgsym_16.02+dfsg-8+grm3u1_arm64.deb",
+      "sha256": "19b0bca5f862de6dbd4ea1f1a2e843c42419eb33f2caabe3dcd95131db7602e7",
+      "size": 9735940,
+      "package": "p7zip-full-dbgsym",
+      "version": "16.02+dfsg-8+grm3u1",
+      "architecture": "arm64",
+      "source_field": "p7zip",
+      "parsed_source": "p7zip",
+      "parsed_source_version": "16.02+dfsg-8+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 6,
+      "elf_machine_counts": {
+        "aarch64": 5
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "p7zip-full_16.02+dfsg-8+grm3u1_arm64.deb",
+      "sha256": "dda5c02cb3edbed2830b6367d575c989d5a2f09cdbe0161b5ff6dd1d7768c5c8",
+      "size": 1065696,
+      "package": "p7zip-full",
+      "version": "16.02+dfsg-8+grm3u1",
+      "architecture": "arm64",
+      "source_field": "p7zip",
+      "parsed_source": "p7zip",
+      "parsed_source_version": "16.02+dfsg-8+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 79,
+      "elf_machine_counts": {
+        "aarch64": 4
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "p7zip_16.02+dfsg-8+grm3u1_arm64.deb",
+      "sha256": "72a0e9f3943e5d529141a9d1475e838dc1d3a42fd497e1c628cdf095241c42ad",
+      "size": 342228,
+      "package": "p7zip",
+      "version": "16.02+dfsg-8+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "p7zip",
+      "parsed_source_version": "16.02+dfsg-8+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 10,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 3,
+    "source": "p7zip",
+    "source_version": "16.02+dfsg-8+grm3u1",
+    "repository": "gooroom/p7zip",
+    "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
+    "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
+    "source_archive_sha256": "d0e7401d1467a74b5fe36ed1e332828817a5584e801c60873a68ce08866a2bf8",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-full-binary-with-docs",
+    "expected_binary_packages": [
+      "p7zip",
+      "p7zip-full"
+    ],
+    "produced_binary_packages": [
+      "p7zip-dbgsym",
+      "p7zip-full-dbgsym",
+      "p7zip-full",
+      "p7zip"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "p7zip",
+    "source_version": "16.02+dfsg-8+grm3u1",
+    "repository": "gooroom/p7zip",
+    "commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
+    "tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
+    "verified_commit_sha": "950abb3e7274d493c8035a23ec2bb0adcde9cb55",
+    "verified_tree_sha": "e392d61e4303302107f9468a06ef0bcb49fe4f33",
+    "deterministic_source_archive_sha256": "d0e7401d1467a74b5fe36ed1e332828817a5584e801c60873a68ce08866a2bf8"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}
