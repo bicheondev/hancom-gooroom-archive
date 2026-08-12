@@ -4,10 +4,10 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 184,
     "workflow_name_count": 184,
-    "referenced_local_file_count": 286,
-    "error_count": 0,
+    "referenced_local_file_count": 289,
+    "error_count": 1,
     "warning_count": 39,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -117,7 +117,10 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/scripts/archaeology_software_heritage_exact_sources.py"
+        "arm64/scripts/archaeology_software_heritage_exact_sources.py",
+        "arm64/scripts/run_rate_limited_swh_archaeology.py",
+        "arm64/scripts/swh_rate_limited_transport.py",
+        "arm64/scripts/test_run_rate_limited_swh_archaeology.py"
       ]
     },
     {
@@ -151,7 +154,10 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": [
-        "arm64/scripts/archaeology_software_heritage_exact_sources.py"
+        "arm64/scripts/archaeology_software_heritage_exact_sources.py",
+        "arm64/scripts/run_rate_limited_swh_archaeology.py",
+        "arm64/scripts/swh_rate_limited_transport.py",
+        "arm64/scripts/test_run_rate_limited_swh_archaeology.py"
       ]
     },
     {
@@ -4582,6 +4588,10 @@
     "arm64/scripts/run_p7zip_full_binary_arm64.sh": [
       ".github/workflows/arm64-build-p7zip-targeted-v2.yml"
     ],
+    "arm64/scripts/run_rate_limited_swh_archaeology.py": [
+      ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
+    ],
     "arm64/scripts/run_software_heritage_archaeology_authenticated.py": [
       ".github/workflows/arm64-archaeology-software-heritage-authenticated.yml"
     ],
@@ -4662,6 +4672,10 @@
       ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml",
       ".github/workflows/arm64-summarize-recovered-package-blockers.yml"
     ],
+    "arm64/scripts/swh_rate_limited_transport.py": [
+      ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
+    ],
     "arm64/scripts/targeted_source_archaeology.py": [
       ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml",
       ".github/workflows/arm64-archaeology-recovered-package-blockers.yml",
@@ -4683,6 +4697,10 @@
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/scripts/test_run_rate_limited_swh_archaeology.py": [
+      ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ],
     "arm64/scripts/test_summarize_exact_source_recovery.py": [
       ".github/workflows/arm64-summarize-exact-source-recovery.yml"
@@ -4810,7 +4828,13 @@
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-repair-software-heritage-throttling.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 49, column 1:\n    DEFAULT_REQUEST_INTERVAL = 1.1\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 50, column 1:\n    DEFAULT_MAX_RETRIES = 8\n    ^"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
