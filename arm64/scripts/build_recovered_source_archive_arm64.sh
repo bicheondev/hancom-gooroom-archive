@@ -21,6 +21,8 @@ SOURCE_NAME="$4"
 SOURCE_VERSION="$5"
 SNAPSHOT="${HANCOM_GOOROOM_DEBIAN_SNAPSHOT:-20230730T235959Z}"
 BUILD_JOBS="${HANCOM_GOOROOM_BUILD_JOBS:-3}"
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
 # This image is only the immutable debootstrap carrier.  All packages used by
 # dpkg-buildpackage are installed into a fresh rootfs from the locked snapshot.
 BOOTSTRAP_IMAGE="${HANCOM_GOOROOM_BOOTSTRAP_IMAGE:-debian@sha256:f313b4bd62667092a59b3a664d7d3ab8b5e65f41675f48e81455a15dc5abe792}"
@@ -81,6 +83,19 @@ export LANG=C.UTF-8
 export TZ=UTC
 
 mkdir -p /output/logs
+
+[[ "$HOST_UID" =~ ^[0-9]+$ ]] || {
+  echo "invalid host UID: $HOST_UID" >&2
+  exit 64
+}
+[[ "$HOST_GID" =~ ^[0-9]+$ ]] || {
+  echo "invalid host GID: $HOST_GID" >&2
+  exit 64
+}
+restore_output_ownership() {
+  chown -R -- "${HOST_UID}:${HOST_GID}" /output 2>/dev/null || true
+}
+trap restore_output_ownership EXIT
 
 # The carrier image is pinned by digest, but its installed package universe is
 # deliberately not used for the build.  It supplies only debootstrap and TLS
@@ -221,7 +236,7 @@ set +e
 dpkg-buildpackage \
   --build=binary \
   --no-sign \
-  --jobs-force="${BUILD_JOBS}" \
+  -j"${BUILD_JOBS}" \
   > /build/logs/dpkg-buildpackage.stdout \
   2> /build/logs/dpkg-buildpackage.stderr
 build_rc=$?
@@ -276,6 +291,8 @@ if [[ "$pull_rc" -eq 0 ]]; then
   DSC_NAME="$DSC_NAME" \
   SNAPSHOT="$SNAPSHOT" \
   BUILD_JOBS="$BUILD_JOBS" \
+  HOST_UID="$HOST_UID" \
+  HOST_GID="$HOST_GID" \
   docker run --rm \
     --platform linux/arm64 \
     --network host \
@@ -284,6 +301,8 @@ if [[ "$pull_rc" -eq 0 ]]; then
     -e DSC_NAME \
     -e SNAPSHOT \
     -e BUILD_JOBS \
+    -e HOST_UID \
+    -e HOST_GID \
     -v "$SCRIPT_DIR/bootstrap-build.sh:/bootstrap-build.sh:ro" \
     -v "$SOURCE_ARCHIVE_DIR:/source:ro" \
     -v "$LOCAL_REPO_DIR:/repo:ro" \
