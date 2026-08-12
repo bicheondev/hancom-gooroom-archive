@@ -45,10 +45,6 @@ jobs:
                   Path('arm64/scripts/test_summarize_exact_source_recovery.py'),
                   '53fa88f9f2d4cb09dca3baf0bba7be38504bd5b5ca90ad02cd55212c1f378318',
               ),
-              root / 'workflow.zlib.b64': (
-                  Path('.github/workflows/arm64-summarize-exact-source-recovery.yml'),
-                  'da6fe6382046a65059fbc068067ac04cc9d5c8e246d5ffbfe3e862590e5d6808',
-              ),
           }
           for source, (destination, expected_sha256) in outputs.items():
               encoded = ''.join(source.read_text(encoding='ascii').split())
@@ -65,6 +61,19 @@ jobs:
                   )
               destination.parent.mkdir(parents=True, exist_ok=True)
               destination.write_bytes(payload)
+
+          workflow_source = root / 'workflow.yml'
+          workflow_destination = Path('.github/workflows/arm64-summarize-exact-source-recovery.yml')
+          workflow_payload = workflow_source.read_bytes()
+          workflow_sha256 = hashlib.sha256(workflow_payload).hexdigest()
+          expected_workflow_sha256 = 'da6fe6382046a65059fbc068067ac04cc9d5c8e246d5ffbfe3e862590e5d6808'
+          if workflow_sha256 != expected_workflow_sha256:
+              raise SystemExit(
+                  f'{workflow_source}: SHA-256 mismatch: '
+                  f'expected={expected_workflow_sha256} actual={workflow_sha256}'
+              )
+          workflow_destination.parent.mkdir(parents=True, exist_ok=True)
+          workflow_destination.write_bytes(workflow_payload)
           PY
           chmod 0755 \
             arm64/scripts/summarize_exact_source_recovery.py \
