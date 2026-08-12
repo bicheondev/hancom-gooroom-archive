@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 184,
-    "workflow_name_count": 184,
-    "referenced_local_file_count": 285,
-    "error_count": 1,
+    "workflow_count": 185,
+    "workflow_name_count": 185,
+    "referenced_local_file_count": 286,
+    "error_count": 3,
     "warning_count": 39,
     "passed": false
   },
@@ -2882,6 +2882,22 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-restore-exact-source-consolidator.yml",
+      "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
+      "name": "ARM64 port - restore exact source consolidator",
+      "events": [
+        "push"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/summarize_exact_source_recovery.py",
+        "arm64/scripts/test_summarize_exact_source_recovery.py"
+      ]
+    },
+    {
       "filename": "arm64-retry-failed-dsc-sources-v3.yml",
       "path": ".github/workflows/arm64-retry-failed-dsc-sources-v3.yml",
       "name": "ARM64 port - retry exact DSC sources with local dependencies v3",
@@ -4655,6 +4671,7 @@
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
     "arm64/scripts/summarize_exact_source_recovery.py": [
+      ".github/workflows/arm64-restore-exact-source-consolidator.yml",
       ".github/workflows/arm64-summarize-exact-source-recovery.yml"
     ],
     "arm64/scripts/summarize_recovered_package_blockers.py": [
@@ -4682,6 +4699,9 @@
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/scripts/test_summarize_exact_source_recovery.py": [
+      ".github/workflows/arm64-restore-exact-source-consolidator.yml"
     ],
     "arm64/scripts/tests/test_audit_hancom_delta.py": [
       ".github/workflows/arm64-audit-gooroom-applauncher-han3u2.yml"
@@ -4807,6 +4827,16 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
+      "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-restore-exact-source-consolidator.yml",
+      "local_path": "arm64/scripts/test_summarize_exact_source_recovery.py",
+      "reason": "referenced-local-code-missing"
+    },
     {
       "path": ".github/workflows/arm64-summarize-exact-source-recovery.yml",
       "local_path": "arm64/scripts/summarize_exact_source_recovery.py",
