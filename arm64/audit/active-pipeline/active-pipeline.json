@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 184,
     "workflow_name_count": 184,
-    "referenced_local_file_count": 289,
+    "referenced_local_file_count": 290,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -120,7 +120,8 @@
         "arm64/scripts/archaeology_software_heritage_exact_sources.py",
         "arm64/scripts/run_rate_limited_swh_archaeology.py",
         "arm64/scripts/swh_rate_limited_transport.py",
-        "arm64/scripts/test_run_rate_limited_swh_archaeology.py"
+        "arm64/scripts/test_run_rate_limited_swh_archaeology.py",
+        "arm64/tests/test_software_heritage_request_policy.py"
       ]
     },
     {
@@ -157,7 +158,8 @@
         "arm64/scripts/archaeology_software_heritage_exact_sources.py",
         "arm64/scripts/run_rate_limited_swh_archaeology.py",
         "arm64/scripts/swh_rate_limited_transport.py",
-        "arm64/scripts/test_run_rate_limited_swh_archaeology.py"
+        "arm64/scripts/test_run_rate_limited_swh_archaeology.py",
+        "arm64/tests/test_software_heritage_request_policy.py"
       ]
     },
     {
@@ -4826,6 +4828,10 @@
     "arm64/status/summary.json": [
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
+    ],
+    "arm64/tests/test_software_heritage_request_policy.py": [
+      ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
+      ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
   "errors": [],
