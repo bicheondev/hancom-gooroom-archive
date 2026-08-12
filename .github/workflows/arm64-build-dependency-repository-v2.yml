@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/arm64-build-dependency-repository-v2.yml'
       - 'arm64/scripts/materialize_build_dependency_repo_v2.py'
+      - 'arm64/scripts/resolve_rebuild_artifact_names.py'
+      - 'arm64/scripts/test_resolve_rebuild_artifact_names.py'
       - 'arm64/locks/vendor-binaries/**'
       - 'arm64/locks/rebuild-result-index-v2/**'
   workflow_dispatch:
@@ -41,17 +43,21 @@ jobs:
           fi
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
 
-      - name: Install APT repository tools
+      - name: Install and test APT repository tools
         if: steps.inputs.outputs.ready == 'true'
         run: |
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             python3 dpkg-dev apt-utils ca-certificates jq
-          python3 -m py_compile arm64/scripts/materialize_build_dependency_repo_v2.py
+          python3 -m py_compile \
+            arm64/scripts/materialize_build_dependency_repo_v2.py \
+            arm64/scripts/resolve_rebuild_artifact_names.py \
+            arm64/scripts/test_resolve_rebuild_artifact_names.py
+          python3 arm64/scripts/test_resolve_rebuild_artifact_names.py
           gh --version
 
-      - name: Download, verify, and index exact build dependencies
+      - name: Resolve immutable artifact identities and materialize packages
         if: steps.inputs.outputs.ready == 'true'
         id: materialize
         env:
@@ -61,10 +67,21 @@ jobs:
           set -uxo pipefail
           rm -rf work/build-dependency-repository work/build-dependency-evidence
           mkdir -p work/build-dependency-repository work/build-dependency-evidence
+          python3 arm64/scripts/resolve_rebuild_artifact_names.py \
+            --input arm64/locks/rebuild-result-index-v2/verified-binary-packages.json \
+            --output work/resolved-rebuild-packages.json \
+            --evidence work/build-dependency-evidence/artifact-name-resolution.json \
+            --github-repository '${{ github.repository }}'
+          jq -e '
+            .schema == 1
+            and .group_count > 0
+            and .rewritten_group_count >= 0
+            and .policy == "exact-or-unique-source-qualified-suffix-artifact-resolution"
+          ' work/build-dependency-evidence/artifact-name-resolution.json >/dev/null
           set +e
           python3 arm64/scripts/materialize_build_dependency_repo_v2.py \
             --vendor-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
-            --rebuild-packages arm64/locks/rebuild-result-index-v2/verified-binary-packages.json \
+            --rebuild-packages work/resolved-rebuild-packages.json \
             --github-repository '${{ github.repository }}' \
             --repository-dir work/build-dependency-repository \
             --output-dir work/build-dependency-evidence \
@@ -103,13 +120,15 @@ jobs:
             arm64/locks/build-dependency-repository-v2/
           cp work/build-dependency-evidence/failures.json \
             arm64/locks/build-dependency-repository-v2/
+          cp work/build-dependency-evidence/artifact-name-resolution.json \
+            arm64/locks/build-dependency-repository-v2/
           cp work/build-dependency-evidence/LOCKSUMS.sha256 \
             arm64/locks/build-dependency-repository-v2/
           jq -n \
             --arg actions_run_id '${{ github.run_id }}' \
             --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
             --arg artifact_name 'hancom-gooroom-3.3-arm64-build-dependency-repository-v2' \
-            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name}' \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,artifact_name_resolution:"artifact-name-resolution.json"}' \
             > arm64/locks/build-dependency-repository-v2/artifact-lock.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -131,6 +150,8 @@ jobs:
           test '${{ steps.materialize.outputs.exit_code }}' = '0'
           jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' \
             work/build-dependency-evidence/summary.json
+          jq -e '.rewritten_group_count == 1' \
+            work/build-dependency-evidence/artifact-name-resolution.json
 
       - name: Dispatch the final package repository merge explicitly
         if: success() && steps.inputs.outputs.ready == 'true'
