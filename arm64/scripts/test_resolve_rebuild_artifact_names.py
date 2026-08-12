@@ -54,9 +54,17 @@ expect_failure(
     ),
     "2 source-qualified suffix matches",
 )
+
+selected, method = resolver.resolve_artifact(
+    "historical-short-name",
+    rows,
+    [artifact("exact-package-rebuild-arm64-demo-source-42", 4)],
+)
+assert selected["id"] == 4 and method == "unique-source-qualified"
+
 expect_failure(
     lambda: resolver.resolve_artifact("missing", rows, [artifact("unrelated", 1)]),
-    "0 source-qualified suffix matches",
+    "0 source-qualified matches",
 )
 
 input_rows = [
