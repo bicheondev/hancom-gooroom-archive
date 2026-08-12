@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 185,
-    "workflow_name_count": 185,
-    "referenced_local_file_count": 292,
+    "workflow_count": 186,
+    "workflow_name_count": 186,
+    "referenced_local_file_count": 298,
     "error_count": 0,
-    "warning_count": 39,
+    "warning_count": 40,
     "passed": true
   },
   "workflows": [
@@ -2573,6 +2573,36 @@
       ]
     },
     {
+      "filename": "arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
+      "name": "ARM64 port - reconstruct, build, and promote Gooroom dockbarx han3u1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1/result.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh",
+        "arm64/scripts/promote_gooroom_dockbarx_han3u1.py",
+        "arm64/scripts/reconstruct_gooroom_dockbarx_han3u1.py",
+        "arm64/scripts/verify_gooroom_dockbarx_arm64.py",
+        "arm64/scripts/verify_gooroom_dockbarx_han3u1_amd64.py"
+      ]
+    },
+    {
       "filename": "arm64-reconstruct-build-qtbase-grm3u1.yml",
       "path": ".github/workflows/arm64-reconstruct-build-qtbase-grm3u1.yml",
       "name": "ARM64 port - reconstruct QtBase grm3u1 source",
@@ -3889,6 +3919,9 @@
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml"
     ],
+    "arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1/result.json": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
+    ],
     "arm64/locks/rebuild-results/gooroom-greeter/0.3.1_grm3u1_han3u2/result.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
@@ -3904,6 +3937,7 @@
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
       ".github/workflows/arm64-source-authority-v5.yml"
     ],
     "arm64/locks/recovered-package-pool/latest/artifact-lock.json": [
@@ -4151,6 +4185,9 @@
     ],
     "arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
+    ],
+    "arm64/scripts/build_gooroom_dockbarx_han3u1_chroot.sh": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
     ],
     "arm64/scripts/build_gooroom_greeter_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
@@ -4421,6 +4458,9 @@
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml"
     ],
+    "arm64/scripts/promote_gooroom_dockbarx_han3u1.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
+    ],
     "arm64/scripts/promote_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
@@ -4449,6 +4489,9 @@
     ],
     "arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
+    ],
+    "arm64/scripts/reconstruct_gooroom_dockbarx_han3u1.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
@@ -4797,6 +4840,12 @@
     "arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
     ],
+    "arm64/scripts/verify_gooroom_dockbarx_arm64.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
+    ],
+    "arm64/scripts/verify_gooroom_dockbarx_han3u1_amd64.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml"
+    ],
     "arm64/scripts/verify_gooroom_greeter_arm64.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
@@ -5016,6 +5065,11 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
+      "local_path": "arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
