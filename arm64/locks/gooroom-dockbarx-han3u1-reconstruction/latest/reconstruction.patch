@@ -1,0 +1,34 @@
+diff --git a/debian/changelog b/debian/changelog
+index d8ef3317f7e3035f41bae80cedc2f741c7ac5f83..5fc95a9146f6da3ae2a14026d6590c8c2e0e6b1a 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,10 @@
++gooroom-dockbarx-applet (0.3.1+grm3u1+han3u1) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [95268201] Add a new icon theme for Hancom Gooroom 3.3
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:21:30 +0900
++
+ gooroom-dockbarx-applet (0.3.1+grm3u1) unstable; urgency=medium
+ 
+   [ gooroom ]
+diff --git a/src/xfce4-dockbarx-plug.py b/src/xfce4-dockbarx-plug.py
+index e05367fd8a44d25e5d0a44caa0c68cbdd4a24566..ffed902229ac6182dffec871e8f25a85b96e390a 100755
+--- a/src/xfce4-dockbarx-plug.py
++++ b/src/xfce4-dockbarx-plug.py
+@@ -115,7 +115,13 @@ class DockBarXFCEPlug(Gtk.Plug):
+         ctx.rectangle(rect.x, rect.y,
+                       rect.width, rect.height)
+         ctx.clip()
+-        ctx.set_source_rgba(0.0,0.0,0.0,0.7)
++        if GSETTINGS_DT_IFACE_CLIENT.get_string("gtk-theme") == "Arc-Darker":
++            ctx.set_source_rgba(0.169,0.184,0.251,0.95)
++        elif GSETTINGS_DT_IFACE_CLIENT.get_string("gtk-theme") ==  "Arc-Lighter":
++            ctx.set_source_rgba(0.941,0.953,0.976,0.96)
++        else:
++            ctx.set_source_rgba(0.0,0.0,0.0,0.7)
++
+         ctx.paint()
+         if self.get_child():
+             self.propagate_draw(self.get_child(), event)
