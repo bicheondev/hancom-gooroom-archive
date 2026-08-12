@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "root": "arm64/locks",
-  "json_file_count": 693,
+  "json_file_count": 724,
   "error_count": 0,
   "files": [
     {
@@ -10479,8 +10479,8 @@
     },
     {
       "path": "pipeline-selfcheck/selfcheck.json",
-      "size": 153507,
-      "sha256": "038cff6dc208a359b49362c88b69348bbf740b2ed0645cd636c871c376fcbce3",
+      "size": 156750,
+      "sha256": "51a94bd1d6c9142000936261aa4ec8a8ab9b8fb203deb699d46af4578a32497f",
       "top_type": "dict",
       "key_frequency": {
         "python[].path": 20,
@@ -10532,7 +10532,7 @@
         },
         "python": {
           "type": "list",
-          "length": 167,
+          "length": 170,
           "first_item_type": "dict",
           "first_item_keys": [
             "path",
@@ -10550,7 +10550,7 @@
         },
         "yaml": {
           "type": "list",
-          "length": 179,
+          "length": 184,
           "first_item_type": "dict",
           "first_item_keys": [
             "path",
@@ -10559,7 +10559,7 @@
         },
         "action_references": {
           "type": "list",
-          "length": 464,
+          "length": 474,
           "first_item_type": "dict",
           "first_item_keys": [
             "reason",
@@ -43437,78 +43437,381 @@
       }
     },
     {
-      "path": "rebuild-results/p7zip/16.02+dfsg-8+grm3u1/result.json",
-      "size": 1267,
-      "sha256": "172c5b1520878561a96afaf73cfcbfa150e2a409338b237630e30ccd6134e499",
+      "path": "rebuild-results/p7zip/16.02+dfsg-8+grm3u1/build-lock.json",
+      "size": 743,
+      "sha256": "ff8b5f290a49cb2306bf1f0f27b3079dc79b4104a7b5f44832598c8b18bf1760",
       "top_type": "dict",
       "key_frequency": {
         "schema": 1,
-        "batch": 1,
-        "actions_run_id": 1,
-        "actions_run_url": 1,
         "source": 1,
         "source_version": 1,
-        "repository_full_name": 1,
+        "repository": 1,
         "commit_sha": 1,
         "tree_sha": 1,
-        "required_native_packages": 1,
-        "reused_all_packages": 1,
-        "build_outcome": 1,
-        "build_exit_code": 1,
-        "verify_outcome": 1,
-        "passed": 1,
-        "retry_reason": 1,
-        "dependency_repository_packages_sha256": 1,
-        "dependency_release_lock_sha256": 1,
-        "deb_artifacts": 1,
-        "verification_errors": 1,
-        "verification_warnings": 1,
-        "build_lock": 1,
-        "source_lock_evidence": 1,
-        "diagnostics": 1,
-        "diagnostics[].filename": 1,
-        "diagnostics[].sha256": 1,
-        "diagnostics[].size": 1,
-        "diagnostics[].truncated": 1,
-        "diagnostics[].tail": 1
+        "source_archive_sha256": 1,
+        "bootstrap_image": 1,
+        "target_architecture": 1,
+        "debian_snapshot": 1,
+        "build_mode": 1,
+        "expected_binary_packages": 1,
+        "produced_binary_packages": 1
       },
       "top_keys": [
-        "actions_run_id",
-        "actions_run_url",
-        "batch",
-        "build_exit_code",
-        "build_lock",
-        "build_outcome",
+        "bootstrap_image",
+        "build_mode",
         "commit_sha",
-        "deb_artifacts",
-        "dependency_release_lock_sha256",
-        "dependency_repository_packages_sha256",
-        "diagnostics",
-        "passed",
-        "repository_full_name",
-        "required_native_packages",
-        "retry_reason",
-        "reused_all_packages",
+        "debian_snapshot",
+        "expected_binary_packages",
+        "produced_binary_packages",
+        "repository",
         "schema",
         "source",
-        "source_lock_evidence",
+        "source_archive_sha256",
         "source_version",
-        "tree_sha",
-        "verification_errors",
-        "verification_warnings",
-        "verify_outcome"
+        "target_architecture",
+        "tree_sha"
       ],
       "fields": {
         "schema": {
           "type": "int"
         },
-        "batch": {
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "repository": {
+          "type": "str"
+        },
+        "commit_sha": {
+          "type": "str"
+        },
+        "tree_sha": {
+          "type": "str"
+        },
+        "source_archive_sha256": {
+          "type": "str"
+        },
+        "bootstrap_image": {
+          "type": "str"
+        },
+        "target_architecture": {
+          "type": "str"
+        },
+        "debian_snapshot": {
+          "type": "str"
+        },
+        "build_mode": {
+          "type": "str"
+        },
+        "expected_binary_packages": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "str"
+        },
+        "produced_binary_packages": {
+          "type": "list",
+          "length": 4,
+          "first_item_type": "str"
+        }
+      }
+    },
+    {
+      "path": "rebuild-results/p7zip/16.02+dfsg-8+grm3u1/result.json",
+      "size": 5078,
+      "sha256": "3958657557ad3f059da3a8245a10845c3bc50e88204e39491ea1bcfc8cd0f32b",
+      "top_type": "dict",
+      "key_frequency": {
+        "verification.packages[].filename": 4,
+        "verification.packages[].sha256": 4,
+        "verification.packages[].size": 4,
+        "verification.packages[].package": 4,
+        "verification.packages[].version": 4,
+        "verification.packages[].architecture": 4,
+        "verification.packages[].source_field": 4,
+        "verification.packages[].parsed_source": 4,
+        "verification.packages[].parsed_source_version": 4,
+        "verification.packages[].expected_from_iso": 4,
+        "verification.packages[].payload_entry_count": 4,
+        "verification.packages[].elf_machine_counts": 4,
+        "verification.packages[].elf_machine_counts.aarch64": 4,
+        "verification.packages[].x86_payloads": 4,
+        "verification.packages[].non_aarch64_elfs": 4,
+        "schema": 1,
+        "source": 1,
+        "source_version": 1,
+        "provenance": 1,
+        "repository_full_name": 1,
+        "commit_sha": 1,
+        "tree_sha": 1,
+        "actions_run_id": 1,
+        "actions_run_url": 1,
+        "artifact_name": 1,
+        "passed": 1,
+        "verification": 1,
+        "verification.schema": 1,
+        "verification.policy": 1,
+        "verification.source": 1,
+        "verification.source_version": 1,
+        "verification.repository_full_name": 1,
+        "verification.commit_sha": 1,
+        "verification.tree_sha": 1,
+        "verification.expected_native_binary_versions": 1,
+        "verification.expected_native_binary_versions.p7zip": 1,
+        "verification.expected_native_binary_versions.p7zip-full": 1,
+        "verification.produced_package_count": 1,
+        "verification.packages": 1,
+        "verification.missing_expected_packages": 1,
+        "verification.x86_payloads": 1,
+        "verification.non_aarch64_elfs": 1,
+        "verification.build_lock": 1,
+        "verification.build_lock.schema": 1,
+        "verification.build_lock.source": 1,
+        "verification.build_lock.source_version": 1,
+        "verification.build_lock.repository": 1,
+        "verification.build_lock.commit_sha": 1,
+        "verification.build_lock.tree_sha": 1,
+        "verification.build_lock.source_archive_sha256": 1,
+        "verification.build_lock.bootstrap_image": 1,
+        "verification.build_lock.target_architecture": 1,
+        "verification.build_lock.debian_snapshot": 1,
+        "verification.build_lock.build_mode": 1,
+        "verification.build_lock.expected_binary_packages": 1,
+        "verification.build_lock.produced_binary_packages": 1,
+        "verification.source_lock_evidence": 1,
+        "verification.source_lock_evidence.schema": 1,
+        "verification.source_lock_evidence.source": 1,
+        "verification.source_lock_evidence.source_version": 1,
+        "verification.source_lock_evidence.repository": 1,
+        "verification.source_lock_evidence.commit_sha": 1,
+        "verification.source_lock_evidence.tree_sha": 1,
+        "verification.source_lock_evidence.verified_commit_sha": 1,
+        "verification.source_lock_evidence.verified_tree_sha": 1,
+        "verification.source_lock_evidence.deterministic_source_archive_sha256": 1,
+        "verification.warnings": 1,
+        "verification.errors": 1,
+        "verification.passed": 1
+      },
+      "top_keys": [
+        "actions_run_id",
+        "actions_run_url",
+        "artifact_name",
+        "commit_sha",
+        "passed",
+        "provenance",
+        "repository_full_name",
+        "schema",
+        "source",
+        "source_version",
+        "tree_sha",
+        "verification"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "provenance": {
+          "type": "str"
+        },
+        "repository_full_name": {
+          "type": "str"
+        },
+        "commit_sha": {
+          "type": "str"
+        },
+        "tree_sha": {
           "type": "str"
         },
         "actions_run_id": {
           "type": "str"
         },
         "actions_run_url": {
+          "type": "str"
+        },
+        "artifact_name": {
+          "type": "str"
+        },
+        "passed": {
+          "type": "bool"
+        },
+        "verification": {
+          "type": "dict",
+          "keys": [
+            "build_lock",
+            "commit_sha",
+            "errors",
+            "expected_native_binary_versions",
+            "missing_expected_packages",
+            "non_aarch64_elfs",
+            "packages",
+            "passed",
+            "policy",
+            "produced_package_count",
+            "repository_full_name",
+            "schema",
+            "source",
+            "source_lock_evidence",
+            "source_version",
+            "tree_sha",
+            "warnings",
+            "x86_payloads"
+          ]
+        }
+      }
+    },
+    {
+      "path": "rebuild-results/p7zip/16.02+dfsg-8+grm3u1/source-lock-evidence.json",
+      "size": 478,
+      "sha256": "1936a68dd76397bc047aecf4975599d7cfd2659505ca6e69d44b44b5121aeaee",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "source": 1,
+        "source_version": 1,
+        "repository": 1,
+        "commit_sha": 1,
+        "tree_sha": 1,
+        "verified_commit_sha": 1,
+        "verified_tree_sha": 1,
+        "deterministic_source_archive_sha256": 1
+      },
+      "top_keys": [
+        "commit_sha",
+        "deterministic_source_archive_sha256",
+        "repository",
+        "schema",
+        "source",
+        "source_version",
+        "tree_sha",
+        "verified_commit_sha",
+        "verified_tree_sha"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "repository": {
+          "type": "str"
+        },
+        "commit_sha": {
+          "type": "str"
+        },
+        "tree_sha": {
+          "type": "str"
+        },
+        "verified_commit_sha": {
+          "type": "str"
+        },
+        "verified_tree_sha": {
+          "type": "str"
+        },
+        "deterministic_source_archive_sha256": {
+          "type": "str"
+        }
+      }
+    },
+    {
+      "path": "rebuild-results/p7zip/16.02+dfsg-8+grm3u1/verification.json",
+      "size": 4301,
+      "sha256": "7441b306d9e66186086b6b9e714d34de25f720333f6173cd87f7a90e800c61d4",
+      "top_type": "dict",
+      "key_frequency": {
+        "packages[].filename": 4,
+        "packages[].sha256": 4,
+        "packages[].size": 4,
+        "packages[].package": 4,
+        "packages[].version": 4,
+        "packages[].architecture": 4,
+        "packages[].source_field": 4,
+        "packages[].parsed_source": 4,
+        "packages[].parsed_source_version": 4,
+        "packages[].expected_from_iso": 4,
+        "packages[].payload_entry_count": 4,
+        "packages[].elf_machine_counts": 4,
+        "packages[].elf_machine_counts.aarch64": 4,
+        "packages[].x86_payloads": 4,
+        "packages[].non_aarch64_elfs": 4,
+        "schema": 1,
+        "policy": 1,
+        "source": 1,
+        "source_version": 1,
+        "repository_full_name": 1,
+        "commit_sha": 1,
+        "tree_sha": 1,
+        "expected_native_binary_versions": 1,
+        "expected_native_binary_versions.p7zip": 1,
+        "expected_native_binary_versions.p7zip-full": 1,
+        "produced_package_count": 1,
+        "packages": 1,
+        "missing_expected_packages": 1,
+        "x86_payloads": 1,
+        "non_aarch64_elfs": 1,
+        "build_lock": 1,
+        "build_lock.schema": 1,
+        "build_lock.source": 1,
+        "build_lock.source_version": 1,
+        "build_lock.repository": 1,
+        "build_lock.commit_sha": 1,
+        "build_lock.tree_sha": 1,
+        "build_lock.source_archive_sha256": 1,
+        "build_lock.bootstrap_image": 1,
+        "build_lock.target_architecture": 1,
+        "build_lock.debian_snapshot": 1,
+        "build_lock.build_mode": 1,
+        "build_lock.expected_binary_packages": 1,
+        "build_lock.produced_binary_packages": 1,
+        "source_lock_evidence": 1,
+        "source_lock_evidence.schema": 1,
+        "source_lock_evidence.source": 1,
+        "source_lock_evidence.source_version": 1,
+        "source_lock_evidence.repository": 1,
+        "source_lock_evidence.commit_sha": 1,
+        "source_lock_evidence.tree_sha": 1,
+        "source_lock_evidence.verified_commit_sha": 1,
+        "source_lock_evidence.verified_tree_sha": 1,
+        "source_lock_evidence.deterministic_source_archive_sha256": 1,
+        "warnings": 1,
+        "errors": 1,
+        "passed": 1
+      },
+      "top_keys": [
+        "build_lock",
+        "commit_sha",
+        "errors",
+        "expected_native_binary_versions",
+        "missing_expected_packages",
+        "non_aarch64_elfs",
+        "packages",
+        "passed",
+        "policy",
+        "produced_package_count",
+        "repository_full_name",
+        "schema",
+        "source",
+        "source_lock_evidence",
+        "source_version",
+        "tree_sha",
+        "warnings",
+        "x86_payloads"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
           "type": "str"
         },
         "source": {
@@ -43526,66 +43829,91 @@
         "tree_sha": {
           "type": "str"
         },
-        "required_native_packages": {
-          "type": "list",
-          "length": 2,
-          "first_item_type": "str"
+        "expected_native_binary_versions": {
+          "type": "dict",
+          "keys": [
+            "p7zip",
+            "p7zip-full"
+          ]
         },
-        "reused_all_packages": {
+        "produced_package_count": {
+          "type": "int"
+        },
+        "packages": {
+          "type": "list",
+          "length": 4,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "architecture",
+            "elf_machine_counts",
+            "expected_from_iso",
+            "filename",
+            "non_aarch64_elfs",
+            "package",
+            "parsed_source",
+            "parsed_source_version",
+            "payload_entry_count",
+            "sha256",
+            "size",
+            "source_field",
+            "version",
+            "x86_payloads"
+          ]
+        },
+        "missing_expected_packages": {
           "type": "list",
           "length": 0
         },
-        "build_outcome": {
-          "type": "str"
-        },
-        "build_exit_code": {
-          "type": "str"
-        },
-        "verify_outcome": {
-          "type": "str"
-        },
-        "passed": {
-          "type": "bool"
-        },
-        "retry_reason": {
-          "type": "str"
-        },
-        "dependency_repository_packages_sha256": {
-          "type": "NoneType"
-        },
-        "dependency_release_lock_sha256": {
-          "type": "NoneType"
-        },
-        "deb_artifacts": {
+        "x86_payloads": {
           "type": "list",
           "length": 0
         },
-        "verification_errors": {
-          "type": "list",
-          "length": 1,
-          "first_item_type": "str"
-        },
-        "verification_warnings": {
+        "non_aarch64_elfs": {
           "type": "list",
           "length": 0
         },
         "build_lock": {
-          "type": "NoneType"
+          "type": "dict",
+          "keys": [
+            "bootstrap_image",
+            "build_mode",
+            "commit_sha",
+            "debian_snapshot",
+            "expected_binary_packages",
+            "produced_binary_packages",
+            "repository",
+            "schema",
+            "source",
+            "source_archive_sha256",
+            "source_version",
+            "target_architecture",
+            "tree_sha"
+          ]
         },
         "source_lock_evidence": {
-          "type": "NoneType"
-        },
-        "diagnostics": {
-          "type": "list",
-          "length": 1,
-          "first_item_type": "dict",
-          "first_item_keys": [
-            "filename",
-            "sha256",
-            "size",
-            "tail",
-            "truncated"
+          "type": "dict",
+          "keys": [
+            "commit_sha",
+            "deterministic_source_archive_sha256",
+            "repository",
+            "schema",
+            "source",
+            "source_version",
+            "tree_sha",
+            "verified_commit_sha",
+            "verified_tree_sha"
           ]
+        },
+        "warnings": {
+          "type": "list",
+          "length": 0
+        },
+        "errors": {
+          "type": "list",
+          "length": 0
+        },
+        "passed": {
+          "type": "bool"
         }
       }
     },
@@ -52945,62 +53273,73 @@
     },
     {
       "path": "reference-source-index-recovery/latest/gooroom/attempts.json",
-      "size": 17439,
-      "sha256": "3b1e789b914ccbe813a55f4e4e1cd0d40936989e06c09c5e2388d0641b6a556d",
+      "size": 5021,
+      "sha256": "27033036beadc0adf8c2e017e7ad935274753838fd8202d707e059677c8d5232",
       "top_type": "list",
       "key_frequency": {
-        "[].url": 20,
-        "[].status": 20,
-        "[].error": 20,
-        "[].elapsed_seconds": 20,
-        "[].expected_size": 20,
-        "[].expected_sha256": 20,
-        "[].verification": 20
+        "[].url": 12,
+        "[].status": 12,
+        "[].error": 12,
+        "[].elapsed_seconds": 12,
+        "[].source": 12,
+        "[].expected_size": 12,
+        "[].expected_sha256": 12,
+        "[].verification": 12
       },
-      "length": 44,
+      "length": 12,
       "first_item_type": "dict",
       "first_item_keys": [
         "elapsed_seconds",
         "error",
         "expected_sha256",
         "expected_size",
+        "source",
         "status",
         "url",
         "verification"
       ]
     },
     {
-      "path": "reference-source-index-recovery/latest/gooroom/cdx-evidence.json",
-      "size": 2509,
-      "sha256": "403c2e79e39b25a73cb5a15a922112d2c799e79bf85b46079a4b027026d1aa2d",
+      "path": "reference-source-index-recovery/latest/gooroom/common-crawl-evidence.json",
+      "size": 29274,
+      "sha256": "d6313dc2b9b961ec48407d37d454b9ecdd7454ffeea508b652ce04b3e0fd42bb",
       "top_type": "list",
       "key_frequency": {
-        "[].url": 4,
-        "[].status": 4,
-        "[].elapsed_seconds": 4,
-        "[].snapshot_count": 4,
-        "[].original_url": 4,
-        "[].error": 3,
-        "[].final_url": 1,
-        "[].content_type": 1,
-        "[].size": 1,
-        "[].sha256": 1
+        "[].query_evidence[].url": 40,
+        "[].query_evidence[].status": 40,
+        "[].query_evidence[].error": 40,
+        "[].query_evidence[].elapsed_seconds": 40,
+        "[].query_evidence[].crawl": 40,
+        "[].query_evidence[].query_url": 40,
+        "[].query_evidence[].record_count": 40,
+        "[].schema": 2,
+        "[].original_url": 2,
+        "[].crawl_count": 2,
+        "[].record_count": 2,
+        "[].record_limit": 2,
+        "[].query_evidence": 2,
+        "[].range_evidence": 2,
+        "[].payload_candidate_count": 2,
+        "[].status": 2
       },
-      "length": 4,
+      "length": 2,
       "first_item_type": "dict",
       "first_item_keys": [
-        "elapsed_seconds",
-        "error",
+        "crawl_count",
         "original_url",
-        "snapshot_count",
-        "status",
-        "url"
+        "payload_candidate_count",
+        "query_evidence",
+        "range_evidence",
+        "record_count",
+        "record_limit",
+        "schema",
+        "status"
       ]
     },
     {
       "path": "reference-source-index-recovery/latest/gooroom/result.json",
-      "size": 1384,
-      "sha256": "cb7297c21567573142f841e35ac9070fe1b6b62d493904f2c4f7a8302b897a05",
+      "size": 1426,
+      "sha256": "85e3bb045d2956f36595632ec7bc01209cbe5b6357c29e52d939a1dcd1112139",
       "top_type": "dict",
       "key_frequency": {
         "schema": 1,
@@ -53034,13 +53373,14 @@
         "exact_target_stanza_count": 1,
         "exact_target_stanzas": 1,
         "attempt_count": 1,
-        "cdx_query_count": 1,
+        "wayback_cdx_query_count": 1,
+        "common_crawl_search_count": 1,
         "promotion_allowed": 1
       },
       "top_keys": [
         "attempt_count",
         "base_url",
-        "cdx_query_count",
+        "common_crawl_search_count",
         "exact_target_stanza_count",
         "exact_target_stanzas",
         "inrelease_path",
@@ -53052,7 +53392,8 @@
         "schema",
         "selected",
         "status",
-        "suite"
+        "suite",
+        "wayback_cdx_query_count"
       ],
       "fields": {
         "schema": {
@@ -53108,7 +53449,10 @@
         "attempt_count": {
           "type": "int"
         },
-        "cdx_query_count": {
+        "wayback_cdx_query_count": {
+          "type": "int"
+        },
+        "common_crawl_search_count": {
           "type": "int"
         },
         "promotion_allowed": {
@@ -53117,35 +53461,9 @@
       }
     },
     {
-      "path": "reference-source-index-recovery/latest/hancom/attempts.json",
-      "size": 12547,
-      "sha256": "078e5c1301745de877df9606f5959e09c8b30ce74a0e0c6324b5812b7b18801e",
-      "top_type": "list",
-      "key_frequency": {
-        "[].url": 20,
-        "[].status": 20,
-        "[].error": 20,
-        "[].elapsed_seconds": 20,
-        "[].expected_size": 20,
-        "[].expected_sha256": 20,
-        "[].verification": 20
-      },
-      "length": 32,
-      "first_item_type": "dict",
-      "first_item_keys": [
-        "elapsed_seconds",
-        "error",
-        "expected_sha256",
-        "expected_size",
-        "status",
-        "url",
-        "verification"
-      ]
-    },
-    {
-      "path": "reference-source-index-recovery/latest/hancom/cdx-evidence.json",
-      "size": 2481,
-      "sha256": "ccc56e17fa4618b0dff7f2de9f42fb00fe784444a013f7e33a3c35eabc58c9d1",
+      "path": "reference-source-index-recovery/latest/gooroom/wayback-cdx-evidence.json",
+      "size": 2527,
+      "sha256": "9bff08e68c2da6d89eb86347d2b863be6221d53d807861f69b3a361192e131f6",
       "top_type": "list",
       "key_frequency": {
         "[].url": 4,
@@ -53162,21 +53480,83 @@
       "length": 4,
       "first_item_type": "dict",
       "first_item_keys": [
-        "content_type",
         "elapsed_seconds",
-        "final_url",
+        "error",
         "original_url",
-        "sha256",
-        "size",
         "snapshot_count",
         "status",
         "url"
       ]
     },
     {
+      "path": "reference-source-index-recovery/latest/hancom/attempts.json",
+      "size": 4973,
+      "sha256": "ab1963d599000f92ee97e67f76544345d9118a8c39bfa722492319e694de2c7c",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 12,
+        "[].status": 12,
+        "[].error": 12,
+        "[].elapsed_seconds": 12,
+        "[].source": 12,
+        "[].expected_size": 12,
+        "[].expected_sha256": 12,
+        "[].verification": 12
+      },
+      "length": 12,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "elapsed_seconds",
+        "error",
+        "expected_sha256",
+        "expected_size",
+        "source",
+        "status",
+        "url",
+        "verification"
+      ]
+    },
+    {
+      "path": "reference-source-index-recovery/latest/hancom/common-crawl-evidence.json",
+      "size": 28869,
+      "sha256": "a66befc9c3309b6f0043c1efe60c3966241615d636a47ed9d09c12facbbfab33",
+      "top_type": "list",
+      "key_frequency": {
+        "[].query_evidence[].url": 40,
+        "[].query_evidence[].status": 40,
+        "[].query_evidence[].error": 40,
+        "[].query_evidence[].elapsed_seconds": 40,
+        "[].query_evidence[].crawl": 40,
+        "[].query_evidence[].query_url": 40,
+        "[].query_evidence[].record_count": 40,
+        "[].schema": 2,
+        "[].original_url": 2,
+        "[].crawl_count": 2,
+        "[].record_count": 2,
+        "[].record_limit": 2,
+        "[].query_evidence": 2,
+        "[].range_evidence": 2,
+        "[].payload_candidate_count": 2,
+        "[].status": 2
+      },
+      "length": 2,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "crawl_count",
+        "original_url",
+        "payload_candidate_count",
+        "query_evidence",
+        "range_evidence",
+        "record_count",
+        "record_limit",
+        "schema",
+        "status"
+      ]
+    },
+    {
       "path": "reference-source-index-recovery/latest/hancom/result.json",
-      "size": 1404,
-      "sha256": "03c606157ed678f45af73ba32359a879563a30e38b344fee61c6218104c02af8",
+      "size": 1446,
+      "sha256": "68597f924d51880b53da35680f650e163ba91b835f5fcdfe47821f00d26045b3",
       "top_type": "dict",
       "key_frequency": {
         "schema": 1,
@@ -53212,13 +53592,14 @@
         "exact_target_stanza_count": 1,
         "exact_target_stanzas": 1,
         "attempt_count": 1,
-        "cdx_query_count": 1,
+        "wayback_cdx_query_count": 1,
+        "common_crawl_search_count": 1,
         "promotion_allowed": 1
       },
       "top_keys": [
         "attempt_count",
         "base_url",
-        "cdx_query_count",
+        "common_crawl_search_count",
         "exact_target_stanza_count",
         "exact_target_stanzas",
         "inrelease_path",
@@ -53230,7 +53611,8 @@
         "schema",
         "selected",
         "status",
-        "suite"
+        "suite",
+        "wayback_cdx_query_count"
       ],
       "fields": {
         "schema": {
@@ -53288,7 +53670,10 @@
         "attempt_count": {
           "type": "int"
         },
-        "cdx_query_count": {
+        "wayback_cdx_query_count": {
+          "type": "int"
+        },
+        "common_crawl_search_count": {
           "type": "int"
         },
         "promotion_allowed": {
@@ -53297,9 +53682,37 @@
       }
     },
     {
+      "path": "reference-source-index-recovery/latest/hancom/wayback-cdx-evidence.json",
+      "size": 3242,
+      "sha256": "fb7d4dd3e02eecb605df01732740b4e8ed4be5dc6fda3432d0daf213ed141fba",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 4,
+        "[].status": 4,
+        "[].elapsed_seconds": 4,
+        "[].snapshot_count": 4,
+        "[].original_url": 4,
+        "[].final_url": 3,
+        "[].content_type": 3,
+        "[].size": 3,
+        "[].sha256": 3,
+        "[].error": 1
+      },
+      "length": 4,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "elapsed_seconds",
+        "error",
+        "original_url",
+        "snapshot_count",
+        "status",
+        "url"
+      ]
+    },
+    {
       "path": "reference-source-index-recovery/latest/summary.json",
-      "size": 4096,
-      "sha256": "928b1e4e429dd89cb37bfebf721be9f18e31eb1a1373175131a1094f25610982",
+      "size": 4225,
+      "sha256": "50b92e6593601e5eed3f045a9105214894ad0ea78d079a66f577b6a188a3030f",
       "top_type": "dict",
       "key_frequency": {
         "unresolved_targets[].source": 7,
@@ -53334,7 +53747,8 @@
         "repositories[].exact_target_stanza_count": 2,
         "repositories[].exact_target_stanzas": 2,
         "repositories[].attempt_count": 2,
-        "repositories[].cdx_query_count": 2,
+        "repositories[].wayback_cdx_query_count": 2,
+        "repositories[].common_crawl_search_count": 2,
         "repositories[].promotion_allowed": 2,
         "schema": 1,
         "generated_at": 1,
@@ -53398,7 +53812,7 @@
           "first_item_keys": [
             "attempt_count",
             "base_url",
-            "cdx_query_count",
+            "common_crawl_search_count",
             "exact_target_stanza_count",
             "exact_target_stanzas",
             "inrelease_path",
@@ -53410,7 +53824,8 @@
             "schema",
             "selected",
             "status",
-            "suite"
+            "suite",
+            "wayback_cdx_query_count"
           ]
         },
         "source_archive_recovery_allowed": {
@@ -53454,6 +53869,90 @@
       }
     },
     {
+      "path": "software-heritage-exact-source-archaeology/latest/app-summary.json",
+      "size": 2059,
+      "sha256": "c804700444d854f258c315ed79f5d3f8c821e76376f1d6d5dce35c3ca8617286",
+      "top_type": "dict",
+      "key_frequency": {
+        "targets[].source": 5,
+        "targets[].source_version": 5,
+        "targets[].status": 5,
+        "targets[].archived_origin_count": 5,
+        "targets[].unique_snapshot_head_count": 5,
+        "targets[].reachable_revision_count": 5,
+        "targets[].exact_candidate_count": 5,
+        "targets[].selected_revision": 5,
+        "targets[].selected_directory": 5,
+        "schema": 1,
+        "generated_at": 1,
+        "policy": 1,
+        "target_count": 1,
+        "archived_origin_target_count": 1,
+        "exact_revision_target_count": 1,
+        "unresolved_target_count": 1,
+        "targets": 1,
+        "source_tree_recovery_allowed": 1,
+        "promotion_allowed": 1
+      },
+      "top_keys": [
+        "archived_origin_target_count",
+        "exact_revision_target_count",
+        "generated_at",
+        "policy",
+        "promotion_allowed",
+        "schema",
+        "source_tree_recovery_allowed",
+        "target_count",
+        "targets",
+        "unresolved_target_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "generated_at": {
+          "type": "str"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "target_count": {
+          "type": "int"
+        },
+        "archived_origin_target_count": {
+          "type": "int"
+        },
+        "exact_revision_target_count": {
+          "type": "int"
+        },
+        "unresolved_target_count": {
+          "type": "int"
+        },
+        "targets": {
+          "type": "list",
+          "length": 5,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "archived_origin_count",
+            "exact_candidate_count",
+            "reachable_revision_count",
+            "selected_directory",
+            "selected_revision",
+            "source",
+            "source_version",
+            "status",
+            "unique_snapshot_head_count"
+          ]
+        },
+        "source_tree_recovery_allowed": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        }
+      }
+    },
+    {
       "path": "software-heritage-exact-source-archaeology/latest/gnome-flashback/changelog-attempts.json",
       "size": 3,
       "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
@@ -53471,8 +53970,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gnome-flashback/origin-visit-attempts.json",
-      "size": 3601,
-      "sha256": "3e775ecfd226c2ed3d784cd952e3f1eb75bb59eb1e7674493a61274eb5a36382",
+      "size": 3600,
+      "sha256": "4ea88906270a6a75ae7ba2a085ec779711dceb7ae0658e7c1ef269283bd954c2",
       "top_type": "list",
       "key_frequency": {
         "[].url": 11,
@@ -53500,8 +53999,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gnome-flashback/release-attempts.json",
-      "size": 56332,
-      "sha256": "206d21e67ab44ac9ab7120007aeb8f2ad6a0a0b08abc962f3d275f09be29cddc",
+      "size": 56338,
+      "sha256": "f2df515af2319d1facfeb3a8fbcb694c2fc9bd82a4a0a6f621649dd92775f293",
       "top_type": "list",
       "key_frequency": {
         "[].url": 20,
@@ -53663,8 +54162,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gnome-flashback/revision-log-attempts.json",
-      "size": 17803,
-      "sha256": "70654f80b63ea4d8f523fdcb0c4671caf01a005dbb424d5cde92412283da7678",
+      "size": 17802,
+      "sha256": "ab143377886bfa4dc28a3c65cd99dbe9d2139d03b647b8949a0bfa2005adc172",
       "top_type": "list",
       "key_frequency": {
         "[].url": 20,
@@ -53688,8 +54187,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gnome-flashback/snapshot-attempts.json",
-      "size": 4798,
-      "sha256": "73bdf6cc39f300e01ae3666bef766a9333bff1bf7f93e4714900db0dc212605b",
+      "size": 4795,
+      "sha256": "6889181c1dbaf162e087abd8d880e9a2fccf6eefed290c95c66b22766e242645",
       "top_type": "list",
       "key_frequency": {
         "[].url": 13,
@@ -53733,8 +54232,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gooroom-dockbarx-applet/origin-visit-attempts.json",
-      "size": 3919,
-      "sha256": "6da07e55eb199e7c21afd6834b20e5d75108afba19a000f872300881d033e726",
+      "size": 3917,
+      "sha256": "56d86685fe77c7147c6cdc821f77c269d86f24c20671f276c68e1b9289211fe5",
       "top_type": "list",
       "key_frequency": {
         "[].url": 12,
@@ -53916,8 +54415,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gooroom-guide/origin-visit-attempts.json",
-      "size": 3679,
-      "sha256": "ab76eae05bdc042bfdd9a14826f4a62febe9c86f6cdead5556692a380392385e",
+      "size": 3677,
+      "sha256": "eab3944b4f9c221e04243c04f2901e84efb3e86911f4911efdfa6b7a70ed87ed",
       "top_type": "list",
       "key_frequency": {
         "[].url": 12,
@@ -54104,7 +54603,7 @@
     {
       "path": "software-heritage-exact-source-archaeology/latest/gooroom-integration-applet/origin-visit-attempts.json",
       "size": 3991,
-      "sha256": "4b44aa86af9255f059d5d63a59cb8440966ca33a8aaae71982f137f170447a1e",
+      "sha256": "ba638a8e37b2e9eb6b692c12964277c1b839b6d3be498392a44c734dd9a84aa4",
       "top_type": "list",
       "key_frequency": {
         "[].url": 12,
@@ -54288,8 +54787,8 @@
     },
     {
       "path": "software-heritage-exact-source-archaeology/latest/gooroom-session-manager/origin-visit-attempts.json",
-      "size": 3919,
-      "sha256": "1f4f7f30f61e8d696e0642d556ef52a6cc49dd751b5136ceecb06c05c72920cd",
+      "size": 3917,
+      "sha256": "e45254762ae84ac7c8ce0f165a4ba29271a50c46b1eb0600ef861f3b15eac5e2",
       "top_type": "list",
       "key_frequency": {
         "[].url": 12,
@@ -54456,6 +54955,441 @@
       "length": 0
     },
     {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/changelog-attempts.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/inspected-revisions.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/origin-visit-attempts.json",
+      "size": 8382,
+      "sha256": "4322857b03b97b69db42d0e99e5d6e82727f6b8261f5206c79754972d195f05b",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 20,
+        "[].status": 20,
+        "[].elapsed_seconds": 20,
+        "[].origin": 20,
+        "[].error": 19,
+        "[].final_url": 1,
+        "[].content_type": 1,
+        "[].link": 1,
+        "[].size": 1
+      },
+      "length": 27,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "content_type",
+        "elapsed_seconds",
+        "final_url",
+        "link",
+        "origin",
+        "size",
+        "status",
+        "url"
+      ]
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/release-attempts.json",
+      "size": 650899,
+      "sha256": "bad01b2fc9eb95d4a9320a09d766e4ffa60685884597d84624aacdb18a50ada2",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 20,
+        "[].status": 20,
+        "[].final_url": 20,
+        "[].content_type": 20,
+        "[].link": 20,
+        "[].size": 20,
+        "[].elapsed_seconds": 20,
+        "[].origin": 20,
+        "[].snapshot": 20
+      },
+      "length": 1960,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "content_type",
+        "elapsed_seconds",
+        "final_url",
+        "link",
+        "origin",
+        "size",
+        "snapshot",
+        "status",
+        "url"
+      ]
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/result.json",
+      "size": 6198,
+      "sha256": "7046502b18bcc7bed2ed3caba9dff64a14857c7fedd02968ed50ba7bb91b1357",
+      "top_type": "dict",
+      "key_frequency": {
+        "origins_checked[].origin": 14,
+        "origins_checked[].visit_count": 14,
+        "origins_checked[].full_snapshot_count": 14,
+        "origins_checked[].snapshots": 14,
+        "origins_checked[].snapshots[].visit": 13,
+        "origins_checked[].snapshots[].date": 13,
+        "origins_checked[].snapshots[].snapshot": 13,
+        "origins_checked[].snapshots[].branch_count": 13,
+        "origins_checked[].snapshots[].revision_branch_count": 13,
+        "origins_checked[].snapshots[].release_branch_count": 13,
+        "schema": 1,
+        "policy": 1,
+        "source": 1,
+        "source_version": 1,
+        "release_date": 1,
+        "change_prefixes": 1,
+        "origins_checked": 1,
+        "origin_count": 1,
+        "archived_origin_count": 1,
+        "unique_snapshot_head_count": 1,
+        "reachable_revision_count": 1,
+        "prefix_matches": 1,
+        "inspected_revision_count": 1,
+        "exact_candidate_count": 1,
+        "status": 1,
+        "selected": 1,
+        "exact_candidates": 1,
+        "promotion_allowed": 1
+      },
+      "top_keys": [
+        "archived_origin_count",
+        "change_prefixes",
+        "exact_candidate_count",
+        "exact_candidates",
+        "inspected_revision_count",
+        "origin_count",
+        "origins_checked",
+        "policy",
+        "prefix_matches",
+        "promotion_allowed",
+        "reachable_revision_count",
+        "release_date",
+        "schema",
+        "selected",
+        "source",
+        "source_version",
+        "status",
+        "unique_snapshot_head_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "release_date": {
+          "type": "str"
+        },
+        "change_prefixes": {
+          "type": "list",
+          "length": 0
+        },
+        "origins_checked": {
+          "type": "list",
+          "length": 14,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "full_snapshot_count",
+            "origin",
+            "snapshots",
+            "visit_count"
+          ]
+        },
+        "origin_count": {
+          "type": "int"
+        },
+        "archived_origin_count": {
+          "type": "int"
+        },
+        "unique_snapshot_head_count": {
+          "type": "int"
+        },
+        "reachable_revision_count": {
+          "type": "int"
+        },
+        "prefix_matches": {
+          "type": "dict",
+          "keys": []
+        },
+        "inspected_revision_count": {
+          "type": "int"
+        },
+        "exact_candidate_count": {
+          "type": "int"
+        },
+        "status": {
+          "type": "str"
+        },
+        "selected": {
+          "type": "NoneType"
+        },
+        "exact_candidates": {
+          "type": "list",
+          "length": 0
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/revision-log-attempts.json",
+      "size": 75494,
+      "sha256": "38fbd0a4bda5626d61e6e76c49f9a9d9f73e2f0cca511fc2cabf7fe681dc5955",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 20,
+        "[].status": 20,
+        "[].error": 20,
+        "[].elapsed_seconds": 20,
+        "[].head": 20,
+        "[].revision_count": 10,
+        "[].purpose": 10
+      },
+      "length": 246,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "elapsed_seconds",
+        "error",
+        "head",
+        "revision_count",
+        "status",
+        "url"
+      ]
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/linux/snapshot-attempts.json",
+      "size": 4719,
+      "sha256": "2830bc88555a243fba43da88fc8395618db54985a93bec1f4080e6c3da933bc7",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 14,
+        "[].status": 14,
+        "[].elapsed_seconds": 14,
+        "[].snapshot": 14,
+        "[].error": 12,
+        "[].final_url": 2,
+        "[].content_type": 2,
+        "[].link": 2,
+        "[].size": 2
+      },
+      "length": 14,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "content_type",
+        "elapsed_seconds",
+        "final_url",
+        "link",
+        "size",
+        "snapshot",
+        "status",
+        "url"
+      ]
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/changelog-attempts.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/inspected-revisions.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/origin-visit-attempts.json",
+      "size": 8634,
+      "sha256": "c310947e2b8848ee12129ec542cb713950b0bd157db38f657316966e306464ae",
+      "top_type": "list",
+      "key_frequency": {
+        "[].url": 20,
+        "[].status": 20,
+        "[].error": 20,
+        "[].elapsed_seconds": 20,
+        "[].origin": 20
+      },
+      "length": 28,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "elapsed_seconds",
+        "error",
+        "origin",
+        "status",
+        "url"
+      ]
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/release-attempts.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/result.json",
+      "size": 2811,
+      "sha256": "d984c67167952f99695dd724f7b860f11fe913fc2dc4525c887efb6788c4a9f4",
+      "top_type": "dict",
+      "key_frequency": {
+        "origins_checked[].origin": 14,
+        "origins_checked[].visit_count": 14,
+        "origins_checked[].full_snapshot_count": 14,
+        "origins_checked[].snapshots": 14,
+        "schema": 1,
+        "policy": 1,
+        "source": 1,
+        "source_version": 1,
+        "release_date": 1,
+        "change_prefixes": 1,
+        "origins_checked": 1,
+        "origin_count": 1,
+        "archived_origin_count": 1,
+        "unique_snapshot_head_count": 1,
+        "reachable_revision_count": 1,
+        "prefix_matches": 1,
+        "prefix_matches.b90b36aa": 1,
+        "inspected_revision_count": 1,
+        "exact_candidate_count": 1,
+        "status": 1,
+        "selected": 1,
+        "exact_candidates": 1,
+        "promotion_allowed": 1
+      },
+      "top_keys": [
+        "archived_origin_count",
+        "change_prefixes",
+        "exact_candidate_count",
+        "exact_candidates",
+        "inspected_revision_count",
+        "origin_count",
+        "origins_checked",
+        "policy",
+        "prefix_matches",
+        "promotion_allowed",
+        "reachable_revision_count",
+        "release_date",
+        "schema",
+        "selected",
+        "source",
+        "source_version",
+        "status",
+        "unique_snapshot_head_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "release_date": {
+          "type": "str"
+        },
+        "change_prefixes": {
+          "type": "list",
+          "length": 1,
+          "first_item_type": "str"
+        },
+        "origins_checked": {
+          "type": "list",
+          "length": 14,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "full_snapshot_count",
+            "origin",
+            "snapshots",
+            "visit_count"
+          ]
+        },
+        "origin_count": {
+          "type": "int"
+        },
+        "archived_origin_count": {
+          "type": "int"
+        },
+        "unique_snapshot_head_count": {
+          "type": "int"
+        },
+        "reachable_revision_count": {
+          "type": "int"
+        },
+        "prefix_matches": {
+          "type": "dict",
+          "keys": [
+            "b90b36aa"
+          ]
+        },
+        "inspected_revision_count": {
+          "type": "int"
+        },
+        "exact_candidate_count": {
+          "type": "int"
+        },
+        "status": {
+          "type": "str"
+        },
+        "selected": {
+          "type": "NoneType"
+        },
+        "exact_candidates": {
+          "type": "list",
+          "length": 0
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/revision-log-attempts.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/qtbase-opensource-src/snapshot-attempts.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "top_type": "list",
+      "key_frequency": {},
+      "length": 0
+    },
+    {
       "path": "software-heritage-exact-source-archaeology/latest/summary.json",
       "size": 2059,
       "sha256": "c9ef9afcf6c18e537d23babebcf2792552b84aef70e88b1ad9bb9803b9071149",
@@ -54536,6 +55470,143 @@
         },
         "promotion_allowed": {
           "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "software-heritage-exact-source-archaeology/latest/system-summary.json",
+      "size": 1022,
+      "sha256": "1d6c024347108e708199b1b18c1d1930a9aad0e036ce1d9d4025150e305254a0",
+      "top_type": "dict",
+      "key_frequency": {
+        "targets[].source": 2,
+        "targets[].source_version": 2,
+        "targets[].status": 2,
+        "targets[].archived_origin_count": 2,
+        "targets[].unique_snapshot_head_count": 2,
+        "targets[].reachable_revision_count": 2,
+        "targets[].exact_candidate_count": 2,
+        "targets[].selected_revision": 2,
+        "targets[].selected_directory": 2,
+        "schema": 1,
+        "generated_at": 1,
+        "policy": 1,
+        "target_count": 1,
+        "archived_origin_target_count": 1,
+        "exact_revision_target_count": 1,
+        "unresolved_target_count": 1,
+        "targets": 1,
+        "source_tree_recovery_allowed": 1,
+        "promotion_allowed": 1
+      },
+      "top_keys": [
+        "archived_origin_target_count",
+        "exact_revision_target_count",
+        "generated_at",
+        "policy",
+        "promotion_allowed",
+        "schema",
+        "source_tree_recovery_allowed",
+        "target_count",
+        "targets",
+        "unresolved_target_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "generated_at": {
+          "type": "str"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "target_count": {
+          "type": "int"
+        },
+        "archived_origin_target_count": {
+          "type": "int"
+        },
+        "exact_revision_target_count": {
+          "type": "int"
+        },
+        "unresolved_target_count": {
+          "type": "int"
+        },
+        "targets": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "archived_origin_count",
+            "exact_candidate_count",
+            "reachable_revision_count",
+            "selected_directory",
+            "selected_revision",
+            "source",
+            "source_version",
+            "status",
+            "unique_snapshot_head_count"
+          ]
+        },
+        "source_tree_recovery_allowed": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "software-heritage-source-tree-recovery/latest/summary.json",
+      "size": 217,
+      "sha256": "47da803f9a3c1f26f4bf60e8ba7b1d180da4fd2c08dfead05063cc74ef7ad21f",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "candidate_count": 1,
+        "recovered_count": 1,
+        "pending_count": 1,
+        "failed_count": 1,
+        "source_build_ready": 1,
+        "results": 1
+      },
+      "top_keys": [
+        "candidate_count",
+        "failed_count",
+        "pending_count",
+        "policy",
+        "recovered_count",
+        "results",
+        "schema",
+        "source_build_ready"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "candidate_count": {
+          "type": "int"
+        },
+        "recovered_count": {
+          "type": "int"
+        },
+        "pending_count": {
+          "type": "int"
+        },
+        "failed_count": {
+          "type": "int"
+        },
+        "source_build_ready": {
+          "type": "bool"
+        },
+        "results": {
+          "type": "list",
+          "length": 0
         }
       }
     },
@@ -59113,6 +60184,974 @@
             "size",
             "source_stanza_count"
           ]
+        }
+      }
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-dockbarx-applet/original-payload-manifest.json",
+      "size": 3524,
+      "sha256": "a1d88470a8d3e0489d629834ace321aec5210632d9bcaf0a08ddf65135de80b7",
+      "top_type": "list",
+      "key_frequency": {
+        "[].path": 20,
+        "[].type": 20,
+        "[].mode": 20,
+        "[].size": 20,
+        "[].sha256": 20,
+        "[].target": 20
+      },
+      "length": 20,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "mode",
+        "path",
+        "sha256",
+        "size",
+        "target",
+        "type"
+      ]
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-dockbarx-applet/result.json",
+      "size": 3006,
+      "sha256": "ddd4b2bac5e5d1aabc5319686f12e130d83be80f29ef7edf5894c07913101aed",
+      "top_type": "dict",
+      "key_frequency": {
+        "payload_scan.native_payloads[].path": 2,
+        "payload_scan.native_payloads[].kind": 2,
+        "payload_scan.native_payloads[].machine": 2,
+        "payload_scan.native_payloads[].size": 2,
+        "payload_scan.native_payloads[].sha256": 2,
+        "schema": 1,
+        "policy": 1,
+        "package": 1,
+        "version": 1,
+        "source": 1,
+        "source_version": 1,
+        "selected_deb": 1,
+        "selected_deb_size": 1,
+        "selected_deb_sha256": 1,
+        "control_fields": 1,
+        "control_fields.Package": 1,
+        "control_fields.Version": 1,
+        "control_fields.Architecture": 1,
+        "control_fields.Maintainer": 1,
+        "control_fields.Installed-Size": 1,
+        "control_fields.Depends": 1,
+        "control_fields.Section": 1,
+        "control_fields.Priority": 1,
+        "control_fields.Description": 1,
+        "parsed_source": 1,
+        "parsed_source_version": 1,
+        "payload_scan": 1,
+        "payload_scan.native_payloads": 1,
+        "payload_scan.native_looking_suffixes": 1,
+        "payload_scan.architecture_specific_paths": 1,
+        "payload_scan.executable_scripts": 1,
+        "payload_scan.executable_scripts[].path": 1,
+        "payload_scan.executable_scripts[].shebang": 1,
+        "payload_scan.python_files": 1,
+        "maintainer_script_audit": 1,
+        "maintainer_script_audit.scripts": 1,
+        "maintainer_script_audit.architecture_references": 1,
+        "python_verification": 1,
+        "python_verification.python_file_count": 1,
+        "python_verification.compiled_count": 1,
+        "python_verification.failures": 1,
+        "original_payload_manifest_sha256": 1,
+        "original_payload_entry_count": 1,
+        "repack_candidate": 1,
+        "blocker_reasons": 1,
+        "repacked": 1,
+        "promotion_allowed": 1,
+        "byte_identity_claimed_for_data_payload_only": 1,
+        "original_source_recovered": 1
+      },
+      "top_keys": [
+        "blocker_reasons",
+        "byte_identity_claimed_for_data_payload_only",
+        "control_fields",
+        "maintainer_script_audit",
+        "original_payload_entry_count",
+        "original_payload_manifest_sha256",
+        "original_source_recovered",
+        "package",
+        "parsed_source",
+        "parsed_source_version",
+        "payload_scan",
+        "policy",
+        "promotion_allowed",
+        "python_verification",
+        "repack_candidate",
+        "repacked",
+        "schema",
+        "selected_deb",
+        "selected_deb_sha256",
+        "selected_deb_size",
+        "source",
+        "source_version",
+        "version"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "package": {
+          "type": "str"
+        },
+        "version": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "selected_deb": {
+          "type": "str"
+        },
+        "selected_deb_size": {
+          "type": "int"
+        },
+        "selected_deb_sha256": {
+          "type": "str"
+        },
+        "control_fields": {
+          "type": "dict",
+          "keys": [
+            "Architecture",
+            "Depends",
+            "Description",
+            "Installed-Size",
+            "Maintainer",
+            "Package",
+            "Priority",
+            "Section",
+            "Version"
+          ]
+        },
+        "parsed_source": {
+          "type": "str"
+        },
+        "parsed_source_version": {
+          "type": "str"
+        },
+        "payload_scan": {
+          "type": "dict",
+          "keys": [
+            "architecture_specific_paths",
+            "executable_scripts",
+            "native_looking_suffixes",
+            "native_payloads",
+            "python_files"
+          ]
+        },
+        "maintainer_script_audit": {
+          "type": "dict",
+          "keys": [
+            "architecture_references",
+            "scripts"
+          ]
+        },
+        "python_verification": {
+          "type": "dict",
+          "keys": [
+            "compiled_count",
+            "failures",
+            "python_file_count"
+          ]
+        },
+        "original_payload_manifest_sha256": {
+          "type": "str"
+        },
+        "original_payload_entry_count": {
+          "type": "int"
+        },
+        "repack_candidate": {
+          "type": "bool"
+        },
+        "blocker_reasons": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "str"
+        },
+        "repacked": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        },
+        "byte_identity_claimed_for_data_payload_only": {
+          "type": "bool"
+        },
+        "original_source_recovered": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-guide/original-payload-manifest.json",
+      "size": 10222,
+      "sha256": "4190236bff8d4cec296a05a211105bcd5a1346e24cc4402456e304e65a5f0b59",
+      "top_type": "list",
+      "key_frequency": {
+        "[].path": 20,
+        "[].type": 20,
+        "[].mode": 20,
+        "[].size": 20,
+        "[].sha256": 20,
+        "[].target": 20
+      },
+      "length": 54,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "mode",
+        "path",
+        "sha256",
+        "size",
+        "target",
+        "type"
+      ]
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-guide/result.json",
+      "size": 2226,
+      "sha256": "e65decc9eea78db7c0e76b166a4c54c2581b9ed1fe7d371573b5069a45173cc7",
+      "top_type": "dict",
+      "key_frequency": {
+        "schema": 1,
+        "policy": 1,
+        "package": 1,
+        "version": 1,
+        "source": 1,
+        "source_version": 1,
+        "selected_deb": 1,
+        "selected_deb_size": 1,
+        "selected_deb_sha256": 1,
+        "control_fields": 1,
+        "control_fields.Package": 1,
+        "control_fields.Version": 1,
+        "control_fields.Architecture": 1,
+        "control_fields.Maintainer": 1,
+        "control_fields.Installed-Size": 1,
+        "control_fields.Depends": 1,
+        "control_fields.Section": 1,
+        "control_fields.Priority": 1,
+        "control_fields.Homepage": 1,
+        "control_fields.Description": 1,
+        "parsed_source": 1,
+        "parsed_source_version": 1,
+        "payload_scan": 1,
+        "payload_scan.native_payloads": 1,
+        "payload_scan.native_payloads[].path": 1,
+        "payload_scan.native_payloads[].kind": 1,
+        "payload_scan.native_payloads[].machine": 1,
+        "payload_scan.native_payloads[].size": 1,
+        "payload_scan.native_payloads[].sha256": 1,
+        "payload_scan.native_looking_suffixes": 1,
+        "payload_scan.architecture_specific_paths": 1,
+        "payload_scan.executable_scripts": 1,
+        "payload_scan.python_files": 1,
+        "maintainer_script_audit": 1,
+        "maintainer_script_audit.scripts": 1,
+        "maintainer_script_audit.scripts[].name": 1,
+        "maintainer_script_audit.scripts[].size": 1,
+        "maintainer_script_audit.scripts[].sha256": 1,
+        "maintainer_script_audit.scripts[].shebang": 1,
+        "maintainer_script_audit.architecture_references": 1,
+        "python_verification": 1,
+        "python_verification.python_file_count": 1,
+        "python_verification.compiled_count": 1,
+        "python_verification.failures": 1,
+        "original_payload_manifest_sha256": 1,
+        "original_payload_entry_count": 1,
+        "repack_candidate": 1,
+        "blocker_reasons": 1,
+        "repacked": 1,
+        "promotion_allowed": 1,
+        "byte_identity_claimed_for_data_payload_only": 1,
+        "original_source_recovered": 1
+      },
+      "top_keys": [
+        "blocker_reasons",
+        "byte_identity_claimed_for_data_payload_only",
+        "control_fields",
+        "maintainer_script_audit",
+        "original_payload_entry_count",
+        "original_payload_manifest_sha256",
+        "original_source_recovered",
+        "package",
+        "parsed_source",
+        "parsed_source_version",
+        "payload_scan",
+        "policy",
+        "promotion_allowed",
+        "python_verification",
+        "repack_candidate",
+        "repacked",
+        "schema",
+        "selected_deb",
+        "selected_deb_sha256",
+        "selected_deb_size",
+        "source",
+        "source_version",
+        "version"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "package": {
+          "type": "str"
+        },
+        "version": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "selected_deb": {
+          "type": "str"
+        },
+        "selected_deb_size": {
+          "type": "int"
+        },
+        "selected_deb_sha256": {
+          "type": "str"
+        },
+        "control_fields": {
+          "type": "dict",
+          "keys": [
+            "Architecture",
+            "Depends",
+            "Description",
+            "Homepage",
+            "Installed-Size",
+            "Maintainer",
+            "Package",
+            "Priority",
+            "Section",
+            "Version"
+          ]
+        },
+        "parsed_source": {
+          "type": "str"
+        },
+        "parsed_source_version": {
+          "type": "str"
+        },
+        "payload_scan": {
+          "type": "dict",
+          "keys": [
+            "architecture_specific_paths",
+            "executable_scripts",
+            "native_looking_suffixes",
+            "native_payloads",
+            "python_files"
+          ]
+        },
+        "maintainer_script_audit": {
+          "type": "dict",
+          "keys": [
+            "architecture_references",
+            "scripts"
+          ]
+        },
+        "python_verification": {
+          "type": "dict",
+          "keys": [
+            "compiled_count",
+            "failures",
+            "python_file_count"
+          ]
+        },
+        "original_payload_manifest_sha256": {
+          "type": "str"
+        },
+        "original_payload_entry_count": {
+          "type": "int"
+        },
+        "repack_candidate": {
+          "type": "bool"
+        },
+        "blocker_reasons": {
+          "type": "list",
+          "length": 1,
+          "first_item_type": "str"
+        },
+        "repacked": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        },
+        "byte_identity_claimed_for_data_payload_only": {
+          "type": "bool"
+        },
+        "original_source_recovered": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-integration-applet/original-payload-manifest.json",
+      "size": 13960,
+      "sha256": "517b6d91928395f8e5764ab2b7a230b2d674edd7aaa454196350ce66acd3f7a3",
+      "top_type": "list",
+      "key_frequency": {
+        "[].path": 20,
+        "[].type": 20,
+        "[].mode": 20,
+        "[].size": 20,
+        "[].sha256": 20,
+        "[].target": 20
+      },
+      "length": 67,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "mode",
+        "path",
+        "sha256",
+        "size",
+        "target",
+        "type"
+      ]
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-integration-applet/result.json",
+      "size": 3399,
+      "sha256": "4458f7630843040f89a1dad2576d5a8e4379674623410e0a4018cba349b22a25",
+      "top_type": "dict",
+      "key_frequency": {
+        "payload_scan.native_payloads[].path": 2,
+        "payload_scan.native_payloads[].kind": 2,
+        "payload_scan.native_payloads[].machine": 2,
+        "payload_scan.native_payloads[].size": 2,
+        "payload_scan.native_payloads[].sha256": 2,
+        "schema": 1,
+        "policy": 1,
+        "package": 1,
+        "version": 1,
+        "source": 1,
+        "source_version": 1,
+        "selected_deb": 1,
+        "selected_deb_size": 1,
+        "selected_deb_sha256": 1,
+        "control_fields": 1,
+        "control_fields.Package": 1,
+        "control_fields.Version": 1,
+        "control_fields.Architecture": 1,
+        "control_fields.Maintainer": 1,
+        "control_fields.Installed-Size": 1,
+        "control_fields.Depends": 1,
+        "control_fields.Section": 1,
+        "control_fields.Priority": 1,
+        "control_fields.Homepage": 1,
+        "control_fields.Description": 1,
+        "parsed_source": 1,
+        "parsed_source_version": 1,
+        "payload_scan": 1,
+        "payload_scan.native_payloads": 1,
+        "payload_scan.native_looking_suffixes": 1,
+        "payload_scan.architecture_specific_paths": 1,
+        "payload_scan.executable_scripts": 1,
+        "payload_scan.python_files": 1,
+        "maintainer_script_audit": 1,
+        "maintainer_script_audit.scripts": 1,
+        "maintainer_script_audit.architecture_references": 1,
+        "python_verification": 1,
+        "python_verification.python_file_count": 1,
+        "python_verification.compiled_count": 1,
+        "python_verification.failures": 1,
+        "original_payload_manifest_sha256": 1,
+        "original_payload_entry_count": 1,
+        "repack_candidate": 1,
+        "blocker_reasons": 1,
+        "repacked": 1,
+        "promotion_allowed": 1,
+        "byte_identity_claimed_for_data_payload_only": 1,
+        "original_source_recovered": 1
+      },
+      "top_keys": [
+        "blocker_reasons",
+        "byte_identity_claimed_for_data_payload_only",
+        "control_fields",
+        "maintainer_script_audit",
+        "original_payload_entry_count",
+        "original_payload_manifest_sha256",
+        "original_source_recovered",
+        "package",
+        "parsed_source",
+        "parsed_source_version",
+        "payload_scan",
+        "policy",
+        "promotion_allowed",
+        "python_verification",
+        "repack_candidate",
+        "repacked",
+        "schema",
+        "selected_deb",
+        "selected_deb_sha256",
+        "selected_deb_size",
+        "source",
+        "source_version",
+        "version"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "package": {
+          "type": "str"
+        },
+        "version": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "selected_deb": {
+          "type": "str"
+        },
+        "selected_deb_size": {
+          "type": "int"
+        },
+        "selected_deb_sha256": {
+          "type": "str"
+        },
+        "control_fields": {
+          "type": "dict",
+          "keys": [
+            "Architecture",
+            "Depends",
+            "Description",
+            "Homepage",
+            "Installed-Size",
+            "Maintainer",
+            "Package",
+            "Priority",
+            "Section",
+            "Version"
+          ]
+        },
+        "parsed_source": {
+          "type": "str"
+        },
+        "parsed_source_version": {
+          "type": "str"
+        },
+        "payload_scan": {
+          "type": "dict",
+          "keys": [
+            "architecture_specific_paths",
+            "executable_scripts",
+            "native_looking_suffixes",
+            "native_payloads",
+            "python_files"
+          ]
+        },
+        "maintainer_script_audit": {
+          "type": "dict",
+          "keys": [
+            "architecture_references",
+            "scripts"
+          ]
+        },
+        "python_verification": {
+          "type": "dict",
+          "keys": [
+            "compiled_count",
+            "failures",
+            "python_file_count"
+          ]
+        },
+        "original_payload_manifest_sha256": {
+          "type": "str"
+        },
+        "original_payload_entry_count": {
+          "type": "int"
+        },
+        "repack_candidate": {
+          "type": "bool"
+        },
+        "blocker_reasons": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "str"
+        },
+        "repacked": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        },
+        "byte_identity_claimed_for_data_payload_only": {
+          "type": "bool"
+        },
+        "original_source_recovered": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-session-manager/original-payload-manifest.json",
+      "size": 4480,
+      "sha256": "9baab8a2a469280ef2d707fa19c3eb35cb8db7983fea06fa60f3227431cca68b",
+      "top_type": "list",
+      "key_frequency": {
+        "[].path": 20,
+        "[].type": 20,
+        "[].mode": 20,
+        "[].size": 20,
+        "[].sha256": 20,
+        "[].target": 20
+      },
+      "length": 25,
+      "first_item_type": "dict",
+      "first_item_keys": [
+        "mode",
+        "path",
+        "sha256",
+        "size",
+        "target",
+        "type"
+      ]
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/gooroom-session-manager/result.json",
+      "size": 3564,
+      "sha256": "3d8d9ee924a39324c71270b5d7fc3e42e6ddd992b3eaa479f849a8f534237984",
+      "top_type": "dict",
+      "key_frequency": {
+        "payload_scan.native_payloads[].path": 4,
+        "payload_scan.native_payloads[].kind": 4,
+        "payload_scan.native_payloads[].machine": 4,
+        "payload_scan.native_payloads[].size": 4,
+        "payload_scan.native_payloads[].sha256": 4,
+        "schema": 1,
+        "policy": 1,
+        "package": 1,
+        "version": 1,
+        "source": 1,
+        "source_version": 1,
+        "selected_deb": 1,
+        "selected_deb_size": 1,
+        "selected_deb_sha256": 1,
+        "control_fields": 1,
+        "control_fields.Package": 1,
+        "control_fields.Version": 1,
+        "control_fields.Architecture": 1,
+        "control_fields.Maintainer": 1,
+        "control_fields.Installed-Size": 1,
+        "control_fields.Depends": 1,
+        "control_fields.Section": 1,
+        "control_fields.Priority": 1,
+        "control_fields.Description": 1,
+        "parsed_source": 1,
+        "parsed_source_version": 1,
+        "payload_scan": 1,
+        "payload_scan.native_payloads": 1,
+        "payload_scan.native_looking_suffixes": 1,
+        "payload_scan.architecture_specific_paths": 1,
+        "payload_scan.executable_scripts": 1,
+        "payload_scan.executable_scripts[].path": 1,
+        "payload_scan.executable_scripts[].shebang": 1,
+        "payload_scan.python_files": 1,
+        "maintainer_script_audit": 1,
+        "maintainer_script_audit.scripts": 1,
+        "maintainer_script_audit.architecture_references": 1,
+        "python_verification": 1,
+        "python_verification.python_file_count": 1,
+        "python_verification.compiled_count": 1,
+        "python_verification.failures": 1,
+        "original_payload_manifest_sha256": 1,
+        "original_payload_entry_count": 1,
+        "repack_candidate": 1,
+        "blocker_reasons": 1,
+        "repacked": 1,
+        "promotion_allowed": 1,
+        "byte_identity_claimed_for_data_payload_only": 1,
+        "original_source_recovered": 1
+      },
+      "top_keys": [
+        "blocker_reasons",
+        "byte_identity_claimed_for_data_payload_only",
+        "control_fields",
+        "maintainer_script_audit",
+        "original_payload_entry_count",
+        "original_payload_manifest_sha256",
+        "original_source_recovered",
+        "package",
+        "parsed_source",
+        "parsed_source_version",
+        "payload_scan",
+        "policy",
+        "promotion_allowed",
+        "python_verification",
+        "repack_candidate",
+        "repacked",
+        "schema",
+        "selected_deb",
+        "selected_deb_sha256",
+        "selected_deb_size",
+        "source",
+        "source_version",
+        "version"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "package": {
+          "type": "str"
+        },
+        "version": {
+          "type": "str"
+        },
+        "source": {
+          "type": "str"
+        },
+        "source_version": {
+          "type": "str"
+        },
+        "selected_deb": {
+          "type": "str"
+        },
+        "selected_deb_size": {
+          "type": "int"
+        },
+        "selected_deb_sha256": {
+          "type": "str"
+        },
+        "control_fields": {
+          "type": "dict",
+          "keys": [
+            "Architecture",
+            "Depends",
+            "Description",
+            "Installed-Size",
+            "Maintainer",
+            "Package",
+            "Priority",
+            "Section",
+            "Version"
+          ]
+        },
+        "parsed_source": {
+          "type": "str"
+        },
+        "parsed_source_version": {
+          "type": "str"
+        },
+        "payload_scan": {
+          "type": "dict",
+          "keys": [
+            "architecture_specific_paths",
+            "executable_scripts",
+            "native_looking_suffixes",
+            "native_payloads",
+            "python_files"
+          ]
+        },
+        "maintainer_script_audit": {
+          "type": "dict",
+          "keys": [
+            "architecture_references",
+            "scripts"
+          ]
+        },
+        "python_verification": {
+          "type": "dict",
+          "keys": [
+            "compiled_count",
+            "failures",
+            "python_file_count"
+          ]
+        },
+        "original_payload_manifest_sha256": {
+          "type": "str"
+        },
+        "original_payload_entry_count": {
+          "type": "int"
+        },
+        "repack_candidate": {
+          "type": "bool"
+        },
+        "blocker_reasons": {
+          "type": "list",
+          "length": 2,
+          "first_item_type": "str"
+        },
+        "repacked": {
+          "type": "bool"
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        },
+        "byte_identity_claimed_for_data_payload_only": {
+          "type": "bool"
+        },
+        "original_source_recovered": {
+          "type": "bool"
+        }
+      }
+    },
+    {
+      "path": "vendor-app-payload-neutrality/latest/summary.json",
+      "size": 14014,
+      "sha256": "e6d81ea59651cae7b78ba492dada2efca84f52e8f48881a932cee24ab24e13a0",
+      "top_type": "dict",
+      "key_frequency": {
+        "results[].schema": 4,
+        "results[].policy": 4,
+        "results[].package": 4,
+        "results[].version": 4,
+        "results[].source": 4,
+        "results[].source_version": 4,
+        "results[].selected_deb": 4,
+        "results[].selected_deb_size": 4,
+        "results[].selected_deb_sha256": 4,
+        "results[].control_fields": 4,
+        "results[].control_fields.Package": 4,
+        "results[].control_fields.Version": 4,
+        "results[].control_fields.Architecture": 4,
+        "results[].control_fields.Maintainer": 4,
+        "results[].control_fields.Installed-Size": 4,
+        "results[].control_fields.Depends": 4,
+        "results[].control_fields.Section": 4,
+        "results[].control_fields.Priority": 4,
+        "results[].control_fields.Description": 4,
+        "results[].parsed_source": 4,
+        "results[].parsed_source_version": 4,
+        "results[].payload_scan": 4,
+        "results[].payload_scan.native_payloads": 4,
+        "results[].payload_scan.native_looking_suffixes": 4,
+        "results[].payload_scan.architecture_specific_paths": 4,
+        "results[].payload_scan.executable_scripts": 4,
+        "results[].payload_scan.python_files": 4,
+        "results[].maintainer_script_audit": 4,
+        "results[].maintainer_script_audit.scripts": 4,
+        "results[].maintainer_script_audit.architecture_references": 4,
+        "results[].python_verification": 4,
+        "results[].python_verification.python_file_count": 4,
+        "results[].python_verification.compiled_count": 4,
+        "results[].python_verification.failures": 4,
+        "results[].original_payload_manifest_sha256": 4,
+        "results[].original_payload_entry_count": 4,
+        "results[].repack_candidate": 4,
+        "results[].blocker_reasons": 4,
+        "results[].repacked": 4,
+        "results[].promotion_allowed": 4,
+        "results[].byte_identity_claimed_for_data_payload_only": 4,
+        "results[].original_source_recovered": 4,
+        "results[].control_fields.Homepage": 2,
+        "schema": 1,
+        "policy": 1,
+        "target_count": 1,
+        "exact_deb_selected_count": 1,
+        "repack_candidate_count": 1,
+        "native_source_required_count": 1,
+        "candidate_packages": 1,
+        "native_source_required_packages": 1,
+        "results": 1,
+        "promotion_allowed": 1,
+        "next_gate": 1
+      },
+      "top_keys": [
+        "candidate_packages",
+        "exact_deb_selected_count",
+        "native_source_required_count",
+        "native_source_required_packages",
+        "next_gate",
+        "policy",
+        "promotion_allowed",
+        "repack_candidate_count",
+        "results",
+        "schema",
+        "target_count"
+      ],
+      "fields": {
+        "schema": {
+          "type": "int"
+        },
+        "policy": {
+          "type": "str"
+        },
+        "target_count": {
+          "type": "int"
+        },
+        "exact_deb_selected_count": {
+          "type": "int"
+        },
+        "repack_candidate_count": {
+          "type": "int"
+        },
+        "native_source_required_count": {
+          "type": "int"
+        },
+        "candidate_packages": {
+          "type": "list",
+          "length": 0
+        },
+        "native_source_required_packages": {
+          "type": "list",
+          "length": 4,
+          "first_item_type": "str"
+        },
+        "results": {
+          "type": "list",
+          "length": 4,
+          "first_item_type": "dict",
+          "first_item_keys": [
+            "blocker_reasons",
+            "byte_identity_claimed_for_data_payload_only",
+            "control_fields",
+            "maintainer_script_audit",
+            "original_payload_entry_count",
+            "original_payload_manifest_sha256",
+            "original_source_recovered",
+            "package",
+            "parsed_source",
+            "parsed_source_version",
+            "payload_scan",
+            "policy",
+            "promotion_allowed",
+            "python_verification",
+            "repack_candidate",
+            "repacked",
+            "schema",
+            "selected_deb",
+            "selected_deb_sha256",
+            "selected_deb_size",
+            "source",
+            "source_version",
+            "version"
+          ]
+        },
+        "promotion_allowed": {
+          "type": "bool"
+        },
+        "next_gate": {
+          "type": "str"
         }
       }
     },
