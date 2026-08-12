@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 185,
     "workflow_name_count": 185,
-    "referenced_local_file_count": 290,
+    "referenced_local_file_count": 292,
     "error_count": 0,
     "warning_count": 39,
     "passed": true
@@ -435,7 +435,9 @@
         "arm64/locks/build-dependency-repository-v2/artifact-lock.json",
         "arm64/locks/rebuild-result-index-v2/verified-binary-packages.json",
         "arm64/locks/vendor-binaries/vendor-binary-lock.json",
-        "arm64/scripts/materialize_build_dependency_repo_v2.py"
+        "arm64/scripts/materialize_build_dependency_repo_v2.py",
+        "arm64/scripts/resolve_rebuild_artifact_names.py",
+        "arm64/scripts/test_resolve_rebuild_artifact_names.py"
       ]
     },
     {
@@ -4517,6 +4519,9 @@
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/scripts/resolve_rebuild_artifact_names.py": [
+      ".github/workflows/arm64-build-dependency-repository-v2.yml"
+    ],
     "arm64/scripts/resolve_source_apt.py": [
       ".github/workflows/arm64-linux-apt-source-lock.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
@@ -4716,6 +4721,9 @@
     ],
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
+    ],
+    "arm64/scripts/test_resolve_rebuild_artifact_names.py": [
+      ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
     "arm64/scripts/test_run_rate_limited_swh_archaeology.py": [
       ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
