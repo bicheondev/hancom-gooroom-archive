@@ -76,7 +76,7 @@ jobs:
             .schema == 1
             and .group_count > 0
             and .rewritten_group_count >= 0
-            and .policy == "exact-or-unique-source-qualified-suffix-artifact-resolution"
+            and .policy == "exact-or-unique-source-qualified-artifact-resolution"
           ' work/build-dependency-evidence/artifact-name-resolution.json >/dev/null
           set +e
           python3 arm64/scripts/materialize_build_dependency_repo_v2.py \
