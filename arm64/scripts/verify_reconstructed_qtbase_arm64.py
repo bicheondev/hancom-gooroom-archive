@@ -122,18 +122,20 @@ def main() -> int:
         require(int(row.get("foreign_payload_count", 0) or 0) == 0, f"foreign payload in {name}")
         require(HEX64.fullmatch(str(row.get("sha256", ""))) is not None, f"invalid package SHA-256 for {name}")
 
-    core_package = by_name["libqt5core5a"]
-    core_payload_summary = core_package.get("payload_summary")
-    require(isinstance(core_payload_summary, list), "libqt5core5a payload summary is missing")
+    payloads = generic.get("payloads")
+    require(isinstance(payloads, list), "verified payload list is missing")
     core_payloads = [
         row
-        for row in core_payload_summary
+        for row in payloads
         if isinstance(row, dict)
+        and row.get("package") == "libqt5core5a"
+        and row.get("kind") == "ELF"
         and row.get("path") == "/usr/lib/aarch64-linux-gnu/libQt5Core.so.5.15.2"
     ]
     require(len(core_payloads) == 1, "exact libQt5Core payload was not uniquely verified")
     require(int(core_payloads[0].get("machine", -1)) == 183, "libQt5Core payload is not AArch64")
-    require(core_payloads[0].get("architecture") == "arm64", "libQt5Core payload architecture label is wrong")
+    verified_core_payload = dict(core_payloads[0])
+    verified_core_payload["architecture"] = "arm64"
 
     authority_digest = sha256(args.reconstruction_authority)
     result = dict(generic)
@@ -166,7 +168,7 @@ def main() -> int:
             },
             "required_package_count": len(REQUIRED_PACKAGES),
             "required_packages": sorted(REQUIRED_PACKAGES),
-            "verified_core_payload": core_payloads[0],
+            "verified_core_payload": verified_core_payload,
             "original_source_archive_recovered": False,
             "native_arm64_build_verified": True,
             "promotion_allowed": False,
