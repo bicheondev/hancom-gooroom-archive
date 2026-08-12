@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 185,
-    "workflow_name_count": 185,
+    "workflow_count": 184,
+    "workflow_name_count": 184,
     "referenced_local_file_count": 286,
     "error_count": 0,
     "warning_count": 39,
@@ -2868,22 +2868,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-recovered-source-builder.yml",
-      "path": ".github/workflows/arm64-repair-recovered-source-builder.yml",
-      "name": "ARM64 port - repair recovered source builder",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/build_recovered_source_archive_arm64.sh"
-      ]
-    },
-    {
       "filename": "arm64-repair-wave2-v2-definition.yml",
       "path": ".github/workflows/arm64-repair-wave2-v2-definition.yml",
       "name": "ARM64 port - repair wave 2 v2 workflow definition",
@@ -4212,8 +4196,7 @@
     ],
     "arm64/scripts/build_recovered_source_archive_arm64.sh": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
-      ".github/workflows/arm64-build-recovered-reference-sources.yml",
-      ".github/workflows/arm64-repair-recovered-source-builder.yml"
+      ".github/workflows/arm64-build-recovered-reference-sources.yml"
     ],
     "arm64/scripts/build_recovery_stage0_v1.sh": [
       ".github/workflows/arm64-recovery-stage0-v1.yml"
