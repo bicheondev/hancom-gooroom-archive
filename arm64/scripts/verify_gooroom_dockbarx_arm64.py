@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,8 @@ from typing import Any
 SOURCE = "gooroom-dockbarx-applet"
 VERSION = "0.3.1+grm3u1+han3u1"
 MULTIARCH = "aarch64-linux-gnu"
+AARCH64_LOADER = "ld-linux-aarch64.so.1"
+AARCH64_INTERPRETER = f"/lib/{AARCH64_LOADER}"
 ELF_MAGIC = b"\x7fELF"
 EXPECTED_MAIN_FILES = {
     f"usr/lib/{MULTIARCH}/gnome-panel/modules/gooroom-update-launchers-helper",
@@ -44,19 +47,22 @@ CHANGELOG_DECOMPRESSED_SHA256 = (
 )
 EXPECTED_ELF_RUNTIME = {
     f"usr/lib/{MULTIARCH}/gnome-panel/modules/gooroom-update-launchers-helper": {
-        "type_contains": "Position-Independent Executable",
+        "kind": "pie",
+        "interpreter": AARCH64_INTERPRETER,
         "needed": [
             "libjson-c.so.5",
             "libgio-2.0.so.0",
             "libgobject-2.0.so.0",
             "libglib-2.0.so.0",
             "libc.so.6",
+            AARCH64_LOADER,
         ],
         "soname": [],
         "required_exports": [],
     },
     f"usr/lib/{MULTIARCH}/gnome-panel/modules/libgooroom-dockbarx-applet.so": {
-        "type_contains": "shared object",
+        "kind": "shared-object",
+        "interpreter": None,
         "needed": [
             "libgnome-panel.so.0",
             "libgtk-3.so.0",
@@ -65,6 +71,7 @@ EXPECTED_ELF_RUNTIME = {
             "libgobject-2.0.so.0",
             "libglib-2.0.so.0",
             "libc.so.6",
+            AARCH64_LOADER,
         ],
         "soname": ["libgooroom-dockbarx-applet.so"],
         "required_exports": [
@@ -104,6 +111,13 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def is_elf(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    with path.open("rb") as stream:
+        return stream.read(4) == ELF_MAGIC
+
+
 def deb_field(deb: Path, field: str) -> str:
     completed = subprocess.run(
         ["dpkg-deb", "-f", str(deb), field],
@@ -121,12 +135,32 @@ def parse_source(value: str, package: str) -> str:
     return package.removesuffix("-dbgsym")
 
 
-def elf_machine(path: Path) -> str:
+def elf_header(path: Path) -> dict[str, str]:
+    result = {"machine": "", "type": "", "type_detail": ""}
     for line in run(["readelf", "-hW", str(path)]).splitlines():
-        match = re.match(r"\s*Machine:\s*(.*)$", line)
-        if match:
-            return match.group(1).strip()
-    return ""
+        machine = re.match(r"\s*Machine:\s*(.*)$", line)
+        if machine:
+            result["machine"] = machine.group(1).strip()
+            continue
+        elf_type = re.match(r"\s*Type:\s*(\S+)(?:\s+\((.*)\))?\s*$", line)
+        if elf_type:
+            result["type"] = elf_type.group(1).strip()
+            result["type_detail"] = (elf_type.group(2) or "").strip()
+    return result
+
+
+def elf_interpreter(path: Path) -> str | None:
+    output = run(["readelf", "-lW", str(path)])
+    match = re.search(r"Requesting program interpreter:\s*([^]]+)\]", output)
+    return match.group(1).strip() if match else None
+
+
+def elf_kind(header: dict[str, str], interpreter: str | None) -> str:
+    if header["type"] == "DYN" and interpreter:
+        return "pie"
+    if header["type"] == "DYN":
+        return "shared-object"
+    return header["type"].lower()
 
 
 def dynamic_identity(path: Path) -> dict[str, list[str]]:
@@ -169,6 +203,7 @@ def main() -> int:
     deb_dir = args.deb_dir.resolve()
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(output / "extracted", ignore_errors=True)
 
     errors: list[str] = []
     debs: list[dict[str, Any]] = []
@@ -211,27 +246,31 @@ def main() -> int:
         )
 
         for path in sorted(root.rglob("*")):
-            if not path.is_file() or path.read_bytes()[:4] != ELF_MAGIC:
+            if not is_elf(path):
                 continue
             relative = path.relative_to(root).as_posix()
             description = run(["file", "-b", str(path)])
-            machine = elf_machine(path)
+            header = elf_header(path)
             row = {
                 "package": package,
                 "path": relative,
                 "size": path.stat().st_size,
                 "sha256": sha256_file(path),
                 "file": description,
-                "machine": machine,
+                "machine": header["machine"],
+                "elf_type": header["type"],
+                "elf_type_detail": header["type_detail"],
             }
             elf_rows.append(row)
             if (
-                "AArch64" not in machine
+                header["machine"] != "AArch64"
                 or "x86-64" in description
                 or "Intel 80386" in description
             ):
                 wrong_architecture.append(row)
 
+    if len(debs) != 2:
+        errors.append(f"expected two DEB artifacts, found {len(debs)}")
     if len(main_roots) != 1:
         errors.append(f"expected one main package, found {len(main_roots)}")
     if len(debug_roots) != 1:
@@ -281,13 +320,24 @@ def main() -> int:
                 errors.append(f"required runtime ELF is missing: {relative}")
                 continue
             description = run(["file", "-b", str(path)])
+            header = elf_header(path)
+            interpreter = elf_interpreter(path)
+            kind = elf_kind(header, interpreter)
             dynamic = dynamic_identity(path)
             exports = exported_symbols(path)
             missing_exports = sorted(set(expectation["required_exports"]) - exports)
             row = {
                 "path": relative,
                 "description": description,
-                "machine": elf_machine(path),
+                "machine": header["machine"],
+                "elf_type": header["type"],
+                "elf_type_detail": header["type_detail"],
+                "kind": kind,
+                "expected_kind": expectation["kind"],
+                "kind_identical": kind == expectation["kind"],
+                "interpreter": interpreter,
+                "expected_interpreter": expectation["interpreter"],
+                "interpreter_identical": interpreter == expectation["interpreter"],
                 "needed": dynamic["needed"],
                 "expected_needed": expectation["needed"],
                 "needed_identical": dynamic["needed"] == expectation["needed"],
@@ -296,22 +346,22 @@ def main() -> int:
                 "soname_identical": dynamic["soname"] == expectation["soname"],
                 "required_exports": expectation["required_exports"],
                 "missing_exports": missing_exports,
-                "type_match": expectation["type_contains"].lower()
-                in description.lower(),
             }
             row["verified"] = (
                 row["machine"] == "AArch64"
+                and row["kind_identical"]
+                and row["interpreter_identical"]
                 and row["needed_identical"]
                 and row["soname_identical"]
                 and not missing_exports
-                and row["type_match"]
             )
             runtime_checks.append(row)
             if not row["verified"]:
                 errors.append(f"runtime ELF identity mismatch: {relative}")
 
     verified = (
-        len(main_roots) == 1
+        len(debs) == 2
+        and len(main_roots) == 1
         and len(debug_roots) == 1
         and len(elf_rows) >= 3
         and not wrong_architecture
