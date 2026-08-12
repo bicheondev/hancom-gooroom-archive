@@ -12,7 +12,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: hancom-gooroom-33-build-dependency-repository-v2
@@ -131,3 +131,20 @@ jobs:
           test '${{ steps.materialize.outputs.exit_code }}' = '0'
           jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' \
             work/build-dependency-evidence/summary.json
+
+      - name: Dispatch the final package repository merge explicitly
+        if: success() && steps.inputs.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if gh workflow run arm64-merge-final-package-repository-v2.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
