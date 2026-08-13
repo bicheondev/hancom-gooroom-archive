@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 189,
-    "workflow_name_count": 189,
+    "workflow_count": 190,
+    "workflow_name_count": 190,
     "referenced_local_file_count": 304,
     "error_count": 0,
     "warning_count": 40,
@@ -1231,6 +1231,18 @@
       "filename": "arm64-dispatch-browser-after-jq-fix.yml",
       "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
       "name": "ARM64 port - dispatch browser after composite jq fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-dispatch-gooroom-guide-reconstruction-v2.yml",
+      "path": ".github/workflows/arm64-dispatch-gooroom-guide-reconstruction-v2.yml",
+      "name": "ARM64 port - dispatch gooroom-guide reconstruction v2",
       "events": [
         "push",
         "workflow_dispatch"
