@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 187,
-    "workflow_name_count": 187,
+    "workflow_count": 188,
+    "workflow_name_count": 188,
     "referenced_local_file_count": 304,
     "error_count": 0,
     "warning_count": 40,
@@ -1191,6 +1191,24 @@
         "arm64/scripts/materialize_rebuild_dependency_repo_v2.py",
         "arm64/scripts/select_dependency_retry_wave.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-diagnose-gooroom-guide-amd64-elf.yml",
+      "path": ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
+      "name": "ARM64 port - diagnose gooroom-guide AMD64 ELF delta",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
+        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
     },
     {
@@ -4227,6 +4245,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
     "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh": [
+      ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
     "arm64/scripts/build_gooroom_resource_access_control_arm64_v1.sh": [
@@ -4538,6 +4557,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_guide_han3u1.py": [
+      ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
     "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py": [
