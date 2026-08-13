@@ -1,0 +1,153 @@
+name: ARM64 port - capture latest gooroom-guide AMD64 ELF diagnostic
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-capture-gooroom-guide-latest-elf.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-capture-guide-latest-elf
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-guide
+  VERSION: 0.5.3+grm3u1+han3u1
+  BASE_REPOSITORY: hancomgooroom/gooroom-guide
+  BASE_COMMIT: c788c29119d43bb97c554973f6dabbc41a9abe79
+  BASE_TREE: 0d4bb01b49c69e33208a47c0aff47545291ee646
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '3620004'
+  TARGET_SHA256: 80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact diagnostic revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install source, build, and ELF tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          bash -n arm64/scripts/build_gooroom_guide_han3u1_chroot.sh
+
+      - name: Download exact vendor package and reconstruct current source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/guide-latest-elf
+          rm -rf "$output"
+          mkdir -p "$output"/{vendor,authority,analysis,binaries,roots}
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$output/vendor"
+          mapfile -t targets < <(find "$output/vendor" -type f -name "$TARGET_FILENAME" -print)
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" "$output/target.deb"
+          test "$(stat -c '%s' "$output/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $output/target.deb" | sha256sum --check --strict -
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$output/source"
+          git -C "$output/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$output/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          python3 arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            --repository "$output/source" \
+            --target-deb "$output/target.deb" \
+            --output-dir "$output/authority"
+          (cd "$output/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+      - name: Build latest reconstructed AMD64 candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/guide-latest-elf
+          sudo bash arm64/scripts/build_gooroom_guide_han3u1_chroot.sh \
+            amd64 \
+            "$output/authority/reconstructed-source.tar.gz" \
+            "$output/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$output/amd64-build"
+          mapfile -t candidates < <(
+            for deb in "$output"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE" ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#candidates[@]}" -eq 1
+          cp "${candidates[0]}" "$output/candidate.deb"
+          mapfile -t debug_candidates < <(
+            for deb in "$output"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE-dbgsym" ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#debug_candidates[@]}" -eq 1
+          cp "${debug_candidates[0]}" "$output/candidate-dbgsym.deb"
+
+      - name: Extract binaries and emit structural diagnostics
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/guide-latest-elf
+          dpkg-deb -x "$output/target.deb" "$output/roots/target"
+          dpkg-deb -x "$output/candidate.deb" "$output/roots/candidate"
+          dpkg-deb -x "$output/candidate-dbgsym.deb" "$output/roots/candidate-dbgsym"
+          cp "$output/roots/target/usr/bin/gooroom-guide" "$output/binaries/gooroom-guide.target"
+          cp "$output/roots/candidate/usr/bin/gooroom-guide" "$output/binaries/gooroom-guide.candidate"
+          for side in target candidate; do
+            binary="$output/binaries/gooroom-guide.$side"
+            readelf -hW "$binary" > "$output/analysis/$side.readelf-header.txt"
+            readelf -SW "$binary" > "$output/analysis/$side.readelf-sections.txt"
+            readelf -sW "$binary" > "$output/analysis/$side.readelf-symbols.txt"
+            readelf -rW "$binary" > "$output/analysis/$side.readelf-relocations.txt"
+            readelf --debug-dump=frames-interp "$binary" > "$output/analysis/$side.frames.txt" || true
+            objdump -drwC "$binary" > "$output/analysis/$side.objdump-disassembly.txt"
+            objdump -s "$binary" > "$output/analysis/$side.objdump-full-contents.txt"
+            strings -a -t x "$binary" > "$output/analysis/$side.strings.txt"
+          done
+          diff -u "$output/analysis/target.readelf-sections.txt" "$output/analysis/candidate.readelf-sections.txt" \
+            > "$output/analysis/readelf-sections.diff" || true
+          diff -u "$output/analysis/target.objdump-disassembly.txt" "$output/analysis/candidate.objdump-disassembly.txt" \
+            > "$output/analysis/objdump-disassembly.diff" || true
+          diff -u "$output/analysis/target.strings.txt" "$output/analysis/candidate.strings.txt" \
+            > "$output/analysis/strings.diff" || true
+          sha256sum "$output"/*.deb "$output"/binaries/* > "$output/analysis/SHA256SUMS"
+          find "$output/roots/candidate-dbgsym" -type f -print -exec file {} \; \
+            > "$output/analysis/candidate-dbgsym-files.txt"
+          rm -rf "$output/vendor" "$output/source"
+
+      - name: Upload exact latest diagnostic payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-latest-amd64-elf-${{ github.run_id }}
+          path: work/guide-latest-elf
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
