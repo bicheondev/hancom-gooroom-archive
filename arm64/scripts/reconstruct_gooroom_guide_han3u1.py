@@ -50,9 +50,19 @@ PIXBUF_CALL_BLOCK = """  pixbuf = gdk_pixbuf_new_from_file (uri,error);
 """
 TARGET_PIXBUF_CALL_BLOCK = """  pixbuf = gdk_pixbuf_new_from_file (uri, &error);
 """
+LOAD_IMAGE_PRESENT_BLOCK = """  set_page_label(self);
+  guide_window_present(self);
+"""
+TARGET_LOAD_IMAGE_PRESENT_BLOCK = """  set_page_label(self);
+  g_object_unref (pixbuf);
+"""
+ACCEL_INIT_BLOCK = """  guide_window_accel_init (self, NULL);
+"""
+TARGET_ACCEL_INIT_BLOCK = """  guide_window_accel_init (GTK_WINDOW (self), NULL);
+"""
 WINDOW_MOVE_BLOCK = """  gtk_window_move (self,point.x ,point.y );
 """
-TARGET_WINDOW_MOVE_BLOCK = """  gtk_window_move (self,point.x ,point.y );
+TARGET_WINDOW_MOVE_BLOCK = """  gtk_window_move (GTK_WINDOW (self), point.x, point.y);
   g_timeout_add (100, guide_window_present, self);
 """
 CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
@@ -312,9 +322,19 @@ def main() -> int:
             "GError pointer handoff",
         ),
         (
+            LOAD_IMAGE_PRESENT_BLOCK,
+            TARGET_LOAD_IMAGE_PRESENT_BLOCK,
+            "pixbuf lifetime and deferred presentation",
+        ),
+        (
             WINDOW_MOVE_BLOCK,
             TARGET_WINDOW_MOVE_BLOCK,
-            "delayed window presentation",
+            "typed delayed window presentation",
+        ),
+        (
+            ACCEL_INIT_BLOCK,
+            TARGET_ACCEL_INIT_BLOCK,
+            "typed accelerator window handoff",
         ),
         (
             CONSTRUCTOR_BLOCK,
