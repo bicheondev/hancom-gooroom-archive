@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 186,
-    "workflow_name_count": 186,
-    "referenced_local_file_count": 298,
-    "error_count": 0,
-    "warning_count": 40,
-    "passed": true
+    "workflow_count": 187,
+    "workflow_name_count": 187,
+    "referenced_local_file_count": 303,
+    "error_count": 1,
+    "warning_count": 39,
+    "passed": false
   },
   "workflows": [
     {
@@ -398,6 +398,26 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-bootstrap-gooroom-guide-pipeline.yml",
+      "path": ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml",
+      "name": "ARM64 port - install gooroom-guide reconstruction pipeline",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
+        "arm64/scripts/promote_gooroom_guide_han3u1.py",
+        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py",
+        "arm64/scripts/verify_gooroom_guide_arm64.py",
+        "arm64/scripts/verify_gooroom_guide_han3u1_amd64.py"
       ]
     },
     {
@@ -4192,6 +4212,9 @@
     "arm64/scripts/build_gooroom_greeter_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
+    "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh": [
+      ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml"
+    ],
     "arm64/scripts/build_gooroom_resource_access_control_arm64_v1.sh": [
       ".github/workflows/arm64-build-gooroom-resource-access-control-v1.yml"
     ],
@@ -4465,6 +4488,9 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml"
     ],
+    "arm64/scripts/promote_gooroom_guide_han3u1.py": [
+      ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml"
+    ],
     "arm64/scripts/promote_reconstructed_libsecurity_result.py": [
       ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
     ],
@@ -4496,6 +4522,9 @@
     "arm64/scripts/reconstruct_gooroom_greeter_han3u2.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml"
+    ],
+    "arm64/scripts/reconstruct_gooroom_guide_han3u1.py": [
+      ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml"
     ],
     "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py": [
       ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
@@ -4855,6 +4884,12 @@
     "arm64/scripts/verify_gooroom_greeter_han3u2_structural.py": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
+    "arm64/scripts/verify_gooroom_guide_arm64.py": [
+      ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml"
+    ],
+    "arm64/scripts/verify_gooroom_guide_han3u1_amd64.py": [
+      ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml"
+    ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
       ".github/workflows/arm64-build-gooroom-resource-access-control-v1.yml",
@@ -4910,7 +4945,13 @@
       ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml",
+      "local_path": "arm64/scripts/promote_gooroom_guide_han3u1.py",
+      "reason": "referenced-local-code-missing"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
@@ -5065,11 +5106,6 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
-      "local_path": "arm64/locks/rebuild-results/gooroom-dockbarx-applet/0.3.1_grm3u1_han3u1/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
