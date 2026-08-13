@@ -1,0 +1,348 @@
+name: ARM64 port - search exact remaining Gooroom Guide source delta v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-search-gooroom-guide-source-delta-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-guide-source-delta-search-v1
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-guide
+  VERSION: 0.5.3+grm3u1+han3u1
+  BASE_REPOSITORY: hancomgooroom/gooroom-guide
+  BASE_COMMIT: c788c29119d43bb97c554973f6dabbc41a9abe79
+  BASE_TREE: 0d4bb01b49c69e33208a47c0aff47545291ee646
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '3620004'
+  TARGET_SHA256: 80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142
+
+jobs:
+  search:
+    name: Build all bounded source-order variants in one Bullseye rootfs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current reconstruction
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic Debian tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+
+      - name: Recover target authority and reconstructed base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-source-delta-search
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,authority,results}
+
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$root/vendor-artifact-metadata.json"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" '
+              .id == $id and .name == $name and .digest == $digest
+              and .expired == false and .workflow_run.id == $run_id
+            ' "$root/vendor-artifact-metadata.json" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          mapfile -t targets < <(find "$root/vendor" -type f -name "$TARGET_FILENAME" -print)
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" "$root/target.deb"
+          test "$(stat -c '%s' "$root/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $root/target.deb" | sha256sum --check --strict -
+
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$root/public-source"
+          git -C "$root/public-source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/public-source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/public-source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/public-source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          python3 arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            --repository "$root/public-source" \
+            --target-deb "$root/target.deb" \
+            --output-dir "$root/authority"
+          (cd "$root/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+      - name: Create one reusable historical Bullseye build root
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-source-delta-search
+          rootfs="$root/rootfs"
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$root/debootstrap.log"
+          sudo tee "$rootfs/etc/apt/sources.list" >/dev/null <<EOF
+          deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main
+          EOF
+          sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null <<'EOF'
+          Acquire::Check-Valid-Until "false";
+          Acquire::Retries "5";
+          Dpkg::Use-Pty "0";
+          EOF
+          sudo mkdir -p "$rootfs/build/base"
+          sudo tar -xf "$root/authority/reconstructed-source.tar.gz" -C "$rootfs/build/base"
+          sudo chown -R root:root "$rootfs/build/base"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS="nocheck parallel=2"
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git binutils
+            cd /build/base
+            mk-build-deps \
+              --install \
+              --remove \
+              --tool "apt-get -y --no-install-recommends" \
+              debian/control
+          ' 2>&1 | tee "$root/dependencies.log"
+
+      - name: Build and compare all 12 bounded variants
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-source-delta-search
+          rootfs="$root/rootfs"
+          results="$root/results"
+          mkdir -p "$results"
+
+          mkdir -p "$root/target-root"
+          dpkg-deb -x "$root/target.deb" "$root/target-root"
+          cp "$root/target-root/usr/bin/gooroom-guide" "$results/target.elf"
+          cp "$results/target.elf" "$results/normalized-target.elf"
+          objcopy \
+            --remove-section=.note.gnu.build-id \
+            --remove-section=.gnu_debuglink \
+            --remove-section=.gnu_debugaltlink \
+            --remove-section=.comment \
+            "$results/normalized-target.elf" "$results/normalized-target.tmp"
+          mv "$results/normalized-target.tmp" "$results/normalized-target.elf"
+
+          printf 'variant\tprototype_void\tclass_object_first\tconstructed_form\tdeb_sha256\telf_sha256\tnormalized_sha256\texact\n' \
+            > "$results/variants.tsv"
+          : > "$results/winners.txt"
+
+          for prototype in 0 1; do
+            for class_order in 0 1; do
+              for constructed in original assign declare; do
+                variant="p${prototype}-c${class_order}-x${constructed}"
+                echo "=== building $variant ==="
+                sudo rm -rf "$rootfs/build/source"
+                sudo cp -a "$rootfs/build/base" "$rootfs/build/source"
+                sudo python3 - "$rootfs/build/source" "$prototype" "$class_order" "$constructed" <<'PY'
+          from __future__ import annotations
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1])
+          prototype = sys.argv[2] == "1"
+          class_order = sys.argv[3] == "1"
+          constructed = sys.argv[4]
+
+          window = source / "src/guide-window.c"
+          text = window.read_text(encoding="utf-8")
+
+          if class_order:
+              old = (
+                  "  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);\n"
+                  "  GObjectClass *object_class = G_OBJECT_CLASS (class);\n"
+              )
+              new = (
+                  "  GObjectClass *object_class = G_OBJECT_CLASS (class);\n"
+                  "  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);\n"
+              )
+              assert text.count(old) == 1
+              text = text.replace(old, new)
+
+          original = (
+              "static void\n"
+              "guide_window_constructed (GObject *obj)\n"
+              "{\n"
+              "  GuideWindow *self = GUIDE_WINDOW (obj);\n"
+              "  GtkRequisition req;\n"
+              "  GdkDisplay *display;\n"
+              "  GdkMonitor *monitor;\n"
+              "  GdkRectangle geo;\n"
+              "  GdkPoint point;\n\n"
+              "  G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);\n"
+          )
+          if constructed == "assign":
+              replacement = (
+                  "static void\n"
+                  "guide_window_constructed (GObject *obj)\n"
+                  "{\n"
+                  "  GuideWindow *self;\n"
+                  "  GtkRequisition req;\n"
+                  "  GdkDisplay *display;\n"
+                  "  GdkMonitor *monitor;\n"
+                  "  GdkRectangle geo;\n"
+                  "  GdkPoint point;\n\n"
+                  "  G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);\n"
+                  "  self = GUIDE_WINDOW (obj);\n"
+              )
+              assert text.count(original) == 1
+              text = text.replace(original, replacement)
+          elif constructed == "declare":
+              replacement = (
+                  "static void\n"
+                  "guide_window_constructed (GObject *obj)\n"
+                  "{\n"
+                  "  GtkRequisition req;\n"
+                  "  GdkDisplay *display;\n"
+                  "  GdkMonitor *monitor;\n"
+                  "  GdkRectangle geo;\n"
+                  "  GdkPoint point;\n\n"
+                  "  G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);\n"
+                  "  GuideWindow *self = GUIDE_WINDOW (obj);\n"
+              )
+              assert text.count(original) == 1
+              text = text.replace(original, replacement)
+          elif constructed != "original":
+              raise AssertionError(constructed)
+          window.write_text(text, encoding="utf-8")
+
+          if prototype:
+              header = source / "src/guide-utils.h"
+              h = header.read_text(encoding="utf-8")
+              old_h = "gchar *     get_norun_file_path ();"
+              new_h = "gchar *     get_norun_file_path (void);"
+              assert h.count(old_h) == 1
+              header.write_text(h.replace(old_h, new_h), encoding="utf-8")
+
+              implementation = source / "src/guide-utils.c"
+              c = implementation.read_text(encoding="utf-8")
+              old_c = "get_norun_file_path ()"
+              new_c = "get_norun_file_path (void)"
+              assert c.count(old_c) == 1
+              implementation.write_text(c.replace(old_c, new_c), encoding="utf-8")
+          PY
+
+                sudo rm -f "$rootfs"/build/*.deb "$rootfs"/build/*.changes "$rootfs"/build/*.buildinfo
+                set +e
+                sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+                  export DEBIAN_FRONTEND=noninteractive
+                  export DEB_BUILD_OPTIONS="nocheck parallel=2"
+                  export LC_ALL=C.UTF-8
+                  cd /build/source
+                  dpkg-buildpackage -us -uc -b -j2
+                ' > "$results/$variant.build.log" 2>&1
+                rc=$?
+                set -e
+                if [ "$rc" -ne 0 ]; then
+                  echo "build failed for $variant" >&2
+                  tail -200 "$results/$variant.build.log" >&2
+                  exit "$rc"
+                fi
+
+                mapfile -t debs < <(
+                  sudo find "$rootfs/build" -maxdepth 1 -type f \
+                    -name "gooroom-guide_${VERSION}_amd64.deb" -print
+                )
+                test "${#debs[@]}" -eq 1
+                sudo cp "${debs[0]}" "$results/$variant.deb"
+                sudo chown "$(id -u):$(id -g)" "$results/$variant.deb"
+                rm -rf "$root/$variant-root"
+                mkdir -p "$root/$variant-root"
+                dpkg-deb -x "$results/$variant.deb" "$root/$variant-root"
+                cp "$root/$variant-root/usr/bin/gooroom-guide" "$results/$variant.elf"
+                cp "$results/$variant.elf" "$results/$variant.normalized.elf"
+                objcopy \
+                  --remove-section=.note.gnu.build-id \
+                  --remove-section=.gnu_debuglink \
+                  --remove-section=.gnu_debugaltlink \
+                  --remove-section=.comment \
+                  "$results/$variant.normalized.elf" "$results/$variant.normalized.tmp"
+                mv "$results/$variant.normalized.tmp" "$results/$variant.normalized.elf"
+
+                exact=false
+                if cmp -s "$results/normalized-target.elf" "$results/$variant.normalized.elf"; then
+                  exact=true
+                  echo "$variant" | tee -a "$results/winners.txt"
+                  sudo tar \
+                    --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+                    -czf "$results/$variant.source.tar.gz" \
+                    -C "$rootfs/build/source" .
+                  sudo chown "$(id -u):$(id -g)" "$results/$variant.source.tar.gz"
+                fi
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                  "$variant" "$prototype" "$class_order" "$constructed" \
+                  "$(sha256sum "$results/$variant.deb" | cut -d' ' -f1)" \
+                  "$(sha256sum "$results/$variant.elf" | cut -d' ' -f1)" \
+                  "$(sha256sum "$results/$variant.normalized.elf" | cut -d' ' -f1)" \
+                  "$exact" >> "$results/variants.tsv"
+              done
+            done
+          done
+
+          winner_count="$(wc -l < "$results/winners.txt")"
+          test "$winner_count" -ge 1
+          jq -Rn \
+            --argjson winner_count "$winner_count" \
+            --rawfile winners "$results/winners.txt" \
+            --rawfile variants "$results/variants.tsv" '
+              {
+                schema: 1,
+                exact_winner_count: $winner_count,
+                exact_winners: ($winners | split("\n") | map(select(length > 0))),
+                variants_tsv: $variants
+              }
+            ' > "$results/summary.json"
+          cat "$results/summary.json"
+          (
+            cd "$results"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload bounded source-delta search
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-han3u1-source-delta-search-v1-${{ github.run_id }}
+          path: work/guide-source-delta-search/results
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
