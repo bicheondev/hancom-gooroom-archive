@@ -65,6 +65,20 @@ WINDOW_MOVE_BLOCK = """  gtk_window_move (self,point.x ,point.y );
 TARGET_WINDOW_MOVE_BLOCK = """  gtk_window_move (GTK_WINDOW (self), point.x, point.y);
   g_timeout_add (100, guide_window_present, self);
 """
+FINALIZE_BLOCK = """static void
+guide_window_finalize (GObject *obj)
+{
+  GuideWindow *self = GUIDE_WINDOW (obj);
+
+  G_OBJECT_CLASS (guide_window_parent_class)->finalize (obj);
+}
+"""
+TARGET_FINALIZE_BLOCK = """static void
+guide_window_finalize (GObject *obj)
+{
+  G_OBJECT_CLASS (guide_window_parent_class)->finalize (obj);
+}
+"""
 CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
                        "application", app,
                        "resizable", FALSE,
@@ -335,6 +349,11 @@ def main() -> int:
             ACCEL_INIT_BLOCK,
             TARGET_ACCEL_INIT_BLOCK,
             "typed accelerator window handoff",
+        ),
+        (
+            FINALIZE_BLOCK,
+            TARGET_FINALIZE_BLOCK,
+            "unused finalize cast cleanup",
         ),
         (
             CONSTRUCTOR_BLOCK,
