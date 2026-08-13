@@ -79,6 +79,29 @@ guide_window_finalize (GObject *obj)
   G_OBJECT_CLASS (guide_window_parent_class)->finalize (obj);
 }
 """
+CLASS_INIT_ORDER_BLOCK = """  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
+  GObjectClass *object_class = G_OBJECT_CLASS (class);
+"""
+TARGET_CLASS_INIT_ORDER_BLOCK = """  GObjectClass *object_class = G_OBJECT_CLASS (class);
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
+"""
+CONSTRUCTED_SELF_BLOCK = """  GuideWindow *self = GUIDE_WINDOW (obj);
+  GtkRequisition req;
+"""
+TARGET_CONSTRUCTED_SELF_BLOCK = """  GuideWindow *self;
+  GtkRequisition req;
+"""
+CONSTRUCTED_PARENT_BLOCK = """  G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);
+
+  display = gdk_display_get_default ();
+"""
+TARGET_CONSTRUCTED_PARENT_BLOCK = """  G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);
+  self = GUIDE_WINDOW (obj);
+
+  display = gdk_display_get_default ();
+"""
+HEADER_PROTOTYPE_BLOCK = "gchar *     get_norun_file_path ();\n"
+TARGET_HEADER_PROTOTYPE_BLOCK = "gchar *     get_norun_file_path (void);\n"
 CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
                        "application", app,
                        "resizable", FALSE,
@@ -122,6 +145,7 @@ EXPECTED_IMAGE_NAMES = {
 EXPECTED_CHANGED_PATHS = {
     "debian/changelog",
     "src/guide-window.c",
+    "src/guide-utils.h",
     "src/data/guide-window.ui",
     "data/guide/toc.json",
     *(f"data/guide/{name}" for name in EXPECTED_IMAGE_NAMES),
@@ -351,6 +375,21 @@ def main() -> int:
             "typed accelerator window handoff",
         ),
         (
+            CLASS_INIT_ORDER_BLOCK,
+            TARGET_CLASS_INIT_ORDER_BLOCK,
+            "GObject and widget class initialization order",
+        ),
+        (
+            CONSTRUCTED_SELF_BLOCK,
+            TARGET_CONSTRUCTED_SELF_BLOCK,
+            "deferred GuideWindow cast declaration",
+        ),
+        (
+            CONSTRUCTED_PARENT_BLOCK,
+            TARGET_CONSTRUCTED_PARENT_BLOCK,
+            "parent construction before GuideWindow cast",
+        ),
+        (
             FINALIZE_BLOCK,
             TARGET_FINALIZE_BLOCK,
             "unused finalize cast cleanup",
@@ -366,6 +405,15 @@ def main() -> int:
             raise SystemExit(f"{label} anchor was not found exactly once")
         source_text = source_text.replace(old, new)
     source_c.write_text(source_text, encoding="utf-8")
+
+    source_h = repository / "src/guide-utils.h"
+    source_h_text = source_h.read_text(encoding="utf-8")
+    if source_h_text.count(HEADER_PROTOTYPE_BLOCK) != 1:
+        raise SystemExit("get_norun_file_path prototype anchor was not found exactly once")
+    source_h_text = source_h_text.replace(
+        HEADER_PROTOTYPE_BLOCK, TARGET_HEADER_PROTOTYPE_BLOCK
+    )
+    source_h.write_text(source_h_text, encoding="utf-8")
 
     source_ui = repository / "src/data/guide-window.ui"
     ui_text = source_ui.read_text(encoding="utf-8")
@@ -456,10 +504,12 @@ def main() -> int:
         "reconstruction": {
             "policy": "minimal-source-cleanup-plus-elf-confirmed-runtime-fixes-plus-exact-shipped-guide-assets",
             "changed_paths": sorted(
-                EXPECTED_CHANGED_PATHS - {"src/data/guide-window.ui"}
+                EXPECTED_CHANGED_PATHS
+                - {"src/data/guide-window.ui", "src/guide-utils.h"}
             ),
             "elf_confirmed_changed_paths": [
                 "src/data/guide-window.ui",
+                "src/guide-utils.h",
             ],
             "all_changed_paths": sorted(EXPECTED_CHANGED_PATHS),
             "tree_sha": reconstructed_tree,
@@ -502,6 +552,7 @@ def main() -> int:
             "changelog_byte_identity_verified": True,
             "source_cleanup_anchors_verified": True,
             "elf_confirmed_runtime_anchors_verified": True,
+            "elf_confirmed_header_prototype_verified": True,
             "embedded_ui_relationship_verified": True,
             "removed_obsolete_path": "data/guide/toc.json",
         },
