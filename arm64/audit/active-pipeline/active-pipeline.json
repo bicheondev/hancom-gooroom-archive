@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 199,
-    "workflow_name_count": 199,
-    "referenced_local_file_count": 306,
+    "workflow_count": 200,
+    "workflow_name_count": 200,
+    "referenced_local_file_count": 307,
     "error_count": 3,
     "warning_count": 40,
     "passed": false
@@ -44,6 +44,23 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
+      "path": ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
+      "name": "ARM64 port - apply strict gooroom-guide ARM64 loader verification",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/patch_gooroom_guide_arm64_loader_verifier.py",
+        "arm64/scripts/verify_gooroom_guide_arm64.py"
+      ]
     },
     {
       "filename": "arm64-apply-gooroom-guide-source-delta-v1.yml",
@@ -4664,6 +4681,9 @@
     "arm64/scripts/patch_gooroom_browser_arm64_packaging.py": [
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
+    "arm64/scripts/patch_gooroom_guide_arm64_loader_verifier.py": [
+      ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml"
+    ],
     "arm64/scripts/patch_gooroom_guide_final_source.py": [
       ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml"
@@ -5116,6 +5136,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
     "arm64/scripts/verify_gooroom_guide_arm64.py": [
+      ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
     "arm64/scripts/verify_gooroom_guide_han3u1_amd64.py": [
