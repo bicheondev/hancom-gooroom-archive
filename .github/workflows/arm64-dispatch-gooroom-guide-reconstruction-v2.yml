@@ -1,4 +1,4 @@
-name: ARM64 port - dispatch gooroom-guide reconstruction v2
+name: ARM64 port - dispatch gooroom-guide retained diagnostics v2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: arm64-dispatch-gooroom-guide-reconstruction-v2
+  group: arm64-dispatch-gooroom-guide-retained-diagnostics-v2
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Dispatch the permanent end-to-end workflow at the current branch
+      - name: Dispatch retained AMD64 ELF diagnostics at the current branch
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -28,7 +28,7 @@ jobs:
           set -euxo pipefail
           for attempt in 1 2 3 4 5 6; do
             if gh workflow run \
-              arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
+              arm64-diagnose-gooroom-guide-amd64-elf.yml \
               --repo "$GITHUB_REPOSITORY" \
               --ref arm64-port; then
               exit 0
