@@ -259,6 +259,13 @@ def main() -> int:
             header = elf_header(path)
             interpreter = elf_interpreter(path)
             dynamic = dynamic_identity(path)
+            raw_needed = dynamic["needed"]
+            loader_needed = [
+                name for name in raw_needed if name == AARCH64_LOADER
+            ]
+            runtime_needed = [
+                name for name in raw_needed if name != AARCH64_LOADER
+            ]
             target_dynamic = expected.get("dynamic", {})
             row = {
                 "path": relative,
@@ -267,8 +274,14 @@ def main() -> int:
                 "expected_elf_type": expected.get("elf_header", {}).get("type"),
                 "interpreter": interpreter,
                 "interpreter_basename": os.path.basename(interpreter) if interpreter else None,
-                "needed": dynamic["needed"],
+                "raw_needed": raw_needed,
+                "loader_needed": loader_needed,
+                "loader_needed_count": len(loader_needed),
+                "loader_needed_verified": loader_needed == [AARCH64_LOADER],
+                "needed": runtime_needed,
                 "expected_needed": target_dynamic.get("needed", []),
+                "needed_identical": runtime_needed
+                == target_dynamic.get("needed", []),
                 "soname": dynamic["soname"],
                 "expected_soname": target_dynamic.get("soname", []),
             }
@@ -276,7 +289,8 @@ def main() -> int:
                 row["machine"] == "AArch64"
                 and row["elf_type"] == row["expected_elf_type"]
                 and row["interpreter_basename"] == AARCH64_LOADER
-                and row["needed"] == row["expected_needed"]
+                and row["loader_needed_verified"]
+                and row["needed_identical"]
                 and row["soname"] == row["expected_soname"]
             )
             runtime_checks.append(row)
