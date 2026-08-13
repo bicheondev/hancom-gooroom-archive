@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 188,
-    "workflow_name_count": 188,
+    "workflow_count": 189,
+    "workflow_name_count": 189,
     "referenced_local_file_count": 304,
     "error_count": 0,
     "warning_count": 40,
@@ -398,6 +398,22 @@
         "arm64/scripts/collect_native_rebuild_results_v2.py",
         "arm64/scripts/select_baseline_reverification.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml",
+      "path": ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml",
+      "name": "ARM64 port - install exact gooroom-guide reconstruction fix v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
     },
     {
@@ -4557,6 +4573,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_guide_han3u1.py": [
+      ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
