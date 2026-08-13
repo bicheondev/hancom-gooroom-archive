@@ -1,7 +1,7 @@
 {
   "policy": "independently-verified-reconstructed-source-overlays",
   "schema": 1,
-  "source_count": 3,
+  "source_count": 4,
   "sources": [
     {
       "provenance": "verified-reconstructed-source",
@@ -87,6 +87,36 @@
         "amd64_structural_equivalence_verified": true,
         "evidence_path": "arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/reconstruction-lock.json",
         "native_arm64_build_verified": true,
+        "passed": true
+      }
+    },
+    {
+      "provenance": "verified-reconstructed-source",
+      "selected": {
+        "commit_sha": "c788c29119d43bb97c554973f6dabbc41a9abe79",
+        "declared_source": "gooroom-guide",
+        "declared_version": "0.5.3+grm3u1+han3u1",
+        "match_scope": "exact-public-base-plus-bounded-source-cleanup-plus-shipped-static-assets-plus-normalized-amd64-elf",
+        "provenance": "exact-public-0.5.1-tree-plus-bounded-cleanup-plus-shipped-static-guide-assets-plus-normalized-amd64-elf-identity",
+        "ref_kind": "reconstructed-tree",
+        "ref_name": "0.5.3+grm3u1+han3u1",
+        "repository_full_name": "hancomgooroom/gooroom-guide",
+        "source_archive_sha256": "076eaa7be90223e8ef259ec9059eafc0a25a11f39f78ba93ea8485d89e6bd7c1",
+        "tree_sha": "0c6c4f0700784a99f9c325473ccf45778699d93d",
+        "type": "reconstructed-git-tree"
+      },
+      "source": "gooroom-guide",
+      "source_version": "0.5.3+grm3u1+han3u1",
+      "status": "resolved",
+      "verification": {
+        "actions_run_id": "31730044304",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31730044304",
+        "amd64_non_elf_payload_identity_verified": true,
+        "amd64_normalized_elf_identity_verified": true,
+        "evidence_path": "arm64/locks/gooroom-guide-han3u1-reconstruction/latest/reconstruction-lock.json",
+        "exact_shipped_static_assets_verified": true,
+        "native_arm64_build_verified": true,
+        "original_source_archive_recovered": false,
         "passed": true
       }
     }
