@@ -8,7 +8,7 @@ WORKFLOW = Path(".github/workflows/arm64-reconstruct-build-promote-gooroom-guide
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
-    if new in text and old not in text:
+    if new in text:
         return text
     count = text.count(old)
     if count != 1:
@@ -46,6 +46,13 @@ def main() -> int:
         '"policy": "minimal-source-cleanup-plus-exact-shipped-static-guide-assets",',
         '"policy": "minimal-source-cleanup-plus-elf-confirmed-runtime-fixes-plus-exact-shipped-guide-assets",',
         "reconstruction policy",
+    )
+
+    source = replace_once(
+        source,
+        '''            "changed_paths": sorted(EXPECTED_CHANGED_PATHS),\n''',
+        '''            "changed_paths": sorted(\n                EXPECTED_CHANGED_PATHS - {"src/data/guide-window.ui"}\n            ),\n            "elf_confirmed_changed_paths": [\n                "src/data/guide-window.ui",\n            ],\n            "all_changed_paths": sorted(EXPECTED_CHANGED_PATHS),\n''',
+        "changed-path evidence partition",
     )
 
     source = replace_once(
