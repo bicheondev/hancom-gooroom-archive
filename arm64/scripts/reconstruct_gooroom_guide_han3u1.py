@@ -416,7 +416,13 @@ def main() -> int:
         },
         "reconstruction": {
             "policy": "minimal-source-cleanup-plus-elf-confirmed-runtime-fixes-plus-exact-shipped-guide-assets",
-            "changed_paths": sorted(EXPECTED_CHANGED_PATHS),
+            "changed_paths": sorted(
+                EXPECTED_CHANGED_PATHS - {"src/data/guide-window.ui"}
+            ),
+            "elf_confirmed_changed_paths": [
+                "src/data/guide-window.ui",
+            ],
+            "all_changed_paths": sorted(EXPECTED_CHANGED_PATHS),
             "tree_sha": reconstructed_tree,
             "patch_filename": patch_path.name,
             "patch_sha256": sha256_file(patch_path),
