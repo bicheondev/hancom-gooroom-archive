@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 198,
-    "workflow_name_count": 198,
+    "workflow_count": 199,
+    "workflow_name_count": 199,
     "referenced_local_file_count": 306,
-    "error_count": 0,
+    "error_count": 3,
     "warning_count": 40,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -1317,6 +1317,18 @@
       "filename": "arm64-dispatch-browser-after-jq-fix.yml",
       "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
       "name": "ARM64 port - dispatch browser after composite jq fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-dispatch-gooroom-guide-after-final-patch.yml",
+      "path": ".github/workflows/arm64-dispatch-gooroom-guide-after-final-patch.yml",
+      "name": "ARM64 port - dispatch gooroom-guide after final patch",
       "events": [
         "push",
         "workflow_dispatch"
@@ -5164,7 +5176,23 @@
       ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
+      "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
+      "local_path": "arm64/scripts/patch_gooroom_guide_final_source_v2.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml",
+      "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
+      "reason": "referenced-local-code-missing"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
