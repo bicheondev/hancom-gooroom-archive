@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 195,
-    "workflow_name_count": 195,
+    "workflow_count": 196,
+    "workflow_name_count": 196,
     "referenced_local_file_count": 304,
     "error_count": 0,
     "warning_count": 40,
@@ -1139,6 +1139,24 @@
         "arm64/scripts/run_locked_source_arm64_component_ccache.sh",
         "arm64/scripts/run_locked_source_arm64_component_compat.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
+      ]
+    },
+    {
+      "filename": "arm64-capture-gooroom-guide-latest-elf.yml",
+      "path": ".github/workflows/arm64-capture-gooroom-guide-latest-elf.yml",
+      "name": "ARM64 port - capture latest gooroom-guide AMD64 ELF diagnostic",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
+        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
     },
     {
@@ -4358,6 +4376,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
     "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh": [
+      ".github/workflows/arm64-capture-gooroom-guide-latest-elf.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v1.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v2.yml",
@@ -4675,6 +4694,7 @@
       ".github/workflows/arm64-apply-gooroom-guide-source-delta-v1.yml",
       ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml",
       ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v3.yml",
+      ".github/workflows/arm64-capture-gooroom-guide-latest-elf.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v1.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v2.yml",
