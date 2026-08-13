@@ -1,0 +1,32 @@
+name: ARM64 port - dispatch gooroom-guide after final patch
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-gooroom-guide-after-final-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch the permanent strict pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if gh workflow run arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          exit 1
