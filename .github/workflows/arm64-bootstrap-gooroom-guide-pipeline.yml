@@ -46,6 +46,10 @@ jobs:
           bash -n arm64/scripts/build_gooroom_guide_han3u1_chroot.sh
           grep -Fq 'gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb' \
             .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml
+          mkdir -p .github/generated-workflows
+          mv \
+            .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
+            .github/generated-workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml
           rm -f \
             .github/bootstrap-assets/gooroom-guide-pipeline.part1 \
             .github/bootstrap-assets/gooroom-guide-pipeline.part2 \
@@ -63,7 +67,7 @@ jobs:
             arm64/scripts/verify_gooroom_guide_han3u1_amd64.py \
             arm64/scripts/verify_gooroom_guide_arm64.py \
             arm64/scripts/promote_gooroom_guide_han3u1.py \
-            .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
+            .github/generated-workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
             .github/workflows/arm64-bootstrap-gooroom-guide-pipeline.yml \
             .github/bootstrap-assets/gooroom-guide-pipeline.part1 \
             .github/bootstrap-assets/gooroom-guide-pipeline.part2
@@ -83,18 +87,3 @@ jobs:
             done
             test "$pushed" = true
           fi
-
-      - name: Dispatch the permanent end-to-end workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euxo pipefail
-          for attempt in 1 2 3 4 5 6; do
-            if gh workflow run arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml \
-              --repo "$GITHUB_REPOSITORY" --ref arm64-port; then
-              exit 0
-            fi
-            sleep $((attempt * 5))
-          done
-          exit 1
