@@ -3,7 +3,8 @@
 
 The lost 0.5.3 source archive is not claimed as recovered.  The exact shipped
 AMD64 DEB is the immutable target authority.  Reconstruction is bounded to the
-changes described by its packaged changelog: source cleanup, removal of the
+changes described by its packaged changelog and independently confirmed by the
+exact shipped AMD64 ELF: source cleanup, runtime correctness fixes, removal of the
 duplicate GtkOverlay insertion, and the Hancom Gooroom 3.3 guide contents.
 """
 
@@ -45,6 +46,39 @@ OVERLAY_BLOCK = """
 
   gtk_overlay_add_overlay (GTK_OVERLAY(self->guide_overlay), self->bar_stack);
 """
+PIXBUF_CALL_BLOCK = """  pixbuf = gdk_pixbuf_new_from_file (uri,error);
+"""
+TARGET_PIXBUF_CALL_BLOCK = """  pixbuf = gdk_pixbuf_new_from_file (uri, &error);
+"""
+WINDOW_MOVE_BLOCK = """  gtk_window_move (self,point.x ,point.y );
+"""
+TARGET_WINDOW_MOVE_BLOCK = """  gtk_window_move (self,point.x ,point.y );
+  g_timeout_add (100, guide_window_present, self);
+"""
+CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
+                       "application", app,
+                       "resizable", FALSE,
+                       "title", _("Hancom Gooroom Guide"),
+                       "icon-name", "gooroom-guide",
+                       "window-position", GTK_WIN_POS_CENTER,
+                       "show-menubar", FALSE,
+                       NULL);
+"""
+TARGET_CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
+                       "application", app,
+                       "resizable", FALSE,
+                       "icon-name", "gooroom-guide",
+                       NULL);
+"""
+UI_HEADER_BLOCK = """        <property name="title" translatable="yes">Hancom Gooroom Quick Guide</property>
+        <property name="has-subtitle">False</property>
+        <property name="spacing">0</property>
+"""
+TARGET_UI_HEADER_BLOCK = """        <property name="title" translatable="yes">Hancom Gooroom Guide</property>
+        <property name="has-subtitle">False</property>
+        <property name="spacing">0</property>
+        <property name="show-close-button">True</property>
+"""
 EXPECTED_IMAGE_NAMES = {
     f"{language}/{name}"
     for language in ("en", "ko")
@@ -64,6 +98,7 @@ EXPECTED_IMAGE_NAMES = {
 EXPECTED_CHANGED_PATHS = {
     "debian/changelog",
     "src/guide-window.c",
+    "src/data/guide-window.ui",
     "data/guide/toc.json",
     *(f"data/guide/{name}" for name in EXPECTED_IMAGE_NAMES),
 }
@@ -260,13 +295,45 @@ def main() -> int:
 
     source_c = repository / "src/guide-window.c"
     source_text = source_c.read_text(encoding="utf-8")
-    if source_text.count(DIMENSION_BLOCK) != 1:
-        raise SystemExit("duplicate dimension-block anchor was not found exactly once")
-    if source_text.count(OVERLAY_BLOCK) != 1:
-        raise SystemExit("GtkOverlay insertion anchor was not found exactly once")
-    source_text = source_text.replace(DIMENSION_BLOCK, CLEAN_DIMENSION_BLOCK)
-    source_text = source_text.replace(OVERLAY_BLOCK, "")
+    source_replacements = (
+        (
+            DIMENSION_BLOCK,
+            CLEAN_DIMENSION_BLOCK,
+            "duplicate dimension-block",
+        ),
+        (
+            OVERLAY_BLOCK,
+            "",
+            "duplicate GtkOverlay insertion",
+        ),
+        (
+            PIXBUF_CALL_BLOCK,
+            TARGET_PIXBUF_CALL_BLOCK,
+            "GError pointer handoff",
+        ),
+        (
+            WINDOW_MOVE_BLOCK,
+            TARGET_WINDOW_MOVE_BLOCK,
+            "delayed window presentation",
+        ),
+        (
+            CONSTRUCTOR_BLOCK,
+            TARGET_CONSTRUCTOR_BLOCK,
+            "constructor property cleanup",
+        ),
+    )
+    for old, new, label in source_replacements:
+        if source_text.count(old) != 1:
+            raise SystemExit(f"{label} anchor was not found exactly once")
+        source_text = source_text.replace(old, new)
     source_c.write_text(source_text, encoding="utf-8")
+
+    source_ui = repository / "src/data/guide-window.ui"
+    ui_text = source_ui.read_text(encoding="utf-8")
+    if ui_text.count(UI_HEADER_BLOCK) != 1:
+        raise SystemExit("embedded guide header anchor was not found exactly once")
+    ui_text = ui_text.replace(UI_HEADER_BLOCK, TARGET_UI_HEADER_BLOCK)
+    source_ui.write_text(ui_text, encoding="utf-8")
 
     shutil.rmtree(source_guide)
     shutil.copytree(target_guide, source_guide)
@@ -348,7 +415,7 @@ def main() -> int:
             "architecture": "amd64",
         },
         "reconstruction": {
-            "policy": "minimal-source-cleanup-plus-exact-shipped-static-guide-assets",
+            "policy": "minimal-source-cleanup-plus-elf-confirmed-runtime-fixes-plus-exact-shipped-guide-assets",
             "changed_paths": sorted(EXPECTED_CHANGED_PATHS),
             "tree_sha": reconstructed_tree,
             "patch_filename": patch_path.name,
@@ -389,6 +456,8 @@ def main() -> int:
             ],
             "changelog_byte_identity_verified": True,
             "source_cleanup_anchors_verified": True,
+            "elf_confirmed_runtime_anchors_verified": True,
+            "embedded_ui_relationship_verified": True,
             "removed_obsolete_path": "data/guide/toc.json",
         },
         "target_payload_manifest": manifest,
