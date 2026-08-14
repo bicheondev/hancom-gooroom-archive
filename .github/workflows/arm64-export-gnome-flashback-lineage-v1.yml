@@ -1,0 +1,404 @@
+name: ARM64 port - export exact gnome-flashback lineage v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-export-gnome-flashback-lineage-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-gnome-flashback-lineage-v1
+  cancel-in-progress: false
+
+env:
+  TARGET_SOURCE: gnome-flashback
+  TARGET_VERSION: 3.38.0-2+grm3u2+han3u4
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Install deterministic inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file git gzip jq python3 unzip xz-utils
+
+      - name: Download and revalidate immutable vendor authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work
+          mkdir -p work/{vendor,targets,roots,repositories,bundles,archives,reports}
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            > work/reports/vendor-artifact-metadata.json
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+            ' work/reports/vendor-artifact-metadata.json >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir work/vendor
+          mapfile -t debs < <(
+            find work/vendor -type f \
+              \( -name 'gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb' \
+                 -o -name 'gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb' \
+                 -o -name 'gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb' \) \
+              -print | sort
+          )
+          test "${#debs[@]}" -eq 3
+          cp "${debs[@]}" work/targets/
+
+      - name: Lock vendor package controls, payloads, changelog and ELF identities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import gzip
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import stat
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work')
+          target_dir = root / 'targets'
+          roots = root / 'roots'
+          reports = root / 'reports'
+          expected = {
+              'gnome-flashback': 'amd64',
+              'gnome-flashback-common': 'all',
+              'gnome-session-flashback': 'all',
+          }
+
+          def run(args: list[str]) -> str:
+              result = subprocess.run(args, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, check=False)
+              if result.returncode:
+                  raise SystemExit(f"command failed ({result.returncode}): {' '.join(args)}\n{result.stdout}")
+              return result.stdout.strip()
+
+          def sha256(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(block)
+              return h.hexdigest()
+
+          packages = []
+          payloads = []
+          changelogs = {}
+          elfs = []
+          for deb in sorted(target_dir.glob('*.deb')):
+              package = run(['dpkg-deb', '-f', str(deb), 'Package'])
+              version = run(['dpkg-deb', '-f', str(deb), 'Version'])
+              architecture = run(['dpkg-deb', '-f', str(deb), 'Architecture'])
+              source = run(['dpkg-deb', '-f', str(deb), 'Source']) or package
+              source = source.split(' ', 1)[0]
+              if package not in expected:
+                  raise SystemExit(f'unexpected package: {package}')
+              if version != os.environ['TARGET_VERSION']:
+                  raise SystemExit(f'wrong version in {deb.name}: {version}')
+              if architecture != expected[package]:
+                  raise SystemExit(f'wrong architecture in {deb.name}: {architecture}')
+              if source != os.environ['TARGET_SOURCE']:
+                  raise SystemExit(f'wrong source in {deb.name}: {source}')
+              unpacked = roots / package
+              shutil.rmtree(unpacked, ignore_errors=True)
+              unpacked.mkdir(parents=True)
+              run(['dpkg-deb', '-x', str(deb), str(unpacked)])
+              packages.append({
+                  'package': package,
+                  'version': version,
+                  'architecture': architecture,
+                  'source': source,
+                  'filename': deb.name,
+                  'size': deb.stat().st_size,
+                  'sha256': sha256(deb),
+              })
+              changelog = unpacked / 'usr/share/doc' / package / 'changelog.Debian.gz'
+              if not changelog.is_file():
+                  raise SystemExit(f'missing changelog: {changelog}')
+              clear = gzip.decompress(changelog.read_bytes())
+              changelogs[package] = {
+                  'compressed_sha256': sha256(changelog),
+                  'decompressed_sha256': hashlib.sha256(clear).hexdigest(),
+                  'text': clear.decode('utf-8'),
+              }
+              for path in sorted(unpacked.rglob('*')):
+                  if not path.is_file() or path.is_symlink():
+                      continue
+                  rel = path.relative_to(unpacked).as_posix()
+                  data = path.read_bytes()
+                  is_elf = data.startswith(b'\x7fELF')
+                  row = {
+                      'package': package,
+                      'path': rel,
+                      'mode': f'{stat.S_IMODE(path.stat().st_mode):04o}',
+                      'size': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'elf': is_elf,
+                  }
+                  if path.suffix == '.gz':
+                      try:
+                          clear = gzip.decompress(data)
+                      except OSError:
+                          pass
+                      else:
+                          row['decompressed_sha256'] = hashlib.sha256(clear).hexdigest()
+                  payloads.append(row)
+                  if is_elf:
+                      description = run(['file', '-b', str(path)])
+                      header = run(['readelf', '-hW', str(path)])
+                      dynamic = run(['readelf', '-dW', str(path)])
+                      program = run(['readelf', '-lW', str(path)])
+                      machine = next((line.split(':', 1)[1].strip() for line in header.splitlines()
+                                      if line.lstrip().startswith('Machine:')), '')
+                      elf_type = next((line.split(':', 1)[1].strip().split()[0] for line in header.splitlines()
+                                       if line.lstrip().startswith('Type:')), '')
+                      interp_match = re.search(r'Requesting program interpreter:\s*([^]]+)\]', program)
+                      build_match = re.search(r'Build ID: ([0-9a-f]+)', run(['readelf', '-nW', str(path)]))
+                      elfs.append({
+                          'package': package,
+                          'path': rel,
+                          'size': len(data),
+                          'sha256': hashlib.sha256(data).hexdigest(),
+                          'file': description,
+                          'machine': machine,
+                          'elf_type': elf_type,
+                          'interpreter': interp_match.group(1).strip() if interp_match else None,
+                          'needed': re.findall(r'Shared library: \[([^]]+)\]', dynamic),
+                          'soname': re.findall(r'Library soname: \[([^]]+)\]', dynamic),
+                          'build_id': build_match.group(1) if build_match else None,
+                      })
+
+          if {row['package'] for row in packages} != set(expected):
+              raise SystemExit('vendor package set mismatch')
+          reports.mkdir(parents=True, exist_ok=True)
+          (reports / 'vendor-packages.json').write_text(json.dumps(packages, indent=2, sort_keys=True) + '\n')
+          (reports / 'vendor-payload-manifest.json').write_text(json.dumps(payloads, indent=2, sort_keys=True) + '\n')
+          (reports / 'vendor-elf-manifest.json').write_text(json.dumps(elfs, indent=2, sort_keys=True) + '\n')
+          (reports / 'vendor-changelogs.json').write_text(json.dumps(changelogs, ensure_ascii=False, indent=2, sort_keys=True) + '\n')
+          canonical = changelogs['gnome-flashback']['text']
+          for package, value in changelogs.items():
+              if value['text'] != canonical:
+                  raise SystemExit(f'changelog differs in {package}')
+          (reports / 'vendor-changelog').write_text(canonical)
+          PY
+          grep -Fq '3.38.0-2+grm3u2+han3u4' work/reports/vendor-changelog
+          for id in 99da2574 a38d3e6b ef9a0790 7f8a9b22 aa9dfb89 cc88eff1 1bf11751 7af5a94e 6b37d402; do
+            grep -Fq "[$id]" work/reports/vendor-changelog
+          done
+
+      - name: Mirror every public Hancom and Gooroom lineage repository
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/reports/repositories.tsv <<'EOF'
+          repository	status
+          EOF
+          repositories=(
+            hancomgooroom/gnome-flashback
+            gooroom/gnome-flashback
+            hancom-io/gnome-flashback
+            IAMLEGENDZ/gnome-flashback
+          )
+          for repository in "${repositories[@]}"; do
+            name="${repository//\//_}"
+            mirror="work/repositories/${name}.git"
+            if git clone --mirror "https://github.com/${repository}.git" "$mirror"; then
+              git -C "$mirror" fsck --full --no-reflogs --unreachable \
+                > "work/reports/${name}-fsck.txt" 2>&1 || true
+              git -C "$mirror" show-ref --head \
+                > "work/reports/${name}-refs.txt"
+              git -C "$mirror" rev-list --all --objects \
+                > "work/reports/${name}-objects.txt"
+              git -C "$mirror" bundle create "$(pwd)/work/bundles/${name}.bundle" --all
+              printf '%s\tok\n' "$repository" >> work/reports/repositories.tsv
+            else
+              rm -rf "$mirror"
+              printf '%s\tclone-failed\n' "$repository" >> work/reports/repositories.tsv
+            fi
+          done
+          test -f work/bundles/hancomgooroom_gnome-flashback.bundle
+          test -f work/bundles/gooroom_gnome-flashback.bundle
+
+      - name: Search all reachable and dangling objects for the nine authoritative changes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import subprocess
+          from pathlib import Path
+
+          ids = [
+              '99da2574', 'a38d3e6b', 'ef9a0790',
+              '7f8a9b22', 'aa9dfb89',
+              'cc88eff1', '1bf11751', '7af5a94e', '6b37d402',
+          ]
+          reports = Path('work/reports')
+          rows = []
+          for mirror in sorted(Path('work/repositories').glob('*.git')):
+              repository = mirror.name.removesuffix('.git').replace('_', '/', 1)
+              proc = subprocess.run(
+                  ['git', '-C', str(mirror), 'cat-file', '--batch-all-objects', '--batch-check=%(objectname) %(objecttype)'],
+                  text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+              )
+              if proc.returncode:
+                  raise SystemExit(proc.stderr)
+              commits = [line.split()[0] for line in proc.stdout.splitlines()
+                         if line.endswith(' commit')]
+              for change_id in ids:
+                  matches = [sha for sha in commits if sha.startswith(change_id)]
+                  detail = []
+                  for sha in matches:
+                      meta = subprocess.run(
+                          ['git', '-C', str(mirror), 'show', '-s',
+                           '--format=%H%n%T%n%P%n%aI%n%cI%n%B', sha],
+                          text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+                      )
+                      detail.append({'sha': sha, 'show': meta.stdout})
+                  rows.append({
+                      'repository': repository,
+                      'change_id': change_id,
+                      'matches': detail,
+                      'match_count': len(detail),
+                  })
+          reports.joinpath('authoritative-change-object-search.json').write_text(
+              json.dumps(rows, ensure_ascii=False, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+      - name: Export exact public source snapshots and semantic Gooroom equivalents
+        shell: bash
+        run: |
+          set -euxo pipefail
+          hancom=work/repositories/hancomgooroom_gnome-flashback.git
+          gooroom=work/repositories/gooroom_gnome-flashback.git
+          test "$(git -C "$hancom" rev-parse refs/heads/hancom-3.0)" = df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7
+          test "$(git -C "$gooroom" rev-parse refs/heads/gooroom-3.0)" = 68a47d769b0f15b84c532746ced1f8ae538ab545
+          git -C "$hancom" archive --format=tar.gz \
+            --prefix=hancomgooroom-gnome-flashback-df5e1ec/ \
+            -o "$(pwd)/work/archives/hancomgooroom-gnome-flashback-df5e1ec.tar.gz" \
+            df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7
+          git -C "$gooroom" archive --format=tar.gz \
+            --prefix=gooroom-gnome-flashback-68a47d7/ \
+            -o "$(pwd)/work/archives/gooroom-gnome-flashback-68a47d7.tar.gz" \
+            68a47d769b0f15b84c532746ced1f8ae538ab545
+          equivalents=(d41e4e23 32faac4a bc6a2610 8c8276e5 719e3611 78fe5375 d6f7bdc8)
+          : > work/reports/gooroom-equivalent-commits.patch
+          for commit in "${equivalents[@]}"; do
+            git -C "$gooroom" show --binary --full-index --no-ext-diff "$commit" \
+              >> work/reports/gooroom-equivalent-commits.patch
+            printf '\n' >> work/reports/gooroom-equivalent-commits.patch
+          done
+          git -C "$gooroom" log --all --date=iso-strict \
+            --format='%H%x09%T%x09%aI%x09%s' \
+            > work/reports/gooroom-all-commits.tsv
+          git -C "$hancom" log --all --date=iso-strict \
+            --format='%H%x09%T%x09%aI%x09%s' \
+            > work/reports/hancom-all-commits.tsv
+
+      - name: Generate immutable checksums and summary
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          work = Path('work')
+          reports = work / 'reports'
+          packages = json.loads((reports / 'vendor-packages.json').read_text())
+          object_search = json.loads((reports / 'authoritative-change-object-search.json').read_text())
+          summary = {
+              'schema': 1,
+              'target_source': 'gnome-flashback',
+              'target_version': '3.38.0-2+grm3u2+han3u4',
+              'vendor_artifact': {
+                  'run_id': 31097604490,
+                  'artifact_id': 8966101210,
+                  'name': 'hancom-gooroom-3.3-exact-vendor-debs',
+                  'digest': 'sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823',
+              },
+              'vendor_packages': packages,
+              'authoritative_change_ids': [
+                  '99da2574', 'a38d3e6b', 'ef9a0790',
+                  '7f8a9b22', 'aa9dfb89',
+                  'cc88eff1', '1bf11751', '7af5a94e', '6b37d402',
+              ],
+              'reachable_or_dangling_exact_object_matches': sum(
+                  row['match_count'] for row in object_search
+              ),
+              'public_hancom_base': {
+                  'repository': 'hancomgooroom/gnome-flashback',
+                  'commit': 'df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7',
+                  'version': '3.38.0-2+grm3u2+han3u1',
+              },
+              'public_gooroom_lineage': {
+                  'repository': 'gooroom/gnome-flashback',
+                  'commit': '68a47d769b0f15b84c532746ced1f8ae538ab545',
+                  'version': '3.38.0-2+grm3u7',
+              },
+          }
+          (reports / 'summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + '\n'
+          )
+          rows = []
+          for path in sorted(work.rglob('*')):
+              if not path.is_file() or path.name == 'LOCKSUMS.sha256':
+                  continue
+              h = hashlib.sha256(path.read_bytes()).hexdigest()
+              rows.append(f'{h}  {path.relative_to(work).as_posix()}\n')
+          (work / 'LOCKSUMS.sha256').write_text(''.join(rows))
+          PY
+          (cd work && sha256sum --check --strict LOCKSUMS.sha256)
+          cat work/reports/summary.json
+
+      - name: Upload exact source lineage authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-lineage-v1-${{ github.run_id }}
+          path: work
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
