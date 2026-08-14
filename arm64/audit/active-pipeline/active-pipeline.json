@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 201,
     "workflow_name_count": 201,
-    "referenced_local_file_count": 308,
-    "error_count": 5,
-    "warning_count": 39,
+    "referenced_local_file_count": 312,
+    "error_count": 3,
+    "warning_count": 40,
     "passed": false
   },
   "workflows": [
@@ -446,23 +446,6 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
-      ]
-    },
-    {
-      "filename": "arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "path": ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "name": "ARM64 port - stage gnome-flashback han3u4 plain blobs",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/promote_gnome_flashback_han3u4.py",
-        "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py"
       ]
     },
     {
@@ -2749,6 +2732,36 @@
       ]
     },
     {
+      "filename": "arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "name": "ARM64 port - reconstruct, build, and promote gnome-flashback han3u4",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 3,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json",
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+        "arm64/scripts/promote_gnome_flashback_han3u4.py",
+        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
+        "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py",
+        "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py"
+      ]
+    },
+    {
       "filename": "arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
       "path": ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
       "name": "ARM64 port - reconstruct, build, and promote Gooroom dockbarx han3u1",
@@ -4172,6 +4185,9 @@
     "arm64/locks/rebuild-results/gnome-control-center/1_3.38.4-1_grm3u9/result.json": [
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml"
     ],
+    "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json": [
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
+    ],
     "arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
@@ -4198,6 +4214,7 @@
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
       ".github/workflows/arm64-promote-gooroom-greeter-han3u2-artifacts.yml",
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml",
       ".github/workflows/arm64-source-authority-v5.yml"
@@ -4444,6 +4461,9 @@
     ],
     "arm64/scripts/build_final_arm64_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
+    ],
+    "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh": [
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
@@ -4730,7 +4750,7 @@
       ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
     ],
     "arm64/scripts/promote_gnome_flashback_han3u4.py": [
-      ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml"
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/promote_gooroom_applauncher_han3u2.py": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
@@ -4765,6 +4785,9 @@
     ],
     "arm64/scripts/reconcile_exact_source_authority_v3.py": [
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
+    ],
+    "arm64/scripts/reconstruct_gnome_flashback_han3u4.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
@@ -5126,8 +5149,11 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
+    "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py": [
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
+    ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
-      ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml"
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/verify_gooroom_applauncher_arm64.py": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
@@ -5215,16 +5241,6 @@
     ]
   },
   "errors": [
-    {
-      "path": ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "local_path": "arm64/scripts/promote_gnome_flashback_han3u4.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "local_path": "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py",
-      "reason": "referenced-local-code-missing"
-    },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
@@ -5395,6 +5411,11 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "local_path": "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
