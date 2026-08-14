@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-14T19:58:15.761241Z",
+  "generated_at": "2026-08-14T19:59:56.787568Z",
   "status": "passed",
   "python": [
     {
@@ -265,6 +265,10 @@
     },
     {
       "path": "arm64/scripts/probe_wayback_blocker_dsc.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/promote_gnome_flashback_han3u4.py",
       "status": "passed"
     },
     {
@@ -661,6 +665,10 @@
     },
     {
       "path": "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py",
+      "status": "passed"
+    },
+    {
+      "path": "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py",
       "status": "passed"
     },
     {
@@ -1120,10 +1128,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-build-arch-replacements.yml",
       "status": "passed"
     },
@@ -1565,6 +1569,10 @@
     },
     {
       "path": ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml",
+      "status": "passed"
+    },
+    {
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
       "status": "passed"
     },
     {
@@ -2150,12 +2158,6 @@
     {
       "workflow": ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v3.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
-      "workflow": ".github/workflows/arm64-bootstrap-gnome-flashback-han3u4.yml",
-      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       "status": "passed",
       "reason": null
     },
@@ -4014,6 +4016,60 @@
       "reason": null
     },
     {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+      "status": "passed",
+      "reason": null
+    },
+    {
+      "workflow": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "reference": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+      "status": "passed",
+      "reason": "explicitly allowed v4 download action ref"
+    },
+    {
       "workflow": ".github/workflows/arm64-reconstruct-build-promote-gooroom-dockbarx-han3u1.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -4908,7 +4964,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-14T19:58:17.567592Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-14T19:59:58.355170Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -4918,7 +4974,7 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-14T19:58:17.607101Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-14T19:59:58.395528Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
