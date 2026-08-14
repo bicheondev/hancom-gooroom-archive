@@ -1,0 +1,32 @@
+name: ARM64 port - dispatch corrected gnome-flashback han3u4 pipeline v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-gnome-flashback-han3u4-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-dispatch-corrected-gnome-flashback-han3u4-v2
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch the corrected reconstruction, AMD64, ARM64, and promotion pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run \
+            arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
