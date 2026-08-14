@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 200,
     "workflow_name_count": 200,
-    "referenced_local_file_count": 307,
+    "referenced_local_file_count": 306,
     "error_count": 3,
-    "warning_count": 40,
+    "warning_count": 39,
     "passed": false
   },
   "workflows": [
@@ -44,23 +44,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
-      "path": ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
-      "name": "ARM64 port - apply strict gooroom-guide ARM64 loader verification",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/patch_gooroom_guide_arm64_loader_verifier.py",
-        "arm64/scripts/verify_gooroom_guide_arm64.py"
-      ]
     },
     {
       "filename": "arm64-apply-gooroom-guide-source-delta-v1.yml",
@@ -1451,6 +1434,21 @@
         "arm64/scripts/materialize_package_acquisition_plan_v2.py",
         "arm64/scripts/verify_arm64_rootfs.py"
       ]
+    },
+    {
+      "filename": "arm64-export-gnome-flashback-lineage-v1.yml",
+      "path": ".github/workflows/arm64-export-gnome-flashback-lineage-v1.yml",
+      "name": "ARM64 port - export exact gnome-flashback lineage v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-extract-blocker-binary-evidence.yml",
@@ -4681,9 +4679,6 @@
     "arm64/scripts/patch_gooroom_browser_arm64_packaging.py": [
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
-    "arm64/scripts/patch_gooroom_guide_arm64_loader_verifier.py": [
-      ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml"
-    ],
     "arm64/scripts/patch_gooroom_guide_final_source.py": [
       ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml"
@@ -5136,7 +5131,6 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml"
     ],
     "arm64/scripts/verify_gooroom_guide_arm64.py": [
-      ".github/workflows/arm64-apply-gooroom-guide-arm64-loader-verifier.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
     "arm64/scripts/verify_gooroom_guide_han3u1_amd64.py": [
@@ -5368,11 +5362,6 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml",
-      "local_path": "arm64/locks/rebuild-results/gooroom-guide/0.5.3_grm3u1_han3u1/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
