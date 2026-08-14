@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 200,
-    "workflow_name_count": 200,
-    "referenced_local_file_count": 306,
-    "error_count": 3,
+    "workflow_count": 201,
+    "workflow_name_count": 201,
+    "referenced_local_file_count": 309,
+    "error_count": 6,
     "warning_count": 39,
     "passed": false
   },
@@ -1704,6 +1704,24 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-install-gnome-flashback-reconstruction-tools.yml",
+      "path": ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml",
+      "name": "ARM64 port - install exact gnome-flashback reconstruction tools",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
+        "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py"
+      ]
     },
     {
       "filename": "arm64-installed-system-boot.yml",
@@ -4428,6 +4446,9 @@
     "arm64/scripts/build_final_arm64_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
+    "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh": [
+      ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml"
+    ],
     "arm64/scripts/build_gooroom_applauncher_han3u2_chroot.sh": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
     ],
@@ -4745,6 +4766,9 @@
     ],
     "arm64/scripts/reconcile_exact_source_authority_v3.py": [
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
+    ],
+    "arm64/scripts/reconstruct_gnome_flashback_han3u4.py": [
+      ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml"
     ],
     "arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py": [
       ".github/workflows/arm64-verify-gooroom-applauncher-lineage.yml"
@@ -5106,6 +5130,9 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml"
     ],
+    "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py": [
+      ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml"
+    ],
     "arm64/scripts/verify_gooroom_applauncher_arm64.py": [
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml"
     ],
@@ -5192,6 +5219,21 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml",
+      "local_path": "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml",
+      "local_path": "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-install-gnome-flashback-reconstruction-tools.yml",
+      "local_path": "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py",
+      "reason": "referenced-local-code-missing"
+    },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
