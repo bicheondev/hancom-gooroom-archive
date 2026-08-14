@@ -1,4 +1,4 @@
-name: ARM64 port - dispatch corrected gnome-flashback han3u4 pipeline v2
+name: ARM64 port - dispatch corrected gnome-flashback han3u4 diagnostics v2
 
 on:
   push:
@@ -20,13 +20,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Dispatch the corrected reconstruction, AMD64, ARM64, and promotion pipeline
+      - name: Dispatch complete corrected AMD64 target and candidate capture
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euxo pipefail
           gh workflow run \
-            arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml \
+            arm64-diagnose-gnome-flashback-han3u4-debs.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref arm64-port
