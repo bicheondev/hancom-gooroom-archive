@@ -376,7 +376,9 @@ def main() -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(origin, destination)
 
-    # ef9a0790: preserve the Placement submenu machinery and line geometry, but hide its parent item.
+    # ef9a0790: the shipped ELF has no standalone "Placement" menu-label literal.
+    # Remove the parent item and submenu construction, while retaining the underlying
+    # placement implementation used elsewhere in the desktop code.
     icon_path = hancom / "gnome-flashback/libdesktop/gf-icon-view.c"
     icon_text = icon_path.read_text(encoding="utf-8")
     placement_block = (
@@ -385,17 +387,11 @@ def main() -> int:
         '  gtk_widget_show (item);\n\n'
         '  append_placement_submenu (self, item);\n\n'
     )
-    hidden_placement_block = (
-        '  item = gtk_menu_item_new_with_label (_("Placement"));\n'
-        '  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);\n'
-        '\n\n'
-        '  append_placement_submenu (self, item);\n\n'
-    )
     icon_text = replace_once(
         icon_text,
         placement_block,
-        hidden_placement_block,
-        "hidden desktop Placement submenu",
+        "",
+        "removed desktop Placement submenu",
     )
     icon_path.write_text(icon_text, encoding="utf-8")
 
@@ -496,10 +492,10 @@ def main() -> int:
     if css_path.read_bytes() != target_css:
         raise SystemExit("target embedded CSS relationship was not preserved")
     final_icon_text = icon_path.read_text(encoding="utf-8")
-    if hidden_placement_block not in final_icon_text:
-        raise SystemExit("hidden Placement submenu geometry was not preserved")
-    if placement_block in final_icon_text:
-        raise SystemExit("Placement submenu parent is still visible")
+    if 'gtk_menu_item_new_with_label (_("Placement"))' in final_icon_text:
+        raise SystemExit("Placement submenu parent survived reconstruction")
+    if 'append_placement_submenu (self, item);' in final_icon_text:
+        raise SystemExit("Placement submenu construction survived reconstruction")
     if "GDK_KEY_Hangul" not in unlock_path.read_text(encoding="utf-8"):
         raise SystemExit("Hangul key evidence is absent")
 
@@ -587,7 +583,7 @@ def main() -> int:
             "patch_sha256": sha256_file(unique_patch_path),
             "changed_paths": unique_paths,
             "elf_confirmed_behaviors": [
-                "desktop-placement-submenu-parent-not-shown",
+                "desktop-placement-submenu-removed",
                 "password-entry-consumes-GDK_KEY_Hangul-0xff31",
                 "screensaver-panel-calls-network_online-with-nm-online",
                 "desktop-icon-label-common-css-matches-target-gresource",
