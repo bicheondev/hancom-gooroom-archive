@@ -5,7 +5,7 @@
     "workflow_count": 205,
     "workflow_name_count": 205,
     "referenced_local_file_count": 312,
-    "error_count": 3,
+    "error_count": 4,
     "warning_count": 40,
     "passed": false
   },
@@ -5314,6 +5314,11 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-fix-gnome-flashback-placement.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 40, column 5:\n        icon_path = hancom / \"gnome-flas ... \n        ^\ncould not find expected ':'\n  in \"<unicode string>\", line 41, column 5:\n        icon_text = icon_path.read_text( ... \n        ^"
+    },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
