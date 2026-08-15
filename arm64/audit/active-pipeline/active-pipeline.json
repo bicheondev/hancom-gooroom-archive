@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 205,
-    "workflow_name_count": 205,
-    "referenced_local_file_count": 312,
+    "workflow_count": 206,
+    "workflow_name_count": 206,
+    "referenced_local_file_count": 313,
     "error_count": 4,
     "warning_count": 40,
     "passed": false
@@ -44,6 +44,23 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-apply-gnome-flashback-placement-fix.yml",
+      "path": ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml",
+      "name": "ARM64 port - apply gnome-flashback Placement fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
+        "arm64/scripts/repair_gnome_flashback_placement.py"
+      ]
     },
     {
       "filename": "arm64-apply-gooroom-guide-source-delta-v1.yml",
@@ -4855,6 +4872,7 @@
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ],
     "arm64/scripts/reconstruct_gnome_flashback_han3u4.py": [
+      ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-patch-gnome-flashback-placement-reconstruction-v2.yml",
@@ -4945,6 +4963,9 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
+    ],
+    "arm64/scripts/repair_gnome_flashback_placement.py": [
+      ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml"
     ],
     "arm64/scripts/repair_stage0_v6.py": [
       ".github/workflows/arm64-stage0-v6-converge-v2.yml",
