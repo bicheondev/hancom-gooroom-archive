@@ -1,0 +1,706 @@
+name: ARM64 continue after gnome-flashback gate
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-continue-after-gnome-flashback.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-continue-after-gnome-flashback
+  cancel-in-progress: false
+
+env:
+  TARGET_RUN_ID: '31930851075'
+  EXPECTED_HEAD_SHA: f24dc7f2a771e68b2c2084615ad9a7d73bd1c32e
+  TARGET_WORKFLOW: .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+  CURRENT_WORKFLOW: .github/workflows/arm64-continue-after-gnome-flashback.yml
+  BRANCH: arm64-port
+
+jobs:
+  record-and-route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Capture the locked target run and bounded evidence artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="work/continuation-run-${TARGET_RUN_ID}"
+          mkdir -p "$root"/{metadata,artifact-zips,artifacts}
+
+          for attempt in $(seq 1 60); do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${TARGET_RUN_ID}" \
+              > "$root/metadata/target-run.json"
+            status="$(jq -r '.status' "$root/metadata/target-run.json")"
+            test "$status" = completed && break
+            test "$attempt" -lt 60 || break
+            sleep 10
+          done
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${TARGET_RUN_ID}/jobs?per_page=100" \
+            > "$root/metadata/target-jobs.json"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${TARGET_RUN_ID}/artifacts?per_page=100" \
+            > "$root/metadata/target-artifacts.json"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows?per_page=100" \
+            > "$root/metadata/repository-workflows.json"
+
+          if ! gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${TARGET_RUN_ID}/logs" \
+              > "$root/target-logs.zip"; then
+            printf '%s\n' 'target log download failed' \
+              > "$root/metadata/target-log-download-error.txt"
+            rm -f "$root/target-logs.zip"
+          fi
+
+          jq -r '
+            .artifacts
+            | map(select(
+                (.expired == false)
+                and (.size_in_bytes < 157286400)
+                and (.name | test("gnome|source|recover|exact|manifest|status|summary|promotion|evidence"; "i"))
+              ))
+            | sort_by(.size_in_bytes)
+            | .[:8][]
+            | [.id, .name] | @tsv
+          ' "$root/metadata/target-artifacts.json" \
+            | while IFS=$'\t' read -r artifact_id artifact_name; do
+                safe_name="$(printf '%s' "$artifact_name" | tr -c 'A-Za-z0-9_.+-' '_')"
+                archive="$root/artifact-zips/${artifact_id}-${safe_name}.zip"
+                destination="$root/artifacts/${artifact_id}-${safe_name}"
+                mkdir -p "$destination"
+                if gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+                    > "$archive"; then
+                  unzip -q "$archive" -d "$destination" || \
+                    printf '%s\n' 'artifact extraction failed' \
+                      > "$destination/EXTRACTION-FAILED.txt"
+                else
+                  printf '%s\n' 'artifact download failed' \
+                    > "$destination/DOWNLOAD-FAILED.txt"
+                  rm -f "$archive"
+                fi
+              done
+
+      - name: Derive the fail-closed continuation route and dispatch at most once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import time
+          from pathlib import Path
+          from typing import Any
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          branch = os.environ['BRANCH']
+          target_run_id = int(os.environ['TARGET_RUN_ID'])
+          expected_head = os.environ['EXPECTED_HEAD_SHA']
+          target_workflow = os.environ['TARGET_WORKFLOW']
+          current_workflow = os.environ['CURRENT_WORKFLOW']
+          root = Path(f'work/continuation-run-{target_run_id}')
+          metadata = root / 'metadata'
+          status_dir = Path('arm64/status')
+          status_dir.mkdir(parents=True, exist_ok=True)
+
+          def load(path: Path) -> Any:
+              return json.loads(path.read_text(encoding='utf-8'))
+
+          def write_json(path: Path, value: Any) -> None:
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(
+                  json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+                  encoding='utf-8',
+              )
+
+          def normalise(value: str) -> str:
+              value = value.casefold().replace('_', '-')
+              value = re.sub(r'[^a-z0-9+.-]+', '-', value)
+              return re.sub(r'-+', '-', value).strip('-.')
+
+          def label_of(value: Any) -> str | None:
+              if not isinstance(value, dict):
+                  return None
+              for key in ('package', 'package_name', 'source', 'source_package',
+                          'name', 'unit', 'component', 'id'):
+                  candidate = value.get(key)
+                  if isinstance(candidate, str) and 2 <= len(normalise(candidate)) <= 120:
+                      return candidate
+              return None
+
+          def labels_of(value: Any) -> list[str]:
+              output: list[str] = []
+              if isinstance(value, list):
+                  for item in value:
+                      label = label_of(item)
+                      if label:
+                          output.append(label)
+                      elif isinstance(item, str):
+                          output.append(item)
+              elif isinstance(value, dict):
+                  label = label_of(value)
+                  if label:
+                      output.append(label)
+                  for key, item in value.items():
+                      if isinstance(item, str) and item.casefold() == 'unresolved':
+                          output.append(str(key))
+              return output
+
+          def evidence_score(source_kind: str, path: str, pointer: str, key: str) -> int:
+              hay = f'{path} {pointer} {key}'.casefold()
+              score = 4 if source_kind == 'target-artifact' else 3
+              for word, bonus in {
+                  'current': 10, 'manifest': 9, 'promotion': 9,
+                  'source-recovery': 8, 'source_recovery': 8,
+                  'recovery': 6, 'exact': 5, 'rollup': 5,
+                  'status': 4, 'result': 4, 'summary': 3,
+              }.items():
+                  if word in hay:
+                      score += bonus
+              for word, penalty in {
+                  'debug': 14, 'diagnostic': 14, 'differential': 12,
+                  'equivalence': 8, 'fixture': 12, 'sample': 12,
+                  '/tests/': 8, 'history': 5,
+              }.items():
+                  if word in hay:
+                      score -= penalty
+              if 'count' in key.casefold() or 'total' in key.casefold():
+                  score += 4
+              return score
+
+          def scan(value: Any, source_kind: str, path: str, pointer: str = '$') -> list[dict[str, Any]]:
+              records: list[dict[str, Any]] = []
+              if isinstance(value, dict):
+                  label = label_of(value)
+                  for state_key in ('status', 'state', 'resolution'):
+                      state = value.get(state_key)
+                      if isinstance(state, str) and state.casefold() == 'unresolved':
+                          records.append({
+                              'source_kind': source_kind, 'path': path,
+                              'pointer': pointer, 'key': state_key, 'count': 1,
+                              'labels': [label] if label else [], 'kind': 'status',
+                              'score': evidence_score(source_kind, path, pointer, state_key),
+                              'global_zero_eligible': False,
+                          })
+                          break
+                  for key, child in value.items():
+                      key_text = str(key)
+                      child_pointer = f'{pointer}/{key_text}'
+                      if 'unresolved' in key_text.casefold():
+                          count = None
+                          kind = 'field'
+                          labels = labels_of(child)
+                          if isinstance(child, bool):
+                              count = int(child)
+                              kind = 'boolean'
+                          elif isinstance(child, int):
+                              count = child
+                              kind = 'count'
+                          elif isinstance(child, list):
+                              count = len(child)
+                              kind = 'list'
+                          elif isinstance(child, dict):
+                              for count_key in ('count', 'total', 'unresolved_count'):
+                                  candidate = child.get(count_key)
+                                  if isinstance(candidate, int) and not isinstance(candidate, bool):
+                                      count = candidate
+                                      kind = 'mapping-count'
+                                      break
+                              if count is None and any(
+                                  word in key_text.casefold()
+                                  for word in ('packages', 'sources', 'units', 'items', 'entries')
+                              ):
+                                  count = len(child)
+                                  kind = 'mapping-list'
+                          elif isinstance(child, str) and child.strip().isdigit():
+                              count = int(child.strip())
+                              kind = 'string-count'
+                          if count is not None:
+                              key_lower = key_text.casefold()
+                              global_zero = any(
+                                  word in key_lower
+                                  for word in ('count', 'total', 'packages', 'sources', 'units')
+                              )
+                              records.append({
+                                  'source_kind': source_kind, 'path': path,
+                                  'pointer': child_pointer, 'key': key_text,
+                                  'count': count, 'labels': labels, 'kind': kind,
+                                  'score': evidence_score(
+                                      source_kind, path, child_pointer, key_text
+                                  ),
+                                  'global_zero_eligible': global_zero,
+                              })
+                      records.extend(scan(child, source_kind, path, child_pointer))
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      records.extend(scan(child, source_kind, path, f'{pointer}/{index}'))
+              return records
+
+          run = load(metadata / 'target-run.json')
+          jobs = load(metadata / 'target-jobs.json')
+          artifacts = load(metadata / 'target-artifacts.json')
+          workflow_api = load(metadata / 'repository-workflows.json')
+
+          files: list[tuple[Path, str]] = []
+          tracked = subprocess.run(
+              ['git', 'ls-files', '-z', '--', '*.json'],
+              stdout=subprocess.PIPE, check=True,
+          ).stdout.split(b'\0')
+          signals = ('source', 'recover', 'exact', 'status', 'manifest',
+                     'result', 'promotion', 'rollup', 'summary')
+          for raw in tracked:
+              if not raw:
+                  continue
+              path = Path(raw.decode('utf-8', errors='surrogateescape'))
+              if any(word in path.as_posix().casefold() for word in signals):
+                  files.append((path, 'repo'))
+          for path in (root / 'artifacts').rglob('*.json'):
+              if any(word in path.as_posix().casefold() for word in signals):
+                  files.append((path, 'target-artifact'))
+
+          records: list[dict[str, Any]] = []
+          parse_errors: list[dict[str, str]] = []
+          for path, source_kind in files:
+              try:
+                  if path.stat().st_size > 32 * 1024 * 1024:
+                      continue
+                  records.extend(scan(load(path), source_kind, path.as_posix()))
+              except Exception as exc:
+                  parse_errors.append({'path': str(path), 'error': str(exc)})
+
+          authoritative = [record for record in records if record['score'] >= 12]
+          positive = [record for record in authoritative if record['count'] > 0]
+          zero = [
+              record for record in authoritative
+              if record['count'] == 0 and record['global_zero_eligible']
+          ]
+          if positive:
+              recovery_state = 'positive'
+              explicit_zero = False
+          elif zero:
+              recovery_state = 'zero'
+              explicit_zero = True
+          else:
+              recovery_state = 'unknown'
+              explicit_zero = False
+
+          labels: list[str] = []
+          seen: set[str] = set()
+          for record in positive:
+              for label in record['labels']:
+                  token = normalise(str(label))
+                  if token and token not in seen:
+                      seen.add(token)
+                      labels.append(str(label))
+          remaining_labels = [
+              label for label in labels
+              if 'gnome-flashback' not in normalise(label)
+          ]
+
+          failed_steps: list[dict[str, Any]] = []
+          for job in jobs.get('jobs', []):
+              if job.get('conclusion') not in (None, 'success', 'skipped', 'neutral'):
+                  failed_steps.append({
+                      'job': job.get('name'), 'step': '(job)',
+                      'conclusion': job.get('conclusion'),
+                      'job_id': job.get('id'), 'html_url': job.get('html_url'),
+                  })
+              for step in job.get('steps') or []:
+                  if step.get('conclusion') not in (None, 'success', 'skipped', 'neutral'):
+                      failed_steps.append({
+                          'job': job.get('name'), 'step': step.get('name'),
+                          'conclusion': step.get('conclusion'),
+                          'number': step.get('number'), 'job_id': job.get('id'),
+                          'html_url': job.get('html_url'),
+                      })
+
+          if run.get('head_sha') != expected_head:
+              category = 'blocked'
+              reason = 'target run head SHA differs from the locked reconstruction commit'
+          elif run.get('path') and run.get('path') != target_workflow:
+              category = 'blocked'
+              reason = 'target run workflow path differs from the locked workflow'
+          elif run.get('status') != 'completed':
+              category = 'blocked'
+              reason = 'target run is not completed'
+          elif run.get('conclusion') != 'success':
+              category = 'failure-debug'
+              reason = f"target run concluded with {run.get('conclusion')!r}"
+          elif recovery_state == 'positive' and remaining_labels:
+              category = 'package-recovery'
+              reason = 'the exact-source gate passed and explicit unresolved source labels remain'
+          elif recovery_state == 'zero' and explicit_zero:
+              category = 'iso-stage0'
+              reason = 'the exact-source gate passed and authoritative evidence explicitly reports zero unresolved sources'
+          else:
+              category = 'source-recovery-audit'
+              reason = 'the exact-source gate passed, but the global unresolved-source state is not authoritatively zero'
+
+          api_by_path = {
+              item['path']: item for item in workflow_api.get('workflows', [])
+              if item.get('state') == 'active' and item.get('path')
+          }
+
+          def candidates_for(route: str) -> list[dict[str, Any]]:
+              output: list[dict[str, Any]] = []
+              workflow_files = sorted(
+                  list(Path('.github/workflows').glob('*.yml'))
+                  + list(Path('.github/workflows').glob('*.yaml'))
+              )
+              for path in workflow_files:
+                  path_text = path.as_posix()
+                  if path_text in (current_workflow, target_workflow):
+                      continue
+                  item = api_by_path.get(path_text)
+                  if not item:
+                      continue
+                  text = path.read_text(encoding='utf-8')
+                  if 'workflow_dispatch' not in text:
+                      continue
+                  lower_path = path_text.casefold()
+                  lower_text = text.casefold()
+                  hay = lower_path + '\n' + lower_text
+                  score = 0
+                  matched = None
+                  forbidden = ('export', 'apply', 'temporary', 'scratch')
+                  if route == 'failure-debug':
+                      if 'gnome-flashback' in lower_path:
+                          score += 100
+                      elif 'gnome-flashback' in lower_text:
+                          score += 35
+                      for word, bonus in (
+                          ('debug', 80), ('diagnostic', 70),
+                          ('differential', 60), ('inspect', 25)
+                      ):
+                          if word in hay:
+                              score += bonus
+                      if score < 120:
+                          continue
+                  elif route == 'package-recovery':
+                      if any(word in lower_path for word in forbidden + ('debug', 'diagnostic')):
+                          continue
+                      for label in remaining_labels:
+                          token = normalise(label)
+                          label_score = 0
+                          if token and token in normalise(lower_path):
+                              label_score += 130
+                          if token and token in normalise(lower_text):
+                              label_score += 55
+                          if label_score > score:
+                              score = label_score
+                              matched = label
+                      for word, bonus in (
+                          ('reconstruct', 55), ('recover', 50),
+                          ('promote', 40), ('promotion', 40),
+                          ('exact', 25), ('build', 15)
+                      ):
+                          if word in hay:
+                              score += bonus
+                      if matched is None or score < 110:
+                          continue
+                  elif route == 'source-recovery-audit':
+                      if any(word in lower_path for word in forbidden + ('debug', 'diagnostic')):
+                          continue
+                      if 'source-recovery' in hay or 'source_recovery' in hay:
+                          score += 90
+                      if 'exact-source' in hay or 'exact_source' in hay:
+                          score += 80
+                      for word, bonus in (
+                          ('audit', 65), ('rollup', 60), ('reconcile', 55),
+                          ('status', 35), ('summary', 30),
+                          ('promotion', 25), ('manifest', 25)
+                      ):
+                          if word in hay:
+                              score += bonus
+                      if 'gnome-flashback' in lower_path:
+                          score -= 100
+                      if score < 105:
+                          continue
+                  elif route == 'iso-stage0':
+                      if any(word in lower_path for word in forbidden + (
+                          'debug', 'diagnostic', 'differential', 'test', 'verify-only'
+                      )):
+                          continue
+                      if 'stage0' in hay or 'stage-0' in hay:
+                          score += 150
+                      if 'iso' in lower_path:
+                          score += 110
+                      elif 'iso' in lower_text:
+                          score += 45
+                      for word, bonus in (
+                          ('assemble', 45), ('build', 25), ('qemu', 5)
+                      ):
+                          if word in hay:
+                              score += bonus
+                      if score < 130:
+                          continue
+                  else:
+                      continue
+                  output.append({
+                      'workflow_id': int(item['id']), 'path': path_text,
+                      'name': item.get('name'), 'score': score,
+                      'matched_unresolved_label': matched,
+                  })
+              output.sort(key=lambda value: (-value['score'], value['path']))
+              return output[:12]
+
+          candidate_category = category
+          candidates = candidates_for(category)
+          if category == 'package-recovery' and not candidates:
+              candidate_category = 'source-recovery-audit'
+              candidates = candidates_for(candidate_category)
+              reason += '; no package-specific zero-input workflow was found, so routing is limited to a recovery audit'
+
+          def gh_json(arguments: list[str]) -> Any:
+              result = subprocess.run(
+                  ['gh', 'api', *arguments], text=True,
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+              )
+              return json.loads(result.stdout)
+
+          dispatch = {'allowed': category != 'blocked' and bool(candidates),
+                      'attempts': [], 'selected': None}
+          if dispatch['allowed']:
+              for candidate in candidates:
+                  active = gh_json([
+                      f'/repos/{repo}/actions/runs?branch={branch}&per_page=100'
+                  ]).get('workflow_runs', [])
+                  duplicate = next((
+                      item for item in active
+                      if int(item.get('workflow_id') or 0) == candidate['workflow_id']
+                      and item.get('status') in (
+                          'requested', 'waiting', 'pending', 'queued', 'in_progress'
+                      )
+                  ), None)
+                  if duplicate:
+                      attempt = {
+                          'path': candidate['path'],
+                          'workflow_id': candidate['workflow_id'],
+                          'result': 'already-active',
+                          'run_id': duplicate.get('id'),
+                          'run_url': duplicate.get('html_url'),
+                          'run_status': duplicate.get('status'),
+                      }
+                      dispatch['attempts'].append(attempt)
+                      dispatch['selected'] = attempt
+                      break
+                  result = subprocess.run([
+                      'gh', 'api', '--method', 'POST',
+                      f"/repos/{repo}/actions/workflows/{candidate['workflow_id']}/dispatches",
+                      '-f', f'ref={branch}',
+                  ], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                  if result.returncode != 0:
+                      dispatch['attempts'].append({
+                          'path': candidate['path'],
+                          'workflow_id': candidate['workflow_id'],
+                          'result': 'dispatch-failed',
+                          'error': result.stderr[-2000:],
+                      })
+                      continue
+                  time.sleep(5)
+                  followups = gh_json([
+                      f"/repos/{repo}/actions/workflows/{candidate['workflow_id']}/runs?branch={branch}&event=workflow_dispatch&per_page=10"
+                  ]).get('workflow_runs', [])
+                  followup = followups[0] if followups else {}
+                  attempt = {
+                      'path': candidate['path'],
+                      'workflow_id': candidate['workflow_id'],
+                      'result': 'dispatched',
+                      'run_id': followup.get('id'),
+                      'run_url': followup.get('html_url'),
+                      'run_status': followup.get('status'),
+                      'run_head_sha': followup.get('head_sha'),
+                  }
+                  dispatch['attempts'].append(attempt)
+                  dispatch['selected'] = attempt
+                  break
+
+          state = {
+              'schema_version': 1,
+              'generated_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+              'repository': repo,
+              'branch': branch,
+              'target_lock': {
+                  'run_id': target_run_id,
+                  'expected_head_sha': expected_head,
+                  'expected_workflow_path': target_workflow,
+              },
+              'target_run': {
+                  key: run.get(key) for key in (
+                      'id', 'name', 'event', 'status', 'conclusion',
+                      'workflow_id', 'path', 'head_branch', 'head_sha',
+                      'run_number', 'run_attempt', 'created_at', 'updated_at',
+                      'run_started_at', 'html_url'
+                  )
+              },
+              'failed_steps': failed_steps,
+              'target_artifacts': {
+                  'count': artifacts.get('total_count'),
+                  'items': [{
+                      key: item.get(key) for key in (
+                          'id', 'name', 'size_in_bytes', 'expired', 'digest',
+                          'created_at', 'expires_at'
+                      )
+                  } for item in artifacts.get('artifacts', [])],
+              },
+              'source_recovery': {
+                  'state': recovery_state,
+                  'explicit_zero': explicit_zero,
+                  'authoritative_threshold': 12,
+                  'authoritative_record_count': len(authoritative),
+                  'positive_record_count': len(positive),
+                  'zero_record_count': len(zero),
+                  'maximum_reported_unresolved_count': max(
+                      (record['count'] for record in positive), default=0
+                  ),
+                  'unresolved_labels': labels,
+                  'unresolved_labels_after_target': remaining_labels,
+                  'authoritative_records': sorted(
+                      authoritative,
+                      key=lambda value: (-value['score'], value['path'], value['pointer'])
+                  )[:200],
+                  'all_record_count': len(records),
+                  'policy': [
+                      'positive authoritative evidence overrides zero evidence',
+                      'absence of an unresolved list is unknown, never zero',
+                      'ISO routing requires an explicit global zero field',
+                  ],
+              },
+              'evidence_parse_errors': parse_errors,
+              'routing': {
+                  'category': category,
+                  'candidate_category': candidate_category,
+                  'reason': reason,
+                  'candidates': candidates,
+                  'dispatch': dispatch,
+              },
+          }
+
+          status_json = status_dir / f'continuation-run-{target_run_id}.json'
+          status_md = status_dir / f'continuation-run-{target_run_id}.md'
+          write_json(status_json, state)
+
+          selected = dispatch.get('selected') or {}
+          lines = [
+              '# Hancom Gooroom 3.3 ARM64 continuation gate', '',
+              f"- Generated: `{state['generated_at']}`",
+              f"- Target run: `{run.get('id')}`",
+              f"- Target status: `{run.get('status')}`",
+              f"- Target conclusion: `{run.get('conclusion')}`",
+              f"- Target head SHA: `{run.get('head_sha')}`",
+              f"- Exact-source state: `{recovery_state}`",
+              f"- Explicit unresolved zero: `{str(explicit_zero).lower()}`",
+              f"- Remaining explicit labels: " + (
+                  ', '.join(f'`{label}`' for label in remaining_labels)
+                  or '_none explicitly recovered_'
+              ), '', '## Routing', '',
+              f"- Category: `{category}`",
+              f"- Candidate category: `{candidate_category}`",
+              f"- Reason: {reason}",
+              f"- Dispatch result: `{selected.get('result', 'none')}`",
+              f"- Selected workflow: `{selected.get('path')}`",
+              f"- Selected run: `{selected.get('run_id')}`",
+              '', '## Failed target steps', '',
+          ]
+          if failed_steps:
+              lines.extend(
+                  f"- `{item.get('job')}` / `{item.get('step')}`: `{item.get('conclusion')}`"
+                  for item in failed_steps
+              )
+          else:
+              lines.append('- None reported by the target jobs API.')
+          lines.extend(['', '## Gate policy', '',
+                        '- Missing evidence never opens the ISO gate.',
+                        '- At most one follow-up workflow is dispatched.',
+                        '- Active follow-up runs suppress duplicate dispatch.', ''])
+          status_md.write_text('\n'.join(lines), encoding='utf-8')
+
+          inventory = []
+          for path in sorted(root.rglob('*')):
+              if path.is_file():
+                  digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                  inventory.append({
+                      'path': path.as_posix(), 'size': path.stat().st_size,
+                      'sha256': digest,
+                  })
+          write_json(root / 'EVIDENCE-SHA256.json', inventory)
+          (root / status_json.name).write_bytes(status_json.read_bytes())
+          (root / status_md.name).write_bytes(status_md.read_bytes())
+          print(json.dumps({
+              'target_conclusion': run.get('conclusion'),
+              'source_recovery_state': recovery_state,
+              'route': category,
+              'dispatch': selected,
+          }, indent=2, ensure_ascii=False))
+          PY
+
+      - name: Commit the immutable continuation record
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "arm64/status/continuation-run-${TARGET_RUN_ID}.json" \
+            "arm64/status/continuation-run-${TARGET_RUN_ID}.md"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record ARM64 continuation gate for run ${TARGET_RUN_ID}"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$BRANCH"
+            if git rebase "origin/${BRANCH}" && git push origin "HEAD:${BRANCH}"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload the full continuation evidence bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-continuation-run-${{ env.TARGET_RUN_ID }}-${{ github.run_id }}
+          path: |
+            work/continuation-run-${{ env.TARGET_RUN_ID }}
+            arm64/status/continuation-run-${{ env.TARGET_RUN_ID }}.json
+            arm64/status/continuation-run-${{ env.TARGET_RUN_ID }}.md
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Publish the continuation summary
+        if: always()
+        shell: bash
+        run: |
+          report="arm64/status/continuation-run-${TARGET_RUN_ID}.md"
+          if test -f "$report"; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'Continuation report was not produced.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
