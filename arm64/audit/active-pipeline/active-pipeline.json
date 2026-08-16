@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 218,
-    "workflow_name_count": 218,
+    "workflow_count": 219,
+    "workflow_name_count": 219,
     "referenced_local_file_count": 316,
     "error_count": 3,
     "warning_count": 42,
@@ -3346,6 +3346,20 @@
         "arm64/locks/stage0-recovery/release-lock.json",
         "arm64/scripts/build_recovery_stage0_v1.sh"
       ]
+    },
+    {
+      "filename": "arm64-refresh-continuation-target-gnome-flashback-success.yml",
+      "path": ".github/workflows/arm64-refresh-continuation-target-gnome-flashback-success.yml",
+      "name": "ARM64 refresh - retarget continuation to verified gnome-flashback run",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-repair-audit-coverage.yml",
