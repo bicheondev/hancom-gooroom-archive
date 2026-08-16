@@ -1,4 +1,4 @@
-name: ARM64 port - dispatch current gnome-flashback ELF differential
+name: ARM64 port - dispatch gnome-flashback differential after warning line fix
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Dispatch the current exact AMD64 ELF differential
+      - name: Dispatch the exact AMD64 ELF differential after warning-line relocation
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
