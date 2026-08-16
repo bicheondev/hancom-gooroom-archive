@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 210,
-    "workflow_name_count": 210,
-    "referenced_local_file_count": 313,
+    "workflow_count": 211,
+    "workflow_name_count": 211,
+    "referenced_local_file_count": 314,
     "error_count": 3,
     "warning_count": 41,
     "passed": false
@@ -2990,6 +2990,23 @@
       ]
     },
     {
+      "filename": "arm64-record-selected-continuation-run.yml",
+      "path": ".github/workflows/arm64-record-selected-continuation-run.yml",
+      "name": "ARM64 record selected continuation run",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/status/continuation-selected-run.json"
+      ]
+    },
+    {
       "filename": "arm64-recover-exact-package-pool.yml",
       "path": ".github/workflows/arm64-recover-exact-package-pool.yml",
       "name": "ARM64 port - recover exact package pool from artifacts",
@@ -5382,6 +5399,9 @@
     "arm64/status/continuation-router-bootstrap.json": [
       ".github/workflows/arm64-bootstrap-continuation-router.yml"
     ],
+    "arm64/status/continuation-selected-run.json": [
+      ".github/workflows/arm64-record-selected-continuation-run.yml"
+    ],
     "arm64/status/coverage.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
@@ -5423,11 +5443,6 @@
     }
   ],
   "warnings": [
-    {
-      "path": ".github/workflows/arm64-bootstrap-continuation-router.yml",
-      "local_path": "arm64/status/continuation-router-bootstrap.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
       "local_path": "arm64/locks/final-iso-v2/release-lock.json",
@@ -5586,6 +5601,11 @@
     {
       "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
       "local_path": "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-record-selected-continuation-run.yml",
+      "local_path": "arm64/status/continuation-selected-run.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
