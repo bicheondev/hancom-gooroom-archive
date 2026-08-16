@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 214,
-    "workflow_name_count": 214,
+    "workflow_count": 215,
+    "workflow_name_count": 215,
     "referenced_local_file_count": 315,
     "error_count": 3,
     "warning_count": 40,
@@ -2325,6 +2325,22 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json"
+      ]
+    },
+    {
+      "filename": "arm64-patch-gnome-flashback-arm64-section-reader-v2.yml",
+      "path": ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader-v2.yml",
+      "name": "ARM64 patch - architecture-neutral gnome-flashback ELF section reader v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py"
       ]
     },
     {
@@ -5382,6 +5398,7 @@
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
+      ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader-v2.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
