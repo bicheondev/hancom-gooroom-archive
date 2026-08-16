@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 220,
-    "workflow_name_count": 220,
-    "referenced_local_file_count": 316,
+    "workflow_count": 221,
+    "workflow_name_count": 221,
+    "referenced_local_file_count": 317,
     "error_count": 4,
     "warning_count": 43,
     "passed": false
@@ -44,6 +44,22 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-apply-gf-arm64-verifier-instrumentation-v2.yml",
+      "path": ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml",
+      "name": "ARM64 apply gnome-flashback verifier instrumentation v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py"
+      ]
     },
     {
       "filename": "arm64-apply-gooroom-guide-source-delta-v1.yml",
@@ -4982,6 +4998,9 @@
     ],
     "arm64/scripts/inspect_lock_schemas.py": [
       ".github/workflows/arm64-lock-schema-audit.yml"
+    ],
+    "arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py": [
+      ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml"
     ],
     "arm64/scripts/inventory_iso.py": [
       ".github/workflows/arm64-inventory.yml"
