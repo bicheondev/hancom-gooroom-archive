@@ -1,4 +1,4 @@
-name: ARM64 port - dispatch corrected gnome-flashback han3u4 diagnostics v2
+name: ARM64 port - dispatch current gnome-flashback ELF differential
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: hancom-gooroom-33-dispatch-corrected-gnome-flashback-han3u4-v2
+  group: hancom-gooroom-33-dispatch-current-gnome-flashback-elf-differential
   cancel-in-progress: true
 
 jobs:
@@ -20,13 +20,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Dispatch complete corrected AMD64 target and candidate capture
+      - name: Dispatch the current exact AMD64 ELF differential
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euxo pipefail
           gh workflow run \
-            arm64-diagnose-gnome-flashback-han3u4-debs.yml \
+            arm64-debug-gnome-flashback-han3u4.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref arm64-port
