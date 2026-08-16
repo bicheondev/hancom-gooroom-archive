@@ -1,0 +1,224 @@
+{
+  "blocking_reasons": [],
+  "branch": "arm64-port",
+  "controller": "gnome-flashback-han3u4-continuation-v3",
+  "downstream": [],
+  "error": {
+    "message": "parent run concluded failure",
+    "traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 317, in <module>\nRuntimeError: parent run concluded failure\n",
+    "type": "RuntimeError"
+  },
+  "generated_at": "2026-08-16T10:55:45.636376Z",
+  "parent": {
+    "artifacts": [
+      {
+        "created_at": "2026-08-16T10:09:24Z",
+        "digest": "sha256:6931afe998f3bbd4bf454d6301ab3cdff6fdede641e79cbd62ca1e4ac2dea33f",
+        "expired": false,
+        "id": 9261986590,
+        "name": "gnome-flashback-han3u4-arm64-diagnostics-31940464529",
+        "size_in_bytes": 63239
+      },
+      {
+        "created_at": "2026-08-16T10:02:15Z",
+        "digest": "sha256:a4daec77409a5ad3148d28fd1d53a4185edc32c13b0455eb8925b9a98a4ff1ab",
+        "expired": false,
+        "id": 9261901648,
+        "name": "gnome-flashback-han3u4-amd64-diagnostics-31940464529",
+        "size_in_bytes": 102342
+      },
+      {
+        "created_at": "2026-08-16T10:02:14Z",
+        "digest": "sha256:3e6dc62638bad139f28a6e3e001b859164605813f4a8d4182b41b039b37fceea",
+        "expired": false,
+        "id": 9261901487,
+        "name": "gnome-flashback-han3u4-verified-source-v1",
+        "size_in_bytes": 1786400
+      }
+    ],
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 95148762318,
+        "name": "Reconstruct and verify the exact AMD64 source relationship",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check out the exact reconstruction implementation",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install deterministic source, Debian, ELF, and GResource tools",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Download and revalidate the immutable vendor AMD64 authority",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check out the exact public Hancom and Gooroom lineages",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Reconstruct the bounded han3u4 source candidate",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build the reconstructed source in a clean historical AMD64 rootfs",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Enforce exact controls, payloads, and normalized AMD64 ELF bytes",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Upload the verified reconstructed source authority",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Upload AMD64 reconstruction diagnostics",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Check out the exact reconstruction implementation",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "failure",
+        "id": 95149121401,
+        "name": "Build and verify the reconstructed tree natively on ARM64",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check out the exact native builder and verifier",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Download the verified reconstructed source authority",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify native host, tools, and source authority",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Re-download and revalidate the immutable AMD64 comparison authority",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Build in a clean native ARM64 historical rootfs",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "failure",
+            "name": "Verify every ARM64 package, ELF, and architecture-neutral payload",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Upload the verified native ARM64 packages",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Upload native build diagnostics",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Check out the exact native builder and verifier",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "conclusion": "skipped",
+        "id": 95149901160,
+        "name": "Persist the reconstructed source and verified ARM64 authority",
+        "status": "completed",
+        "steps": []
+      }
+    ],
+    "run": {
+      "conclusion": "failure",
+      "created_at": "2026-08-16T09:58:54Z",
+      "event": "workflow_dispatch",
+      "head_branch": "arm64-port",
+      "head_sha": "ab94cf9f3e1f78088f284f1d8300ee0dfd90da8b",
+      "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31940464529",
+      "id": 31940464529,
+      "name": "ARM64 port - reconstruct, build, and promote gnome-flashback han3u4",
+      "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      "run_number": 5,
+      "run_started_at": "2026-08-16T09:58:54Z",
+      "status": "completed",
+      "updated_at": "2026-08-16T10:09:26Z"
+    }
+  },
+  "phase": "failed",
+  "promotion": null,
+  "repository": "bicheondev/hancom-gooroom-archive",
+  "schema": 3,
+  "stage0_gate": null,
+  "stage0_run": null
+}
