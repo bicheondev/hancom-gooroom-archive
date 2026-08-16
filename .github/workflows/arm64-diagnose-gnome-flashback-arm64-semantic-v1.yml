@@ -1,0 +1,278 @@
+name: ARM64 diagnose gnome-flashback han3u4 semantic verification v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-diagnose-gnome-flashback-arm64-semantic-v1
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: '31940464529'
+  SOURCE_RUN_SHA: ab94cf9f3e1f78088f284f1d8300ee0dfd90da8b
+  SOURCE_ARTIFACT_NAME: gnome-flashback-han3u4-verified-source-v1
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_RUN_SHA: f5199ad765b7bd080b4452ecf4bfde785beb35da
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    steps:
+      - name: Check out the current native builder and verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install native build and diagnostic tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git jq python3 unzip xz-utils
+          bash -n arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+          python3 -m py_compile arm64/scripts/verify_gnome_flashback_han3u4_arm64.py
+
+      - name: Download and validate the verified reconstructed source authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/source-authority
+          mkdir -p work/source-authority
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" \
+            > work/source-run.json
+          jq -e \
+            --arg sha "$SOURCE_RUN_SHA" \
+            --arg path '.github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml' '
+              .id == 31940464529
+              and .head_sha == $sha
+              and .path == $path
+              and .status == "completed"
+            ' work/source-run.json >/dev/null
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT_NAME" \
+            --dir work/source-authority
+          (cd work/source-authority && sha256sum --check --strict LOCKSUMS.sha256)
+          archive_sha="$(jq -r '.reconstruction.archive_sha256' \
+            work/source-authority/reconstruction-lock.json)"
+          echo "$archive_sha  work/source-authority/reconstructed-source.tar.gz" \
+            | sha256sum --check --strict -
+          jq -e '
+            .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .source_status == "verified-reconstructed-git-tree"
+            and .claims.amd64_equivalence_verified == true
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' work/source-authority/reconstruction-lock.json >/dev/null
+
+      - name: Download and revalidate the immutable AMD64 comparison authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor work/target-debs
+          mkdir -p work/vendor work/target-debs
+          metadata=work/vendor-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+            ' "$metadata" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir work/vendor
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import shutil
+
+          root = Path('work')
+          lock = json.loads(
+              (root / 'source-authority/target-binary-lock.json').read_text(encoding='utf-8')
+          )
+          rows = lock.get('packages')
+          if not isinstance(rows, list) or len(rows) != 3:
+              raise SystemExit('target binary authority package set is invalid')
+          for row in rows:
+              matches = list((root / 'vendor').rglob(row['filename']))
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"{row['filename']}: expected one vendor match, got {len(matches)}"
+                  )
+              source = matches[0]
+              if source.stat().st_size != int(row['size']):
+                  raise SystemExit(f"{row['filename']}: size mismatch")
+              digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              if digest != row['sha256']:
+                  raise SystemExit(f"{row['filename']}: SHA-256 mismatch")
+              shutil.copy2(source, root / 'target-debs' / row['filename'])
+          PY
+
+      - name: Build the verified source in a clean native ARM64 historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo bash arm64/scripts/build_gnome_flashback_han3u4_chroot.sh \
+            arm64 \
+            work/source-authority/reconstructed-source.tar.gz \
+            work/arm64-build \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" work/arm64-build
+
+      - name: Capture the exact fail-closed verifier result
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf work/arm64-verification
+          rm -f work/arm64-verifier.stdout work/arm64-verifier.stderr \
+            work/arm64-verifier.exit-status
+          status=0
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_arm64.py \
+            --target-deb-dir work/target-debs \
+            --candidate-deb-dir work/arm64-build/debs \
+            --output-dir work/arm64-verification \
+            >work/arm64-verifier.stdout \
+            2>work/arm64-verifier.stderr || status=$?
+          printf '%s\n' "$status" > work/arm64-verifier.exit-status
+          cat work/arm64-verifier.stdout
+          cat work/arm64-verifier.stderr >&2
+          exit 0
+
+      - name: Generate direct ELF semantic comparison evidence
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p work/arm64-semantic-evidence
+          python3 - <<'PY'
+          from pathlib import Path
+          import importlib.util
+          import json
+          import shutil
+          import subprocess
+          import tempfile
+
+          script = Path('arm64/scripts/verify_gnome_flashback_han3u4_arm64.py')
+          spec = importlib.util.spec_from_file_location('arm64_verifier', script)
+          if spec is None or spec.loader is None:
+              raise SystemExit('cannot load ARM64 verifier')
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          target_deb = next(Path('work/target-debs').glob('gnome-flashback_*_amd64.deb'))
+          candidate_deb = next(Path('work/arm64-build/debs').glob('gnome-flashback_*_arm64.deb'))
+          report = {
+              'target_deb': target_deb.name,
+              'candidate_deb': candidate_deb.name,
+              'runtime_elfs': [],
+          }
+          with tempfile.TemporaryDirectory(prefix='gf-arm64-semantic-') as temporary:
+              root = Path(temporary)
+              target_root = root / 'target'
+              candidate_root = root / 'candidate'
+              subprocess.run(['dpkg-deb', '-x', str(target_deb), str(target_root)], check=True)
+              subprocess.run(['dpkg-deb', '-x', str(candidate_deb), str(candidate_root)], check=True)
+              target_elfs = {
+                  path.relative_to(target_root).as_posix(): path
+                  for path in target_root.rglob('*')
+                  if path.is_file() and path.read_bytes()[:4] == b'\x7fELF'
+              }
+              candidate_elfs = {
+                  path.relative_to(candidate_root).as_posix(): path
+                  for path in candidate_root.rglob('*')
+                  if path.is_file() and path.read_bytes()[:4] == b'\x7fELF'
+              }
+              report['target_elf_paths'] = sorted(target_elfs)
+              report['candidate_elf_paths'] = sorted(candidate_elfs)
+              for path in sorted(set(target_elfs) & set(candidate_elfs)):
+                  target = target_elfs[path]
+                  candidate = candidate_elfs[path]
+                  target_dynamic = module.dynamic_identity(target)
+                  candidate_dynamic = module.dynamic_identity(candidate)
+                  target_symbols = module.exported_symbol_set(target)
+                  candidate_symbols = module.exported_symbol_set(candidate)
+                  report['runtime_elfs'].append({
+                      'path': path,
+                      'target_dynamic_identity': target_dynamic,
+                      'candidate_dynamic_identity': candidate_dynamic,
+                      'dynamic_identity_identical': target_dynamic == candidate_dynamic,
+                      'target_exported_symbol_count': len(target_symbols),
+                      'candidate_exported_symbol_count': len(candidate_symbols),
+                      'exported_symbols_identical': target_symbols == candidate_symbols,
+                      'target_only_exported_symbols': sorted(set(target_symbols) - set(candidate_symbols)),
+                      'candidate_only_exported_symbols': sorted(set(candidate_symbols) - set(target_symbols)),
+                  })
+          Path('work/arm64-semantic-evidence/comparison.json').write_text(
+              json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          cat work/arm64-semantic-evidence/comparison.json
+
+      - name: Upload the complete ARM64 diagnostic authority
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-arm64-semantic-diagnostic-${{ github.run_id }}
+          path: |
+            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+            work/arm64-build/debs
+            work/target-debs
+            work/arm64-verification
+            work/arm64-semantic-evidence
+            work/arm64-verifier.stdout
+            work/arm64-verifier.stderr
+            work/arm64-verifier.exit-status
+            work/source-authority/reconstruction-lock.json
+            work/source-run.json
+            work/vendor-artifact-metadata.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce the captured verifier result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/arm64-verifier.exit-status
+          test "$(cat work/arm64-verifier.exit-status)" = 0
