@@ -1,0 +1,396 @@
+name: ARM64 debug - gnome-flashback dynamic string link order
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-debug-gnome-flashback-link-order.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-debug-gnome-flashback-link-order
+  cancel-in-progress: true
+
+env:
+  VERSION: 3.38.0-2+grm3u2+han3u4
+  BASE_REPOSITORY: hancomgooroom/gnome-flashback
+  BASE_COMMIT: df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7
+  BASE_TREE: a5961872b3538a33b1ece5c76d0cf67506c71e2b
+  PUBLIC_REPOSITORY: gooroom/gnome-flashback
+  PUBLIC_COMMIT: 68a47d769b0f15b84c532746ced1f8ae538ab545
+  PUBLIC_TREE: 830a852c6272843c4c23da7e80b3b3961d4aeb38
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+
+jobs:
+  link-order:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out the exact diagnostic implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic build and binary-analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq libglib2.0-0 python3 unzip xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          bash -n arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+
+      - name: Download and lock the immutable vendor AMD64 target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-link-order
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,target,authority,diagnostics}
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          target_name="gnome-flashback_${VERSION}_amd64.deb"
+          mapfile -t matches < <(find "$root/vendor" -type f -name "$target_name" -print)
+          test "${#matches[@]}" -eq 1
+          test "$(stat -c '%s' "${matches[0]}")" -eq 436564
+          test "$(sha256sum "${matches[0]}" | awk '{print $1}')" \
+            = 6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408
+          cp -a "${matches[0]}" "$root/target/target.deb"
+          dpkg-deb -x "$root/target/target.deb" "$root/target/root"
+          cp -a "$root/target/root/usr/bin/gnome-flashback" \
+            "$root/target/target-gnome-flashback"
+
+      - name: Check out the exact public Hancom and Gooroom lineages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-link-order
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$root/hancom-source"
+          git -C "$root/hancom-source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/hancom-source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${PUBLIC_REPOSITORY}.git" "$root/gooroom-source"
+          git -C "$root/gooroom-source" fetch --depth=1 origin "$PUBLIC_COMMIT"
+          git -C "$root/gooroom-source" checkout --detach "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD)" = "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD^{tree})" = "$PUBLIC_TREE"
+
+      - name: Reconstruct the current bounded source candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-link-order
+          python3 arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            --hancom-repository "$root/hancom-source" \
+            --gooroom-repository "$root/gooroom-source" \
+            --target-deb-dir "$root/vendor" \
+            --output-dir "$root/authority"
+          test "$(sha256sum arm64/scripts/reconstruct_gnome_flashback_han3u4.py | awk '{print $1}')" \
+            = a14115737669bb0206a28e709d66d3e43ba31bd7b65f4bfecd00f720cf044c80
+
+      - name: Build once while retaining the exact chroot and object graph
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-link-order
+          cp arm64/scripts/build_gnome_flashback_han3u4_chroot.sh "$root/build-retained.sh"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('work/gnome-flashback-link-order/build-retained.sh')
+          text = path.read_text(encoding='utf-8')
+          old = '\nrm -rf "$ROOTFS"\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'cleanup anchor count: {text.count(old)}')
+          text = text.replace(old, '\nprintf "%s\\n" "$ROOTFS" > "$OUTPUT_DIR/retained-rootfs.path"\n')
+          path.write_text(text, encoding='utf-8')
+          PY
+          sudo bash "$root/build-retained.sh" \
+            amd64 \
+            "$root/authority/reconstructed-source.tar.gz" \
+            "$root/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$root/amd64-build"
+
+      - name: Capture provenance and execute controlled relink variants
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-link-order
+          rootfs="$root/amd64-build/rootfs"
+          diag_host="$root/diagnostics"
+          diag_guest=/build/linkdiag
+          mkdir -p "$diag_host"
+          sudo mkdir -p "$rootfs$diag_guest"
+          sudo cp -a "$root/target/target-gnome-flashback" \
+            "$rootfs$diag_guest/target-gnome-flashback"
+
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            diag=/build/linkdiag
+            source=/build/source
+            mkdir -p "$diag"/{binaries,sections,maps,traces,reports,objects,archives}
+
+            {
+              uname -a
+              gcc --version
+              ld --version
+              as --version
+              ar --version
+              dpkg-query -W \
+                binutils binutils-common binutils-x86-64-linux-gnu \
+                gcc gcc-10 libgcc-10-dev libc6-dev \
+                libglib2.0-0 libglib2.0-dev libgio-2.0-0 2>/dev/null || true
+              dpkg-query -W libgtk-3-0 libgtk-3-dev libgdk-pixbuf-2.0-0 \
+                libgdk-pixbuf-2.0-dev libgnome-desktop-3-19 \
+                libgnome-desktop-3-dev 2>/dev/null || true
+            } >"$diag/reports/toolchain-and-library-versions.txt" 2>&1
+
+            cp -a "$source/gnome-flashback/.libs/gnome-flashback" \
+              "$diag/binaries/build-tree-original"
+            cp -a "$source/gnome-flashback/libscreenshot/.libs/"*.o \
+              "$diag/objects/" || true
+            cp -a "$source/gnome-flashback/libscreenshot/.libs/libscreenshot.a" \
+              "$diag/archives/"
+            ar t "$source/gnome-flashback/libscreenshot/.libs/libscreenshot.a" \
+              >"$diag/reports/libscreenshot-ar-order.txt"
+            nm -A "$source/gnome-flashback/libscreenshot/.libs/"*.o \
+              >"$diag/reports/libscreenshot-nm.txt" 2>&1 || true
+            readelf -Ws \
+              "$source/gnome-flashback/libscreenshot/.libs/libscreenshot_la-gf-screenshot.o" \
+              >"$diag/reports/gf-screenshot-object-symbols.txt"
+            readelf -rW \
+              "$source/gnome-flashback/libscreenshot/.libs/libscreenshot_la-gf-screenshot.o" \
+              >"$diag/reports/gf-screenshot-object-relocations.txt"
+
+            find "$source" -type f \( -name "*.o" -o -name "*.a" \) -print0 \
+              | while IFS= read -r -d "" file; do
+                  if grep -aq "g_date_time_new_now_local" "$file"; then
+                    printf "%s\\n" "$file"
+                    nm -A "$file" 2>/dev/null \
+                      | grep "g_date_time_new_now_local" || true
+                  fi
+                done >"$diag/reports/build-files-containing-symbol.txt"
+
+            ldd "$diag/binaries/build-tree-original" \
+              >"$diag/reports/ldd.txt"
+            awk "{ for (i=1; i<=NF; i++) if (\$i ~ /^\\//) print \$i }" \
+              "$diag/reports/ldd.txt" | LC_ALL=C sort -u \
+              | while IFS= read -r library; do
+                  if readelf -Ws "$library" 2>/dev/null \
+                      | grep -q "g_date_time_new_now_local"; then
+                    printf "%s\\n" "$library"
+                    readelf -Ws "$library" \
+                      | grep "g_date_time_new_now_local"
+                  fi
+                done >"$diag/reports/needed-libraries-containing-symbol.txt"
+          '
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import shlex
+
+          root = Path('work/gnome-flashback-link-order')
+          log = (root / 'amd64-build/build.log').read_text(encoding='utf-8', errors='replace').splitlines()
+          matches = [
+              line.removeprefix('libtool: link: ')
+              for line in log
+              if line.startswith('libtool: link: gcc ') and ' -o gnome-flashback ' in line
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f'final linker command count: {len(matches)}')
+          tokens = shlex.split(matches[0])
+          if tokens.count('-lglib-2.0') != 1:
+              raise SystemExit(f'glib token count: {tokens.count("-lglib-2.0")}')
+
+          def output(tokens, name):
+              result = list(tokens)
+              index = result.index('-o')
+              if result[index + 1] != 'gnome-flashback':
+                  raise SystemExit('unexpected linker output anchor')
+              result[index + 1] = f'/build/linkdiag/binaries/{name}'
+              return result
+
+          def insert_before(tokens, anchor, values):
+              result = list(tokens)
+              index = result.index(anchor)
+              result[index:index] = values
+              return result
+
+          def insert_after(tokens, anchor, values):
+              result = list(tokens)
+              index = result.index(anchor) + 1
+              result[index:index] = values
+              return result
+
+          def move(tokens, names, anchor, after=False):
+              result = list(tokens)
+              for name in names:
+                  if result.count(name) != 1:
+                      raise SystemExit(f'{name}: expected one token, got {result.count(name)}')
+                  result.remove(name)
+              index = result.index(anchor) + (1 if after else 0)
+              result[index:index] = names
+              return result
+
+          backends = '../backends/.libs/libbackends.a'
+          screenshot = '../gnome-flashback/libscreenshot/.libs/libscreenshot.a'
+          shell = '../gnome-flashback/libshell/.libs/libshell.a'
+          glib = ['-lglib-2.0']
+          gio_group = ['-lgio-2.0', '-lgobject-2.0', '-lglib-2.0']
+          variants = {
+              'baseline': list(tokens),
+              'duplicate-glib-before-backends': insert_before(tokens, backends, glib),
+              'duplicate-glib-before-screenshot': insert_before(tokens, screenshot, glib),
+              'duplicate-glib-after-screenshot': insert_after(tokens, screenshot, glib),
+              'duplicate-glib-before-shell': insert_before(tokens, shell, glib),
+              'move-glib-before-backends': move(tokens, glib, backends),
+              'move-glib-before-screenshot': move(tokens, glib, screenshot),
+              'move-glib-after-screenshot': move(tokens, glib, screenshot, after=True),
+              'move-glib-before-shell': move(tokens, glib, shell),
+              'move-gio-group-before-backends': move(tokens, gio_group, backends),
+              'move-gio-group-before-screenshot': move(tokens, gio_group, screenshot),
+              'move-gio-group-after-screenshot': move(tokens, gio_group, screenshot, after=True),
+              'move-gio-group-before-shell': move(tokens, gio_group, shell),
+          }
+
+          guest = root / 'amd64-build/rootfs/build/linkdiag'
+          guest.mkdir(parents=True, exist_ok=True)
+          (guest / 'reports/original-link-command.txt').write_text(
+              matches[0] + '\n', encoding='utf-8'
+          )
+          manifest = {}
+          script = ['#!/bin/bash', 'set -uo pipefail', 'cd /build/source/gnome-flashback', 'overall=0']
+          for name, variant in variants.items():
+              command = output(variant, name)
+              if name == 'baseline':
+                  insert = command.index('-o')
+                  command[insert:insert] = [
+                      '-Wl,-Map=/build/linkdiag/maps/baseline.map',
+                      '-Wl,--trace-symbol=g_date_time_new_now_local',
+                  ]
+              manifest[name] = command
+              rendered = shlex.join(command)
+              script.extend([
+                  f'echo "===== {name} ====="',
+                  f'{rendered} > /build/linkdiag/traces/{name}.stdout 2> /build/linkdiag/traces/{name}.stderr || overall=1',
+              ])
+          script.extend(['exit "$overall"', ''])
+          (guest / 'relink-variants.sh').write_text('\n'.join(script), encoding='utf-8')
+          (guest / 'reports/relink-commands.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          sudo chmod +x "$rootfs$diag_guest/relink-variants.sh"
+          set +e
+          sudo chroot "$rootfs" /build/linkdiag/relink-variants.sh
+          relink_rc=$?
+          set -e
+          printf '%s\n' "$relink_rc" >"$rootfs$diag_guest/reports/relink-exit-status.txt"
+
+          sudo chroot "$rootfs" /usr/bin/python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import struct
+          import subprocess
+
+          root = Path('/build/linkdiag')
+          target = root / 'target-gnome-flashback'
+          sections = ['.dynstr', '.dynsym', '.text', '.rodata', '.gnu.hash', '.rela.plt']
+
+          def digest(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          def dump(binary, section, output):
+              result = subprocess.run(
+                  ['objcopy', f'--dump-section={section}={output}', str(binary)],
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+              )
+              return result.returncode == 0 and output.exists()
+
+          target_sections = {}
+          for section in sections:
+              output = root / 'sections' / f'target{section}.bin'
+              if dump(target, section, output):
+                  target_sections[section] = output
+
+          summary = {}
+          for binary in sorted((root / 'binaries').iterdir()):
+              if not binary.is_file():
+                  continue
+              row = {'binary_sha256': digest(binary), 'sections': {}}
+              mismatches = []
+              for section in sections:
+                  output = root / 'sections' / f'{binary.name}{section}.bin'
+                  if not dump(binary, section, output):
+                      row['sections'][section] = {'present': False}
+                      mismatches.append(section)
+                      continue
+                  target_output = target_sections.get(section)
+                  exact = bool(target_output and output.read_bytes() == target_output.read_bytes())
+                  row['sections'][section] = {
+                      'present': True,
+                      'size': output.stat().st_size,
+                      'sha256': digest(output),
+                      'target_exact': exact,
+                  }
+                  if not exact:
+                      mismatches.append(section)
+              dynstr = (root / 'sections' / f'{binary.name}.dynstr.bin').read_bytes()
+              marker = b'g_date_time_new_now_local\0'
+              row['g_date_time_new_now_local_dynstr_offset'] = dynstr.find(marker)
+              row['mismatched_sections'] = mismatches
+              row['all_tracked_sections_target_exact'] = not mismatches
+              summary[binary.name] = row
+
+          target_dynstr = (root / 'sections/target.dynstr.bin').read_bytes()
+          summary['_target'] = {
+              'g_date_time_new_now_local_dynstr_offset': target_dynstr.find(
+                  b'g_date_time_new_now_local\0'
+              ),
+              'tracked_section_hashes': {
+                  section: digest(path) for section, path in target_sections.items()
+              },
+          }
+          (root / 'reports/variant-summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          sudo chown -R "$(id -u):$(id -g)" "$rootfs$diag_guest"
+          cp -a "$rootfs$diag_guest/." "$diag_host/"
+          jq . "$diag_host/reports/variant-summary.json"
+          rm -rf "$root/amd64-build/rootfs"
+
+      - name: Upload the complete link-order evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-link-order-${{ github.run_id }}
+          path: |
+            work/gnome-flashback-link-order/diagnostics
+            work/gnome-flashback-link-order/authority/reconstruction-lock.json
+            work/gnome-flashback-link-order/authority/reconstruction.patch
+            work/gnome-flashback-link-order/amd64-build/build.log
+            work/gnome-flashback-link-order/amd64-build/debootstrap.log
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
