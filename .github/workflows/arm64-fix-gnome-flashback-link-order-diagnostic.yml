@@ -29,18 +29,13 @@ jobs:
           from pathlib import Path
 
           path = Path('.github/workflows/arm64-debug-gnome-flashback-link-order.yml')
-          text = path.read_text(encoding='utf-8')
-          anchor = '''          gh run download "$VENDOR_RUN_ID" \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --name "$VENDOR_ARTIFACT_NAME" \\
-            --dir "$root/vendor"
-          target_name="gnome-flashback_${VERSION}_amd64.deb"
-          '''
-          replacement = '''          gh run download "$VENDOR_RUN_ID" \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --name "$VENDOR_ARTIFACT_NAME" \\
-            --dir "$root/vendor"
-          mkdir -p "$root/target-debs"
+          lines = path.read_text(encoding='utf-8').splitlines()
+          marker = '            --dir "$root/vendor"'
+          positions = [i for i, line in enumerate(lines) if line == marker]
+          if len(positions) != 1:
+              raise SystemExit(f'download marker count: {len(positions)}')
+          insert_at = positions[0] + 1
+          block = '''          mkdir -p "$root/target-debs"
           for filename in \\
             "gnome-flashback_${VERSION}_amd64.deb" \\
             "gnome-flashback-common_${VERSION}_all.deb" \\
@@ -48,18 +43,15 @@ jobs:
             mapfile -t authority_matches < <(find "$root/vendor" -type f -name "$filename" -print)
             test "${#authority_matches[@]}" -eq 1
             cp -a "${authority_matches[0]}" "$root/target-debs/$filename"
-          done
-          target_name="gnome-flashback_${VERSION}_amd64.deb"
-          '''
-          if text.count(anchor) != 1:
-              raise SystemExit(f'download anchor count: {text.count(anchor)}')
-          text = text.replace(anchor, replacement)
-          old = '            --target-deb-dir "$root/vendor" \\\n'
-          new = '            --target-deb-dir "$root/target-debs" \\\n'
-          if text.count(old) != 1:
-              raise SystemExit(f'target directory anchor count: {text.count(old)}')
-          text = text.replace(old, new)
-          path.write_text(text, encoding='utf-8')
+          done'''.splitlines()
+          lines[insert_at:insert_at] = block
+          old = '            --target-deb-dir "$root/vendor" \\'
+          new = '            --target-deb-dir "$root/target-debs" \\'
+          positions = [i for i, line in enumerate(lines) if line == old]
+          if len(positions) != 1:
+              raise SystemExit(f'target directory marker count: {len(positions)}')
+          lines[positions[0]] = new
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
           git diff --check
           git rm .github/workflows/arm64-fix-gnome-flashback-link-order-diagnostic.yml
