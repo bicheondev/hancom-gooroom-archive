@@ -259,15 +259,138 @@ def exported_symbols(path: Path) -> list[tuple[str, str, str, str]]:
     return sorted(rows)
 
 
+def _elf_uint(payload: bytes, offset: int, size: int, byteorder: str, label: str) -> int:
+    end = offset + size
+    if offset < 0 or end > len(payload):
+        raise RuntimeError(f"ELF {label} escapes the file: {offset}+{size}>{len(payload)}")
+    return int.from_bytes(payload[offset:end], byteorder)
+
+
 def section_bytes(path: Path, section: str, temporary: Path) -> bytes | None:
-    sections = str(run(["readelf", "-SW", str(path)]))
-    if not re.search(rf"\]\s+{re.escape(section)}\s", sections):
+    # Parse section headers directly so an AArch64 runner can inspect the
+    # immutable AMD64 authority without relying on host-target objcopy support.
+    del temporary
+    payload = path.read_bytes()
+    if len(payload) < 16 or payload[:4] != ELF_MAGIC:
+        raise RuntimeError(f"{path}: not an ELF file")
+
+    elf_class = payload[4]
+    data_encoding = payload[5]
+    if data_encoding == 1:
+        byteorder = "little"
+    elif data_encoding == 2:
+        byteorder = "big"
+    else:
+        raise RuntimeError(f"{path}: unsupported ELF data encoding {data_encoding}")
+
+    if elf_class == 1:
+        minimum_header = 52
+        section_table_offset_field = (32, 4)
+        section_entry_size_field = (46, 2)
+        section_count_field = (48, 2)
+        section_names_index_field = (50, 2)
+        minimum_section_header = 40
+        section_offset_field = (16, 4)
+        section_size_field = (20, 4)
+        section_link_field = (24, 4)
+    elif elf_class == 2:
+        minimum_header = 64
+        section_table_offset_field = (40, 8)
+        section_entry_size_field = (58, 2)
+        section_count_field = (60, 2)
+        section_names_index_field = (62, 2)
+        minimum_section_header = 64
+        section_offset_field = (24, 8)
+        section_size_field = (32, 8)
+        section_link_field = (40, 4)
+    else:
+        raise RuntimeError(f"{path}: unsupported ELF class {elf_class}")
+
+    if len(payload) < minimum_header:
+        raise RuntimeError(f"{path}: truncated ELF header")
+
+    def header_field(field: tuple[int, int], label: str) -> int:
+        return _elf_uint(payload, field[0], field[1], byteorder, label)
+
+    section_table_offset = header_field(
+        section_table_offset_field, "section table offset"
+    )
+    section_entry_size = header_field(
+        section_entry_size_field, "section entry size"
+    )
+    section_count = header_field(section_count_field, "section count")
+    section_names_index = header_field(
+        section_names_index_field, "section-name index"
+    )
+    if not section_table_offset or section_entry_size < minimum_section_header:
         return None
-    temporary.parent.mkdir(parents=True, exist_ok=True)
-    if temporary.exists():
-        temporary.unlink()
-    run(["objcopy", f"--dump-section={section}={temporary}", str(path)])
-    return temporary.read_bytes()
+
+    def read_section_header(index: int) -> dict[str, int]:
+        base = section_table_offset + index * section_entry_size
+        if base < 0 or base + section_entry_size > len(payload):
+            raise RuntimeError(f"{path}: section header {index} escapes the file")
+        return {
+            "name": _elf_uint(payload, base, 4, byteorder, "section name"),
+            "type": _elf_uint(payload, base + 4, 4, byteorder, "section type"),
+            "offset": _elf_uint(
+                payload,
+                base + section_offset_field[0],
+                section_offset_field[1],
+                byteorder,
+                "section offset",
+            ),
+            "size": _elf_uint(
+                payload,
+                base + section_size_field[0],
+                section_size_field[1],
+                byteorder,
+                "section size",
+            ),
+            "link": _elf_uint(
+                payload,
+                base + section_link_field[0],
+                section_link_field[1],
+                byteorder,
+                "section link",
+            ),
+        }
+
+    section_zero = read_section_header(0)
+    if section_count == 0:
+        section_count = section_zero["size"]
+    if section_names_index == 0xFFFF:
+        section_names_index = section_zero["link"]
+    if section_count <= 0 or section_names_index >= section_count:
+        raise RuntimeError(f"{path}: invalid ELF section table geometry")
+    if section_table_offset + section_count * section_entry_size > len(payload):
+        raise RuntimeError(f"{path}: complete section table escapes the file")
+
+    names_header = read_section_header(section_names_index)
+    names_start = names_header["offset"]
+    names_end = names_start + names_header["size"]
+    if names_end > len(payload):
+        raise RuntimeError(f"{path}: section-name table escapes the file")
+    names = payload[names_start:names_end]
+
+    for index in range(section_count):
+        header = read_section_header(index)
+        name_offset = header["name"]
+        if name_offset >= len(names):
+            raise RuntimeError(f"{path}: section {index} name escapes the string table")
+        name_end = names.find(b"\0", name_offset)
+        if name_end < 0:
+            raise RuntimeError(f"{path}: section {index} name is unterminated")
+        name = names[name_offset:name_end].decode("utf-8", "surrogateescape")
+        if name != section:
+            continue
+        if header["type"] == 8:  # SHT_NOBITS has no file-backed bytes.
+            return b""
+        start = header["offset"]
+        end = start + header["size"]
+        if end > len(payload):
+            raise RuntimeError(f"{path}: section {section} escapes the file")
+        return payload[start:end]
+    return None
 
 
 def dependency_groups(value: str) -> list[list[str]]:
