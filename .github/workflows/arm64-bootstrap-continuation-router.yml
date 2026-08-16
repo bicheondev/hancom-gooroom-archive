@@ -1,0 +1,172 @@
+name: ARM64 bootstrap continuation router
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-bootstrap-continuation-router.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-bootstrap-continuation-router
+  cancel-in-progress: false
+
+env:
+  BRANCH: arm64-port
+  ROUTER_WORKFLOW: arm64-continue-after-gnome-flashback.yml
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Find or dispatch exactly one router run and wait for completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/router-bootstrap arm64/status
+          workflow_json=work/router-bootstrap/workflow.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${ROUTER_WORKFLOW}" \
+            > "$workflow_json"
+          workflow_id="$(jq -er '.id' "$workflow_json")"
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}/runs?branch=${BRANCH}&per_page=30" \
+            > work/router-bootstrap/runs-before.json
+          run_id="$(jq -r '
+            [.workflow_runs[]
+              | select(.status == "requested" or .status == "waiting"
+                       or .status == "pending" or .status == "queued"
+                       or .status == "in_progress")]
+            | sort_by(.created_at) | reverse | .[0].id // empty
+          ' work/router-bootstrap/runs-before.json)"
+
+          if test -z "$run_id"; then
+            gh api --method POST \
+              "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}/dispatches" \
+              -f "ref=${BRANCH}"
+            for attempt in $(seq 1 30); do
+              sleep 4
+              gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}/runs?branch=${BRANCH}&event=workflow_dispatch&per_page=10" \
+                > work/router-bootstrap/runs-after-dispatch.json
+              run_id="$(jq -r '.workflow_runs[0].id // empty' \
+                work/router-bootstrap/runs-after-dispatch.json)"
+              test -n "$run_id" && break
+            done
+          fi
+          test -n "$run_id"
+          printf '%s\n' "$run_id" > work/router-bootstrap/router-run-id.txt
+
+          for attempt in $(seq 1 480); do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" \
+              > work/router-bootstrap/router-run.json
+            status="$(jq -r '.status' work/router-bootstrap/router-run.json)"
+            test "$status" = completed && break
+            test "$attempt" -lt 480 || break
+            sleep 10
+          done
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            > work/router-bootstrap/router-jobs.json
+          python3 - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('work/router-bootstrap')
+          run = json.loads((root / 'router-run.json').read_text())
+          jobs = json.loads((root / 'router-jobs.json').read_text())
+          result = {
+              'schema_version': 1,
+              'generated_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'branch': os.environ['BRANCH'],
+              'router_workflow': os.environ['ROUTER_WORKFLOW'],
+              'router_run': {
+                  key: run.get(key) for key in (
+                      'id', 'status', 'conclusion', 'head_sha', 'path',
+                      'created_at', 'updated_at', 'html_url'
+                  )
+              },
+              'jobs': [{
+                  key: job.get(key) for key in (
+                      'id', 'name', 'status', 'conclusion', 'started_at',
+                      'completed_at', 'html_url'
+                  )
+              } for job in jobs.get('jobs', [])],
+          }
+          path = Path('arm64/status/continuation-router-bootstrap.json')
+          path.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          markdown = [
+              '# ARM64 continuation router bootstrap', '',
+              f"- Router run: `{run.get('id')}`",
+              f"- Status: `{run.get('status')}`",
+              f"- Conclusion: `{run.get('conclusion')}`",
+              f"- Head SHA: `{run.get('head_sha')}`",
+              f"- Workflow: `{run.get('path')}`", '',
+          ]
+          Path('arm64/status/continuation-router-bootstrap.md').write_text(
+              '\n'.join(markdown)
+          )
+          PY
+
+      - name: Commit the router conclusion lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/status/continuation-router-bootstrap.json \
+            arm64/status/continuation-router-bootstrap.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record ARM64 continuation router conclusion'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$BRANCH"
+            if git rebase "origin/${BRANCH}" && git push origin "HEAD:${BRANCH}"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-continuation-router-bootstrap-${{ github.run_id }}
+          path: |
+            work/router-bootstrap
+            arm64/status/continuation-router-bootstrap.json
+            arm64/status/continuation-router-bootstrap.md
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Publish bootstrap summary
+        if: always()
+        shell: bash
+        run: |
+          report=arm64/status/continuation-router-bootstrap.md
+          if test -f "$report"; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'Router bootstrap did not produce a report.' \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
