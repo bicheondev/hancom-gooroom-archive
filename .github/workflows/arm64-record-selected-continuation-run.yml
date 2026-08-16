@@ -1,0 +1,294 @@
+name: ARM64 record selected continuation run
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-record-selected-continuation-run.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-record-selected-continuation-run
+  cancel-in-progress: false
+
+env:
+  BRANCH: arm64-port
+  TARGET_RUN_ID: '31930851075'
+
+jobs:
+  record-selected-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Wait for the router decision and selected run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=work/selected-continuation-run
+          mkdir -p "$root"/{metadata,artifacts,artifact-zips} arm64/status
+          router_path="arm64/status/continuation-run-${TARGET_RUN_ID}.json"
+
+          for attempt in $(seq 1 540); do
+            git fetch origin "$BRANCH"
+            if git show "origin/${BRANCH}:${router_path}" \
+                > "$root/metadata/router-state.json" 2>/dev/null; then
+              break
+            fi
+            test "$attempt" -lt 540 || break
+            sleep 10
+          done
+
+          if ! test -s "$root/metadata/router-state.json"; then
+            jq -n \
+              --arg status router-state-missing \
+              --arg router_path "$router_path" \
+              '{status: $status, router_path: $router_path, selected_run_id: null}' \
+              > "$root/metadata/selection.json"
+            exit 0
+          fi
+
+          selected_run_id="$(jq -r '.routing.dispatch.selected.run_id // empty' \
+            "$root/metadata/router-state.json")"
+          route_category="$(jq -r '.routing.category // "unknown"' \
+            "$root/metadata/router-state.json")"
+          selected_path="$(jq -r '.routing.dispatch.selected.path // empty' \
+            "$root/metadata/router-state.json")"
+          jq -n \
+            --arg route_category "$route_category" \
+            --arg selected_path "$selected_path" \
+            --arg selected_run_id "$selected_run_id" \
+            '{route_category: $route_category,
+              selected_path: ($selected_path | select(length > 0)),
+              selected_run_id: (if ($selected_run_id | length) > 0
+                                then ($selected_run_id | tonumber) else null end)}' \
+            > "$root/metadata/selection.json"
+
+          if test -z "$selected_run_id"; then
+            exit 0
+          fi
+
+          for attempt in $(seq 1 1080); do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${selected_run_id}" \
+              > "$root/metadata/selected-run.json"
+            status="$(jq -r '.status' "$root/metadata/selected-run.json")"
+            test "$status" = completed && break
+            test "$attempt" -lt 1080 || break
+            sleep 10
+          done
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${selected_run_id}/jobs?per_page=100" \
+            > "$root/metadata/selected-jobs.json"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${selected_run_id}/artifacts?per_page=100" \
+            > "$root/metadata/selected-artifacts.json"
+          if ! gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${selected_run_id}/logs" \
+              > "$root/selected-logs.zip"; then
+            rm -f "$root/selected-logs.zip"
+            printf '%s\n' 'selected run log download failed' \
+              > "$root/metadata/selected-log-download-error.txt"
+          fi
+
+          jq -r '
+            .artifacts
+            | map(select(
+                (.expired == false)
+                and (.size_in_bytes < 157286400)
+                and (.name | test("source|recover|exact|manifest|status|summary|promotion|evidence|diagnostic|differential|iso|qemu"; "i"))
+              ))
+            | sort_by(.size_in_bytes)
+            | .[:8][]
+            | [.id, .name] | @tsv
+          ' "$root/metadata/selected-artifacts.json" \
+            | while IFS=$'\t' read -r artifact_id artifact_name; do
+                safe_name="$(printf '%s' "$artifact_name" | tr -c 'A-Za-z0-9_.+-' '_')"
+                archive="$root/artifact-zips/${artifact_id}-${safe_name}.zip"
+                destination="$root/artifacts/${artifact_id}-${safe_name}"
+                mkdir -p "$destination"
+                if gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+                    > "$archive"; then
+                  unzip -q "$archive" -d "$destination" || \
+                    printf '%s\n' 'artifact extraction failed' \
+                      > "$destination/EXTRACTION-FAILED.txt"
+                else
+                  printf '%s\n' 'artifact download failed' \
+                    > "$destination/DOWNLOAD-FAILED.txt"
+                  rm -f "$archive"
+                fi
+              done
+
+      - name: Build the selected-run conclusion lock
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('work/selected-continuation-run')
+          metadata = root / 'metadata'
+          selection_path = metadata / 'selection.json'
+          selection = (
+              json.loads(selection_path.read_text())
+              if selection_path.exists()
+              else {'status': 'selection-not-produced', 'selected_run_id': None}
+          )
+          router_path = metadata / 'router-state.json'
+          router = json.loads(router_path.read_text()) if router_path.exists() else None
+          run_path = metadata / 'selected-run.json'
+          jobs_path = metadata / 'selected-jobs.json'
+          artifacts_path = metadata / 'selected-artifacts.json'
+          run = json.loads(run_path.read_text()) if run_path.exists() else {}
+          jobs = json.loads(jobs_path.read_text()) if jobs_path.exists() else {'jobs': []}
+          artifacts = (
+              json.loads(artifacts_path.read_text())
+              if artifacts_path.exists() else {'total_count': 0, 'artifacts': []}
+          )
+
+          failed_steps = []
+          for job in jobs.get('jobs', []):
+              if job.get('conclusion') not in (None, 'success', 'skipped', 'neutral'):
+                  failed_steps.append({
+                      'job': job.get('name'), 'step': '(job)',
+                      'conclusion': job.get('conclusion'),
+                      'job_id': job.get('id'), 'html_url': job.get('html_url'),
+                  })
+              for step in job.get('steps') or []:
+                  if step.get('conclusion') not in (None, 'success', 'skipped', 'neutral'):
+                      failed_steps.append({
+                          'job': job.get('name'), 'step': step.get('name'),
+                          'number': step.get('number'),
+                          'conclusion': step.get('conclusion'),
+                          'job_id': job.get('id'), 'html_url': job.get('html_url'),
+                      })
+
+          result = {
+              'schema_version': 1,
+              'generated_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'branch': os.environ['BRANCH'],
+              'router_target_run_id': int(os.environ['TARGET_RUN_ID']),
+              'selection': selection,
+              'router': router,
+              'selected_run': {
+                  key: run.get(key) for key in (
+                      'id', 'name', 'event', 'status', 'conclusion',
+                      'workflow_id', 'path', 'head_branch', 'head_sha',
+                      'run_number', 'run_attempt', 'created_at', 'updated_at',
+                      'run_started_at', 'html_url'
+                  )
+              } if run else None,
+              'failed_steps': failed_steps,
+              'artifacts': {
+                  'count': artifacts.get('total_count', 0),
+                  'items': [{
+                      key: item.get(key) for key in (
+                          'id', 'name', 'size_in_bytes', 'expired', 'digest',
+                          'created_at', 'expires_at'
+                      )
+                  } for item in artifacts.get('artifacts', [])],
+              },
+          }
+          status_json = Path('arm64/status/continuation-selected-run.json')
+          status_md = Path('arm64/status/continuation-selected-run.md')
+          status_json.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          lines = [
+              '# ARM64 selected continuation run', '',
+              f"- Router target run: `{os.environ['TARGET_RUN_ID']}`",
+              f"- Route category: `{selection.get('route_category')}`",
+              f"- Selected workflow: `{selection.get('selected_path')}`",
+              f"- Selected run: `{selection.get('selected_run_id')}`",
+              f"- Selected status: `{run.get('status')}`",
+              f"- Selected conclusion: `{run.get('conclusion')}`",
+              f"- Selected head SHA: `{run.get('head_sha')}`",
+              f"- Artifact count: `{artifacts.get('total_count', 0)}`",
+              '', '## Failed steps', '',
+          ]
+          if failed_steps:
+              lines.extend(
+                  f"- `{item.get('job')}` / `{item.get('step')}`: `{item.get('conclusion')}`"
+                  for item in failed_steps
+              )
+          else:
+              lines.append('- None reported, or no run was selected.')
+          lines.append('')
+          status_md.write_text('\n'.join(lines))
+
+          inventory = []
+          for path in sorted(root.rglob('*')):
+              if path.is_file():
+                  inventory.append({
+                      'path': path.as_posix(),
+                      'size': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  })
+          (root / 'EVIDENCE-SHA256.json').write_text(
+              json.dumps(inventory, indent=2, sort_keys=True) + '\n'
+          )
+          (root / status_json.name).write_bytes(status_json.read_bytes())
+          (root / status_md.name).write_bytes(status_md.read_bytes())
+          PY
+
+      - name: Commit the selected-run conclusion lock
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/status/continuation-selected-run.json \
+            arm64/status/continuation-selected-run.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record selected ARM64 continuation run'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$BRANCH"
+            if git rebase "origin/${BRANCH}" && git push origin "HEAD:${BRANCH}"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload selected-run evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-selected-continuation-run-${{ github.run_id }}
+          path: |
+            work/selected-continuation-run
+            arm64/status/continuation-selected-run.json
+            arm64/status/continuation-selected-run.md
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Publish selected-run summary
+        if: always()
+        shell: bash
+        run: |
+          report=arm64/status/continuation-selected-run.md
+          if test -f "$report"; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'Selected-run report was not produced.' \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
