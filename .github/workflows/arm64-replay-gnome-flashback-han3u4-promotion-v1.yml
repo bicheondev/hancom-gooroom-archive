@@ -1,0 +1,207 @@
+name: ARM64 replay - promote verified gnome-flashback han3u4 v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-replay-gnome-flashback-han3u4-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-replay-gnome-flashback-han3u4-promotion-v1
+  cancel-in-progress: true
+
+jobs:
+  patch-replay-and-dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Patch the exact five-path reconstruction lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/promote_gnome_flashback_han3u4.py')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              text = text.replace(old, new)
+
+          replace_once(
+              'EXPECTED_PACKAGES = {\n'
+              '    "gnome-flashback": "arm64",\n'
+              '    "gnome-flashback-common": "all",\n'
+              '    "gnome-session-flashback": "all",\n'
+              '}\n',
+              'EXPECTED_PACKAGES = {\n'
+              '    "gnome-flashback": "arm64",\n'
+              '    "gnome-flashback-common": "all",\n'
+              '    "gnome-session-flashback": "all",\n'
+              '}\n'
+              'EXPECTED_UNIQUE_CHANGED_PATHS = {\n'
+              '    "data/theme/common.css",\n'
+              '    "gnome-flashback/libdesktop/gf-icon-view.c",\n'
+              '    "gnome-flashback/libdesktop/gf-monitor-view.c",\n'
+              '    "gnome-flashback/libscreensaver/gf-panel-bottom.c",\n'
+              '    "gnome-flashback/libscreensaver/gf-unlock-dialog.c",\n'
+              '}\n',
+              'exact changed-path authority',
+          )
+          replace_once(
+              '    if not isinstance(unique.get("changed_paths"), list) or len(unique["changed_paths"]) != 4:\n'
+              '        raise SystemExit("bounded unique reconstruction path set mismatch")\n',
+              '    changed_paths = unique.get("changed_paths")\n'
+              '    if (\n'
+              '        not isinstance(changed_paths, list)\n'
+              '        or set(changed_paths) != EXPECTED_UNIQUE_CHANGED_PATHS\n'
+              '        or len(changed_paths) != len(EXPECTED_UNIQUE_CHANGED_PATHS)\n'
+              '    ):\n'
+              '        raise SystemExit("bounded unique reconstruction path set mismatch")\n',
+              'bounded path-set gate',
+          )
+          replace_once(
+              'plus-four-binary-constrained-hancom-deltas-plus-exact-embedded-css-',
+              'plus-five-binary-constrained-hancom-deltas-plus-exact-embedded-css-',
+              'provenance path count',
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile arm64/scripts/promote_gnome_flashback_han3u4.py
+
+      - name: Download and revalidate the successful source and ARM64 authorities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/promote
+          mkdir -p \
+            work/promote/gnome-flashback-han3u4-verified-source-v1 \
+            work/promote/gnome-flashback-han3u4-exact-arm64-v1
+          gh run download 31941974157 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name gnome-flashback-han3u4-verified-source-v1 \
+            --dir work/promote/gnome-flashback-han3u4-verified-source-v1
+          gh run download 31941974157 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name gnome-flashback-han3u4-exact-arm64-v1 \
+            --dir work/promote/gnome-flashback-han3u4-exact-arm64-v1
+          (
+            cd work/promote/gnome-flashback-han3u4-verified-source-v1
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          (
+            cd work/promote/gnome-flashback-han3u4-exact-arm64-v1
+            sha256sum --check --strict SHA256SUMS
+          )
+          metadata=work/promote/arm64-artifact-metadata.json
+          gh api \
+            repos/bicheondev/hancom-gooroom-archive/actions/artifacts/9262313391 \
+            > "$metadata"
+          jq -e '
+            .id == 9262313391
+            and .name == "gnome-flashback-han3u4-exact-arm64-v1"
+            and .expired == false
+            and .digest == "sha256:0788f96937862e5ac01d8f631e478410ec1e3fab8df990b7f15dcd0ba7e011c0"
+            and .workflow_run.id == 31941974157
+            and .workflow_run.head_sha == "829df30b5690d19500c4155bd2b66ec05aef6fb9"
+          ' "$metadata" >/dev/null
+
+      - name: Generate and verify promotion records from immutable artifacts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/promote_gnome_flashback_han3u4.py \
+            --source-artifact work/promote/gnome-flashback-han3u4-verified-source-v1 \
+            --arm64-artifact work/promote/gnome-flashback-han3u4-exact-arm64-v1 \
+            --repository-root . \
+            --run-id 31941974157 \
+            --run-url "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31941974157" \
+            --artifact-name gnome-flashback-han3u4-exact-arm64-v1 \
+            --artifact-id 9262313391 \
+            --artifact-digest sha256:0788f96937862e5ac01d8f631e478410ec1e3fab8df990b7f15dcd0ba7e011c0
+          result=arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json
+          jq -e '
+            .schema == 4
+            and .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .passed == true
+            and .verification_passed == true
+            and .job_passed == true
+            and (.required_deb_artifacts | length) == 3
+            and .source_lock_evidence.original_source_archive_recovered == false
+            and .source_lock_evidence.embedded_resource_relationship.resource_count == 16
+            and (.source_lock_evidence.unique_reconstruction.changed_paths | length) == 5
+            and .source_lock_evidence.amd64_equivalence.verified == true
+            and .verification_summary.verified == true
+            and (.verification_summary.runtime_elf_checks | length) == 5
+            and all(.verification_summary.runtime_elf_checks[]; .verified == true)
+          ' "$result" >/dev/null
+          jq -e '
+            [.sources[]
+             | select(.source == "gnome-flashback"
+                      and .source_version == "3.38.0-2+grm3u2+han3u4"
+                      and .status == "resolved"
+                      and .selected.type == "reconstructed-git-tree"
+                      and .verification.passed == true
+                      and .verification.native_arm64_build_verified == true
+                      and .verification.exact_shipped_embedded_css_verified == true
+                      and .verification.arm64_embedded_gresource_identity_verified == true
+                      and .verification.original_source_archive_recovered == false)]
+            | length == 1
+          ' arm64/locks/reconstructed-sources/source-locks.json >/dev/null
+
+      - name: Commit the promoted exact reconstruction and ARM64 result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            arm64/scripts/promote_gnome_flashback_han3u4.py \
+            arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4 \
+            arm64/locks/gnome-flashback-han3u4-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          git diff --cached --check
+          git commit -m 'Promote verified gnome-flashback han3u4 ARM64 build'
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            if git push origin HEAD:arm64-port; then
+              pushed=1
+              break
+            fi
+            sleep 2
+          done
+          test "$pushed" = 1
+
+      - name: Dispatch canonical source, rebuild, and package-pool consumers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
