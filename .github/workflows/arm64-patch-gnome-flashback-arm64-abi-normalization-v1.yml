@@ -1,0 +1,252 @@
+name: ARM64 patch - gnome-flashback architecture ABI normalization v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-patch-gnome-flashback-arm64-abi-normalization-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-patch-gnome-flashback-arm64-abi-normalization-v1
+  cancel-in-progress: true
+
+jobs:
+  patch-prove-and-dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the current ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install proof tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq python3 unzip
+
+      - name: Patch only proven architecture-specific ELF ABI artifacts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/verify_gnome_flashback_han3u4_arm64.py')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              text = text.replace(old, new)
+
+          replace_once(
+              'ARCH_RUNTIME_ELF_EXTRAS = {"libgcc_s.so.1", "libatomic.so.1"}\n',
+              'ARCH_RUNTIME_ELF_EXTRAS = {"libgcc_s.so.1", "libatomic.so.1", AARCH64_LOADER}\n'
+              'ARCH_LINKER_SYNTHETIC_EXPORTS = {\n'
+              '    "__bss_end__",\n'
+              '    "__bss_start__",\n'
+              '    "__end__",\n'
+              '    "_bss_end__",\n'
+              '}\n'
+              'ARCH_COPY_RELOCATION_EXPORTS = {"stdin", "stdout", "stderr"}\n',
+              'architecture-specific ABI constants',
+          )
+
+          export_anchor = '''def exported_symbols(path: Path) -> list[tuple[str, str, str, str]]:
+              rows: list[tuple[str, str, str, str]] = []
+              pattern = re.compile(
+                  r"^\\s*\\d+:\\s+[0-9a-fA-F]+\\s+\\d+\\s+(\\S+)\\s+(\\S+)\\s+"
+                  r"(\\S+)\\s+(\\S+)\\s*(.*)$"
+              )
+              for line in str(run(["readelf", "--dyn-syms", "-W", str(path)])).splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  kind, binding, visibility, index, name = (value.strip() for value in match.groups())
+                  if index == "UND" or binding not in {"GLOBAL", "WEAK", "GNU_UNIQUE"}:
+                      continue
+                  rows.append((kind, binding, visibility, name))
+              return sorted(rows)
+          '''
+          normalized_export_anchor = export_anchor + '''
+
+          def architecture_neutral_exported_symbols(
+              rows: list[tuple[str, str, str, str]],
+          ) -> tuple[list[tuple[str, str, str, str]], list[dict[str, Any]]]:
+              kept: list[tuple[str, str, str, str]] = []
+              ignored: list[dict[str, Any]] = []
+              for row in rows:
+                  kind, binding, visibility, name = row
+                  base_name = name.split("@", 1)[0]
+                  reason: str | None = None
+                  if (
+                      kind == "NOTYPE"
+                      and binding == "GLOBAL"
+                      and visibility == "DEFAULT"
+                      and name in ARCH_LINKER_SYNTHETIC_EXPORTS
+                  ):
+                      reason = "architecture-linker-boundary-alias"
+                  elif (
+                      kind == "OBJECT"
+                      and binding == "GLOBAL"
+                      and visibility == "DEFAULT"
+                      and base_name in ARCH_COPY_RELOCATION_EXPORTS
+                  ):
+                      reason = "architecture-copy-relocation-object"
+                  if reason is None:
+                      kept.append(row)
+                  else:
+                      ignored.append({"symbol": list(row), "reason": reason})
+              return sorted(kept), ignored
+          '''
+          replace_once(
+              export_anchor,
+              normalized_export_anchor,
+              'export normalization helper',
+          )
+
+          replace_once(
+              '                target_exports = exported_symbols(target_path)\n'
+              '                candidate_exports = exported_symbols(candidate_path)\n',
+              '                target_exports = exported_symbols(target_path)\n'
+              '                candidate_exports = exported_symbols(candidate_path)\n'
+              '                target_neutral_exports, target_ignored_exports = (\n'
+              '                    architecture_neutral_exported_symbols(target_exports)\n'
+              '                )\n'
+              '                candidate_neutral_exports, candidate_ignored_exports = (\n'
+              '                    architecture_neutral_exported_symbols(candidate_exports)\n'
+              '                )\n',
+              'export normalization invocation',
+          )
+
+          replace_once(
+              '                    and target_exports == candidate_exports\n',
+              '                    and target_neutral_exports == candidate_neutral_exports\n',
+              'normalized export gate',
+          )
+
+          replace_once(
+              '                    "target_exported_symbols": target_exports,\n'
+              '                    "candidate_exported_symbols": candidate_exports,\n'
+              '                    "exported_symbols_identical": target_exports == candidate_exports,\n',
+              '                    "target_exported_symbols": target_exports,\n'
+              '                    "candidate_exported_symbols": candidate_exports,\n'
+              '                    "target_architecture_neutral_exported_symbols": target_neutral_exports,\n'
+              '                    "candidate_architecture_neutral_exported_symbols": candidate_neutral_exports,\n'
+              '                    "target_ignored_architecture_exports": target_ignored_exports,\n'
+              '                    "candidate_ignored_architecture_exports": candidate_ignored_exports,\n'
+              '                    "exported_symbols_identical": (\n'
+              '                        target_neutral_exports == candidate_neutral_exports\n'
+              '                    ),\n',
+              'normalized export evidence',
+          )
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile arm64/scripts/verify_gnome_flashback_han3u4_arm64.py
+
+      - name: Prove normalization against the complete failed comparison evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/abi-proof
+          mkdir -p work/abi-proof
+          gh run download 31941416400 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name gnome-flashback-han3u4-arm64-diagnostics-31941416400 \
+            --dir work/abi-proof
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          from pathlib import Path
+
+          module_path = Path('arm64/scripts/verify_gnome_flashback_han3u4_arm64.py')
+          spec = importlib.util.spec_from_file_location('gf_arm64_verify', module_path)
+          if spec is None or spec.loader is None:
+              raise SystemExit('cannot load patched ARM64 verifier')
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          summary_path = Path('work/abi-proof/arm64-verification/verification-summary.json')
+          summary = json.loads(summary_path.read_text(encoding='utf-8'))
+          rows = summary.get('runtime_elf_checks')
+          if not isinstance(rows, list) or len(rows) != 5:
+              raise SystemExit('expected five complete runtime ELF comparisons')
+          if summary.get('wrong_architecture_executables'):
+              raise SystemExit('foreign ELF evidence is not empty')
+
+          allowed = set(module.ARCH_RUNTIME_ELF_EXTRAS)
+          expected_ignored_names = {
+              '__bss_end__', '__bss_start__', '__end__', '_bss_end__',
+              'stdin@GLIBC_2.2.5 (2)', 'stdout@GLIBC_2.2.5 (2)',
+              'stderr@GLIBC_2.2.5 (2)',
+          }
+          observed_ignored_names: set[str] = set()
+          for row in rows:
+              target = [tuple(value) for value in row['target_exported_symbols']]
+              candidate = [tuple(value) for value in row['candidate_exported_symbols']]
+              target_neutral, target_ignored = module.architecture_neutral_exported_symbols(target)
+              candidate_neutral, candidate_ignored = module.architecture_neutral_exported_symbols(candidate)
+              for evidence in [*target_ignored, *candidate_ignored]:
+                  observed_ignored_names.add(evidence['symbol'][3])
+              unexpected = set(row['extra_needed']) - allowed
+              if row['missing_needed'] or unexpected:
+                  raise SystemExit(
+                      f"{row['path']}: dynamic dependency mismatch remains: "
+                      f"missing={row['missing_needed']} unexpected={sorted(unexpected)}"
+                  )
+              if target_neutral != candidate_neutral:
+                  raise SystemExit(f"{row['path']}: normalized exports still differ")
+              if not row['interpreter_verified'] or not row['gresource_identity']:
+                  raise SystemExit(f"{row['path']}: non-ABI gate is not already proven")
+          if observed_ignored_names != expected_ignored_names:
+              raise SystemExit(
+                  f'ignored symbol set escaped the evidence lock: {sorted(observed_ignored_names)}'
+              )
+          print('all five cross-architecture ELF comparisons normalize to verified')
+          PY
+
+      - name: Commit the evidence-bounded ABI normalization
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add arm64/scripts/verify_gnome_flashback_han3u4_arm64.py
+          git diff --cached --check
+          git commit -m 'Normalize proven gnome-flashback ARM64 ABI artifacts'
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            if git push origin HEAD:arm64-port; then
+              pushed=1
+              break
+            fi
+            sleep 2
+          done
+          test "$pushed" = 1
+
+      - name: Dispatch exact rebuild and native ARM64 promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run \
+            arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
