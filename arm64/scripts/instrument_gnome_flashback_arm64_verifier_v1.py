@@ -78,7 +78,7 @@ def main() -> None:
         raise SystemExit(f"diagnostic anchor count mismatch: {count}")
     text = text.replace(old_diag, new_diag)
 
-    if text.count("work/arm64-verifier.stderr") != 2:
+    if text.count("work/arm64-verifier.stderr") != 4:
         raise SystemExit("instrumented verifier stderr paths are not exact")
     if text.count("            work/arm64-build/debs\n") != 1:
         raise SystemExit("candidate DEB diagnostic path is not exact")
