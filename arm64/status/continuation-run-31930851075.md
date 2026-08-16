@@ -1,6 +1,6 @@
 # Hancom Gooroom 3.3 ARM64 continuation gate
 
-- Generated: `2026-08-16T07:52:40+00:00`
+- Generated: `2026-08-16T07:56:12+00:00`
 - Target run: `31930851075`
 - Target status: `completed`
 - Target conclusion: `failure`
@@ -16,7 +16,7 @@
 - Reason: target run concluded with 'failure'
 - Dispatch result: `dispatched`
 - Selected workflow: `.github/workflows/arm64-debug-gnome-flashback-han3u4.yml`
-- Selected run: `31935005085`
+- Selected run: `31935156157`
 
 ## Failed target steps
 

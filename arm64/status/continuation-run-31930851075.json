@@ -18,7 +18,7 @@
       "step": "Enforce exact controls, payloads, and normalized AMD64 ELF bytes"
     }
   ],
-  "generated_at": "2026-08-16T07:52:40+00:00",
+  "generated_at": "2026-08-16T07:56:12+00:00",
   "repository": "bicheondev/hancom-gooroom-archive",
   "routing": {
     "candidate_category": "failure-debug",
@@ -115,20 +115,20 @@
         {
           "path": ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
           "result": "dispatched",
-          "run_head_sha": "1f9805c2fda3bcfbf7df98c6ad263450f9d897fa",
-          "run_id": 31935005085,
+          "run_head_sha": "34a7d7b766eb42fba5b54d265debdebd74b5091a",
+          "run_id": 31935156157,
           "run_status": "in_progress",
-          "run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31935005085",
+          "run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31935156157",
           "workflow_id": 335393763
         }
       ],
       "selected": {
         "path": ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
         "result": "dispatched",
-        "run_head_sha": "1f9805c2fda3bcfbf7df98c6ad263450f9d897fa",
-        "run_id": 31935005085,
+        "run_head_sha": "34a7d7b766eb42fba5b54d265debdebd74b5091a",
+        "run_id": 31935156157,
         "run_status": "in_progress",
-        "run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31935005085",
+        "run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31935156157",
         "workflow_id": 335393763
       }
     },
@@ -136,8 +136,8 @@
   },
   "schema_version": 1,
   "source_recovery": {
-    "all_record_count": 219,
-    "authoritative_record_count": 82,
+    "all_record_count": 222,
+    "authoritative_record_count": 85,
     "authoritative_records": [
       {
         "count": 7,
@@ -591,6 +591,17 @@
       {
         "count": 7,
         "global_zero_eligible": true,
+        "key": "maximum_reported_unresolved_count",
+        "kind": "count",
+        "labels": [],
+        "path": "arm64/status/continuation-run-31930851075.json",
+        "pointer": "$/source_recovery/maximum_reported_unresolved_count",
+        "score": 25,
+        "source_kind": "repo"
+      },
+      {
+        "count": 7,
+        "global_zero_eligible": true,
         "key": "unresolved_target_count",
         "kind": "count",
         "labels": [],
@@ -648,6 +659,43 @@
         "labels": [],
         "path": "arm64/locks/reference-release-source-recovery/latest/repositories/hancom/source-index-lock.json",
         "pointer": "$",
+        "score": 21,
+        "source_kind": "repo"
+      },
+      {
+        "count": 7,
+        "global_zero_eligible": false,
+        "key": "unresolved_labels",
+        "kind": "list",
+        "labels": [
+          "gnome-flashback",
+          "gooroom-dockbarx-applet",
+          "gooroom-guide",
+          "gooroom-integration-applet",
+          "gooroom-session-manager",
+          "linux",
+          "qtbase-opensource-src"
+        ],
+        "path": "arm64/status/continuation-run-31930851075.json",
+        "pointer": "$/source_recovery/unresolved_labels",
+        "score": 21,
+        "source_kind": "repo"
+      },
+      {
+        "count": 6,
+        "global_zero_eligible": false,
+        "key": "unresolved_labels_after_target",
+        "kind": "list",
+        "labels": [
+          "gooroom-dockbarx-applet",
+          "gooroom-guide",
+          "gooroom-integration-applet",
+          "gooroom-session-manager",
+          "linux",
+          "qtbase-opensource-src"
+        ],
+        "path": "arm64/status/continuation-run-31930851075.json",
+        "pointer": "$/source_recovery/unresolved_labels_after_target",
         "score": 21,
         "source_kind": "repo"
       },
@@ -1168,7 +1216,7 @@
       "absence of an unresolved list is unknown, never zero",
       "ISO routing requires an explicit global zero field"
     ],
-    "positive_record_count": 82,
+    "positive_record_count": 85,
     "state": "positive",
     "unresolved_labels": [
       "gnome-flashback",
