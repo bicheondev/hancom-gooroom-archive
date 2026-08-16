@@ -4,8 +4,8 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 206,
     "workflow_name_count": 206,
-    "referenced_local_file_count": 313,
-    "error_count": 4,
+    "referenced_local_file_count": 312,
+    "error_count": 3,
     "warning_count": 40,
     "passed": false
   },
@@ -44,23 +44,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-apply-gnome-flashback-placement-fix.yml",
-      "path": ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml",
-      "name": "ARM64 port - apply gnome-flashback Placement fix",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
-        "arm64/scripts/repair_gnome_flashback_placement.py"
-      ]
     },
     {
       "filename": "arm64-apply-gooroom-guide-source-delta-v1.yml",
@@ -1215,6 +1198,25 @@
       "filename": "arm64-debug-gnome-flashback-han3u4-elf.yml",
       "path": ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       "name": "ARM64 port - debug gnome-flashback han3u4 AMD64 ELF",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
+        "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py"
+      ]
+    },
+    {
+      "filename": "arm64-debug-gnome-flashback-han3u4.yml",
+      "path": ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
+      "name": "ARM64 debug - gnome-flashback han3u4 ELF differential",
       "events": [
         "push",
         "workflow_dispatch"
@@ -4547,6 +4549,7 @@
     ],
     "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh": [
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
+      ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
@@ -4872,8 +4875,8 @@
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
     ],
     "arm64/scripts/reconstruct_gnome_flashback_han3u4.py": [
-      ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
+      ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-patch-gnome-flashback-placement-reconstruction-v2.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
@@ -4963,9 +4966,6 @@
     ],
     "arm64/scripts/recover_vendor_sources_wayback_fast.py": [
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
-    ],
-    "arm64/scripts/repair_gnome_flashback_placement.py": [
-      ".github/workflows/arm64-apply-gnome-flashback-placement-fix.yml"
     ],
     "arm64/scripts/repair_stage0_v6.py": [
       ".github/workflows/arm64-stage0-v6-converge-v2.yml",
@@ -5243,6 +5243,7 @@
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py": [
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
+      ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
@@ -5335,11 +5336,6 @@
     ]
   },
   "errors": [
-    {
-      "path": ".github/workflows/arm64-fix-gnome-flashback-placement.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 40, column 5:\n        icon_path = hancom / \"gnome-flas ... \n        ^\ncould not find expected ':'\n  in \"<unicode string>\", line 41, column 5:\n        icon_text = icon_path.read_text( ... \n        ^"
-    },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
       "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
