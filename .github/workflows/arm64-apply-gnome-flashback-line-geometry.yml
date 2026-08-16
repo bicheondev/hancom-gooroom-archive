@@ -25,7 +25,7 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Apply and validate the evidence-derived reconstruction patch
+      - name: Apply and validate the evidence-derived script patch
         shell: bash
         run: |
           set -euxo pipefail
@@ -34,6 +34,7 @@ jobs:
           git pull --rebase origin arm64-port
 
           patch=arm64/patches/gnome-flashback-han3u4-line-geometry.patch
+          workflow=.github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
           python3 - <<'PY'
           from pathlib import Path
           import hashlib
@@ -52,25 +53,23 @@ jobs:
               raise SystemExit(f'staged patch digest mismatch: {digest}')
           PY
 
-          git apply --check "$patch"
-          git apply "$patch"
+          git apply --check --exclude="$workflow" "$patch"
+          git apply --exclude="$workflow" "$patch"
           python3 -m py_compile arm64/scripts/reconstruct_gnome_flashback_han3u4.py
-          grep -Fq 'and (.unique_reconstruction.changed_paths | length) == 5' \
-            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
           grep -Fq '1037: "        G_OBJECT_WARN_INVALID_PROPERTY_ID' \
             arm64/scripts/reconstruct_gnome_flashback_han3u4.py
           grep -Fq '438: "        g_assert_not_reached ();"' \
             arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          test "$(sha256sum arm64/scripts/reconstruct_gnome_flashback_han3u4.py | awk '{print $1}')" \
+            = f58b7ff3053c14c5eb67c7618ab0538730815ecde0662da21aa095087f867e6e
           git diff --check
 
-          git rm -f "$patch" .github/workflows/arm64-apply-gnome-flashback-line-geometry.yml
-          git add \
-            arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
-            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          git checkout -- "$patch"
+          git add arm64/scripts/reconstruct_gnome_flashback_han3u4.py
           git diff --cached --check
           git commit -m 'Fix gnome-flashback exact ELF reconstruction geometry'
 
-      - name: Rebase and publish the validated change
+      - name: Rebase and publish the validated script change
         shell: bash
         run: |
           set -euxo pipefail
