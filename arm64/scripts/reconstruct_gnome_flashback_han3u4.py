@@ -423,14 +423,15 @@ def main() -> int:
     # 7f8a9b22: target machine code consumes exactly GDK_KEY_Hangul on the password entry.
     unlock_path = hancom / "gnome-flashback/libscreensaver/gf-unlock-dialog.c"
     unlock_text = unlock_path.read_text(encoding="utf-8")
-    # Two vendor assertions in this file encode lines 438 and 534. The public
-    # equivalent is nine lines short before auth_message_cb; restore that exact
-    # non-semantic source geometry before adding the Hangul callback.
+    # The target structured-log record encodes line 325 in dm_seat_ready_cb,
+    # while the two later assertions encode lines 438 and 534. The public
+    # equivalent is nine lines short before dm_seat_ready_cb; restore the
+    # non-semantic source geometry at its first binary-observable boundary.
     unlock_text = replace_once(
         unlock_text,
-        "}\n\nstatic void\nauth_message_cb (GfAuth            *auth,\n",
-        "}\n" + ("\n" * 10)
-        + "static void\nauth_message_cb (GfAuth            *auth,\n",
+        "#endif\n\nstatic void\ndm_seat_ready_cb (GObject      *object,\n",
+        "#endif\n" + ("\n" * 10)
+        + "static void\ndm_seat_ready_cb (GObject      *object,\n",
         "gf-unlock-dialog source line geometry",
     )
     unlock_text = replace_once(
@@ -544,6 +545,7 @@ def main() -> int:
             raise SystemExit(f"monitor source line geometry mismatch at {line_number}")
     unlock_lines = unlock_path.read_text(encoding="utf-8").splitlines()
     expected_unlock_lines = {
+        325: '        g_warning ("%s", error->message);',
         438: "        g_assert_not_reached ();",
         534: "  g_assert (self->shake_timeout_id == 0);",
     }
@@ -658,7 +660,8 @@ def main() -> int:
             ],
             "network_warning_source_lines": sorted(expected_lines),
             "monitor_assertion_source_lines": sorted(expected_monitor_lines),
-            "unlock_assertion_source_lines": sorted(expected_unlock_lines),
+            "unlock_structured_log_source_lines": [325],
+            "unlock_assertion_source_lines": [438, 534],
         },
         "archive": {
             "filename": archive.name,
