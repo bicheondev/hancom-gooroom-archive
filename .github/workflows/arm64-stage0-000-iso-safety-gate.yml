@@ -1,0 +1,293 @@
+name: ARM64 Stage 0 ISO safety gate
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-000-iso-safety-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-iso-safety-gate
+  cancel-in-progress: false
+
+env:
+  BRANCH: arm64-port
+  ROUTER_STATUS: arm64/status/continuation-run-31930851075.json
+  CURRENT_WORKFLOW: .github/workflows/arm64-stage0-000-iso-safety-gate.yml
+
+jobs:
+  verify-and-dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify the strict zero-source gate and select the real Stage 0 builder
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/stage0-iso-safety arm64/status
+          git fetch origin "$BRANCH"
+          git show "origin/${BRANCH}:${ROUTER_STATUS}" \
+            > work/stage0-iso-safety/router-status.json 2>/dev/null || true
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows?per_page=100" \
+            > work/stage0-iso-safety/workflows.json
+
+          python3 - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import re
+          import subprocess
+          import time
+          from pathlib import Path
+
+          root = Path('work/stage0-iso-safety')
+          router_path = root / 'router-status.json'
+          workflow_api = json.loads((root / 'workflows.json').read_text())
+          current = os.environ['CURRENT_WORKFLOW']
+          branch = os.environ['BRANCH']
+          repo = os.environ['GITHUB_REPOSITORY']
+
+          router = json.loads(router_path.read_text()) if router_path.stat().st_size else None
+          reasons = []
+          eligible = True
+          qualifying_zero = []
+          if router is None:
+              eligible = False
+              reasons.append('router status is absent')
+          else:
+              target = router.get('target_run') or {}
+              recovery = router.get('source_recovery') or {}
+              if target.get('status') != 'completed' or target.get('conclusion') != 'success':
+                  eligible = False
+                  reasons.append('locked gnome-flashback target gate is not successful')
+              if recovery.get('state') != 'zero' or recovery.get('explicit_zero') is not True:
+                  eligible = False
+                  reasons.append('router did not report an explicit zero state')
+              if int(recovery.get('positive_record_count') or 0) != 0:
+                  eligible = False
+                  reasons.append('positive unresolved evidence is present')
+              for record in recovery.get('authoritative_records') or []:
+                  pointer = str(record.get('pointer') or '')
+                  path = str(record.get('path') or '').casefold()
+                  key = str(record.get('key') or '').casefold()
+                  count = record.get('count')
+                  depth = pointer.count('/')
+                  path_is_authoritative = any(
+                      word in path for word in (
+                          'current', 'manifest', 'promotion',
+                          'source-recovery', 'source_recovery', 'rollup'
+                      )
+                  )
+                  key_is_global = any(
+                      word in key for word in (
+                          'total', 'count', 'packages', 'sources', 'units'
+                      )
+                  )
+                  if count == 0 and depth <= 2 and path_is_authoritative and key_is_global:
+                      qualifying_zero.append(record)
+              if not qualifying_zero:
+                  eligible = False
+                  reasons.append('no top-level or summary-level authoritative zero record exists')
+
+          api_by_path = {
+              item['path']: item for item in workflow_api.get('workflows', [])
+              if item.get('state') == 'active' and item.get('path')
+          }
+          candidates = []
+          for path in sorted(
+              list(Path('.github/workflows').glob('*.yml'))
+              + list(Path('.github/workflows').glob('*.yaml'))
+          ):
+              path_text = path.as_posix()
+              if path_text == current:
+                  continue
+              item = api_by_path.get(path_text)
+              if not item:
+                  continue
+              text = path.read_text(encoding='utf-8')
+              lower_path = path_text.casefold()
+              lower_text = text.casefold()
+              hay = lower_path + '\n' + lower_text
+              if 'workflow_dispatch' not in lower_text:
+                  continue
+              if any(word in lower_path for word in (
+                  'debug', 'diagnostic', 'differential', 'test', 'verify-only',
+                  'export', 'apply', 'safety-gate', 'continuation'
+              )):
+                  continue
+              score = 0
+              if 'stage0' in hay or 'stage-0' in hay:
+                  score += 150
+              if 'iso' in lower_path:
+                  score += 110
+              elif 'iso' in lower_text:
+                  score += 45
+              if 'assemble' in hay:
+                  score += 45
+              if 'build' in hay:
+                  score += 25
+              if score >= 130:
+                  candidates.append({
+                      'workflow_id': int(item['id']),
+                      'path': path_text,
+                      'name': item.get('name'),
+                      'score': score,
+                  })
+          candidates.sort(key=lambda value: (-value['score'], value['path']))
+
+          dispatch = {'allowed': eligible and bool(candidates),
+                      'attempts': [], 'selected': None}
+          if eligible and not candidates:
+              reasons.append('no real zero-input Stage 0 ISO workflow was found')
+          if dispatch['allowed']:
+              for candidate in candidates:
+                  active_result = subprocess.run(
+                      ['gh', 'api', f'/repos/{repo}/actions/runs?branch={branch}&per_page=100'],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+                  )
+                  active = json.loads(active_result.stdout).get('workflow_runs', [])
+                  duplicate = next((
+                      run for run in active
+                      if int(run.get('workflow_id') or 0) == candidate['workflow_id']
+                      and run.get('status') in (
+                          'requested', 'waiting', 'pending', 'queued', 'in_progress'
+                      )
+                  ), None)
+                  if duplicate:
+                      selected = {
+                          'result': 'already-active', 'path': candidate['path'],
+                          'workflow_id': candidate['workflow_id'],
+                          'run_id': duplicate.get('id'),
+                          'run_url': duplicate.get('html_url'),
+                          'run_status': duplicate.get('status'),
+                      }
+                      dispatch['attempts'].append(selected)
+                      dispatch['selected'] = selected
+                      break
+                  result = subprocess.run([
+                      'gh', 'api', '--method', 'POST',
+                      f"/repos/{repo}/actions/workflows/{candidate['workflow_id']}/dispatches",
+                      '-f', f'ref={branch}',
+                  ], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                  if result.returncode != 0:
+                      dispatch['attempts'].append({
+                          'result': 'dispatch-failed', 'path': candidate['path'],
+                          'workflow_id': candidate['workflow_id'],
+                          'error': result.stderr[-2000:],
+                      })
+                      continue
+                  time.sleep(5)
+                  runs_result = subprocess.run(
+                      ['gh', 'api',
+                       f"/repos/{repo}/actions/workflows/{candidate['workflow_id']}/runs?branch={branch}&event=workflow_dispatch&per_page=10"],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+                  )
+                  runs = json.loads(runs_result.stdout).get('workflow_runs', [])
+                  followup = runs[0] if runs else {}
+                  selected = {
+                      'result': 'dispatched', 'path': candidate['path'],
+                      'workflow_id': candidate['workflow_id'],
+                      'run_id': followup.get('id'),
+                      'run_url': followup.get('html_url'),
+                      'run_status': followup.get('status'),
+                      'run_head_sha': followup.get('head_sha'),
+                  }
+                  dispatch['attempts'].append(selected)
+                  dispatch['selected'] = selected
+                  break
+
+          result = {
+              'schema_version': 1,
+              'generated_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+              'repository': repo,
+              'branch': branch,
+              'eligible': eligible,
+              'blocking_reasons': reasons,
+              'qualifying_zero_records': qualifying_zero,
+              'candidates': candidates,
+              'dispatch': dispatch,
+          }
+          status_json = Path('arm64/status/stage0-iso-safety-gate.json')
+          status_md = Path('arm64/status/stage0-iso-safety-gate.md')
+          status_json.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          selected = dispatch.get('selected') or {}
+          lines = [
+              '# ARM64 Stage 0 ISO safety gate', '',
+              f"- Eligible: `{str(eligible).lower()}`",
+              f"- Qualifying zero records: `{len(qualifying_zero)}`",
+              f"- Candidate builders: `{len(candidates)}`",
+              f"- Dispatch result: `{selected.get('result', 'none')}`",
+              f"- Selected workflow: `{selected.get('path')}`",
+              f"- Selected run: `{selected.get('run_id')}`",
+              '', '## Blocking reasons', '',
+          ]
+          if reasons:
+              lines.extend(f'- {reason}' for reason in reasons)
+          else:
+              lines.append('- None.')
+          lines.append('')
+          status_md.write_text('\n'.join(lines))
+          PY
+
+      - name: Commit the safety-gate record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/status/stage0-iso-safety-gate.json \
+            arm64/status/stage0-iso-safety-gate.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record strict ARM64 Stage 0 ISO gate'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$BRANCH"
+            if git rebase "origin/${BRANCH}" && git push origin "HEAD:${BRANCH}"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload safety-gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-stage0-iso-safety-gate-${{ github.run_id }}
+          path: |
+            work/stage0-iso-safety
+            arm64/status/stage0-iso-safety-gate.json
+            arm64/status/stage0-iso-safety-gate.md
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Publish the safety-gate summary
+        if: always()
+        shell: bash
+        run: |
+          report=arm64/status/stage0-iso-safety-gate.md
+          if test -f "$report"; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'Stage 0 ISO safety report was not produced.' \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
