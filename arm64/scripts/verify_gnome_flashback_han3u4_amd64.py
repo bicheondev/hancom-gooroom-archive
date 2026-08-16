@@ -4,8 +4,10 @@
 The immutable Hancom Gooroom 3.3 vendor packages are the target authority.
 Every binary package must preserve its complete semantic control paragraph,
 installed path/type/mode/symlink set, all architecture-neutral payload bytes
-(or the decompressed bytes of gzip members), and every ELF after removing only
-locked build metadata sections.
+(or the decompressed bytes of gzip members), and every ELF after removing
+locked build metadata sections plus canonicalizing only dynamic string-table
+storage proven semantically identical by complete symbol, dynamic-tag, and
+string-multiset checks.
 """
 
 from __future__ import annotations
@@ -253,6 +255,109 @@ def exported_symbols(path: Path) -> list[tuple[str, ...]]:
     return sorted(rows)
 
 
+
+def complete_dynamic_symbols(path: Path) -> list[tuple[str, ...]]:
+    rows: list[tuple[str, ...]] = []
+    pattern = re.compile(
+        r"^\s*(\d+):\s+([0-9a-fA-F]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+"
+        r"(\S+)\s+(\S+)\s*(.*)$"
+    )
+    for line in str(run(["readelf", "--dyn-syms", "-W", str(path)])).splitlines():
+        match = pattern.match(line)
+        if match:
+            rows.append(tuple(value.strip() for value in match.groups()))
+    return rows
+
+
+def complete_dynamic_table(path: Path) -> list[tuple[str, ...]]:
+    return [
+        tuple(line.split())
+        for line in str(run(["readelf", "-dW", str(path)])).splitlines()
+        if line.lstrip().startswith("0x")
+    ]
+
+
+def semantic_sequence_summary(rows: list[tuple[str, ...]]) -> dict[str, Any]:
+    payload = json.dumps(
+        rows, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    return {"count": len(rows), "canonical_sha256": sha256_bytes(payload)}
+
+
+def elf_section_layout(path: Path) -> dict[str, dict[str, int]]:
+    rows: dict[str, dict[str, int]] = {}
+    pattern = re.compile(
+        r"^\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+[0-9a-fA-F]+\s+"
+        r"([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+"
+    )
+    for line in str(run(["readelf", "-SW", str(path)])).splitlines():
+        match = pattern.match(line)
+        if not match:
+            continue
+        name, offset, size, entry_size = match.groups()
+        rows[name] = {
+            "offset": int(offset, 16),
+            "size": int(size, 16),
+            "entry_size": int(entry_size, 16),
+        }
+    return rows
+
+
+def dynamic_strings(path: Path) -> tuple[bytes, ...]:
+    section = elf_section_layout(path).get(".dynstr")
+    if section is None:
+        return ()
+    payload = path.read_bytes()
+    start = section["offset"]
+    end = start + section["size"]
+    if end > len(payload):
+        raise RuntimeError(f"{path}: .dynstr escapes the ELF file")
+    return tuple(sorted(payload[start:end].split(b"\0")))
+
+
+def dynamic_string_multiset_summary(strings: tuple[bytes, ...]) -> dict[str, Any]:
+    digest = hashlib.sha256()
+    for value in strings:
+        digest.update(len(value).to_bytes(8, "little"))
+        digest.update(value)
+    return {
+        "string_count": len(strings),
+        "canonical_multiset_sha256": digest.hexdigest(),
+    }
+
+
+def canonicalize_dynamic_string_storage(path: Path) -> dict[str, Any]:
+    payload = bytearray(path.read_bytes())
+    if not payload.startswith(ELF_MAGIC):
+        raise RuntimeError(f"{path}: not an ELF file")
+    if len(payload) < 6 or payload[4] != 2 or payload[5] != 1:
+        raise RuntimeError(f"{path}: expected ELF64 little-endian storage")
+    sections = elf_section_layout(path)
+    dynstr = sections.get(".dynstr")
+    dynsym = sections.get(".dynsym")
+    if dynstr is None and dynsym is None:
+        return {"applied": False, "dynstr_size": 0, "dynsym_entry_count": 0}
+    if dynstr is None or dynsym is None:
+        raise RuntimeError(f"{path}: incomplete dynamic string/symbol section pair")
+    if dynsym["entry_size"] != 24 or dynsym["size"] % dynsym["entry_size"]:
+        raise RuntimeError(f"{path}: unexpected ELF64 .dynsym geometry")
+    dynstr_start = dynstr["offset"]
+    dynstr_end = dynstr_start + dynstr["size"]
+    dynsym_start = dynsym["offset"]
+    dynsym_end = dynsym_start + dynsym["size"]
+    if max(dynstr_end, dynsym_end) > len(payload):
+        raise RuntimeError(f"{path}: dynamic section escapes the ELF file")
+    payload[dynstr_start:dynstr_end] = b"\0" * dynstr["size"]
+    for offset in range(dynsym_start, dynsym_end, dynsym["entry_size"]):
+        payload[offset:offset + 4] = b"\0" * 4
+    path.write_bytes(payload)
+    return {
+        "applied": True,
+        "dynstr_size": dynstr["size"],
+        "dynsym_entry_count": dynsym["size"] // dynsym["entry_size"],
+    }
+
+
 def normalized_elf(path: Path, destination: Path) -> dict[str, Any]:
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(path, destination)
@@ -263,9 +368,11 @@ def normalized_elf(path: Path, destination: Path) -> dict[str, Any]:
     command.extend([str(destination), str(temporary)])
     run(command)
     temporary.replace(destination)
+    dynamic_storage = canonicalize_dynamic_string_storage(destination)
     return {
         "size": destination.stat().st_size,
         "sha256": sha256_file(destination),
+        "dynamic_string_storage": dynamic_storage,
     }
 
 
@@ -455,6 +562,12 @@ def compare_package(
         candidate_dynamic = dynamic_identity(candidate_path)
         target_exports = exported_symbols(target_path)
         candidate_exports = exported_symbols(candidate_path)
+        target_complete_symbols = complete_dynamic_symbols(target_path)
+        candidate_complete_symbols = complete_dynamic_symbols(candidate_path)
+        target_complete_dynamic = complete_dynamic_table(target_path)
+        candidate_complete_dynamic = complete_dynamic_table(candidate_path)
+        target_dynamic_strings = dynamic_strings(target_path)
+        candidate_dynamic_strings = dynamic_strings(candidate_path)
         row = {
             "package": package,
             "path": relative,
@@ -474,10 +587,38 @@ def compare_package(
             "target_exported_symbols": target_exports,
             "candidate_exported_symbols": candidate_exports,
             "exported_symbols_identical": target_exports == candidate_exports,
+            "target_complete_dynamic_symbols": semantic_sequence_summary(
+                target_complete_symbols
+            ),
+            "candidate_complete_dynamic_symbols": semantic_sequence_summary(
+                candidate_complete_symbols
+            ),
+            "complete_dynamic_symbols_identical": (
+                target_complete_symbols == candidate_complete_symbols
+            ),
+            "target_complete_dynamic_table": semantic_sequence_summary(
+                target_complete_dynamic
+            ),
+            "candidate_complete_dynamic_table": semantic_sequence_summary(
+                candidate_complete_dynamic
+            ),
+            "complete_dynamic_table_identical": (
+                target_complete_dynamic == candidate_complete_dynamic
+            ),
+            "target_dynamic_string_multiset": (
+                dynamic_string_multiset_summary(target_dynamic_strings)
+            ),
+            "candidate_dynamic_string_multiset": (
+                dynamic_string_multiset_summary(candidate_dynamic_strings)
+            ),
+            "dynamic_string_multiset_identical": (
+                target_dynamic_strings == candidate_dynamic_strings
+            ),
             "normalized_target": normalized_target,
             "normalized_candidate": normalized_candidate,
             "normalized_byte_identity": normalized_target == normalized_candidate,
             "removed_sections": list(NONDETERMINISTIC_ELF_SECTIONS),
+            "canonicalized_storage": [".dynstr", ".dynsym.st_name"],
         }
         row["verified"] = all(
             row[field]
@@ -486,6 +627,9 @@ def compare_package(
                 "interpreter_identical",
                 "dynamic_identity_identical",
                 "exported_symbols_identical",
+                "complete_dynamic_symbols_identical",
+                "complete_dynamic_table_identical",
+                "dynamic_string_multiset_identical",
                 "normalized_byte_identity",
             )
         )
@@ -664,7 +808,8 @@ def main() -> int:
         "policy": (
             "exact-semantic-control-plus-exact-auxiliary-control-plus-"
             "exact-path-type-mode-symlink-plus-non-elf-byte-or-decompressed-"
-            "identity-plus-normalized-elf-byte-identity"
+            "identity-plus-elf-byte-identity-after-build-metadata-removal-and-"
+            "semantically-proven-dynamic-string-storage-canonicalization"
         ),
         "expected_binary_package_count": len(EXPECTED_PACKAGES),
         "compared_binary_package_count": len(package_results),
