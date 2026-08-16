@@ -56,7 +56,14 @@ MULTIARCH_SEGMENTS = {
     "aarch64-linux-gnu": "@MULTIARCH@",
 }
 ARCH_RUNTIME_DEB_EXTRAS = {"libgcc-s1", "libatomic1", "gcc-10-base"}
-ARCH_RUNTIME_ELF_EXTRAS = {"libgcc_s.so.1", "libatomic.so.1"}
+ARCH_RUNTIME_ELF_EXTRAS = {"libgcc_s.so.1", "libatomic.so.1", AARCH64_LOADER}
+ARCH_LINKER_SYNTHETIC_EXPORTS = {
+    "__bss_end__",
+    "__bss_start__",
+    "__end__",
+    "_bss_end__",
+}
+ARCH_COPY_RELOCATION_EXPORTS = {"stdin", "stdout", "stderr"}
 CONTROL_ARCH_VARIANT_FIELDS = {"Architecture", "Installed-Size", "Depends", "Built-Using"}
 
 
@@ -257,6 +264,36 @@ def exported_symbols(path: Path) -> list[tuple[str, str, str, str]]:
             continue
         rows.append((kind, binding, visibility, name))
     return sorted(rows)
+
+
+def architecture_neutral_exported_symbols(
+    rows: list[tuple[str, str, str, str]],
+) -> tuple[list[tuple[str, str, str, str]], list[dict[str, Any]]]:
+    kept: list[tuple[str, str, str, str]] = []
+    ignored: list[dict[str, Any]] = []
+    for row in rows:
+        kind, binding, visibility, name = row
+        base_name = name.split("@", 1)[0]
+        reason: str | None = None
+        if (
+            kind == "NOTYPE"
+            and binding == "GLOBAL"
+            and visibility == "DEFAULT"
+            and name in ARCH_LINKER_SYNTHETIC_EXPORTS
+        ):
+            reason = "architecture-linker-boundary-alias"
+        elif (
+            kind == "OBJECT"
+            and binding == "GLOBAL"
+            and visibility == "DEFAULT"
+            and base_name in ARCH_COPY_RELOCATION_EXPORTS
+        ):
+            reason = "architecture-copy-relocation-object"
+        if reason is None:
+            kept.append(row)
+        else:
+            ignored.append({"symbol": list(row), "reason": reason})
+    return sorted(kept), ignored
 
 
 def _elf_uint(payload: bytes, offset: int, size: int, byteorder: str, label: str) -> int:
@@ -671,6 +708,12 @@ def main() -> int:
                 candidate_interpreter = elf_interpreter(candidate_path)
                 target_exports = exported_symbols(target_path)
                 candidate_exports = exported_symbols(candidate_path)
+                target_neutral_exports, target_ignored_exports = (
+                    architecture_neutral_exported_symbols(target_exports)
+                )
+                candidate_neutral_exports, candidate_ignored_exports = (
+                    architecture_neutral_exported_symbols(candidate_exports)
+                )
                 resource_target = section_bytes(
                     target_path,
                     ".gresource.gf",
@@ -708,7 +751,7 @@ def main() -> int:
                     and target_dynamic["soname"] == candidate_dynamic["soname"]
                     and target_dynamic["rpath"] == candidate_dynamic["rpath"]
                     and target_dynamic["runpath"] == candidate_dynamic["runpath"]
-                    and target_exports == candidate_exports
+                    and target_neutral_exports == candidate_neutral_exports
                     and resource_identity
                 )
                 row = {
@@ -729,7 +772,13 @@ def main() -> int:
                     "unexpected_needed": unexpected_needed,
                     "target_exported_symbols": target_exports,
                     "candidate_exported_symbols": candidate_exports,
-                    "exported_symbols_identical": target_exports == candidate_exports,
+                    "target_architecture_neutral_exported_symbols": target_neutral_exports,
+                    "candidate_architecture_neutral_exported_symbols": candidate_neutral_exports,
+                    "target_ignored_architecture_exports": target_ignored_exports,
+                    "candidate_ignored_architecture_exports": candidate_ignored_exports,
+                    "exported_symbols_identical": (
+                        target_neutral_exports == candidate_neutral_exports
+                    ),
                     "target_gresource_sha256": sha256_bytes(resource_target) if resource_target is not None else None,
                     "candidate_gresource_sha256": sha256_bytes(resource_candidate) if resource_candidate is not None else None,
                     "gresource_identity": resource_identity,
