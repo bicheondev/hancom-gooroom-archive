@@ -186,7 +186,7 @@ jobs:
             and (.target_binary_authority | length) == 3
             and .embedded_resource_relationship.resource_count == 16
             and .embedded_resource_relationship.all_other_resources_public_base_identical == true
-            and (.unique_reconstruction.changed_paths | length) == 4
+            and (.unique_reconstruction.changed_paths | length) == 5
             and .claims.lost_original_source_archive_recovered == false
             and .claims.reconstructed_source_claimed == true
             and .claims.exact_shipped_embedded_css_used_as_source_input == true
