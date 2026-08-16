@@ -1,4 +1,4 @@
-name: ARM64 port - dispatch gnome-flashback differential after warning line fix
+name: ARM64 port - dispatch current gnome-flashback exact ARM64 promotion
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: hancom-gooroom-33-dispatch-current-gnome-flashback-elf-differential
+  group: hancom-gooroom-33-dispatch-current-gnome-flashback-exact-arm64
   cancel-in-progress: true
 
 jobs:
@@ -20,13 +20,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Dispatch the exact AMD64 ELF differential after warning-line relocation
+      - name: Dispatch exact source reconstruction and native ARM64 promotion
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euxo pipefail
           gh workflow run \
-            arm64-debug-gnome-flashback-han3u4.yml \
+            arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref arm64-port
