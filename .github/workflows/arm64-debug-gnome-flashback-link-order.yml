@@ -100,7 +100,7 @@ jobs:
           python3 arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
             --hancom-repository "$root/hancom-source" \
             --gooroom-repository "$root/gooroom-source" \
-            --target-deb-dir "$root/vendor" \
+            --target-deb-dir "$root/vendor/vendor-debs" \
             --output-dir "$root/authority"
           test "$(sha256sum arm64/scripts/reconstruct_gnome_flashback_han3u4.py | awk '{print $1}')" \
             = a14115737669bb0206a28e709d66d3e43ba31bd7b65f4bfecd00f720cf044c80
