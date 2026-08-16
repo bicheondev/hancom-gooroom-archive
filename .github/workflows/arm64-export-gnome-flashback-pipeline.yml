@@ -1,0 +1,28 @@
+name: ARM64 export - gnome-flashback pipeline sources
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-export-gnome-flashback-pipeline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-pipeline-sources-${{ github.run_id }}
+          path: |
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+            arm64/scripts/verify_gnome_flashback_han3u4_amd64.py
+            arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
