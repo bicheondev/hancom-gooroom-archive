@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 212,
-    "workflow_name_count": 212,
+    "workflow_count": 213,
+    "workflow_name_count": 213,
     "referenced_local_file_count": 315,
     "error_count": 3,
-    "warning_count": 42,
+    "warning_count": 40,
     "passed": false
   },
   "workflows": [
@@ -2325,6 +2325,22 @@
       "referenced_local_files": [
         "arm64/locks/effective-sources/effective-source-lock.json",
         "arm64/locks/reference/amd64-reference.json"
+      ]
+    },
+    {
+      "filename": "arm64-patch-gnome-flashback-dynstr-normalization.yml",
+      "path": ".github/workflows/arm64-patch-gnome-flashback-dynstr-normalization.yml",
+      "name": "ARM64 patch - canonicalize proven-equivalent gnome-flashback dynamic strings",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py"
       ]
     },
     {
@@ -5346,6 +5362,7 @@
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
+      ".github/workflows/arm64-patch-gnome-flashback-dynstr-normalization.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
@@ -5624,18 +5641,8 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-record-selected-continuation-run.yml",
-      "local_path": "arm64/status/continuation-selected-run.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-stage0-000-iso-safety-gate.yml",
-      "local_path": "arm64/status/stage0-iso-safety-gate.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
