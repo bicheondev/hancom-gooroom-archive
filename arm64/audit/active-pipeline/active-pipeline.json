@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 207,
-    "workflow_name_count": 207,
+    "workflow_count": 208,
+    "workflow_name_count": 208,
     "referenced_local_file_count": 312,
     "error_count": 3,
     "warning_count": 40,
@@ -1230,6 +1230,24 @@
         "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
         "arm64/scripts/reconstruct_gnome_flashback_han3u4.py",
         "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py"
+      ]
+    },
+    {
+      "filename": "arm64-debug-gnome-flashback-link-order.yml",
+      "path": ".github/workflows/arm64-debug-gnome-flashback-link-order.yml",
+      "name": "ARM64 debug - gnome-flashback dynamic string link order",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+        "arm64/scripts/reconstruct_gnome_flashback_han3u4.py"
       ]
     },
     {
@@ -4565,6 +4583,7 @@
     "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh": [
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
+      ".github/workflows/arm64-debug-gnome-flashback-link-order.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
@@ -4892,6 +4911,7 @@
     "arm64/scripts/reconstruct_gnome_flashback_han3u4.py": [
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
+      ".github/workflows/arm64-debug-gnome-flashback-link-order.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-patch-gnome-flashback-placement-reconstruction-v2.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
