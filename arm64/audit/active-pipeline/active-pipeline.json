@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 221,
-    "workflow_name_count": 221,
+    "workflow_count": 222,
+    "workflow_name_count": 222,
     "referenced_local_file_count": 317,
     "error_count": 4,
     "warning_count": 43,
@@ -1398,6 +1398,24 @@
         "arm64/scripts/materialize_rebuild_dependency_repo_v2.py",
         "arm64/scripts/select_dependency_retry_wave.py",
         "arm64/scripts/verify_arm64_rebuild.py"
+      ]
+    },
+    {
+      "filename": "arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
+      "path": ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
+      "name": "ARM64 diagnose gnome-flashback han3u4 semantic verification v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
+        "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py"
       ]
     },
     {
@@ -4802,6 +4820,7 @@
       ".github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml",
       ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-debug-gnome-flashback-link-order.yml",
+      ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
@@ -5506,6 +5525,7 @@
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
+      ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-abi-normalization-v1.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader-v2.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader.yml",
