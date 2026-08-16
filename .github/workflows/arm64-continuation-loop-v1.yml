@@ -1,0 +1,501 @@
+name: ARM64 continuation loop - resolve sources then enter ISO gate v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-continuation-loop-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-continuation-loop-v1
+  cancel-in-progress: false
+
+env:
+  TARGET_RUN_ID: '31940464529'
+  TARGET_HEAD_SHA: ab94cf9f3e1f78088f284f1d8300ee0dfd90da8b
+  ROUTER_WORKFLOW: arm64-continue-after-gnome-flashback.yml
+  ROUTER_STATUS: arm64/status/continuation-run-31940464529.json
+  LOOP_STATUS: arm64/status/continuation-loop-v1.json
+
+jobs:
+  loop:
+    name: Advance one exact-source authority at a time until the ISO gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out the current evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install controller prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          gh --version
+
+      - name: Run the fail-closed continuation loop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf work/continuation-loop-v1
+          mkdir -p work/continuation-loop-v1/runs
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import subprocess
+          import time
+          import traceback
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+
+          REPOSITORY = os.environ['GITHUB_REPOSITORY']
+          BRANCH = 'arm64-port'
+          TARGET_RUN_ID = int(os.environ['TARGET_RUN_ID'])
+          TARGET_HEAD_SHA = os.environ['TARGET_HEAD_SHA']
+          ROUTER_WORKFLOW = os.environ['ROUTER_WORKFLOW']
+          ROUTER_STATUS = Path(os.environ['ROUTER_STATUS'])
+          LOOP_STATUS = Path(os.environ['LOOP_STATUS'])
+          ROOT = Path('work/continuation-loop-v1')
+          RUNS = ROOT / 'runs'
+          WORK_STATUS = ROOT / 'state.json'
+
+          state: dict[str, Any] = {
+              'schema': 1,
+              'controller': 'arm64-continuation-loop-v1',
+              'repository': REPOSITORY,
+              'branch': BRANCH,
+              'target_run_id': TARGET_RUN_ID,
+              'target_head_sha': TARGET_HEAD_SHA,
+              'generated_at': None,
+              'phase': 'initializing',
+              'iterations': [],
+              'final_route': None,
+              'stage0_gate': None,
+              'stage0_run': None,
+              'blocking_reasons': [],
+              'error': None,
+          }
+
+          def utcnow() -> str:
+              return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+
+          def write_json(path: Path, value: Any) -> None:
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(
+                  json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+
+          def save() -> None:
+              state['generated_at'] = utcnow()
+              write_json(WORK_STATUS, state)
+
+          def command(arguments: list[str], *, check: bool = True) -> str:
+              completed = subprocess.run(
+                  arguments,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+              if check and completed.returncode:
+                  raise RuntimeError(
+                      f"command failed ({completed.returncode}): {' '.join(arguments)}\n"
+                      f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+                  )
+              return completed.stdout
+
+          def gh_json(endpoint: str) -> Any:
+              return json.loads(command(['gh', 'api', endpoint]))
+
+          def compact_run(run: dict[str, Any]) -> dict[str, Any]:
+              return {
+                  key: run.get(key)
+                  for key in (
+                      'id', 'name', 'path', 'event', 'status', 'conclusion',
+                      'head_branch', 'head_sha', 'run_number', 'created_at',
+                      'run_started_at', 'updated_at', 'html_url'
+                  )
+              }
+
+          def jobs(run_id: int) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/runs/{run_id}/jobs?per_page=100'
+              )
+              return [
+                  {
+                      'id': row.get('id'),
+                      'name': row.get('name'),
+                      'status': row.get('status'),
+                      'conclusion': row.get('conclusion'),
+                      'failed_steps': [
+                          {
+                              'number': step.get('number'),
+                              'name': step.get('name'),
+                              'conclusion': step.get('conclusion'),
+                          }
+                          for step in row.get('steps', [])
+                          if step.get('conclusion') == 'failure'
+                      ],
+                  }
+                  for row in payload.get('jobs', [])
+              ]
+
+          def artifacts(run_id: int) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/runs/{run_id}/artifacts?per_page=100'
+              )
+              return [
+                  {
+                      'id': row.get('id'),
+                      'name': row.get('name'),
+                      'size_in_bytes': row.get('size_in_bytes'),
+                      'digest': row.get('digest'),
+                      'expired': row.get('expired'),
+                  }
+                  for row in payload.get('artifacts', [])
+              ]
+
+          def pull_latest() -> None:
+              last = ''
+              for attempt in range(1, 13):
+                  result = subprocess.run(
+                      ['git', 'pull', '--rebase', 'origin', BRANCH],
+                      text=True,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                      check=False,
+                  )
+                  if result.returncode == 0:
+                      return
+                  last = result.stderr
+                  time.sleep(attempt * 2)
+              raise RuntimeError(f'cannot update {BRANCH}: {last}')
+
+          def wait_run(run_id: int, label: str) -> dict[str, Any]:
+              for _ in range(600):
+                  run = gh_json(f'/repos/{REPOSITORY}/actions/runs/{run_id}')
+                  write_json(RUNS / f'{label}-live.json', compact_run(run))
+                  if run.get('status') == 'completed':
+                      write_json(RUNS / f'{label}.json', {
+                          'run': compact_run(run),
+                          'jobs': jobs(run_id),
+                          'artifacts': artifacts(run_id),
+                      })
+                      return run
+                  time.sleep(30)
+              raise TimeoutError(f'{label}: run {run_id} did not complete')
+
+          def workflow_runs(workflow: str) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/workflows/{workflow}/runs'
+                  f'?branch={BRANCH}&per_page=100'
+              )
+              return payload.get('workflow_runs', [])
+
+          def dispatch_new(workflow: str, label: str) -> int:
+              before = {int(row['id']) for row in workflow_runs(workflow)}
+              mark = utcnow()
+              command([
+                  'gh', 'workflow', 'run', workflow,
+                  '--repo', REPOSITORY,
+                  '--ref', BRANCH,
+              ])
+              for _ in range(48):
+                  candidates = [
+                      row for row in workflow_runs(workflow)
+                      if int(row['id']) not in before
+                      and row.get('head_branch') == BRANCH
+                      and row.get('created_at', '') >= mark[:19] + 'Z'
+                  ]
+                  if candidates:
+                      candidates.sort(key=lambda row: row.get('created_at', ''), reverse=True)
+                      run_id = int(candidates[0]['id'])
+                      write_json(RUNS / f'{label}-dispatch.json', {
+                          'workflow': workflow,
+                          'dispatched_at': mark,
+                          'run': compact_run(candidates[0]),
+                      })
+                      return run_id
+                  time.sleep(5)
+              raise RuntimeError(f'{label}: could not resolve dispatched {workflow} run')
+
+          def nested_run_id(value: Any) -> int | None:
+              if isinstance(value, int) and value > 0:
+                  return value
+              if isinstance(value, str) and value.isdigit():
+                  return int(value)
+              return None
+
+          def selected_dispatch(router: dict[str, Any]) -> tuple[str | None, int | None, str | None]:
+              routing = router.get('routing') or {}
+              dispatch = routing.get('dispatch') or router.get('dispatch') or {}
+              selected = dispatch.get('selected') or {}
+              path = selected.get('path') or selected.get('workflow') or dispatch.get('path')
+              run_id = (
+                  nested_run_id(selected.get('run_id'))
+                  or nested_run_id(dispatch.get('run_id'))
+                  or nested_run_id(router.get('selected_run_id'))
+              )
+              result = selected.get('result') or dispatch.get('result')
+              return path, run_id, result
+
+          def find_gate_record() -> tuple[Path, dict[str, Any]]:
+              paths = [
+                  Path('arm64/status/stage0-iso-safety-gate.json'),
+                  Path('arm64/status/stage0-iso-safety-gate-latest.json'),
+                  *sorted(Path('arm64').rglob('*iso*safety*gate*.json')),
+              ]
+              seen: set[Path] = set()
+              for path in paths:
+                  if path in seen or not path.is_file():
+                      continue
+                  seen.add(path)
+                  try:
+                      value = json.loads(path.read_text(encoding='utf-8'))
+                  except (OSError, json.JSONDecodeError):
+                      continue
+                  if isinstance(value, dict) and isinstance(value.get('eligible'), bool):
+                      return path, value
+              raise RuntimeError('ISO safety gate did not leave a readable eligibility record')
+
+          def gate_selected_run(gate: dict[str, Any]) -> int | None:
+              dispatch = gate.get('dispatch') or {}
+              selected = dispatch.get('selected') or {}
+              return (
+                  nested_run_id(selected.get('run_id'))
+                  or nested_run_id(dispatch.get('run_id'))
+                  or nested_run_id(gate.get('selected_run_id'))
+              )
+
+          try:
+              state['phase'] = 'waiting-for-refreshed-router-lock'
+              save()
+              router_definition = Path('.github/workflows') / ROUTER_WORKFLOW
+              for _ in range(60):
+                  pull_latest()
+                  text = router_definition.read_text(encoding='utf-8')
+                  if str(TARGET_RUN_ID) in text and TARGET_HEAD_SHA in text:
+                      break
+                  time.sleep(10)
+              else:
+                  raise RuntimeError('continuation router did not acquire the verified target lock')
+
+              parent = wait_run(TARGET_RUN_ID, 'locked-parent')
+              if (
+                  parent.get('status') != 'completed'
+                  or parent.get('conclusion') != 'success'
+                  or parent.get('head_sha') != TARGET_HEAD_SHA
+              ):
+                  raise RuntimeError(
+                      f'locked parent is not a successful verified authority: '
+                      f'{compact_run(parent)}'
+                  )
+
+              seen_selected_runs: set[int] = set()
+              for iteration_number in range(1, 25):
+                  state['phase'] = f'iteration-{iteration_number}-dispatch-router'
+                  save()
+                  router_run_id = dispatch_new(
+                      ROUTER_WORKFLOW,
+                      f'iteration-{iteration_number}-router',
+                  )
+                  router_run = wait_run(
+                      router_run_id,
+                      f'iteration-{iteration_number}-router',
+                  )
+                  if router_run.get('conclusion') != 'success':
+                      raise RuntimeError(
+                          f'iteration {iteration_number}: router concluded '
+                          f'{router_run.get("conclusion")}'
+                      )
+                  pull_latest()
+                  if not ROUTER_STATUS.is_file():
+                      raise RuntimeError(
+                          f'iteration {iteration_number}: router status is absent: {ROUTER_STATUS}'
+                      )
+                  router = json.loads(ROUTER_STATUS.read_text(encoding='utf-8'))
+                  target = router.get('target_run') or {}
+                  if (
+                      nested_run_id(target.get('id')) != TARGET_RUN_ID
+                      or target.get('conclusion') != 'success'
+                      or target.get('head_sha') != TARGET_HEAD_SHA
+                  ):
+                      raise RuntimeError(
+                          f'iteration {iteration_number}: router recorded the wrong target: {target}'
+                      )
+                  path, selected_run_id, dispatch_result = selected_dispatch(router)
+                  route = router.get('routing') or {}
+                  record: dict[str, Any] = {
+                      'iteration': iteration_number,
+                      'router_run': compact_run(router_run),
+                      'router_status_path': str(ROUTER_STATUS),
+                      'source_recovery': router.get('source_recovery'),
+                      'routing': route,
+                      'selected_workflow': path,
+                      'selected_run_id': selected_run_id,
+                      'dispatch_result': dispatch_result,
+                      'selected_run': None,
+                  }
+                  state['iterations'].append(record)
+                  state['final_route'] = route
+                  save()
+
+                  if selected_run_id is None:
+                      state['phase'] = 'blocked-without-selected-run'
+                      state['blocking_reasons'] = [
+                          route.get('reason') or 'router did not select a runnable continuation'
+                      ]
+                      save()
+                      break
+                  if selected_run_id in seen_selected_runs:
+                      raise RuntimeError(
+                          f'router selected run {selected_run_id} twice without state progress'
+                      )
+                  seen_selected_runs.add(selected_run_id)
+
+                  state['phase'] = f'iteration-{iteration_number}-wait-selected'
+                  save()
+                  selected_run = wait_run(
+                      selected_run_id,
+                      f'iteration-{iteration_number}-selected',
+                  )
+                  record['selected_run'] = {
+                      'run': compact_run(selected_run),
+                      'jobs': jobs(selected_run_id),
+                      'artifacts': artifacts(selected_run_id),
+                  }
+                  save()
+                  if selected_run.get('conclusion') != 'success':
+                      raise RuntimeError(
+                          f'iteration {iteration_number}: selected run {selected_run_id} '
+                          f'concluded {selected_run.get("conclusion")}'
+                      )
+                  pull_latest()
+
+                  path_text = str(path or '')
+                  selected_actual_path = str(selected_run.get('path') or '')
+                  is_gate = (
+                      'iso-safety-gate' in path_text
+                      or 'iso-safety-gate' in selected_actual_path
+                      or 'stage0-000' in path_text
+                      or 'stage0-000' in selected_actual_path
+                  )
+                  is_iso = any(
+                      marker in path_text.lower() or marker in selected_actual_path.lower()
+                      for marker in ('final-live-iso', 'build-final-live-iso', 'stage0-live')
+                  )
+
+                  if is_gate:
+                      gate_path, gate = find_gate_record()
+                      state['stage0_gate'] = {
+                          'record_path': str(gate_path),
+                          'record': gate,
+                          'workflow_run': compact_run(selected_run),
+                      }
+                      save()
+                      if gate.get('eligible') is not True:
+                          state['phase'] = 'stage0-blocked-safely'
+                          reasons = gate.get('blocking_reasons') or []
+                          state['blocking_reasons'] = (
+                              reasons if isinstance(reasons, list) else [reasons]
+                          )
+                          save()
+                          break
+                      stage0_run_id = gate_selected_run(gate)
+                      if stage0_run_id is None:
+                          raise RuntimeError('eligible ISO safety gate has no selected run')
+                      stage0_run = wait_run(stage0_run_id, 'stage0-selected-run')
+                      state['stage0_run'] = {
+                          'run': compact_run(stage0_run),
+                          'jobs': jobs(stage0_run_id),
+                          'artifacts': artifacts(stage0_run_id),
+                      }
+                      if stage0_run.get('conclusion') != 'success':
+                          raise RuntimeError(
+                              f'Stage 0 selected run {stage0_run_id} concluded '
+                              f'{stage0_run.get("conclusion")}'
+                          )
+                      pull_latest()
+                      state['phase'] = 'stage0-completed'
+                      save()
+                      break
+
+                  if is_iso:
+                      state['stage0_run'] = record['selected_run']
+                      state['phase'] = 'iso-run-completed'
+                      save()
+                      break
+
+                  state['phase'] = f'iteration-{iteration_number}-selected-success'
+                  save()
+              else:
+                  raise RuntimeError('continuation loop exhausted 24 iterations without convergence')
+
+          except Exception as error:
+              state['phase'] = 'failed'
+              state['error'] = {
+                  'type': type(error).__name__,
+                  'message': str(error),
+                  'traceback': traceback.format_exc(),
+              }
+              save()
+              raise
+          finally:
+              save()
+          PY
+
+      - name: Commit the loop evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/continuation-loop-v1/state.json
+          mkdir -p "$(dirname "$LOOP_STATUS")"
+          cp work/continuation-loop-v1/state.json "$LOOP_STATUS"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          pushed=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            cp work/continuation-loop-v1/state.json "$LOOP_STATUS"
+            git add "$LOOP_STATUS"
+            if git diff --cached --quiet; then
+              pushed=1
+              break
+            fi
+            git commit -m 'Record ARM64 continuation loop v1' || true
+            if git push origin HEAD:arm64-port; then
+              pushed=1
+              break
+            fi
+            git reset --soft HEAD~1 || true
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = 1
+
+      - name: Upload the complete loop evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-continuation-loop-v1-${{ github.run_id }}
+          path: work/continuation-loop-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
