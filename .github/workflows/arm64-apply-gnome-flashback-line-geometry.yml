@@ -1,0 +1,85 @@
+name: ARM64 apply - gnome-flashback exact line geometry
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-apply-gnome-flashback-line-geometry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-apply-gnome-flashback-line-geometry
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply and validate the evidence-derived reconstruction patch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin arm64-port
+
+          patch=arm64/patches/gnome-flashback-han3u4-line-geometry.patch
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          path = Path('arm64/patches/gnome-flashback-han3u4-line-geometry.patch')
+          text = path.read_text(encoding='utf-8')
+          malformed = 'gtk_menu_item_new_with_label _(("Placement"))'
+          corrected = 'gtk_menu_item_new_with_label (_("Placement"))'
+          if text.count(malformed) != 2:
+              raise SystemExit('staged patch repair anchor count mismatch')
+          text = text.replace(malformed, corrected)
+          path.write_text(text, encoding='utf-8')
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          expected = 'd29d09e5122ac4bcf71314f2b557e82881c3751c57ffb7bd930c176b981abfd9'
+          if digest != expected:
+              raise SystemExit(f'staged patch digest mismatch: {digest}')
+          PY
+
+          git apply --check "$patch"
+          git apply "$patch"
+          python3 -m py_compile arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          grep -Fq 'and (.unique_reconstruction.changed_paths | length) == 5' \
+            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          grep -Fq '1037: "        G_OBJECT_WARN_INVALID_PROPERTY_ID' \
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          grep -Fq '438: "        g_assert_not_reached ();"' \
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          git diff --check
+
+          git rm "$patch" .github/workflows/arm64-apply-gnome-flashback-line-geometry.yml
+          git add \
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          git diff --cached --check
+          git commit -m 'Fix gnome-flashback exact ELF reconstruction geometry'
+
+      - name: Rebase and publish the validated change
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5; do
+            git fetch origin arm64-port
+            if git rebase origin/arm64-port && git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
