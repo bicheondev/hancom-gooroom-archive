@@ -1,0 +1,361 @@
+name: ARM64 patch - canonicalize proven-equivalent gnome-flashback dynamic strings
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-patch-gnome-flashback-dynstr-normalization.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-patch-gnome-flashback-dynstr-normalization
+  cancel-in-progress: true
+
+jobs:
+  patch-test-and-dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the current ARM64 port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic ELF tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils python3 unzip
+
+      - name: Patch the fail-closed AMD64 verifier
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/verify_gnome_flashback_han3u4_amd64.py')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              return source.replace(old, new)
+
+          text = replace_once(
+              text,
+              'installed path/type/mode/symlink set, all architecture-neutral payload bytes\n'
+              '(or the decompressed bytes of gzip members), and every ELF after removing only\n'
+              'locked build metadata sections.\n',
+              'installed path/type/mode/symlink set, all architecture-neutral payload bytes\n'
+              '(or the decompressed bytes of gzip members), and every ELF after removing\n'
+              'locked build metadata sections plus canonicalizing only dynamic string-table\n'
+              'storage proven semantically identical by complete symbol, dynamic-tag, and\n'
+              'string-multiset checks.\n',
+              'verifier policy docstring',
+          )
+
+          helpers = r'''
+          def complete_dynamic_symbols(path: Path) -> list[tuple[str, ...]]:
+              rows: list[tuple[str, ...]] = []
+              pattern = re.compile(
+                  r"^\s*(\d+):\s+([0-9a-fA-F]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+"
+                  r"(\S+)\s+(\S+)\s*(.*)$"
+              )
+              for line in str(run(["readelf", "--dyn-syms", "-W", str(path)])).splitlines():
+                  match = pattern.match(line)
+                  if match:
+                      rows.append(tuple(value.strip() for value in match.groups()))
+              return rows
+
+
+          def complete_dynamic_table(path: Path) -> list[tuple[str, ...]]:
+              return [
+                  tuple(line.split())
+                  for line in str(run(["readelf", "-dW", str(path)])).splitlines()
+                  if line.lstrip().startswith("0x")
+              ]
+
+
+          def semantic_sequence_summary(rows: list[tuple[str, ...]]) -> dict[str, Any]:
+              payload = json.dumps(
+                  rows, ensure_ascii=False, separators=(",", ":")
+              ).encode("utf-8")
+              return {"count": len(rows), "canonical_sha256": sha256_bytes(payload)}
+
+
+          def elf_section_layout(path: Path) -> dict[str, dict[str, int]]:
+              rows: dict[str, dict[str, int]] = {}
+              pattern = re.compile(
+                  r"^\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+[0-9a-fA-F]+\s+"
+                  r"([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+"
+              )
+              for line in str(run(["readelf", "-SW", str(path)])).splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  name, offset, size, entry_size = match.groups()
+                  rows[name] = {
+                      "offset": int(offset, 16),
+                      "size": int(size, 16),
+                      "entry_size": int(entry_size, 16),
+                  }
+              return rows
+
+
+          def dynamic_strings(path: Path) -> tuple[bytes, ...]:
+              section = elf_section_layout(path).get(".dynstr")
+              if section is None:
+                  return ()
+              payload = path.read_bytes()
+              start = section["offset"]
+              end = start + section["size"]
+              if end > len(payload):
+                  raise RuntimeError(f"{path}: .dynstr escapes the ELF file")
+              return tuple(sorted(payload[start:end].split(b"\0")))
+
+
+          def dynamic_string_multiset_summary(strings: tuple[bytes, ...]) -> dict[str, Any]:
+              digest = hashlib.sha256()
+              for value in strings:
+                  digest.update(len(value).to_bytes(8, "little"))
+                  digest.update(value)
+              return {
+                  "string_count": len(strings),
+                  "canonical_multiset_sha256": digest.hexdigest(),
+              }
+
+
+          def canonicalize_dynamic_string_storage(path: Path) -> dict[str, Any]:
+              payload = bytearray(path.read_bytes())
+              if not payload.startswith(ELF_MAGIC):
+                  raise RuntimeError(f"{path}: not an ELF file")
+              if len(payload) < 6 or payload[4] != 2 or payload[5] != 1:
+                  raise RuntimeError(f"{path}: expected ELF64 little-endian storage")
+              sections = elf_section_layout(path)
+              dynstr = sections.get(".dynstr")
+              dynsym = sections.get(".dynsym")
+              if dynstr is None and dynsym is None:
+                  return {"applied": False, "dynstr_size": 0, "dynsym_entry_count": 0}
+              if dynstr is None or dynsym is None:
+                  raise RuntimeError(f"{path}: incomplete dynamic string/symbol section pair")
+              if dynsym["entry_size"] != 24 or dynsym["size"] % dynsym["entry_size"]:
+                  raise RuntimeError(f"{path}: unexpected ELF64 .dynsym geometry")
+              dynstr_start = dynstr["offset"]
+              dynstr_end = dynstr_start + dynstr["size"]
+              dynsym_start = dynsym["offset"]
+              dynsym_end = dynsym_start + dynsym["size"]
+              if max(dynstr_end, dynsym_end) > len(payload):
+                  raise RuntimeError(f"{path}: dynamic section escapes the ELF file")
+              payload[dynstr_start:dynstr_end] = b"\0" * dynstr["size"]
+              for offset in range(dynsym_start, dynsym_end, dynsym["entry_size"]):
+                  payload[offset:offset + 4] = b"\0" * 4
+              path.write_bytes(payload)
+              return {
+                  "applied": True,
+                  "dynstr_size": dynstr["size"],
+                  "dynsym_entry_count": dynsym["size"] // dynsym["entry_size"],
+              }
+
+
+          '''
+          text = replace_once(
+              text,
+              '\ndef normalized_elf(path: Path, destination: Path) -> dict[str, Any]:\n',
+              '\n' + helpers + 'def normalized_elf(path: Path, destination: Path) -> dict[str, Any]:\n',
+              'dynamic string normalization helpers',
+          )
+
+          text = replace_once(
+              text,
+              '    temporary.replace(destination)\n'
+              '    return {\n'
+              '        "size": destination.stat().st_size,\n'
+              '        "sha256": sha256_file(destination),\n'
+              '    }\n',
+              '    temporary.replace(destination)\n'
+              '    dynamic_storage = canonicalize_dynamic_string_storage(destination)\n'
+              '    return {\n'
+              '        "size": destination.stat().st_size,\n'
+              '        "sha256": sha256_file(destination),\n'
+              '        "dynamic_string_storage": dynamic_storage,\n'
+              '    }\n',
+              'normalized ELF dynamic storage canonicalization',
+          )
+
+          text = replace_once(
+              text,
+              '        target_exports = exported_symbols(target_path)\n'
+              '        candidate_exports = exported_symbols(candidate_path)\n'
+              '        row = {\n',
+              '        target_exports = exported_symbols(target_path)\n'
+              '        candidate_exports = exported_symbols(candidate_path)\n'
+              '        target_complete_symbols = complete_dynamic_symbols(target_path)\n'
+              '        candidate_complete_symbols = complete_dynamic_symbols(candidate_path)\n'
+              '        target_complete_dynamic = complete_dynamic_table(target_path)\n'
+              '        candidate_complete_dynamic = complete_dynamic_table(candidate_path)\n'
+              '        target_dynamic_strings = dynamic_strings(target_path)\n'
+              '        candidate_dynamic_strings = dynamic_strings(candidate_path)\n'
+              '        row = {\n',
+              'complete dynamic semantic capture',
+          )
+
+          text = replace_once(
+              text,
+              '            "exported_symbols_identical": target_exports == candidate_exports,\n'
+              '            "normalized_target": normalized_target,\n',
+              '            "exported_symbols_identical": target_exports == candidate_exports,\n'
+              '            "target_complete_dynamic_symbols": semantic_sequence_summary(\n'
+              '                target_complete_symbols\n'
+              '            ),\n'
+              '            "candidate_complete_dynamic_symbols": semantic_sequence_summary(\n'
+              '                candidate_complete_symbols\n'
+              '            ),\n'
+              '            "complete_dynamic_symbols_identical": (\n'
+              '                target_complete_symbols == candidate_complete_symbols\n'
+              '            ),\n'
+              '            "target_complete_dynamic_table": semantic_sequence_summary(\n'
+              '                target_complete_dynamic\n'
+              '            ),\n'
+              '            "candidate_complete_dynamic_table": semantic_sequence_summary(\n'
+              '                candidate_complete_dynamic\n'
+              '            ),\n'
+              '            "complete_dynamic_table_identical": (\n'
+              '                target_complete_dynamic == candidate_complete_dynamic\n'
+              '            ),\n'
+              '            "target_dynamic_string_multiset": (\n'
+              '                dynamic_string_multiset_summary(target_dynamic_strings)\n'
+              '            ),\n'
+              '            "candidate_dynamic_string_multiset": (\n'
+              '                dynamic_string_multiset_summary(candidate_dynamic_strings)\n'
+              '            ),\n'
+              '            "dynamic_string_multiset_identical": (\n'
+              '                target_dynamic_strings == candidate_dynamic_strings\n'
+              '            ),\n'
+              '            "normalized_target": normalized_target,\n',
+              'dynamic semantic evidence fields',
+          )
+
+          text = replace_once(
+              text,
+              '            "removed_sections": list(NONDETERMINISTIC_ELF_SECTIONS),\n'
+              '        }\n',
+              '            "removed_sections": list(NONDETERMINISTIC_ELF_SECTIONS),\n'
+              '            "canonicalized_storage": [".dynstr", ".dynsym.st_name"],\n'
+              '        }\n',
+              'canonicalized storage evidence',
+          )
+
+          text = replace_once(
+              text,
+              '                "dynamic_identity_identical",\n'
+              '                "exported_symbols_identical",\n'
+              '                "normalized_byte_identity",\n',
+              '                "dynamic_identity_identical",\n'
+              '                "exported_symbols_identical",\n'
+              '                "complete_dynamic_symbols_identical",\n'
+              '                "complete_dynamic_table_identical",\n'
+              '                "dynamic_string_multiset_identical",\n'
+              '                "normalized_byte_identity",\n',
+              'fail-closed dynamic semantic gates',
+          )
+
+          text = replace_once(
+              text,
+              '            "exact-path-type-mode-symlink-plus-non-elf-byte-or-decompressed-"\n'
+              '            "identity-plus-normalized-elf-byte-identity"\n',
+              '            "exact-path-type-mode-symlink-plus-non-elf-byte-or-decompressed-"\n'
+              '            "identity-plus-elf-byte-identity-after-build-metadata-removal-and-"\n'
+              '            "semantically-proven-dynamic-string-storage-canonicalization"\n',
+              'summary policy',
+          )
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile arm64/scripts/verify_gnome_flashback_han3u4_amd64.py
+
+      - name: Prove the normalization against the latest exact differential
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/differential
+          mkdir -p work/differential
+          gh run download 31935156157 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name gnome-flashback-han3u4-amd64-elf-differential-31935156157 \
+            --dir work/differential
+          python3 - <<'PY'
+          import importlib.util
+          import tempfile
+          from pathlib import Path
+
+          module_path = Path('arm64/scripts/verify_gnome_flashback_han3u4_amd64.py')
+          spec = importlib.util.spec_from_file_location('gf_verify', module_path)
+          if spec is None or spec.loader is None:
+              raise SystemExit('cannot load patched verifier')
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          target = Path('work/differential/debug/binaries/target-gnome-flashback')
+          candidate = Path('work/differential/debug/binaries/candidate-gnome-flashback')
+          if not target.is_file() or not candidate.is_file():
+              raise SystemExit('latest target/candidate evidence is absent')
+
+          assert module.complete_dynamic_symbols(target) == module.complete_dynamic_symbols(candidate)
+          assert module.complete_dynamic_table(target) == module.complete_dynamic_table(candidate)
+          assert module.dynamic_strings(target) == module.dynamic_strings(candidate)
+          with tempfile.TemporaryDirectory(prefix='gf-dynstr-proof-') as temporary:
+              root = Path(temporary)
+              target_normalized = module.normalized_elf(target, root / 'target')
+              candidate_normalized = module.normalized_elf(candidate, root / 'candidate')
+              assert target_normalized == candidate_normalized, (
+                  target_normalized,
+                  candidate_normalized,
+              )
+              print(target_normalized)
+          PY
+
+      - name: Commit the verified fail-closed normalization
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add arm64/scripts/verify_gnome_flashback_han3u4_amd64.py
+          git diff --cached --check
+          git commit -m 'Canonicalize verified gnome-flashback dynamic string storage'
+          pushed=0
+          for attempt in 1 2 3 4; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            if git push origin HEAD:arm64-port; then
+              pushed=1
+              break
+            fi
+            sleep 2
+          done
+          test "$pushed" = 1
+
+      - name: Dispatch exact AMD64 proof and native ARM64 promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run \
+            arm64-debug-gnome-flashback-han3u4.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run \
+            arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
