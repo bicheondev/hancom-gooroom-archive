@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 217,
-    "workflow_name_count": 217,
-    "referenced_local_file_count": 315,
+    "workflow_count": 218,
+    "workflow_name_count": 218,
+    "referenced_local_file_count": 316,
     "error_count": 3,
-    "warning_count": 41,
+    "warning_count": 42,
     "passed": false
   },
   "workflows": [
@@ -1191,6 +1191,25 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/summarize_arm64_ci_state.py"
+      ]
+    },
+    {
+      "filename": "arm64-continuation-gnome-flashback-han3u4-v3.yml",
+      "path": ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml",
+      "name": "ARM64 continuation - gnome-flashback han3u4 to Stage 0 v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/reconstructed-sources/source-locks.json",
+        "arm64/status/stage0-iso-safety-gate-latest.json",
+        "arm64/status/stage0-iso-safety-gate.json"
       ]
     },
     {
@@ -4477,6 +4496,7 @@
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
       ".github/workflows/arm64-build-promote-gooroom-applauncher-han3u2.yml",
+      ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifacts.yml",
@@ -5522,7 +5542,11 @@
     "arm64/status/source-recovery-resolutions.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/status/stage0-iso-safety-gate-latest.json": [
+      ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml"
+    ],
     "arm64/status/stage0-iso-safety-gate.json": [
+      ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml",
       ".github/workflows/arm64-stage0-000-iso-safety-gate.yml"
     ],
     "arm64/status/summary.json": [
@@ -5580,6 +5604,11 @@
     {
       "path": ".github/workflows/arm64-build-qtbase.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml",
+      "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
