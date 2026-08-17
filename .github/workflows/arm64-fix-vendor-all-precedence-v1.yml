@@ -1,4 +1,4 @@
-name: ARM64 fix - prefer exact ISO Architecture all packages
+name: ARM64 fix - publish vendor Architecture all precedence code
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Apply and validate vendor Architecture all precedence
+      - name: Apply and validate code-only precedence change
         shell: bash
         run: |
           set -euxo pipefail
@@ -51,17 +51,16 @@ jobs:
           python3 arm64/scripts/test_materialize_build_dependency_repo_v2.py
           git diff --check
 
-          git rm -f \
-            .github/workflows/arm64-fix-vendor-all-precedence-v1.yml \
+          git checkout -- \
+            .github/workflows/arm64-build-dependency-repository-v2.yml \
             arm64/scripts/apply_vendor_all_precedence_fix_v1.py
           git add \
             arm64/scripts/materialize_build_dependency_repo_v2.py \
-            arm64/scripts/test_materialize_build_dependency_repo_v2.py \
-            .github/workflows/arm64-build-dependency-repository-v2.yml
+            arm64/scripts/test_materialize_build_dependency_repo_v2.py
           git diff --cached --check
           git commit -m 'Prefer exact ISO Architecture all packages'
 
-      - name: Publish the validated fix
+      - name: Publish the validated code change
         shell: bash
         run: |
           set -euxo pipefail
