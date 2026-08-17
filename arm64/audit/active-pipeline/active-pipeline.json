@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 225,
-    "workflow_name_count": 225,
-    "referenced_local_file_count": 324,
+    "workflow_count": 226,
+    "workflow_name_count": 226,
+    "referenced_local_file_count": 326,
     "error_count": 7,
     "warning_count": 41,
     "passed": false
@@ -1789,6 +1789,24 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/prepare_composite_source_chroot.sh"
+      ]
+    },
+    {
+      "filename": "arm64-fix-vendor-all-precedence-v1.yml",
+      "path": ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml",
+      "name": "ARM64 fix - prefer exact ISO Architecture all packages",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/apply_vendor_all_precedence_fix_v1.py",
+        "arm64/scripts/materialize_build_dependency_repo_v2.py",
+        "arm64/scripts/test_materialize_build_dependency_repo_v2.py"
       ]
     },
     {
@@ -4813,6 +4831,9 @@
     "arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py": [
       ".github/workflows/arm64-apply-targeted-source-owner-fallback.yml"
     ],
+    "arm64/scripts/apply_vendor_all_precedence_fix_v1.py": [
+      ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml"
+    ],
     "arm64/scripts/archaeology_software_heritage_exact_sources.py": [
       ".github/workflows/arm64-archaeology-software-heritage-app-sources.yml",
       ".github/workflows/arm64-archaeology-software-heritage-authenticated.yml",
@@ -5107,7 +5128,8 @@
       ".github/workflows/arm64-debian-map.yml"
     ],
     "arm64/scripts/materialize_build_dependency_repo_v2.py": [
-      ".github/workflows/arm64-build-dependency-repository-v2.yml"
+      ".github/workflows/arm64-build-dependency-repository-v2.yml",
+      ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml"
     ],
     "arm64/scripts/materialize_debian_arm64_reference_repo_v2.py": [
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml"
@@ -5535,6 +5557,9 @@
     "arm64/scripts/test_final_arm64_iso_qemu_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
+    "arm64/scripts/test_materialize_build_dependency_repo_v2.py": [
+      ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml"
+    ],
     "arm64/scripts/test_resolve_rebuild_artifact_names.py": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
     ],
@@ -5730,8 +5755,8 @@
     },
     {
       "path": ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 53, column 1:\n    def download_rebuild_group(\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 54, column 1:\n    '''\n    ^"
+      "local_path": "arm64/scripts/test_materialize_build_dependency_repo_v2.py",
+      "reason": "referenced-local-code-missing"
     },
     {
       "path": ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
