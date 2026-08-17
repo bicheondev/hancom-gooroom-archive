@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 223,
-    "workflow_name_count": 223,
+    "workflow_count": 222,
+    "workflow_name_count": 222,
     "referenced_local_file_count": 317,
     "error_count": 4,
-    "warning_count": 43,
+    "warning_count": 41,
     "passed": false
   },
   "workflows": [
@@ -1771,22 +1771,6 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/prepare_composite_source_chroot.sh"
-      ]
-    },
-    {
-      "filename": "arm64-fix-gnome-flashback-promotion-path-contract-v1.yml",
-      "path": ".github/workflows/arm64-fix-gnome-flashback-promotion-path-contract-v1.yml",
-      "name": "ARM64 fix gnome-flashback promotion path contract v1",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/promote_gnome_flashback_han3u4.py"
       ]
     },
     {
@@ -5128,7 +5112,6 @@
       ".github/workflows/arm64-probe-wayback-blocker-dsc.yml"
     ],
     "arm64/scripts/promote_gnome_flashback_han3u4.py": [
-      ".github/workflows/arm64-fix-gnome-flashback-promotion-path-contract-v1.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-replay-gnome-flashback-han3u4-promotion-v1.yml"
     ],
@@ -5837,18 +5820,8 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
-      "path": ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
-      "local_path": "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-replay-gnome-flashback-han3u4-promotion-v1.yml",
-      "local_path": "arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
