@@ -1,0 +1,480 @@
+name: ARM64 port - inspect final three package blockers v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-inspect-final-three-blockers-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-three-blockers-inspection-v1
+  cancel-in-progress: true
+
+env:
+  INTEGRATION_PACKAGE: gooroom-integration-applet
+  INTEGRATION_VERSION: 0.3.1+grm3u1+han3u3
+  INTEGRATION_BASE_VERSION: 0.3.1+grm3u1
+  INTEGRATION_BASE_REPOSITORY: gooroom/gooroom-integration-applet
+  INTEGRATION_BASE_TAG: gooroom/0.3.1+grm3u1
+  INTEGRATION_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  SESSION_PACKAGE: gooroom-session-manager
+  SESSION_VERSION: 0.3.9+grm3u1+han3u2
+  SESSION_BASE_VERSION: 0.3.9+grm3u1
+  SESSION_BASE_REPOSITORY: gooroom/gooroom-session-manager
+  SESSION_BASE_TAG: gooroom/0.3.9+grm3u1
+  SESSION_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb
+  KERNEL_PACKAGE: linux-image-5.10.0-23-arm64
+  KERNEL_VERSION: 5.10.179-1+grm3u1
+  KERNEL_FILENAME: linux-image-5.10.0-23-arm64_5.10.179-1+grm3u1_arm64.deb
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package, Git, and ELF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file git gzip jq python3 \
+            xz-utils zstd
+
+      - name: Download and extract the two exact vendor AMD64 packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-three-blockers
+          rm -rf "$base"
+          mkdir -p "$base"/{downloads,packages,sources,kernel,evidence}
+
+          inspect_deb() {
+            package="$1"
+            version="$2"
+            url="$3"
+            out="$base/packages/$package"
+            mkdir -p "$out"/{root,control}
+            deb="$base/downloads/${package}_${version}_amd64.deb"
+            curl --fail --show-error --location --retry 8 --retry-delay 3 \
+              --retry-all-errors "$url" -o "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$package"
+            test "$(dpkg-deb -f "$deb" Version)" = "$version"
+            test "$(dpkg-deb -f "$deb" Architecture)" = amd64
+            dpkg-deb -x "$deb" "$out/root"
+            dpkg-deb -e "$deb" "$out/control"
+            dpkg-deb -f "$deb" > "$out/control-fields.txt"
+            dpkg-deb -c "$deb" > "$out/data-list.txt"
+            stat -c '%n\t%s' "$deb" > "$out/deb.stat.tsv"
+            sha256sum "$deb" > "$out/deb.sha256"
+            find "$out/root" -printf '%y\t%m\t%u\t%g\t%s\t%P\n' \
+              | LC_ALL=C sort > "$out/payload-inventory.tsv"
+            find "$out/root" -type f -print0 | while IFS= read -r -d '' file_path; do
+              if file -b "$file_path" | grep -q '^ELF '; then
+                relative="${file_path#"$out/root/"}"
+                printf '%s\t%s\n' "$relative" "$(file -b "$file_path")"
+              fi
+            done | LC_ALL=C sort > "$out/elf-inventory.tsv"
+            changelog="$(find "$out/root/usr/share/doc" -type f -name changelog.gz -print -quit || true)"
+            test -n "$changelog"
+            gzip -dc "$changelog" > "$out/changelog"
+            sha256sum "$out/changelog" > "$out/changelog.sha256"
+          }
+
+          inspect_deb "$INTEGRATION_PACKAGE" "$INTEGRATION_VERSION" "$INTEGRATION_URL"
+          inspect_deb "$SESSION_PACKAGE" "$SESSION_VERSION" "$SESSION_URL"
+
+      - name: Discover every public repository carrying the two source names
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-three-blockers
+          discover_repositories() {
+            package="$1"
+            canonical="$2"
+            output="$base/sources/$package"
+            mkdir -p "$output/mirrors" "$output/indices"
+            {
+              printf '%s\n' "$canonical"
+              printf '%s\n' "hancomgooroom/$package" "hancom-io/$package"
+              gh api --method GET search/repositories \
+                -f q="$package in:name" -f per_page=100 \
+                --jq '.items[] | select(.name == "'"$package"'") | .full_name' || true
+              gh api --paginate "repos/$canonical/forks?per_page=100" \
+                --jq '.[].full_name' || true
+            } | awk 'NF' | LC_ALL=C sort -u | head -100 > "$output/repositories.txt"
+
+            : > "$output/available-repositories.txt"
+            while IFS= read -r repository; do
+              [ -n "$repository" ] || continue
+              if ! gh api "repos/$repository" >/dev/null 2>&1; then
+                continue
+              fi
+              printf '%s\n' "$repository" >> "$output/available-repositories.txt"
+              directory="$output/mirrors/${repository//\//__}.git"
+              git clone --mirror --filter=blob:none \
+                "https://github.com/$repository.git" "$directory"
+              git -C "$directory" for-each-ref \
+                --format='%(refname)\t%(objectname)\t%(*objectname)' \
+                | LC_ALL=C sort > "$output/indices/${repository//\//__}.refs.tsv"
+              git -C "$directory" log --all --date=iso-strict \
+                --pretty=format:'%H%x09%P%x09%ad%x09%s' \
+                > "$output/indices/${repository//\//__}.commits.tsv"
+            done < "$output/repositories.txt"
+          }
+
+          discover_repositories "$INTEGRATION_PACKAGE" "$INTEGRATION_BASE_REPOSITORY"
+          discover_repositories "$SESSION_PACKAGE" "$SESSION_BASE_REPOSITORY"
+
+      - name: Recover changelog prefixes and match vendor commits
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import difflib
+          import hashlib
+          import json
+          import re
+          import subprocess
+          from pathlib import Path
+
+          base = Path('work/final-three-blockers')
+          targets = [
+              {
+                  'package': 'gooroom-integration-applet',
+                  'version': '0.3.1+grm3u1+han3u3',
+                  'base_version': '0.3.1+grm3u1',
+                  'base_repository': 'gooroom/gooroom-integration-applet',
+                  'base_tag': 'gooroom/0.3.1+grm3u1',
+              },
+              {
+                  'package': 'gooroom-session-manager',
+                  'version': '0.3.9+grm3u1+han3u2',
+                  'base_version': '0.3.9+grm3u1',
+                  'base_repository': 'gooroom/gooroom-session-manager',
+                  'base_tag': 'gooroom/0.3.9+grm3u1',
+              },
+          ]
+
+          stanza_re = re.compile(r'^(?P<source>[A-Za-z0-9+.-]+) \((?P<version>[^)]+)\)')
+          commit_re = re.compile(r'\[([0-9a-fA-F]{7,40})\]')
+
+          def sha256(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          def normalize(value: str) -> str:
+              value = value.lower()
+              value = re.sub(r'\[[^]]+\]', ' ', value)
+              value = re.sub(r'[^a-z0-9가-힣]+', ' ', value)
+              return ' '.join(value.split())
+
+          def git(directory: Path, *arguments: str, check: bool = True) -> str:
+              result = subprocess.run(
+                  ['git', '-C', str(directory), *arguments],
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  check=False,
+              )
+              if check and result.returncode:
+                  raise RuntimeError(result.stdout)
+              return result.stdout.strip()
+
+          summaries = []
+          for target in targets:
+              package = target['package']
+              package_dir = base / 'packages' / package
+              source_dir = base / 'sources' / package
+              changelog = (package_dir / 'changelog').read_text(encoding='utf-8', errors='replace')
+              lines = changelog.splitlines(keepends=True)
+              stanzas = []
+              starts = []
+              for index, line in enumerate(lines):
+                  match = stanza_re.match(line)
+                  if match:
+                      starts.append((index, match.group('source'), match.group('version')))
+              for position, (start, source, version) in enumerate(starts):
+                  end = starts[position + 1][0] if position + 1 < len(starts) else len(lines)
+                  text = ''.join(lines[start:end])
+                  commits = []
+                  for line in lines[start:end]:
+                      for commit in commit_re.findall(line):
+                          subject = commit_re.sub('', line).strip().lstrip('*').strip()
+                          commits.append({'short_sha': commit.lower(), 'subject': subject})
+                  stanzas.append({
+                      'source': source,
+                      'version': version,
+                      'text_sha256': sha256(text.encode('utf-8')),
+                      'commits': commits,
+                  })
+
+              canonical = source_dir / 'mirrors' / (target['base_repository'].replace('/', '__') + '.git')
+              if not canonical.is_dir():
+                  raise RuntimeError(f'canonical mirror missing: {canonical}')
+              base_commit = git(canonical, 'rev-parse', f"refs/tags/{target['base_tag']}^{{commit}}")
+              base_tree = git(canonical, 'rev-parse', f'{base_commit}^{{tree}}')
+              base_changelog = subprocess.run(
+                  ['git', '-C', str(canonical), 'show', f'{base_commit}:debian/changelog'],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=True,
+              ).stdout
+              (source_dir / 'base-changelog').write_bytes(base_changelog)
+              target_bytes = (package_dir / 'changelog').read_bytes()
+              offset = target_bytes.find(base_changelog)
+              suffix_exact = offset >= 0 and target_bytes[offset:] == base_changelog
+              prefix = target_bytes[:offset] if suffix_exact else b''
+              (source_dir / 'vendor-changelog-prefix').write_bytes(prefix)
+
+              vendor_commits = []
+              for stanza in stanzas:
+                  if stanza['version'] == target['base_version']:
+                      break
+                  vendor_commits.extend(stanza['commits'])
+
+              matches = []
+              for mirror in sorted((source_dir / 'mirrors').glob('*.git')):
+                  repository = mirror.name[:-4].replace('__', '/')
+                  commit_rows = []
+                  index_path = source_dir / 'indices' / (mirror.name[:-4] + '.commits.tsv')
+                  if index_path.is_file():
+                      for row in index_path.read_text(encoding='utf-8', errors='replace').splitlines():
+                          parts = row.split('\t', 3)
+                          if len(parts) == 4:
+                              commit_rows.append(parts)
+                  for vendor in vendor_commits:
+                      short_sha = vendor['short_sha']
+                      exact = git(mirror, 'rev-parse', '--verify', f'{short_sha}^{{commit}}', check=False)
+                      if re.fullmatch(r'[0-9a-f]{40}', exact):
+                          matches.append({
+                              'repository': repository,
+                              'vendor_short_sha': short_sha,
+                              'vendor_subject': vendor['subject'],
+                              'match_type': 'exact-short-sha',
+                              'commit_sha': exact,
+                              'commit_subject': git(mirror, 'show', '-s', '--format=%s', exact),
+                              'score': 1.0,
+                              'changed_paths': git(mirror, 'diff-tree', '--no-commit-id', '--name-only', '-r', exact).splitlines(),
+                          })
+                          continue
+                      wanted = normalize(vendor['subject'])
+                      scored = []
+                      if wanted:
+                          for commit_sha, _parents, _date, subject in commit_rows:
+                              score = difflib.SequenceMatcher(None, wanted, normalize(subject)).ratio()
+                              if score >= 0.72:
+                                  scored.append((score, commit_sha, subject))
+                      for score, commit_sha, subject in sorted(scored, reverse=True)[:8]:
+                          matches.append({
+                              'repository': repository,
+                              'vendor_short_sha': short_sha,
+                              'vendor_subject': vendor['subject'],
+                              'match_type': 'subject-similarity',
+                              'commit_sha': commit_sha,
+                              'commit_subject': subject,
+                              'score': round(score, 6),
+                              'changed_paths': git(mirror, 'diff-tree', '--no-commit-id', '--name-only', '-r', commit_sha).splitlines(),
+                          })
+
+              analysis = {
+                  'schema': 1,
+                  **target,
+                  'target_changelog_sha256': sha256(target_bytes),
+                  'base_commit_sha': base_commit,
+                  'base_tree_sha': base_tree,
+                  'base_changelog_sha256': sha256(base_changelog),
+                  'base_changelog_found_as_exact_suffix': suffix_exact,
+                  'vendor_changelog_prefix_size': len(prefix),
+                  'vendor_changelog_prefix_sha256': sha256(prefix),
+                  'stanzas': stanzas,
+                  'vendor_commits': vendor_commits,
+                  'public_matches': matches,
+                  'exact_short_sha_match_count': sum(m['match_type'] == 'exact-short-sha' for m in matches),
+              }
+              (source_dir / 'analysis.json').write_text(
+                  json.dumps(analysis, indent=2, ensure_ascii=False, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+              summaries.append(analysis)
+
+          (base / 'evidence' / 'application-source-summary.json').write_text(
+              json.dumps(summaries, indent=2, ensure_ascii=False, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          jq -e 'length == 2 and all(.base_changelog_found_as_exact_suffix == true)' \
+            work/final-three-blockers/evidence/application-source-summary.json >/dev/null
+
+      - name: Derive and probe exact ARM64 kernel package URLs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-three-blockers
+          urls="$base/kernel/candidate-urls.txt"
+          probes="$base/kernel/url-probes.tsv"
+          repository_urls=arm64/locks/reference-iso-source-residue/latest/repository-urls.txt
+          test -f "$repository_urls"
+
+          {
+            grep -F "$KERNEL_FILENAME" "$repository_urls" || true
+            grep -F 'linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb' \
+              "$repository_urls" \
+              | sed 's/linux-image-5\.10\.0-23-amd64_5\.10\.179-1+grm3u1_amd64\.deb/linux-image-5.10.0-23-arm64_5.10.179-1+grm3u1_arm64.deb/g' || true
+            printf '%s\n' \
+              "https://update.hancomgooroom.com/hancom/pool/main/l/linux/$KERNEL_FILENAME" \
+              "https://update.hancomgooroom.com/gooroom/pool/main/l/linux/$KERNEL_FILENAME" \
+              "https://update.gooroom.kr/gooroom/pool/main/l/linux/$KERNEL_FILENAME" \
+              "https://archive.gooroom.kr/gooroom/pool/main/l/linux/$KERNEL_FILENAME"
+          } | sed -n 's#.*\(https\?://[^[:space:]"<>]*linux-image-5\.10\.0-23-arm64_5\.10\.179-1+grm3u1_arm64\.deb\).*#\1#p' \
+            | LC_ALL=C sort -u > "$urls"
+
+          printf 'http_code\tcontent_length\turl\n' > "$probes"
+          found=''
+          while IFS= read -r url; do
+            [ -n "$url" ] || continue
+            response="$(curl --location --silent --show-error --head \
+              --max-time 45 --retry 2 \
+              --write-out '%{http_code}\t%{size_download}' \
+              --output /dev/null "$url" || printf '000\t0')"
+            code="${response%%$'\t'*}"
+            size="${response#*$'\t'}"
+            printf '%s\t%s\t%s\n' "$code" "$size" "$url" >> "$probes"
+            if [ -z "$found" ] && [ "$code" = 200 ]; then
+              found="$url"
+            fi
+          done < "$urls"
+
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select((.name | ascii_downcase | contains("kernel")) or (.name | contains("5.10.0-23")))' \
+            > "$base/kernel/actions-artifacts.ndjson" || true
+
+          if [ -n "$found" ]; then
+            deb="$base/downloads/$KERNEL_FILENAME"
+            curl --fail --show-error --location --retry 8 --retry-delay 3 \
+              --retry-all-errors "$found" -o "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$KERNEL_PACKAGE"
+            test "$(dpkg-deb -f "$deb" Version)" = "$KERNEL_VERSION"
+            test "$(dpkg-deb -f "$deb" Architecture)" = arm64
+            mkdir -p "$base/kernel/root"
+            dpkg-deb -x "$deb" "$base/kernel/root"
+            dpkg-deb -f "$deb" > "$base/kernel/control-fields.txt"
+            dpkg-deb -c "$deb" > "$base/kernel/data-list.txt"
+            sha256sum "$deb" > "$base/kernel/deb.sha256"
+            stat -c '%n\t%s' "$deb" > "$base/kernel/deb.stat.tsv"
+            printf '%s\n' "$found" > "$base/kernel/selected-url.txt"
+          fi
+
+          jq -Rn \
+            --arg package "$KERNEL_PACKAGE" \
+            --arg version "$KERNEL_VERSION" \
+            --arg filename "$KERNEL_FILENAME" \
+            --arg selected_url "$found" \
+            '{schema:1,package:$package,version:$version,filename:$filename,
+              selected_url:($selected_url | select(length>0)),
+              exact_binary_recovered:($selected_url|length>0)}' \
+            > "$base/kernel/summary.json"
+
+      - name: Seal and upload complete inspection evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-three-blockers
+          find "$base" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$base/FILE-INVENTORY.tsv"
+          (
+            cd "$base"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -n \
+            --slurpfile apps "$base/evidence/application-source-summary.json" \
+            --slurpfile kernel "$base/kernel/summary.json" '
+              {schema:1,
+               applications:$apps[0],
+               kernel:$kernel[0],
+               exact_application_short_sha_matches:([$apps[0][].exact_short_sha_match_count] | add),
+               application_count:($apps[0]|length)}
+            ' > "$base/summary.json"
+          cat "$base/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload final-three blocker inspection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-final-three-blockers-inspection-v1
+          path: work/final-three-blockers
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact blocker authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/final-three-blockers
+          destination=arm64/locks/final-three-blockers-inspection-v1
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/evidence/application-source-summary.json" "$destination/"
+          cp "$source/kernel/summary.json" "$destination/kernel-summary.json"
+          cp "$source/kernel/candidate-urls.txt" "$destination/"
+          cp "$source/kernel/url-probes.tsv" "$destination/"
+          cp "$source/kernel/actions-artifacts.ndjson" "$destination/" || true
+          for package in "$INTEGRATION_PACKAGE" "$SESSION_PACKAGE"; do
+            mkdir -p "$destination/$package"
+            cp "$source/sources/$package/analysis.json" "$destination/$package/"
+            cp "$source/sources/$package/vendor-changelog-prefix" "$destination/$package/"
+            cp "$source/sources/$package/repositories.txt" "$destination/$package/"
+            cp "$source/sources/$package/available-repositories.txt" "$destination/$package/"
+          done
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-final-three-blockers-inspection-v1' \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              artifact_name:$artifact_name}' \
+            > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Final-three blocker authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock final three ARM64 blocker inspection'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
