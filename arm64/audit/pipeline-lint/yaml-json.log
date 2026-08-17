@@ -1,3 +1,11 @@
+.github/workflows/arm64-deep-diff-final-app-blockers-v1.yml: ScannerError: while scanning a simple key
+  in "<unicode string>", line 164, column 1:
+    deb [check-valid-until=no] https ... 
+    ^
+could not find expected ':'
+  in "<unicode string>", line 165, column 1:
+    EOF
+    ^
 .github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml: ScannerError: while scanning a simple key
   in "<unicode string>", line 47, column 1:
     '''
@@ -6,3 +14,4 @@ could not find expected ':'
   in "<unicode string>", line 48, column 27:
               new_verify = '''          rm -rf work/arm64-veri ... 
                               ^
+arm64/locks/final-three-blockers-inspection-v1/kernel-summary.json: JSONDecodeError: Expecting value: line 1 column 1 (char 0)
