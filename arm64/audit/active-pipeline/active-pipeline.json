@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 222,
-    "workflow_name_count": 222,
-    "referenced_local_file_count": 317,
+    "workflow_count": 223,
+    "workflow_name_count": 223,
+    "referenced_local_file_count": 319,
     "error_count": 4,
     "warning_count": 41,
     "passed": false
@@ -4205,6 +4205,29 @@
       ]
     },
     {
+      "filename": "arm64-verify-qtbase-grm3u1-amd64-equivalence.yml",
+      "path": ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml",
+      "name": "ARM64 verify QtBase grm3u1 AMD64 equivalence",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json",
+        "arm64/locks/vendor-binaries/vendor-binary-lock.json",
+        "arm64/scripts/build_recovered_source_archive_amd64.sh",
+        "arm64/scripts/build_recovered_source_archive_arm64.sh",
+        "arm64/scripts/verify_gnome_flashback_han3u4_amd64.py",
+        "arm64/scripts/verify_qtbase_grm3u1_amd64_equivalence.py"
+      ]
+    },
+    {
       "filename": "arm64-wave1-v3-record.yml",
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
       "name": "ARM64 port - record package wave 1 v3 evidence",
@@ -4514,7 +4537,8 @@
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
     "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json": [
-      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml"
+      ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
       ".github/workflows/arm64-dependency-retry-v2.yml",
@@ -4707,7 +4731,8 @@
       ".github/workflows/arm64-build-dependency-repository-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
-      ".github/workflows/arm64-reconstruct-build-qtbase-grm3u1.yml"
+      ".github/workflows/arm64-reconstruct-build-qtbase-grm3u1.yml",
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json": [
       ".github/workflows/arm64-effective-source-lock.yml",
@@ -4907,9 +4932,13 @@
     "arm64/scripts/build_recovered_exact_arm64_rootfs.sh": [
       ".github/workflows/arm64-build-recovered-exact-rootfs.yml"
     ],
+    "arm64/scripts/build_recovered_source_archive_amd64.sh": [
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
+    ],
     "arm64/scripts/build_recovered_source_archive_arm64.sh": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
-      ".github/workflows/arm64-build-recovered-reference-sources.yml"
+      ".github/workflows/arm64-build-recovered-reference-sources.yml",
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/scripts/build_recovery_stage0_v1.sh": [
       ".github/workflows/arm64-recovery-stage0-v1.yml"
@@ -5522,7 +5551,8 @@
       ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
       ".github/workflows/arm64-diagnose-gnome-flashback-han3u4-debs.yml",
       ".github/workflows/arm64-patch-gnome-flashback-dynstr-normalization.yml",
-      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml"
+      ".github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml",
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
       ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
@@ -5576,6 +5606,9 @@
     ],
     "arm64/scripts/verify_locked_arm64_build_v2.sh": [
       ".github/workflows/arm64-build-wave1-v2.yml"
+    ],
+    "arm64/scripts/verify_qtbase_grm3u1_amd64_equivalence.py": [
+      ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/scripts/verify_reconstructed_qtbase_arm64.py": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml"
