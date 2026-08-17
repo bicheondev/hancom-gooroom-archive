@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 225,
-    "workflow_name_count": 225,
+    "workflow_count": 226,
+    "workflow_name_count": 226,
     "referenced_local_file_count": 325,
     "error_count": 6,
     "warning_count": 41,
@@ -1898,6 +1898,21 @@
         "arm64/scripts/select_infrastructure_retry_wave_v3.py",
         "arm64/scripts/verify_arm64_rebuild_v3.py"
       ]
+    },
+    {
+      "filename": "arm64-inspect-final-three-blockers-v1.yml",
+      "path": ".github/workflows/arm64-inspect-final-three-blockers-v1.yml",
+      "name": "ARM64 port - inspect final three package blockers v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-inspect-gooroom-greeter-han3u2-target-v2.yml",
