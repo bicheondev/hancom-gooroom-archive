@@ -8,6 +8,7 @@ on:
       - 'arm64/scripts/materialize_build_dependency_repo_v2.py'
       - 'arm64/scripts/resolve_rebuild_artifact_names.py'
       - 'arm64/scripts/test_resolve_rebuild_artifact_names.py'
+      - 'arm64/scripts/test_materialize_build_dependency_repo_v2.py'
       - 'arm64/locks/vendor-binaries/**'
       - 'arm64/locks/rebuild-result-index-v2/**'
   workflow_dispatch:
@@ -53,8 +54,10 @@ jobs:
           python3 -m py_compile \
             arm64/scripts/materialize_build_dependency_repo_v2.py \
             arm64/scripts/resolve_rebuild_artifact_names.py \
-            arm64/scripts/test_resolve_rebuild_artifact_names.py
+            arm64/scripts/test_resolve_rebuild_artifact_names.py \
+            arm64/scripts/test_materialize_build_dependency_repo_v2.py
           python3 arm64/scripts/test_resolve_rebuild_artifact_names.py
+          python3 arm64/scripts/test_materialize_build_dependency_repo_v2.py
           gh --version
 
       - name: Resolve immutable artifact identities and materialize packages
@@ -149,8 +152,16 @@ jobs:
         run: |
           set -euxo pipefail
           test '${{ steps.materialize.outputs.exit_code }}' = '0'
-          jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' \
-            work/build-dependency-evidence/summary.json
+          jq -e '
+            .repository_ready == true
+            and .failure_count == 0
+            and .ambiguous_count == 0
+            and .vendor_precedence_shadowed_rebuild_count >= 2
+            and (
+              .rebuilt_candidate_count_before_vendor_precedence
+              == (.rebuilt_candidate_count + .vendor_precedence_shadowed_rebuild_count)
+            )
+          ' work/build-dependency-evidence/summary.json
           jq -e '
             .rewritten_group_count == 1
             and .locked_member_verified_group_count == 1
