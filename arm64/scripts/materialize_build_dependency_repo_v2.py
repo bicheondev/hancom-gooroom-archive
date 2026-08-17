@@ -207,6 +207,76 @@ def rebuilt_candidates(document: Any) -> list[dict[str, Any]]:
     return sorted(candidates, key=lambda row: (row["package"], row["version"]))
 
 
+def package_triplet(row: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(row["package"]),
+        str(row["version"]),
+        str(row["architecture"]),
+    )
+
+
+def apply_vendor_all_precedence(
+    vendor: list[dict[str, Any]],
+    rebuilt: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Prefer exact ISO Architecture: all packages over rebuilt duplicates.
+
+    Architecture: all payloads from the original ISO are already native on ARM64
+    and remain the byte authority. A rebuilt package with the same Package,
+    Version and Architecture is therefore redundant, even when its container
+    bytes differ because of build metadata. Ambiguous vendor authority remains a
+    hard failure.
+    """
+
+    vendor_identities: dict[
+        tuple[str, str, str], set[tuple[str, str, int]]
+    ] = defaultdict(set)
+    for row in vendor:
+        if row.get("architecture") != "all":
+            raise RuntimeError("vendor precedence received a non-all package")
+        vendor_identities[package_triplet(row)].add(
+            (str(row["filename"]), str(row["sha256"]), int(row["size"]))
+        )
+
+    ambiguous = [
+        {
+            "package": key[0],
+            "version": key[1],
+            "architecture": key[2],
+            "identities": sorted(identities),
+        }
+        for key, identities in vendor_identities.items()
+        if len(identities) != 1
+    ]
+    if ambiguous:
+        raise RuntimeError(
+            "vendor Architecture: all authority is ambiguous: "
+            + json.dumps(ambiguous, ensure_ascii=False, sort_keys=True)
+        )
+
+    retained: list[dict[str, Any]] = []
+    shadowed: list[dict[str, Any]] = []
+    for row in rebuilt:
+        key = package_triplet(row)
+        identities = vendor_identities.get(key)
+        if not identities:
+            retained.append(row)
+            continue
+        filename, digest, size = next(iter(identities))
+        shadowed.append(
+            {
+                **row,
+                "shadowed_by": "iso-vendor-binary-lock",
+                "vendor_authority": {
+                    "filename": filename,
+                    "sha256": digest,
+                    "size": size,
+                },
+            }
+        )
+    return retained, shadowed
+
+
 def download_rebuild_group(
     repository: str,
     run_id: str,
@@ -274,7 +344,10 @@ def main() -> int:
     args = parser.parse_args()
 
     vendor = vendor_all_candidates(load(args.vendor_lock))
-    rebuilt = rebuilt_candidates(load(args.rebuild_packages))
+    rebuilt_before_vendor_precedence = rebuilt_candidates(load(args.rebuild_packages))
+    rebuilt, shadowed_rebuilt = apply_vendor_all_precedence(
+        vendor, rebuilt_before_vendor_precedence
+    )
     args.repository_dir.mkdir(parents=True, exist_ok=True)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     staging = args.output_dir / "staging"
@@ -368,7 +441,11 @@ def main() -> int:
         "schema": 1,
         "policy": "verified-architecture-all-vendor-plus-verified-native-arm64",
         "vendor_all_candidate_count": len(vendor),
+        "rebuilt_candidate_count_before_vendor_precedence": len(
+            rebuilt_before_vendor_precedence
+        ),
         "rebuilt_candidate_count": len(rebuilt),
+        "vendor_precedence_shadowed_rebuild_count": len(shadowed_rebuilt),
         "verified_package_file_count": len(verified),
         "failure_count": len(failures),
         "ambiguous_count": len(ambiguous),
@@ -378,6 +455,7 @@ def main() -> int:
     manifest = {
         "summary": summary,
         "verified": verified,
+        "shadowed_rebuilt": shadowed_rebuilt,
         "failures": failures,
         "ambiguous": ambiguous,
         "repository_files": repository_files,
