@@ -231,3 +231,14 @@ jobs:
             sleep $((attempt * 3))
           done
           exit 1
+
+      - name: Dispatch the unified rebuild result index explicitly
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
