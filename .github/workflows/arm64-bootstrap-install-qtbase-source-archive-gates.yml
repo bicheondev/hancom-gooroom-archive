@@ -1,0 +1,138 @@
+name: ARM64 bootstrap - install QtBase source-archive gates
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-bootstrap-qtbase-source-archive-gates
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out current ARM64 port authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Decode hash-locked implementation bundle
+        shell: bash
+        run: |
+          set -euxo pipefail
+          payload_dir=.github/bootstrap-assets/qtbase-source-archive-gates
+          rm -rf /tmp/qtbase-source-archive-gates \
+            /tmp/qtbase-source-archive-gates.tar.gz \
+            /tmp/qtbase-source-archive-gates.b64
+          mkdir -p /tmp/qtbase-source-archive-gates
+          test "$(find "$payload_dir" -maxdepth 1 -type f -name 'part-*.b64' | wc -l)" -eq 5
+          cat "$payload_dir"/part-*.b64 > /tmp/qtbase-source-archive-gates.b64
+          base64 --decode /tmp/qtbase-source-archive-gates.b64 \
+            > /tmp/qtbase-source-archive-gates.tar.gz
+          echo '521240f2b7d65b133f36e65dbbf3732b4697a17e1f3369eb6511694afb16c29f  /tmp/qtbase-source-archive-gates.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/qtbase-source-archive-gates.tar.gz \
+            -C /tmp/qtbase-source-archive-gates
+
+      - name: Install and verify the source-archive authority path
+        shell: bash
+        run: |
+          set -euxo pipefail
+          install -m 0755 \
+            /tmp/qtbase-source-archive-gates/promote_qtbase_grm3u1_arm64.py \
+            arm64/scripts/promote_qtbase_grm3u1_arm64.py
+          install -m 0755 \
+            /tmp/qtbase-source-archive-gates/finalize_reconstructed_source_archive_authority.py \
+            arm64/scripts/finalize_reconstructed_source_archive_authority.py
+          install -m 0755 \
+            /tmp/qtbase-source-archive-gates/summarize_arm64_port_coverage_v3.py \
+            arm64/scripts/summarize_arm64_port_coverage_v3.py
+          install -m 0644 \
+            /tmp/qtbase-source-archive-gates/arm64-promote-qtbase-grm3u1-source-archive.yml \
+            .github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml
+          install -m 0644 \
+            /tmp/qtbase-source-archive-gates/arm64-source-archive-authority-v1.yml \
+            .github/workflows/arm64-source-archive-authority-v1.yml
+          install -m 0644 \
+            /tmp/qtbase-source-archive-gates/arm64-port-coverage-v3.yml \
+            .github/workflows/arm64-port-coverage-v3.yml
+
+          cat > /tmp/qtbase-source-archive-gates.SHA256SUMS <<'SUMS'
+          08cfae8346e73aa3a88e08afd50eb48ee77db54b2d351cbf4b885ee96b882b7c  arm64/scripts/promote_qtbase_grm3u1_arm64.py
+          5b506997d588969731d529a6e1bbd40e9ff0d7556b85b35285f68a4b1ecd4b22  arm64/scripts/finalize_reconstructed_source_archive_authority.py
+          9cdaa519c68409b0679b71f5a0f54c03e4d38fcc189f1ec8dc163240e660bc20  arm64/scripts/summarize_arm64_port_coverage_v3.py
+          8ff06f4bd15a04d8db4fa4b81f2254d1525a04007fd81c4b822c30fb66d721cc  .github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml
+          2d611cf797b6962978e2398714f3d26f69047c30463f33de4f136c2a736412b9  .github/workflows/arm64-source-archive-authority-v1.yml
+          a995eacb0dec0780c31b6b318ffcffa5d11d847db9005e2a62bc262588eeb44b  .github/workflows/arm64-port-coverage-v3.yml
+          SUMS
+          sha256sum --check --strict /tmp/qtbase-source-archive-gates.SHA256SUMS
+
+          python3 -m py_compile \
+            arm64/scripts/promote_qtbase_grm3u1_arm64.py \
+            arm64/scripts/finalize_reconstructed_source_archive_authority.py \
+            arm64/scripts/summarize_arm64_port_coverage_v3.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          required = {
+              Path('.github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml'): (
+                  'workflow_dispatch:',
+                  'promote_qtbase_grm3u1_arm64.py',
+                  'verified-reconstructed-source-archive',
+              ),
+              Path('.github/workflows/arm64-source-archive-authority-v1.yml'): (
+                  'workflow_dispatch:',
+                  'finalize_reconstructed_source_archive_authority.py',
+                  'effective-sources-v4',
+              ),
+              Path('.github/workflows/arm64-port-coverage-v3.yml'): (
+                  'workflow_dispatch:',
+                  'summarize_arm64_port_coverage_v3.py',
+                  'source-archive-aware',
+              ),
+          }
+          for path, needles in required.items():
+              text = path.read_text(encoding='utf-8')
+              missing = [needle for needle in needles if needle not in text]
+              if missing:
+                  raise SystemExit(f'{path}: missing required workflow contracts: {missing}')
+          PY
+
+      - name: Commit the six verified gates atomically and remove bootstrap material
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf .github/bootstrap-assets/qtbase-source-archive-gates
+          rm -f .github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/scripts/promote_qtbase_grm3u1_arm64.py \
+            arm64/scripts/finalize_reconstructed_source_archive_authority.py \
+            arm64/scripts/summarize_arm64_port_coverage_v3.py \
+            .github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml \
+            .github/workflows/arm64-source-archive-authority-v1.yml \
+            .github/workflows/arm64-port-coverage-v3.yml \
+            .github/bootstrap-assets/qtbase-source-archive-gates \
+            .github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml
+          git commit -m 'Install QtBase reconstructed source archive promotion gates'
+
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
