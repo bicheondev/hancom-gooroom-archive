@@ -19,6 +19,10 @@ PACKAGE_SORT_FIELDS = (
     "filename",
     "sha256",
 )
+VERIFIED_RECONSTRUCTED_SOURCE_TYPES = {
+    "verified-reconstructed-git-tree",
+    "verified-reconstructed-source-archive",
+}
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -192,7 +196,8 @@ def normalize_result(path: Path, root: Path) -> dict[str, Any] | None:
         )
         internal_errors.extend(errors)
 
-    reconstructed = row.get("source_type") == "verified-reconstructed-git-tree"
+    source_type = str(row.get("source_type") or "")
+    reconstructed = source_type in VERIFIED_RECONSTRUCTED_SOURCE_TYPES
     top_level_packages, errors = normalize_packages(
         row.get("deb_artifacts"),
         source=source,
@@ -226,6 +231,28 @@ def normalize_result(path: Path, root: Path) -> dict[str, Any] | None:
             internal_errors.append("verify_outcome must be success")
         if not top_level_packages:
             internal_errors.append("deb_artifacts must contain verified packages")
+        if source_type == "verified-reconstructed-source-archive":
+            if row.get("source_status") != "verified-reconstructed-amd64-equivalent":
+                internal_errors.append(
+                    "verified reconstructed source archive has an invalid source_status"
+                )
+            if row.get("original_source_archive_recovered") is not False:
+                internal_errors.append(
+                    "verified reconstructed source archive must preserve unrecovered-original status"
+                )
+            if row.get("package_layer_promotion_allowed") is not True:
+                internal_errors.append(
+                    "verified reconstructed source archive lacks package-layer promotion authority"
+                )
+            if row.get("iso_assembly_allowed") is not False:
+                internal_errors.append(
+                    "verified reconstructed source archive must not authorize ISO assembly"
+                )
+            dsc_sha256 = str(row.get("dsc_sha256") or "")
+            if not SHA256_RE.fullmatch(dsc_sha256):
+                internal_errors.append(
+                    "verified reconstructed source archive lacks a valid reconstructed DSC SHA-256"
+                )
         if not isinstance(verification_summary, dict):
             internal_errors.append("verification_summary must be an object")
         else:
@@ -239,6 +266,27 @@ def normalize_result(path: Path, root: Path) -> dict[str, Any] | None:
                 internal_errors.append(
                     "verification_summary contains foreign executable payloads"
                 )
+            if source_type == "verified-reconstructed-source-archive":
+                if verification_summary.get("original_source_archive_recovered") is not False:
+                    internal_errors.append(
+                        "verification_summary changed original-source recovery status"
+                    )
+                if verification_summary.get("amd64_equivalence_verified") is not True:
+                    internal_errors.append(
+                        "verification_summary lacks AMD64 equivalence authority"
+                    )
+                if verification_summary.get("native_arm64_build_verified") is not True:
+                    internal_errors.append(
+                        "verification_summary lacks native ARM64 build authority"
+                    )
+                if verification_summary.get("package_layer_promotion_allowed") is not True:
+                    internal_errors.append(
+                        "verification_summary lacks package-layer promotion authority"
+                    )
+                if verification_summary.get("iso_assembly_allowed") is not False:
+                    internal_errors.append(
+                        "verification_summary must not authorize ISO assembly"
+                    )
             if not summary_packages:
                 internal_errors.append(
                     "verification_summary.deb_artifacts must contain verified packages"
