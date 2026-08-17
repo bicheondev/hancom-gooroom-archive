@@ -32,6 +32,17 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git pull --rebase origin arm64-port
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/apply_vendor_all_precedence_fix_v1.py')
+          text = path.read_text(encoding='utf-8')
+          old = '    ambiguous = {\n        key: sorted(identities)\n        for key, identities in vendor_identities.items()\n        if len(identities) != 1\n    }\n'
+          new = '    ambiguous = [\n        {\n            "package": key[0],\n            "version": key[1],\n            "architecture": key[2],\n            "identities": sorted(identities),\n        }\n        for key, identities in vendor_identities.items()\n        if len(identities) != 1\n    ]\n'
+          if text.count(old) != 1:
+              raise SystemExit('ambiguity evidence repair anchor mismatch')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
           python3 -m py_compile arm64/scripts/apply_vendor_all_precedence_fix_v1.py
           python3 arm64/scripts/apply_vendor_all_precedence_fix_v1.py
           python3 -m py_compile \
