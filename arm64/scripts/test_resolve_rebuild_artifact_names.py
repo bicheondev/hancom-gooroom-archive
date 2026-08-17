@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("resolve_rebuild_artifact_names.py")
@@ -56,6 +59,18 @@ expect_failure(
 )
 
 selected, method = resolver.resolve_artifact(
+    "1.0_grm1",
+    rows,
+    [artifact("demo-source-a-1.0_grm1", 1), artifact("demo-source-b-1.0_grm1", 2)],
+    verify_candidate=lambda candidate, members: (
+        candidate["id"] == 2,
+        "synthetic locked-member result",
+    ),
+)
+assert selected["id"] == 2
+assert method == "verified-member-bytes-source-qualified-suffix"
+
+selected, method = resolver.resolve_artifact(
     "historical-short-name",
     rows,
     [artifact("exact-package-rebuild-arm64-demo-source-42", 4)],
@@ -66,6 +81,31 @@ expect_failure(
     lambda: resolver.resolve_artifact("missing", rows, [artifact("unrelated", 1)]),
     "0 source-qualified matches",
 )
+
+payload = b"locked-deb-payload"
+payload_sha256 = hashlib.sha256(payload).hexdigest()
+locked_rows = [
+    {
+        "package": "demo",
+        "source": "demo-source",
+        "filename": "demo_1.0_arm64.deb",
+        "size": len(payload),
+        "sha256": payload_sha256,
+    }
+]
+with tempfile.TemporaryDirectory(prefix="resolver-unit-") as temporary:
+    matching = Path(temporary) / "matching.zip"
+    with zipfile.ZipFile(matching, "w") as bundle:
+        bundle.writestr("nested/demo_1.0_arm64.deb", payload)
+        bundle.writestr("diagnostics/report.json", "{}")
+    passed, detail = resolver.inspect_artifact_zip(matching, locked_rows)
+    assert passed, detail
+
+    wrong = Path(temporary) / "wrong.zip"
+    with zipfile.ZipFile(wrong, "w") as bundle:
+        bundle.writestr("nested/demo_1.0_arm64.deb", b"wrong-deb-payload")
+    passed, detail = resolver.inspect_artifact_zip(wrong, locked_rows)
+    assert not passed and "missing" in detail
 
 input_rows = [
     {
@@ -89,4 +129,5 @@ resolved, evidence = resolver.resolve_rows(
 assert all(row["artifact_name"] == "demo-source-1.0_grm1" for row in resolved)
 assert all(row["resolved_artifact_id"] == "99" for row in resolved)
 assert evidence[0]["package_count"] == 2
+assert evidence[0]["locked_member_bytes_verified"] is False
 print("resolve_rebuild_artifact_names tests: OK")
