@@ -1,6 +1,6 @@
 {
   "schema": "hancom-gooroom-arm64-pipeline-selfcheck-v1",
-  "generated_at": "2026-08-17T13:19:01.326067Z",
+  "generated_at": "2026-08-17T13:19:39.552165Z",
   "status": "failed",
   "python": [
     {
@@ -13,10 +13,6 @@
     },
     {
       "path": "arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py",
-      "status": "passed"
-    },
-    {
-      "path": "arm64/scripts/apply_vendor_all_precedence_fix_v1.py",
       "status": "passed"
     },
     {
@@ -1416,10 +1412,6 @@
       "status": "passed"
     },
     {
-      "path": ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml",
-      "status": "passed"
-    },
-    {
       "path": ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       "status": "passed"
     },
@@ -1454,7 +1446,7 @@
     {
       "path": ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
       "status": "failed",
-      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f1043ab6120>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f1043ab6630>)"
+      "error": "ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f6319a47920>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f6319a443e0>)"
     },
     {
       "path": ".github/workflows/arm64-inventory.yml",
@@ -3413,12 +3405,6 @@
       "reason": null
     },
     {
-      "workflow": ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml",
-      "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
-      "status": "passed",
-      "reason": null
-    },
-    {
       "workflow": ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       "reference": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
       "status": "passed",
@@ -5321,7 +5307,7 @@
       "accepted_return_codes": [
         8
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-17T13:19:03.329834Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-wave\",\n  \"generated_at\": \"2026-08-17T13:19:41.518007Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"artifact download status=failure\",\n    \"missing source evidence: accountsservice\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"artifact_download_status\": \"failure\",\n  \"selection\": null,\n  \"expected_sources\": [\n    \"accountsservice\"\n  ],\n  \"recorded_sources\": [],\n  \"missing_sources\": [\n    \"accountsservice\"\n  ],\n  \"failed_sources\": [],\n  \"duplicate_validations\": [],\n  \"packages\": [],\n  \"unvalidated_failures\": []\n}\n",
       "stderr_tail": ""
     },
     {
@@ -5331,11 +5317,11 @@
       "accepted_return_codes": [
         9
       ],
-      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-17T13:19:03.369477Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
+      "stdout_tail": "{\n  \"schema\": \"selfcheck-empty-boot\",\n  \"generated_at\": \"2026-08-17T13:19:41.560226Z\",\n  \"status\": \"failed\",\n  \"reasons\": [\n    \"assembly exit code=98\",\n    \"boot step outcome=skipped\",\n    \"build result missing or invalid: missing.json\",\n    \"QEMU log missing: missing.log\",\n    \"readiness marker missing: SELF_CHECK_READY\"\n  ],\n  \"workflow_run\": {\n    \"workflow_name\": null,\n    \"repository\": null,\n    \"run_id\": null,\n    \"run_attempt\": null,\n    \"head_branch\": null,\n    \"head_sha\": null,\n    \"url\": null\n  },\n  \"assembly_exit_code\": 98,\n  \"boot_outcome\": \"skipped\",\n  \"readiness_marker\": \"SELF_CHECK_READY\",\n  \"readiness_marker_found\": false,\n  \"build_result\": null,\n  \"wrapper_result\": null,\n  \"qemu_error_lines\": [],\n  \"qemu_log_tail\": [],\n  \"diagnostic_matches\": [],\n  \"artifact_files\": []\n}\n",
       "stderr_tail": ""
     }
   ],
   "issues": [
-    "YAML parse failed: .github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f1043ab6120>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f1043ab6630>)"
+    "YAML parse failed: .github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml: ScannerError('while scanning a simple key', <yaml.error.Mark object at 0x7f6319a47920>, \"could not find expected ':'\", <yaml.error.Mark object at 0x7f6319a443e0>)"
   ]
 }
