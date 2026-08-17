@@ -99,7 +99,7 @@ jobs:
 
           if 'len(unique["changed_paths"]) != 4' in text:
               raise SystemExit('stale four-path assertion survived')
-          if text.count('EXPECTED_UNIQUE_RECONSTRUCTION_PATHS') != 7:
+          if text.count('EXPECTED_UNIQUE_RECONSTRUCTION_PATHS') != 5:
               raise SystemExit(
                   'unexpected path-contract reference count: '
                   f'{text.count("EXPECTED_UNIQUE_RECONSTRUCTION_PATHS")}'
