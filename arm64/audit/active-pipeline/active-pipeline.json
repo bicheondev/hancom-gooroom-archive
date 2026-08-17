@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 223,
-    "workflow_name_count": 223,
-    "referenced_local_file_count": 319,
-    "error_count": 4,
+    "workflow_count": 224,
+    "workflow_name_count": 224,
+    "referenced_local_file_count": 322,
+    "error_count": 6,
     "warning_count": 41,
     "passed": false
   },
@@ -479,6 +479,24 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
+      ]
+    },
+    {
+      "filename": "arm64-bootstrap-install-qtbase-source-archive-gates.yml",
+      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
+      "name": "ARM64 bootstrap - install QtBase source-archive gates",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/finalize_reconstructed_source_archive_authority.py",
+        "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
+        "arm64/scripts/summarize_arm64_port_coverage_v3.py"
       ]
     },
     {
@@ -5034,6 +5052,9 @@
     "arm64/scripts/finalize_final_arm64_live_rootfs_v2.sh": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
+    "arm64/scripts/finalize_reconstructed_source_archive_authority.py": [
+      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+    ],
     "arm64/scripts/import_historical_arm64_artifacts_v2.py": [
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-import-historical-artifacts-v3.yml"
@@ -5158,6 +5179,9 @@
     ],
     "arm64/scripts/promote_gooroom_guide_han3u1.py": [
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
+    ],
+    "arm64/scripts/promote_qtbase_grm3u1_arm64.py": [
+      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
     ],
     "arm64/scripts/promote_reconstructed_libsecurity_result.py": [
       ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
@@ -5448,6 +5472,9 @@
     "arm64/scripts/summarize_arm64_port_coverage_v2.py": [
       ".github/workflows/arm64-port-coverage-v2.yml"
     ],
+    "arm64/scripts/summarize_arm64_port_coverage_v3.py": [
+      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+    ],
     "arm64/scripts/summarize_exact_source_recovery.py": [
       ".github/workflows/arm64-restore-exact-source-summarizer.yml",
       ".github/workflows/arm64-summarize-exact-source-recovery.yml"
@@ -5665,6 +5692,16 @@
     ]
   },
   "errors": [
+    {
+      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
+      "local_path": "arm64/scripts/finalize_reconstructed_source_archive_authority.py",
+      "reason": "referenced-local-code-missing"
+    },
+    {
+      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
+      "local_path": "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
+      "reason": "referenced-local-code-missing"
+    },
     {
       "path": ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
       "reason": "yaml-parse-failed",
