@@ -1,0 +1,233 @@
+name: ARM64 port - promote verified QtBase grm3u1 runtime
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml'
+      - 'arm64/scripts/promote_qtbase_grm3u1_runtime.py'
+      - 'arm64/locks/qtbase-grm3u1-amd64-equivalence/latest/**'
+      - 'arm64/locks/qtbase-grm3u1-arm64-build/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-qtbase-grm3u1-runtime
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: '31497018080'
+  SOURCE_ARTIFACT_ID: '9103425191'
+  SOURCE_ARTIFACT_NAME: qtbase-5.15.2-dfsg-9-grm3u1-reconstructed-source
+  SOURCE_ARTIFACT_DIGEST: sha256:d369c4984048ad79e5674e3b83e7d765cbea86eabd849f141e1e27d4ba261178
+  SOURCE_RUN_SHA: c6836345bdc6dd39b168328a33b9f29f1b4d0efb
+  EQUIVALENCE_RUN_ID: '32021983414'
+  EQUIVALENCE_ARTIFACT_ID: '9287099998'
+  EQUIVALENCE_ARTIFACT_NAME: qtbase-grm3u1-amd64-equivalence-32021983414
+  EQUIVALENCE_ARTIFACT_DIGEST: sha256:22eae6c1d1b12c01ab108cc0f4bcf97e6c07522d7208ddb297a1c20be7d7bb39
+  EQUIVALENCE_RUN_SHA: e7bceb7541f754ab081b09c50e00d0d8b1817fb1
+  ARM64_RUN_ID: '31564958386'
+  ARM64_ARTIFACT_ID: '9129122860'
+  ARM64_ARTIFACT_NAME: qtbase-opensource-src-reconstructed-exact-arm64-31564958386
+  ARM64_ARTIFACT_DIGEST: sha256:19e814bb5e290bda74cab2686ed75e69430c35a8fef18538d9761079fc28bc1f
+  ARM64_RUN_SHA: a81ab764ebe68c8be5c127dd0e47c3d57cde8144
+  PROMOTED_ARTIFACT_NAME: qtbase-opensource-src-verified-runtime-arm64-v1
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out package promotion policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic package verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev jq python3 unzip
+          python3 -m py_compile \
+            arm64/scripts/promote_qtbase_grm3u1_runtime.py \
+            arm64/scripts/index_rebuild_results_v2.py
+          gh --version
+
+      - name: Revalidate and download all immutable upstream authorities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/qtbase-promotion
+          mkdir -p \
+            work/qtbase-promotion/metadata \
+            work/qtbase-promotion/source \
+            work/qtbase-promotion/equivalence \
+            work/qtbase-promotion/arm64
+
+          verify_artifact() {
+            local label="$1"
+            local id="$2"
+            local name="$3"
+            local digest="$4"
+            local run_id="$5"
+            local run_sha="$6"
+            local metadata="work/qtbase-promotion/metadata/${label}.json"
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}" > "$metadata"
+            jq -e \
+              --argjson id "$id" \
+              --arg name "$name" \
+              --arg digest "$digest" \
+              --argjson run_id "$run_id" \
+              --arg run_sha "$run_sha" '
+                .id == $id
+                and .name == $name
+                and .digest == $digest
+                and .expired == false
+                and .workflow_run.id == $run_id
+                and .workflow_run.head_sha == $run_sha
+              ' "$metadata" >/dev/null
+          }
+
+          verify_artifact \
+            source "$SOURCE_ARTIFACT_ID" "$SOURCE_ARTIFACT_NAME" \
+            "$SOURCE_ARTIFACT_DIGEST" "$SOURCE_RUN_ID" "$SOURCE_RUN_SHA"
+          verify_artifact \
+            equivalence "$EQUIVALENCE_ARTIFACT_ID" "$EQUIVALENCE_ARTIFACT_NAME" \
+            "$EQUIVALENCE_ARTIFACT_DIGEST" "$EQUIVALENCE_RUN_ID" "$EQUIVALENCE_RUN_SHA"
+          verify_artifact \
+            arm64 "$ARM64_ARTIFACT_ID" "$ARM64_ARTIFACT_NAME" \
+            "$ARM64_ARTIFACT_DIGEST" "$ARM64_RUN_ID" "$ARM64_RUN_SHA"
+
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT_NAME" \
+            --dir work/qtbase-promotion/source
+          gh run download "$EQUIVALENCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$EQUIVALENCE_ARTIFACT_NAME" \
+            --dir work/qtbase-promotion/equivalence
+          gh run download "$ARM64_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$ARM64_ARTIFACT_NAME" \
+            --dir work/qtbase-promotion/arm64
+
+      - name: Prepare the bounded verified ARM64 runtime subset
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/promote_qtbase_grm3u1_runtime.py prepare \
+            --source-artifact work/qtbase-promotion/source \
+            --equivalence-artifact work/qtbase-promotion/equivalence \
+            --arm64-artifact work/qtbase-promotion/arm64 \
+            --output-dir work/qtbase-promotion/runtime-artifact
+          (cd work/qtbase-promotion/runtime-artifact && \
+            sha256sum --check --strict LOCKSUMS.sha256)
+          test "$(find work/qtbase-promotion/runtime-artifact/runtime \
+            -maxdepth 1 -type f -name '*.deb' | wc -l)" = 9
+          jq -e '
+            .original_source_archive_recovered == false
+            and .amd64_equivalence_verified == true
+            and .native_arm64_build_verified == true
+            and .selected_runtime_package_count == 9
+            and .package_layer_promotion_allowed == true
+            and .iso_assembly_allowed == false
+          ' work/qtbase-promotion/runtime-artifact/package-promotion-authority.json
+
+      - name: Upload the compact verified QtBase runtime artifact
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.PROMOTED_ARTIFACT_NAME }}
+          path: work/qtbase-promotion/runtime-artifact
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Seal package-layer promotion evidence and schema 4 rebuild result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -n '${{ steps.upload.outputs.artifact-id }}'
+          test -n '${{ steps.upload.outputs.artifact-digest }}'
+          test -n '${{ steps.upload.outputs.artifact-url }}'
+          python3 arm64/scripts/promote_qtbase_grm3u1_runtime.py seal \
+            --prepared-dir work/qtbase-promotion/runtime-artifact \
+            --repository-root . \
+            --run-id '${{ github.run_id }}' \
+            --run-url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --artifact-name "$PROMOTED_ARTIFACT_NAME" \
+            --artifact-id '${{ steps.upload.outputs.artifact-id }}' \
+            --artifact-digest '${{ steps.upload.outputs.artifact-digest }}' \
+            --artifact-url '${{ steps.upload.outputs.artifact-url }}'
+          jq -e '
+            .schema == 4
+            and .source_type == "verified-reconstructed-source-archive"
+            and .source_status == "verified-reconstructed-amd64-equivalent"
+            and .original_source_archive_recovered == false
+            and .package_layer_promotion_allowed == true
+            and .iso_assembly_allowed == false
+            and .verification_summary.verified == true
+            and (.deb_artifacts | length) == 9
+          ' arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json
+
+      - name: Prove the strict rebuild index accepts exactly nine QtBase packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/qtbase-promotion/index-check
+          python3 arm64/scripts/index_rebuild_results_v2.py \
+            --root arm64/locks/rebuild-results \
+            --root arm64/locks/dsc-rebuild-results \
+            --output-dir work/qtbase-promotion/index-check
+          jq -e '
+            .sources[]
+            | select(
+                .source == "qtbase-opensource-src"
+                and .source_version == "5.15.2+dfsg-9+grm3u1"
+              )
+            | .status == "verified"
+              and .selected.provenance == "verified-reconstructed-source-archive"
+              and (.selected.packages | length) == 9
+              and (.selected.verification_errors | length) == 0
+          ' work/qtbase-promotion/index-check/rebuild-result-index.json
+          jq -e '
+            [
+              .[]
+              | select(
+                  .source == "qtbase-opensource-src"
+                  and .source_version == "5.15.2+dfsg-9+grm3u1"
+                )
+            ]
+            | length == 9
+          ' work/qtbase-promotion/index-check/verified-binary-packages.json
+          jq -e '
+            .package_index_usable == true
+            and .ambiguous_binary_package_count == 0
+            and .parse_error_count == 0
+          ' work/qtbase-promotion/index-check/summary.json
+
+      - name: Commit the sealed QtBase package promotion authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/qtbase-grm3u1-package-promotion/latest \
+            arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Promote verified QtBase grm3u1 ARM64 runtime'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
