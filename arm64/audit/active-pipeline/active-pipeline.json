@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 224,
-    "workflow_name_count": 224,
-    "referenced_local_file_count": 322,
+    "workflow_count": 225,
+    "workflow_name_count": 225,
+    "referenced_local_file_count": 324,
     "error_count": 6,
-    "warning_count": 41,
+    "warning_count": 42,
     "passed": false
   },
   "workflows": [
@@ -2806,6 +2806,25 @@
       ]
     },
     {
+      "filename": "arm64-promote-qtbase-grm3u1-runtime.yml",
+      "path": ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml",
+      "name": "ARM64 port - promote verified QtBase grm3u1 runtime",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json",
+        "arm64/scripts/index_rebuild_results_v2.py",
+        "arm64/scripts/promote_qtbase_grm3u1_runtime.py"
+      ]
+    },
+    {
       "filename": "arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
       "path": ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
       "name": "ARM64 port - promote revalidated Gooroom browser run 31397104534",
@@ -4600,6 +4619,9 @@
     "arm64/locks/rebuild-results/gooroom-libsecurity-extensions/0.1.7_grm3u1/result.json": [
       ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
     ],
+    "arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json": [
+      ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml"
+    ],
     "arm64/locks/reconstructed-sources/source-locks.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml",
@@ -5063,7 +5085,8 @@
       ".github/workflows/arm64-import-historical-artifacts-v3.yml"
     ],
     "arm64/scripts/index_rebuild_results_v2.py": [
-      ".github/workflows/arm64-index-rebuild-results-v2.yml"
+      ".github/workflows/arm64-index-rebuild-results-v2.yml",
+      ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml"
     ],
     "arm64/scripts/inspect_lock_schemas.py": [
       ".github/workflows/arm64-lock-schema-audit.yml"
@@ -5182,6 +5205,9 @@
     ],
     "arm64/scripts/promote_qtbase_grm3u1_arm64.py": [
       ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+    ],
+    "arm64/scripts/promote_qtbase_grm3u1_runtime.py": [
+      ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml"
     ],
     "arm64/scripts/promote_reconstructed_libsecurity_result.py": [
       ".github/workflows/arm64-build-reconstructed-libsecurity-extensions-v2.yml"
@@ -5877,6 +5903,11 @@
     {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml",
+      "local_path": "arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
