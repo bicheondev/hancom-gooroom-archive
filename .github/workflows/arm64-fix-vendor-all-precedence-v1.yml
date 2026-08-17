@@ -51,7 +51,7 @@ jobs:
           python3 arm64/scripts/test_materialize_build_dependency_repo_v2.py
           git diff --check
 
-          git rm \
+          git rm -f \
             .github/workflows/arm64-fix-vendor-all-precedence-v1.yml \
             arm64/scripts/apply_vendor_all_precedence_fix_v1.py
           git add \
