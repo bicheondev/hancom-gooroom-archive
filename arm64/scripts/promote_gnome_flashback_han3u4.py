@@ -25,6 +25,13 @@ EXPECTED_PACKAGES = {
     "gnome-flashback-common": "all",
     "gnome-session-flashback": "all",
 }
+EXPECTED_UNIQUE_RECONSTRUCTION_PATHS = (
+    "data/theme/common.css",
+    "gnome-flashback/libdesktop/gf-icon-view.c",
+    "gnome-flashback/libdesktop/gf-monitor-view.c",
+    "gnome-flashback/libscreensaver/gf-panel-bottom.c",
+    "gnome-flashback/libscreensaver/gf-unlock-dialog.c",
+)
 
 
 def load(path: Path) -> Any:
@@ -183,8 +190,16 @@ def main() -> int:
     if not isinstance(patches, list) or len(patches) != 7:
         raise SystemExit("expected seven public equivalent patches")
     unique = require_dict(reconstruction.get("unique_reconstruction"), "unique reconstruction")
-    if not isinstance(unique.get("changed_paths"), list) or len(unique["changed_paths"]) != 4:
-        raise SystemExit("bounded unique reconstruction path set mismatch")
+    unique_paths = unique.get("changed_paths")
+    if (
+        not isinstance(unique_paths, list)
+        or tuple(unique_paths) != EXPECTED_UNIQUE_RECONSTRUCTION_PATHS
+    ):
+        raise SystemExit(
+            "bounded unique reconstruction path set mismatch: "
+            f"expected={list(EXPECTED_UNIQUE_RECONSTRUCTION_PATHS)!r} "
+            f"actual={unique_paths!r}"
+        )
     embedded = require_dict(
         reconstruction.get("embedded_resource_relationship"), "embedded resources"
     )
@@ -206,6 +221,16 @@ def main() -> int:
     if claims.get("promotion_allowed") is not False:
         raise SystemExit("source artifact must not pre-authorize promotion")
     reconstruction_detail = require_dict(reconstruction.get("reconstruction"), "reconstruction detail")
+    reconstruction_paths = reconstruction_detail.get("changed_paths")
+    if (
+        not isinstance(reconstruction_paths, list)
+        or tuple(reconstruction_paths) != EXPECTED_UNIQUE_RECONSTRUCTION_PATHS
+    ):
+        raise SystemExit(
+            "reconstruction detail path set mismatch: "
+            f"expected={list(EXPECTED_UNIQUE_RECONSTRUCTION_PATHS)!r} "
+            f"actual={reconstruction_paths!r}"
+        )
     tree_sha = str(reconstruction_detail.get("tree_sha", ""))
     archive_sha = str(reconstruction_detail.get("archive_sha256", ""))
     if not re.fullmatch(r"[0-9a-f]{40}", tree_sha):
