@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write
 
 concurrency:
@@ -83,3 +84,14 @@ jobs:
           set -euxo pipefail
           test '${{ steps.index.outputs.exit_code }}' = '0'
           jq -e '.package_index_usable == true' work/rebuild-index/summary.json
+
+      - name: Dispatch the exact build dependency repository explicitly
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-build-dependency-repository-v2.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
