@@ -3,17 +3,17 @@
     "schema": 4,
     "policy": "exact-signed-dsc-then-exact-git-then-verified-build-selection-then-verified-reconstruction",
     "source_target_count": 74,
-    "resolved_count": 62,
+    "resolved_count": 63,
     "signed_dsc_resolved_count": 0,
     "git_resolved_count": 58,
     "arch_replace_count": 1,
-    "unresolved_count": 11,
-    "rebuild_blocker_count": 5,
+    "unresolved_count": 10,
+    "rebuild_blocker_count": 4,
     "build_allowed": false,
     "wayback_release_lock_present": true,
     "wayback_release_complete": false,
     "verified_build_git_resolved_count": 4,
-    "reconstructed_resolved_count": 4,
+    "reconstructed_resolved_count": 5,
     "verified_build_overlays": [
       {
         "source": "cups-pk-helper",
@@ -49,6 +49,14 @@
       }
     ],
     "reconstructed_overlays": [
+      {
+        "source": "gnome-flashback",
+        "source_version": "3.38.0-2+grm3u2+han3u4",
+        "repository_full_name": "hancomgooroom/gnome-flashback",
+        "base_commit_sha": "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7",
+        "reconstructed_tree_sha": "5ba0fda18bdab150805516d4ace45b6dd2c10059",
+        "source_archive_sha256": "171a7e5cfe87a6a87ceda233ccd76a6e83ef186bddc552728148cad3cbb41a6a"
+      },
       {
         "source": "gooroom-applauncher-applet",
         "source_version": "0.4.0+grm3u1+han3u2",
@@ -1090,13 +1098,42 @@
         "all",
         "amd64"
       ],
-      "status": "unresolved-exact-source",
-      "provenance": null,
-      "selected": null,
+      "status": "resolved",
+      "provenance": "verified-reconstructed-source",
+      "selected": {
+        "commit_sha": "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7",
+        "declared_source": "gnome-flashback",
+        "declared_version": "3.38.0-2+grm3u2+han3u4",
+        "match_scope": "exact-public-hancom-base-plus-public-gooroom-equivalent-patches-plus-binary-constrained-unique-deltas-plus-exact-gresource-plus-normalized-amd64-elf",
+        "provenance": "exact-public-han3u1-tree-plus-seven-public-gooroom-equivalent-patches-plus-four-binary-constrained-hancom-deltas-plus-exact-embedded-css-plus-normalized-amd64-elf-identity",
+        "ref_kind": "reconstructed-tree",
+        "ref_name": "3.38.0-2+grm3u2+han3u4",
+        "repository_full_name": "hancomgooroom/gnome-flashback",
+        "source_archive_sha256": "171a7e5cfe87a6a87ceda233ccd76a6e83ef186bddc552728148cad3cbb41a6a",
+        "tree_sha": "5ba0fda18bdab150805516d4ace45b6dd2c10059",
+        "type": "reconstructed-git-tree"
+      },
       "git_candidate_count": 0,
       "signed_dsc_candidate_count": 0,
       "git_candidates": [],
-      "signed_dsc_candidates": []
+      "signed_dsc_candidates": [],
+      "reconstruction_evidence": {
+        "actions_run_id": "31952525349",
+        "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31952525349",
+        "amd64_control_identity_verified": true,
+        "amd64_non_elf_payload_identity_verified": true,
+        "amd64_normalized_elf_identity_verified": true,
+        "arm64_dynamic_and_export_identity_verified": true,
+        "arm64_embedded_gresource_identity_verified": true,
+        "evidence_path": "arm64/locks/gnome-flashback-han3u4-reconstruction/latest/reconstruction-lock.json",
+        "exact_shipped_embedded_css_verified": true,
+        "native_arm64_build_verified": true,
+        "original_source_archive_recovered": false,
+        "passed": true,
+        "authority_lock": "arm64/locks/reconstructed-sources/source-locks.json",
+        "original_status": "unresolved-exact-source",
+        "original_provenance": null
+      }
     },
     {
       "source": "gnome-panel",
@@ -4647,6 +4684,14 @@
       }
     ],
     "reconstructed_applied": [
+      {
+        "source": "gnome-flashback",
+        "source_version": "3.38.0-2+grm3u2+han3u4",
+        "repository_full_name": "hancomgooroom/gnome-flashback",
+        "base_commit_sha": "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7",
+        "reconstructed_tree_sha": "5ba0fda18bdab150805516d4ace45b6dd2c10059",
+        "source_archive_sha256": "171a7e5cfe87a6a87ceda233ccd76a6e83ef186bddc552728148cad3cbb41a6a"
+      },
       {
         "source": "gooroom-applauncher-applet",
         "source_version": "0.4.0+grm3u1+han3u2",

@@ -2,17 +2,17 @@
   "schema": 4,
   "policy": "exact-signed-dsc-then-exact-git-then-verified-build-selection-then-verified-reconstruction",
   "source_target_count": 74,
-  "resolved_count": 62,
+  "resolved_count": 63,
   "signed_dsc_resolved_count": 0,
   "git_resolved_count": 58,
   "arch_replace_count": 1,
-  "unresolved_count": 11,
-  "rebuild_blocker_count": 5,
+  "unresolved_count": 10,
+  "rebuild_blocker_count": 4,
   "build_allowed": false,
   "wayback_release_lock_present": true,
   "wayback_release_complete": false,
   "verified_build_git_resolved_count": 4,
-  "reconstructed_resolved_count": 4,
+  "reconstructed_resolved_count": 5,
   "verified_build_overlays": [
     {
       "source": "cups-pk-helper",
@@ -48,6 +48,14 @@
     }
   ],
   "reconstructed_overlays": [
+    {
+      "source": "gnome-flashback",
+      "source_version": "3.38.0-2+grm3u2+han3u4",
+      "repository_full_name": "hancomgooroom/gnome-flashback",
+      "base_commit_sha": "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7",
+      "reconstructed_tree_sha": "5ba0fda18bdab150805516d4ace45b6dd2c10059",
+      "source_archive_sha256": "171a7e5cfe87a6a87ceda233ccd76a6e83ef186bddc552728148cad3cbb41a6a"
+    },
     {
       "source": "gooroom-applauncher-applet",
       "source_version": "0.4.0+grm3u1+han3u2",
