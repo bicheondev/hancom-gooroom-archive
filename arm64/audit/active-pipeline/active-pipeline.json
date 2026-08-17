@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 226,
-    "workflow_name_count": 226,
+    "workflow_count": 227,
+    "workflow_name_count": 227,
     "referenced_local_file_count": 325,
     "error_count": 7,
     "warning_count": 41,
@@ -1353,6 +1353,21 @@
         "arm64/scripts/build_gnome_flashback_han3u4_chroot.sh",
         "arm64/scripts/reconstruct_gnome_flashback_han3u4.py"
       ]
+    },
+    {
+      "filename": "arm64-deep-diff-final-app-blockers-v2.yml",
+      "path": ".github/workflows/arm64-deep-diff-final-app-blockers-v2.yml",
+      "name": "ARM64 port - deep diff final application blockers v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-dependency-retry-controller-v3.yml",
