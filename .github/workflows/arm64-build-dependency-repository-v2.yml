@@ -163,17 +163,23 @@ jobs:
             )
           ' work/build-dependency-evidence/summary.json
           jq -e '
-            .rewritten_group_count == 1
+            .rewritten_group_count
+              == ([.groups[] | select(.resolution != "exact")] | length)
+            and .locked_member_verified_group_count
+              == ([.groups[] | select(.locked_member_bytes_verified == true)] | length)
             and .locked_member_verified_group_count == 1
-            and (
-              [.groups[] | select(.locked_member_bytes_verified == true)]
-              | length == 1
-            )
             and (
               [.groups[] | select(.locked_member_bytes_verified == true)][0]
               | .declared_artifact_name == "0.3.1_grm3u1_han3u2"
               and .resolved_artifact_name == "gooroom-greeter-han3u2-exact-arm64-v2"
               and .resolved_artifact_id == "9013024069"
+              and .resolution == "verified-member-bytes-source-qualified"
+            )
+            and all(
+              .groups[] | select(.resolution != "exact");
+              (.declared_artifact_name != .resolved_artifact_name)
+              and (.resolved_artifact_id | type == "string" and length > 0)
+              and (.resolved_artifact_digest | test("^sha256:[0-9a-f]{64}$"))
             )
           ' work/build-dependency-evidence/artifact-name-resolution.json
 
