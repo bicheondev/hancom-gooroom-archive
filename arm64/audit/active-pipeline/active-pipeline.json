@@ -5,7 +5,7 @@
     "workflow_count": 226,
     "workflow_name_count": 226,
     "referenced_local_file_count": 326,
-    "error_count": 7,
+    "error_count": 6,
     "warning_count": 41,
     "passed": false
   },
@@ -537,6 +537,7 @@
         "arm64/locks/vendor-binaries/vendor-binary-lock.json",
         "arm64/scripts/materialize_build_dependency_repo_v2.py",
         "arm64/scripts/resolve_rebuild_artifact_names.py",
+        "arm64/scripts/test_materialize_build_dependency_repo_v2.py",
         "arm64/scripts/test_resolve_rebuild_artifact_names.py"
       ]
     },
@@ -5558,6 +5559,7 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/scripts/test_materialize_build_dependency_repo_v2.py": [
+      ".github/workflows/arm64-build-dependency-repository-v2.yml",
       ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml"
     ],
     "arm64/scripts/test_resolve_rebuild_artifact_names.py": [
@@ -5751,11 +5753,6 @@
     {
       "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
       "local_path": "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-fix-vendor-all-precedence-v1.yml",
-      "local_path": "arm64/scripts/test_materialize_build_dependency_repo_v2.py",
       "reason": "referenced-local-code-missing"
     },
     {
