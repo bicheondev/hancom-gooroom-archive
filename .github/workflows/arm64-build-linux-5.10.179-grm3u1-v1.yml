@@ -133,17 +133,17 @@ jobs:
             --no-check-gpg bullseye "$chroot" http://deb.debian.org/debian \
             2>&1 | tee "$root/build/debootstrap.log"
           sudo tee "$chroot/etc/apt/sources.list" >/dev/null <<'EOF'
-deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye main
-deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye-updates main
-deb [trusted=yes check-valid-until=no] http://security.debian.org/debian-security bullseye-security main
-EOF
+          deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye main
+          deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye-updates main
+          deb [trusted=yes check-valid-until=no] http://security.debian.org/debian-security bullseye-security main
+          EOF
           sudo tee "$chroot/etc/apt/apt.conf.d/99arm64-kernel-build" >/dev/null <<'EOF'
-Acquire::Check-Valid-Until "false";
-Acquire::AllowInsecureRepositories "true";
-Acquire::Retries "5";
-APT::Get::AllowUnauthenticated "true";
-Dpkg::Use-Pty "0";
-EOF
+          Acquire::Check-Valid-Until "false";
+          Acquire::AllowInsecureRepositories "true";
+          Acquire::Retries "5";
+          APT::Get::AllowUnauthenticated "true";
+          Dpkg::Use-Pty "0";
+          EOF
           sudo mkdir -p "$chroot/build/source"
           sudo cp -a "$root/source/." "$chroot/build/source/"
           sudo chown -R root:root "$chroot/build/source"
