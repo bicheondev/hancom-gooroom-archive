@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 242,
-    "workflow_name_count": 242,
+    "workflow_count": 243,
+    "workflow_name_count": 243,
     "referenced_local_file_count": 334,
     "error_count": 0,
     "warning_count": 48,
@@ -1916,6 +1916,23 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-fix-linux-resolver-exit-v1.yml",
+      "path": ".github/workflows/arm64-fix-linux-resolver-exit-v1.yml",
+      "name": "ARM64 fix - preserve Linux resolver exit status v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/download_debian_snapshot_binary_v1.py",
+        "arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py"
+      ]
     },
     {
       "filename": "arm64-import-historical-artifacts-v2.yml",
@@ -5371,6 +5388,7 @@
       ".github/workflows/arm64-final-live-iso.yml"
     ],
     "arm64/scripts/download_debian_snapshot_binary_v1.py": [
+      ".github/workflows/arm64-fix-linux-resolver-exit-v1.yml",
       ".github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml"
     ],
     "arm64/scripts/extract_blocker_binary_evidence.py": [
@@ -5645,6 +5663,7 @@
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py": [
+      ".github/workflows/arm64-fix-linux-resolver-exit-v1.yml",
       ".github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml"
     ],
     "arm64/scripts/resolve_rebuild_artifact_names.py": [
