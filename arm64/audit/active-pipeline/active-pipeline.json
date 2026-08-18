@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 238,
-    "workflow_name_count": 238,
+    "workflow_count": 240,
+    "workflow_name_count": 240,
     "referenced_local_file_count": 330,
-    "error_count": 7,
+    "error_count": 6,
     "warning_count": 42,
     "passed": false
   },
@@ -2077,6 +2077,22 @@
       ]
     },
     {
+      "filename": "arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
+      "path": ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
+      "name": "ARM64 instrument - preserve gnome-flashback ARM64 verifier failure evidence",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py"
+      ]
+    },
+    {
       "filename": "arm64-inventory.yml",
       "path": ".github/workflows/arm64-inventory.yml",
       "name": "ARM64 port - lock AMD64 reference",
@@ -3864,6 +3880,20 @@
       "filename": "arm64-seed-source-lock.yml",
       "path": ".github/workflows/arm64-seed-source-lock.yml",
       "name": "ARM64 port - preserve API source-lock baseline",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-select-linux-5.10.179-grm3u1-source-v1.yml",
+      "path": ".github/workflows/arm64-select-linux-5.10.179-grm3u1-source-v1.yml",
+      "name": "ARM64 port - select linux 5.10.179 grm3u1 source v1",
       "events": [
         "push",
         "workflow_dispatch"
@@ -5833,6 +5863,7 @@
     ],
     "arm64/scripts/verify_gnome_flashback_han3u4_arm64.py": [
       ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
+      ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-abi-normalization-v1.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader-v2.yml",
       ".github/workflows/arm64-patch-gnome-flashback-arm64-section-reader.yml",
@@ -5956,11 +5987,6 @@
       "path": ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml",
       "reason": "yaml-parse-failed",
       "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 136, column 1:\n    deb [trusted=yes check-valid-unt ... \n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 137, column 1:\n    deb [trusted=yes check-valid-unt ... \n    ^"
-    },
-    {
-      "path": ".github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 47, column 1:\n    '''\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 48, column 27:\n              new_verify = '''          rm -rf work/arm64-veri ... \n                              ^"
     },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
