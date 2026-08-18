@@ -406,6 +406,6 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except KeyboardInterrupt:
         raise
-    except BaseException as error:
+    except Exception as error:
         print(f"fatal: {type(error).__name__}: {error}", file=sys.stderr)
         raise SystemExit(1)
