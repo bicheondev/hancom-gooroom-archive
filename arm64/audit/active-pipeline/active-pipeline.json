@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 239,
-    "workflow_name_count": 239,
+    "workflow_count": 240,
+    "workflow_name_count": 240,
     "referenced_local_file_count": 330,
     "error_count": 2,
     "warning_count": 42,
@@ -1920,6 +1920,20 @@
       "referenced_local_files": [
         "arm64/scripts/prepare_composite_source_chroot.sh"
       ]
+    },
+    {
+      "filename": "arm64-fix-gnome-flashback-lineage-tab-v1.yml",
+      "path": ".github/workflows/arm64-fix-gnome-flashback-lineage-tab-v1.yml",
+      "name": "ARM64 fix - remove tab from gnome-flashback lineage workflow",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-import-historical-artifacts-v2.yml",
