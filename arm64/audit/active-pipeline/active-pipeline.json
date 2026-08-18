@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 229,
-    "workflow_name_count": 229,
-    "referenced_local_file_count": 325,
+    "workflow_count": 230,
+    "workflow_name_count": 230,
+    "referenced_local_file_count": 327,
     "error_count": 6,
     "warning_count": 41,
     "passed": false
@@ -3559,6 +3559,24 @@
       ]
     },
     {
+      "filename": "arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml",
+      "path": ".github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml",
+      "name": "ARM64 port - resolve linux 5.10.0-23 grm3u1 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/download_debian_snapshot_binary_v1.py",
+        "arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py"
+      ]
+    },
+    {
       "filename": "arm64-restore-exact-source-summarizer.yml",
       "path": ".github/workflows/arm64-restore-exact-source-summarizer.yml",
       "name": "ARM64 port - restore exact source recovery summarizer",
@@ -5111,6 +5129,9 @@
     "arm64/scripts/configure_graphical_boot_gate_v2.sh": [
       ".github/workflows/arm64-final-live-iso.yml"
     ],
+    "arm64/scripts/download_debian_snapshot_binary_v1.py": [
+      ".github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml"
+    ],
     "arm64/scripts/extract_blocker_binary_evidence.py": [
       ".github/workflows/arm64-extract-blocker-binary-evidence.yml"
     ],
@@ -5389,6 +5410,9 @@
     ],
     "arm64/scripts/report_arm64_port_coverage.py": [
       ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py": [
+      ".github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml"
     ],
     "arm64/scripts/resolve_rebuild_artifact_names.py": [
       ".github/workflows/arm64-build-dependency-repository-v2.yml"
