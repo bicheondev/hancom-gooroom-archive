@@ -1,0 +1,329 @@
+name: ARM64 port - build linux 5.10.179 grm3u1 v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml'
+      - 'arm64/locks/linux-5.10.179-grm3u1-source/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-build-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: linux
+  SOURCE_VERSION: 5.10.179-1+grm3u1
+  TARGET_PACKAGE: linux-image-5.10.0-23-arm64
+  TARGET_VERSION: 5.10.179-1+grm3u1
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      allowed: ${{ steps.gate.outputs.allowed }}
+      source_run_id: ${{ steps.gate.outputs.source_run_id }}
+      artifact_name: ${{ steps.gate.outputs.artifact_name }}
+    steps:
+      - name: Check out source authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Require exact recovered source
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          authority=arm64/locks/linux-5.10.179-grm3u1-source/latest/authority.json
+          lock=arm64/locks/linux-5.10.179-grm3u1-source/latest/artifact-lock.json
+          allowed=false
+          source_run_id=''
+          artifact_name=''
+          if [ -f "$authority" ] && [ -f "$lock" ] \
+             && [ "$(jq -r '.status // empty' "$authority")" = exact-source-recovered ] \
+             && [ "$(jq -r '.source // empty' "$authority")" = "$SOURCE_NAME" ] \
+             && [ "$(jq -r '.version // empty' "$authority")" = "$SOURCE_VERSION" ] \
+             && [ "$(jq -r '.arm64_build_allowed // false' "$authority")" = true ]; then
+            allowed=true
+            source_run_id="$(jq -r '.actions_run_id' "$lock")"
+            artifact_name="$(jq -r '.artifact_name' "$lock")"
+          fi
+          printf 'allowed=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+          printf 'source_run_id=%s\n' "$source_run_id" >> "$GITHUB_OUTPUT"
+          printf 'artifact_name=%s\n' "$artifact_name" >> "$GITHUB_OUTPUT"
+          jq -n \
+            --argjson allowed "$allowed" \
+            --arg source_run_id "$source_run_id" \
+            --arg artifact_name "$artifact_name" \
+            '{allowed:$allowed,source_run_id:$source_run_id,artifact_name:$artifact_name}' \
+            >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.allowed == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install native ARM64 kernel build infrastructure
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test "$(dpkg --print-architecture)" = arm64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils bc bison build-essential ca-certificates cpio curl \
+            debootstrap devscripts dpkg-dev dwarves elfutils equivs fakeroot \
+            file flex git jq kmod libelf-dev libssl-dev python3 rsync \
+            unzip xz-utils zstd
+
+      - name: Download exact recovered source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.gate.outputs.source_run_id }}
+          ARTIFACT_NAME: ${{ needs.gate.outputs.artifact_name }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-build
+          rm -rf "$root"
+          mkdir -p "$root"/{source-artifact,build,evidence,packages,artifact}
+          artifact_id="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name == env.ARTIFACT_NAME and .expired == false) | .id' \
+            | head -1)"
+          test -n "$artifact_id"
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > "$root/source-artifact.zip"
+          unzip -q "$root/source-artifact.zip" -d "$root/source-artifact"
+          test -f "$root/source-artifact/authority.json"
+          test "$(jq -r '.status' "$root/source-artifact/authority.json")" = exact-source-recovered
+          test "$(jq -r '.source' "$root/source-artifact/authority.json")" = "$SOURCE_NAME"
+          test "$(jq -r '.version' "$root/source-artifact/authority.json")" = "$SOURCE_VERSION"
+          source_tree="$(find "$root/source-artifact" -type f -path '*/debian/changelog' -printf '%h\n' \
+            | sed 's#/debian$##' | head -1)"
+          test -n "$source_tree"
+          test "$(dpkg-parsechangelog -l"$source_tree/debian/changelog" -SSource)" = "$SOURCE_NAME"
+          test "$(dpkg-parsechangelog -l"$source_tree/debian/changelog" -SVersion)" = "$SOURCE_VERSION"
+          cp -a "$source_tree" "$root/source"
+          find "$root/source" -xdev -printf '%y\t%m\t%u\t%g\t%s\t%P\n' \
+            | LC_ALL=C sort > "$root/evidence/source-inventory.tsv"
+
+      - name: Create native Bullseye ARM64 build root
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root="$(pwd)/work/linux-5.10.179-grm3u1-build"
+          chroot="$root/build/rootfs"
+          sudo debootstrap \
+            --arch=arm64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$chroot" http://deb.debian.org/debian \
+            2>&1 | tee "$root/build/debootstrap.log"
+          sudo tee "$chroot/etc/apt/sources.list" >/dev/null <<'EOF'
+deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye main
+deb [trusted=yes check-valid-until=no] http://deb.debian.org/debian bullseye-updates main
+deb [trusted=yes check-valid-until=no] http://security.debian.org/debian-security bullseye-security main
+EOF
+          sudo tee "$chroot/etc/apt/apt.conf.d/99arm64-kernel-build" >/dev/null <<'EOF'
+Acquire::Check-Valid-Until "false";
+Acquire::AllowInsecureRepositories "true";
+Acquire::Retries "5";
+APT::Get::AllowUnauthenticated "true";
+Dpkg::Use-Pty "0";
+EOF
+          sudo mkdir -p "$chroot/build/source"
+          sudo cp -a "$root/source/." "$chroot/build/source/"
+          sudo chown -R root:root "$chroot/build/source"
+          sudo chroot "$chroot" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential ca-certificates devscripts dpkg-dev equivs \
+              fakeroot git locales
+            sed -i "s/^# *C.UTF-8 UTF-8/C.UTF-8 UTF-8/" /etc/locale.gen 2>/dev/null || true
+            locale-gen C.UTF-8 || true
+          ' 2>&1 | tee "$root/build/bootstrap-packages.log"
+
+      - name: Build exact ARM64 kernel binary packages
+        shell: bash
+        run: |
+          set -uo pipefail
+          root="$(pwd)/work/linux-5.10.179-grm3u1-build"
+          chroot="$root/build/rootfs"
+          set +e
+          sudo chroot "$chroot" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS="nocheck parallel=2"
+            export DEB_BUILD_PROFILES="pkg.linux.nokerneldbg pkg.linux.notools pkg.linux.noudeb"
+            export LC_ALL=C.UTF-8
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -y --no-install-recommends --allow-unauthenticated" \
+              debian/control
+            dpkg-checkbuilddeps
+            dpkg-buildpackage -us -uc -B -j2
+          ' 2>&1 | tee "$root/build/build.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$rc" > "$root/build/build.rc"
+          if [ "$rc" -ne 0 ]; then
+            tail -n 1000 "$root/build/build.log" > "$root/evidence/build-tail.log"
+            exit "$rc"
+          fi
+          while IFS= read -r package; do
+            sudo cp "$package" "$root/packages/"
+          done < <(sudo find "$chroot/build" -maxdepth 1 -type f \( -name '*.deb' -o -name '*.buildinfo' -o -name '*.changes' \) | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$root/packages" "$root/build"
+          sudo rm -rf "$chroot"
+
+      - name: Validate exact target package and all ELF architectures
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-build
+          candidates=()
+          while IFS= read -r deb; do
+            [ "$(dpkg-deb -f "$deb" Package)" = "$TARGET_PACKAGE" ] || continue
+            [ "$(dpkg-deb -f "$deb" Version)" = "$TARGET_VERSION" ] || continue
+            [ "$(dpkg-deb -f "$deb" Architecture)" = arm64 ] || continue
+            candidates+=("$deb")
+          done < <(find "$root/packages" -type f -name '*.deb' | LC_ALL=C sort)
+          test "${#candidates[@]}" -eq 1
+          target="${candidates[0]}"
+          cp "$target" "$root/artifact/${TARGET_PACKAGE}_${TARGET_VERSION}_arm64.deb"
+          mkdir -p "$root/evidence/target-root"
+          dpkg-deb -x "$target" "$root/evidence/target-root"
+          dpkg-deb -f "$target" > "$root/evidence/control-fields.txt"
+          dpkg-deb -c "$target" > "$root/evidence/data-list.txt"
+          sha256sum "$target" > "$root/evidence/target.sha256"
+          : > "$root/evidence/elf-inventory.tsv"
+          : > "$root/evidence/non-aarch64-elf.tsv"
+          find "$root/evidence/target-root" -type f -print0 \
+            | while IFS= read -r -d '' path; do
+                description="$(file -b "$path")"
+                case "$description" in
+                  ELF*)
+                    relative="${path#"$root/evidence/target-root/"}"
+                    printf '%s\t%s\n' "$relative" "$description" \
+                      >> "$root/evidence/elf-inventory.tsv"
+                    case "$description" in
+                      *ARM\ aarch64*|*AArch64*) ;;
+                      *) printf '%s\t%s\n' "$relative" "$description" \
+                           >> "$root/evidence/non-aarch64-elf.tsv" ;;
+                    esac
+                    ;;
+                esac
+              done
+          test ! -s "$root/evidence/non-aarch64-elf.tsv"
+          kernel_image="$(find "$root/evidence/target-root/boot" -maxdepth 1 -type f -name 'vmlinuz-*' -print -quit)"
+          test -n "$kernel_image"
+          file "$kernel_image" > "$root/evidence/kernel-image.file.txt"
+          find "$root/evidence/target-root/lib/modules" -type f -name '*.ko' | wc -l \
+            > "$root/evidence/module-count.txt"
+          test "$(cat "$root/evidence/module-count.txt")" -gt 0
+
+      - name: Build and seal unpromoted kernel authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-build
+          deb="$root/artifact/${TARGET_PACKAGE}_${TARGET_VERSION}_arm64.deb"
+          module_count="$(cat "$root/evidence/module-count.txt")"
+          jq -n \
+            --arg source "$SOURCE_NAME" \
+            --arg source_version "$SOURCE_VERSION" \
+            --arg package "$TARGET_PACKAGE" \
+            --arg version "$TARGET_VERSION" \
+            --arg architecture arm64 \
+            --arg deb_filename "$(basename "$deb")" \
+            --arg deb_sha256 "$(sha256sum "$deb" | awk '{print $1}')" \
+            --argjson module_count "$module_count" '
+              {schema:1,status:"native-arm64-build-complete",source:$source,
+               source_version:$source_version,package:$package,version:$version,
+               architecture:$architecture,deb_filename:$deb_filename,
+               deb_sha256:$deb_sha256,module_count:$module_count,
+               all_elf_aarch64:true,boot_tested:false,abi_equivalence_verified:false,
+               package_promotion_allowed:false,iso_assembly_allowed:false}
+            ' > "$root/artifact/authority.json"
+          cp -a "$root/evidence" "$root/artifact/"
+          cp "$root/build/build.log" "$root/artifact/"
+          cp "$root/build/build.rc" "$root/artifact/"
+          find "$root/artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$root/artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$root/artifact/authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact native ARM64 kernel build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.0-23-arm64-5.10.179-1-grm3u1-v1
+          path: work/linux-5.10.179-grm3u1-build/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact unpromoted build authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/linux-5.10.179-grm3u1-build/artifact
+          destination=arm64/locks/linux-5.10.179-grm3u1-arm64-build/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/authority.json" "$destination/"
+          cp "$source/evidence/control-fields.txt" "$destination/"
+          cp "$source/evidence/target.sha256" "$destination/"
+          cp "$source/evidence/elf-inventory.tsv" "$destination/"
+          cp "$source/evidence/non-aarch64-elf.tsv" "$destination/"
+          cp "$source/evidence/kernel-image.file.txt" "$destination/"
+          cp "$source/evidence/module-count.txt" "$destination/"
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'linux-5.10.0-23-arm64-5.10.179-1-grm3u1-v1' \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              artifact_name:$artifact_name}' \
+            > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Kernel build authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock native ARM64 linux 5.10.179 grm3u1 build'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
