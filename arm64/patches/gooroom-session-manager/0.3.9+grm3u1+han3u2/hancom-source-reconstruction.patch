@@ -1,0 +1,108 @@
+--- a/src/gooroom-session-manager.c
++++ b/src/gooroom-session-manager.c
+@@ -47,10 +47,14 @@
+ #define GCSR_CONF               "/etc/gooroom/gooroom-client-server-register/gcsr.conf"
+ #define DEFAULT_THEME_ICON      "Gooroom-Numix-Circle"
+ #define DEFAULT_THEME_BG        "file:///usr/share/backgrounds/gooroom/gooroom_theme_bg_4.jpg"
++#define PANEL_THEME_SCHEMA       "org.gnome.gnome-panel.toplevel.theme"
++#define PANEL_THEME_PATH         "/org/gnome/gnome-panel/layout/toplevels/bottom-panel/theme/"
++
+ 
+ 
+ static GSettings  *g_blacklist_settings = NULL;
+ static GSettings  *g_whitelist_settings = NULL;
++static GSettings  *g_icon_settings = NULL;
+ static GDBusProxy *g_grac_proxy = NULL;
+ static GDBusProxy *g_agent_proxy = NULL;
+ static guint g_gda_watch_id = 0;
+@@ -367,15 +371,24 @@
+ 	const gchar *icon_theme, *background;
+ 
+ 	if (g_str_equal (theme_idx, "1")) {
++		icon_theme = "Hancom-Gooroom-Numix-Circle";
++		background = "/usr/share/backgrounds/hancom-gooroom/hancom_gooroom_theme_bg_9.jpg";
++	} else if (g_str_equal (theme_idx, "2")) {
++		icon_theme = "style1";
++		background = "/usr/share/backgrounds/hancom-gooroom/hancom_gooroom_theme_bg_10.jpg";
++	} else if (g_str_equal (theme_idx, "3")) {
++		icon_theme = "style4";
++		background = "/usr/share/backgrounds/hancom-gooroom/hancom_gooroom_theme_bg_11.jpg";
++	} else if (g_str_equal (theme_idx, "4")) {
+ 		icon_theme = "Gooroom-Arc";
+ 		background = BACKGROUND_PATH"gooroom_theme_bg_1.jpg";
+-	} else if (g_str_equal (theme_idx, "2")) {
++	} else if (g_str_equal (theme_idx, "5")) {
+ 		icon_theme = "Gooroom-Faenza";
+ 		background = BACKGROUND_PATH"gooroom_theme_bg_2.jpg";
+-	} else if (g_str_equal (theme_idx, "3")) {
++	} else if (g_str_equal (theme_idx, "6")) {
+ 		icon_theme = "Gooroom-Papirus";
+ 		background = BACKGROUND_PATH"gooroom_theme_bg_3.jpg";
+-	} else if (g_str_equal (theme_idx, "4")) {
++	} else if (g_str_equal (theme_idx, "7")) {
+ 		icon_theme = "Gooroom-Numix-Circle";
+ 		background = BACKGROUND_PATH"gooroom_theme_bg_4.jpg";
+ 	} else {
+@@ -1350,6 +1363,45 @@
+ }
+ 
+ static void
++set_icon_and_theme (const gchar *str)
++{
++	GSettingsSchema *schema;
++	GSettings *settings;
++	schema = g_settings_schema_source_lookup (g_settings_schema_source_get_default (),
++	                                          PANEL_THEME_SCHEMA, TRUE);
++
++	settings = g_settings_new_full (schema, NULL, PANEL_THEME_PATH);
++
++	if (g_strrstr (str, "style1")) {
++		g_settings_set_string (settings, "bg-color", "rgba(240, 243, 249, 0.96)");
++	}
++	else if (g_strrstr (str, "style4")) {
++		g_settings_set_string (settings, "bg-color", "rgba(43, 47, 64, 0.95)");
++	}
++	else {
++		g_settings_set_string (settings, "bg-color", "rgba(0, 0, 0, 0.7)");
++	}
++
++	g_settings_schema_unref (schema);
++}
++
++static void
++theme_property_notified (GSettings *settings,
++                         gchar     *key,
++                         gpointer   data)
++{
++	if (g_strcmp0 (key, "icon-theme") != 0)
++		return;
++
++	gchar *str;
++
++	str = g_strdup (g_settings_get_string (settings, "icon-theme"));
++	set_icon_and_theme (str);
++
++	g_free (str);
++}
++
++static void
+ name_acquired_handler (GDBusConnection *connection,
+                        const gchar     *name,
+                        gpointer         user_data)
+@@ -1386,6 +1438,16 @@
+ 		g_settings_schema_unref (schema);
+ 	}
+ 
++	schema = g_settings_schema_source_lookup (g_settings_schema_source_get_default (),
++	                                              "org.gnome.desktop.interface", TRUE);
++	if (schema) {
++		g_icon_settings = g_settings_new_full (schema, NULL, NULL);
++		theme_property_notified (g_icon_settings, "icon-theme", NULL);
++		g_signal_connect (G_OBJECT (g_icon_settings), "changed",
++	                          G_CALLBACK (theme_property_notified), NULL);
++		g_settings_schema_unref (schema);
++	}
++
+ 	task = g_task_new (NULL, NULL, start_init_thread_done_cb, NULL);
+ 	g_task_run_in_thread (task, start_init_thread);
+ 	g_object_unref (task);
