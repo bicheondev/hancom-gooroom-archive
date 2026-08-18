@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 240,
-    "workflow_name_count": 240,
-    "referenced_local_file_count": 330,
-    "error_count": 2,
-    "warning_count": 42,
-    "passed": false
+    "workflow_count": 242,
+    "workflow_name_count": 242,
+    "referenced_local_file_count": 334,
+    "error_count": 0,
+    "warning_count": 48,
+    "passed": true
   },
   "workflows": [
     {
@@ -479,24 +479,6 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
-      ]
-    },
-    {
-      "filename": "arm64-bootstrap-install-qtbase-source-archive-gates.yml",
-      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
-      "name": "ARM64 bootstrap - install QtBase source-archive gates",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/finalize_reconstructed_source_archive_authority.py",
-        "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
-        "arm64/scripts/summarize_arm64_port_coverage_v3.py"
       ]
     },
     {
@@ -2763,6 +2745,32 @@
       ]
     },
     {
+      "filename": "arm64-port-coverage-v3.yml",
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "name": "ARM64 port - exact authority and phase coverage v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/acquisition-plan/package-acquisition-plan.json",
+        "arm64/locks/debian-arm64/normalized-package-map.json",
+        "arm64/locks/effective-sources-v4/effective-source-lock.json",
+        "arm64/locks/installed-system/release-lock.json",
+        "arm64/locks/iso/release-lock.json",
+        "arm64/locks/rebuild-release/rebuild-release-lock.json",
+        "arm64/locks/reference/amd64-reference.json",
+        "arm64/locks/rootfs/verification.json",
+        "arm64/scripts/summarize_arm64_port_coverage_v2.py",
+        "arm64/scripts/summarize_arm64_port_coverage_v3.py"
+      ]
+    },
+    {
       "filename": "arm64-port-coverage.yml",
       "path": ".github/workflows/arm64-port-coverage.yml",
       "name": "ARM64 port - report exact package-layer coverage",
@@ -3013,6 +3021,29 @@
         "arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json",
         "arm64/scripts/index_rebuild_results_v2.py",
         "arm64/scripts/promote_qtbase_grm3u1_runtime.py"
+      ]
+    },
+    {
+      "filename": "arm64-promote-qtbase-grm3u1-source-archive.yml",
+      "path": ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml",
+      "name": "ARM64 promote QtBase grm3u1 verified source archive",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-grm3u1-amd64-equivalence/latest/authority.json",
+        "arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json",
+        "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json",
+        "arm64/scripts/finalize_reconstructed_source_archive_authority.py",
+        "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
+        "arm64/scripts/summarize_arm64_port_coverage_v3.py"
       ]
     },
     {
@@ -3903,6 +3934,25 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-source-archive-authority-v1.yml",
+      "path": ".github/workflows/arm64-source-archive-authority-v1.yml",
+      "name": "ARM64 source authority - verified reconstructed archives v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/effective-sources-v3/effective-source-lock.json",
+        "arm64/locks/reconstructed-source-archives/source-locks.json",
+        "arm64/scripts/finalize_reconstructed_source_archive_authority.py"
+      ]
+    },
+    {
       "filename": "arm64-source-authority-v3.yml",
       "path": ".github/workflows/arm64-source-authority-v3.yml",
       "name": "ARM64 port - merge exact source authority v3",
@@ -4616,7 +4666,8 @@
     ],
     "arm64/locks/acquisition-plan/package-acquisition-plan.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml",
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/acquisition-plan/summary.json": [
       ".github/workflows/arm64-exact-rootfs-v2.yml"
@@ -4654,7 +4705,8 @@
     ],
     "arm64/locks/debian-arm64/normalized-package-map.json": [
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/debian-reference-repository-v2/artifact-lock.json": [
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
@@ -4679,12 +4731,16 @@
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
       ".github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml",
-      ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml"
+      ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml",
+      ".github/workflows/arm64-source-archive-authority-v1.yml"
     ],
     "arm64/locks/effective-sources-v3/effective-source-rebuild-blockers.json": [
       ".github/workflows/arm64-audit-small-blocked-package-payloads.yml",
       ".github/workflows/arm64-audit-vendor-payload-repacks.yml",
       ".github/workflows/arm64-wayback-source-recovery-fast.yml"
+    ],
+    "arm64/locks/effective-sources-v4/effective-source-lock.json": [
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/effective-sources/effective-source-lock.json": [
       ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -4774,7 +4830,8 @@
     ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml",
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/iso/iso-build.json": [
       ".github/workflows/arm64-installed-system-boot.yml"
@@ -4782,7 +4839,8 @@
     "arm64/locks/iso/release-lock.json": [
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-installed-system-boot.yml",
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json": [
       ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml",
@@ -4822,8 +4880,15 @@
       ".github/workflows/arm64-qtbase-apt-source-lock-v2.yml",
       ".github/workflows/arm64-qtbase-apt-source-lock.yml"
     ],
+    "arm64/locks/qtbase-grm3u1-amd64-equivalence/latest/authority.json": [
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml"
+    ],
+    "arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json": [
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml"
+    ],
     "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml",
       ".github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml"
     ],
     "arm64/locks/rebuild-release/rebuild-release-lock.json": [
@@ -4831,6 +4896,7 @@
       ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       ".github/workflows/arm64-package-acquisition-plan-v3.yml",
       ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit-v3.yml",
       ".github/workflows/arm64-rebuild-failure-audit.yml"
     ],
@@ -4870,6 +4936,9 @@
     ],
     "arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1/result.json": [
       ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml"
+    ],
+    "arm64/locks/reconstructed-source-archives/source-locks.json": [
+      ".github/workflows/arm64-source-archive-authority-v1.yml"
     ],
     "arm64/locks/reconstructed-sources/source-locks.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
@@ -4939,6 +5008,7 @@
       ".github/workflows/arm64-package-repo-incremental.yml",
       ".github/workflows/arm64-package-repo-wave1.yml",
       ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml",
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-promote-gnome-control-center-artifact.yml",
       ".github/workflows/arm64-promote-gooroom-browser-artifact.yml",
@@ -4974,7 +5044,8 @@
     ],
     "arm64/locks/rootfs/verification.json": [
       ".github/workflows/arm64-final-live-iso.yml",
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/locks/source-candidate-amd64-comparisons/latest/summary.json": [
       ".github/workflows/arm64-reconcile-exact-source-authority-v3.yml"
@@ -5327,7 +5398,8 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
     "arm64/scripts/finalize_reconstructed_source_archive_authority.py": [
-      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml",
+      ".github/workflows/arm64-source-archive-authority-v1.yml"
     ],
     "arm64/scripts/import_historical_arm64_artifacts_v2.py": [
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
@@ -5449,7 +5521,7 @@
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
     ],
     "arm64/scripts/promote_qtbase_grm3u1_arm64.py": [
-      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml"
     ],
     "arm64/scripts/promote_qtbase_grm3u1_runtime.py": [
       ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml"
@@ -5742,10 +5814,12 @@
       ".github/workflows/arm64-ci-state-snapshot.yml"
     ],
     "arm64/scripts/summarize_arm64_port_coverage_v2.py": [
-      ".github/workflows/arm64-port-coverage-v2.yml"
+      ".github/workflows/arm64-port-coverage-v2.yml",
+      ".github/workflows/arm64-port-coverage-v3.yml"
     ],
     "arm64/scripts/summarize_arm64_port_coverage_v3.py": [
-      ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml"
+      ".github/workflows/arm64-port-coverage-v3.yml",
+      ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml"
     ],
     "arm64/scripts/summarize_exact_source_recovery.py": [
       ".github/workflows/arm64-restore-exact-source-summarizer.yml",
@@ -5967,18 +6041,7 @@
       ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
-  "errors": [
-    {
-      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
-      "local_path": "arm64/scripts/finalize_reconstructed_source_archive_authority.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
-      "local_path": "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
-      "reason": "referenced-local-code-missing"
-    }
-  ],
+  "errors": [],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
@@ -6136,6 +6199,31 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "local_path": "arm64/locks/debian-arm64/normalized-package-map.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "local_path": "arm64/locks/effective-sources-v4/effective-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "local_path": "arm64/locks/installed-system/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "local_path": "arm64/locks/iso/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-port-coverage-v3.yml",
+      "local_path": "arm64/locks/rootfs/verification.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -6153,6 +6241,11 @@
     {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-source-archive-authority-v1.yml",
+      "local_path": "arm64/locks/reconstructed-source-archives/source-locks.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
