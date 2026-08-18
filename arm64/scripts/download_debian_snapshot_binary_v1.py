@@ -32,7 +32,7 @@ HASH_ALGORITHMS_BY_LENGTH = {40: "sha1", 64: "sha256"}
 
 
 def request_bytes(url: str, *, attempts: int = 8, timeout: int = 120) -> bytes:
-    last_error: BaseException | None = None
+    last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         request = urllib.request.Request(
             url,
@@ -223,7 +223,7 @@ def main() -> int:
                 record["package"] = deb_field(candidate, "Package")
                 record["version"] = deb_field(candidate, "Version")
                 record["architecture"] = deb_field(candidate, "Architecture")
-            except BaseException as error:  # preserve every rejected-candidate reason
+            except Exception as error:  # preserve every rejected-candidate reason
                 record["accepted"] = False
                 record["error"] = f"{type(error).__name__}: {error}"
                 attempts.append(record)
@@ -279,6 +279,6 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except KeyboardInterrupt:
         raise
-    except BaseException as error:
+    except Exception as error:
         print(f"fatal: {type(error).__name__}: {error}", file=sys.stderr)
         raise SystemExit(1)
