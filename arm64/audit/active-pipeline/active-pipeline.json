@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 234,
-    "workflow_name_count": 234,
+    "workflow_count": 236,
+    "workflow_name_count": 236,
     "referenced_local_file_count": 330,
     "error_count": 6,
     "warning_count": 42,
@@ -1480,6 +1480,22 @@
         "arm64/scripts/select_dependency_retry_wave.py",
         "arm64/scripts/verify_arm64_rebuild.py"
       ]
+    },
+    {
+      "filename": "arm64-diagnose-final-app-deep-diff-v1.yml",
+      "path": ".github/workflows/arm64-diagnose-final-app-deep-diff-v1.yml",
+      "name": "ARM64 port - diagnose final app deep diff v1",
+      "events": [
+        "push",
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
@@ -3439,6 +3455,21 @@
         "arm64/scripts/recover_vendor_sources_wayback.py",
         "arm64/status/source-blockers.json"
       ]
+    },
+    {
+      "filename": "arm64-recover-linux-5.10.179-grm3u1-source-v1.yml",
+      "path": ".github/workflows/arm64-recover-linux-5.10.179-grm3u1-source-v1.yml",
+      "name": "ARM64 port - recover linux 5.10.179 grm3u1 source v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-recover-reference-apt-sources.yml",
