@@ -1,0 +1,61 @@
+name: ARM64 fix - remove tab from gnome-flashback lineage workflow
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-gnome-flashback-lineage-tab-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-fix-gnome-flashback-lineage-tab-v1
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Replace the single forbidden tab and publish
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=.github/workflows/arm64-export-gnome-flashback-lineage-v1.yml
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-export-gnome-flashback-lineage-v1.yml')
+          text = path.read_text(encoding='utf-8')
+          count = text.count('\t')
+          if count != 1:
+              raise SystemExit(f'expected exactly one tab, found {count}')
+          path.write_text(text.replace('\t', '  '), encoding='utf-8')
+          PY
+          ! grep -n $'\t' "$target"
+          git diff --check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          git rm .github/workflows/arm64-fix-gnome-flashback-lineage-tab-v1.yml
+          git diff --cached --check
+          git commit -m 'Remove tab from gnome-flashback lineage workflow'
+
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
