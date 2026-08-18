@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 240,
-    "workflow_name_count": 240,
-    "referenced_local_file_count": 330,
-    "error_count": 6,
+    "workflow_count": 241,
+    "workflow_name_count": 241,
+    "referenced_local_file_count": 332,
+    "error_count": 5,
     "warning_count": 42,
     "passed": false
   },
@@ -725,6 +725,25 @@
         "arm64/scripts/build_locked_source_arm64_v2.sh",
         "arm64/scripts/run_locked_source_arm64.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
+      ]
+    },
+    {
+      "filename": "arm64-build-linux-5.10.179-grm3u1-v1.yml",
+      "path": ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml",
+      "name": "ARM64 port - build linux 5.10.179 grm3u1 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/linux-5.10.179-grm3u1-source/latest/artifact-lock.json",
+        "arm64/locks/linux-5.10.179-grm3u1-source/latest/authority.json"
       ]
     },
     {
@@ -4793,6 +4812,12 @@
     "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json": [
       ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml"
     ],
+    "arm64/locks/linux-5.10.179-grm3u1-source/latest/artifact-lock.json": [
+      ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml"
+    ],
+    "arm64/locks/linux-5.10.179-grm3u1-source/latest/authority.json": [
+      ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml"
+    ],
     "arm64/locks/linux-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-linux-apt-source-lock.yml"
     ],
@@ -5982,11 +6007,6 @@
       "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
       "local_path": "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
       "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 136, column 1:\n    deb [trusted=yes check-valid-unt ... \n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 137, column 1:\n    deb [trusted=yes check-valid-unt ... \n    ^"
     },
     {
       "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
