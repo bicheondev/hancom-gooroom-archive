@@ -1,0 +1,284 @@
+name: ARM64 port - diagnose final app deep diff v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-final-app-deep-diff-v1.yml'
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Optional deep-diff run ID; latest run is used when empty
+        required: false
+        type: string
+  workflow_run:
+    workflows: ['ARM64 port - deep diff final application blockers v1']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-app-deep-diff-diagnosis-v1
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve target run and collect metadata
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/final-app-deep-diff-diagnosis/logs
+          run_id=''
+          if [ "$EVENT_NAME" = workflow_run ] && [ -n "${EVENT_RUN_ID:-}" ]; then
+            run_id="$EVENT_RUN_ID"
+          elif [ -n "${INPUT_RUN_ID:-}" ]; then
+            run_id="$INPUT_RUN_ID"
+          else
+            run_id="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/arm64-deep-diff-final-app-blockers-v1.yml/runs?branch=arm64-port&per_page=20" \
+              --jq '.workflow_runs | map(select(.status == "completed")) | first | .id')"
+          fi
+          test -n "$run_id"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" \
+            > work/final-app-deep-diff-diagnosis/run.json
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+            --slurp \
+            > work/final-app-deep-diff-diagnosis/jobs-pages.json
+          jq '[.[][]?.jobs[]?] // [.[]?.jobs[]?]' \
+            work/final-app-deep-diff-diagnosis/jobs-pages.json \
+            > work/final-app-deep-diff-diagnosis/jobs.json
+
+      - name: Download and unpack complete run logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=work/final-app-deep-diff-diagnosis
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/logs" \
+            > "$output/logs.zip"
+          unzip -q "$output/logs.zip" -d "$output/logs"
+          find "$output/logs" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/log-inventory.tsv"
+
+      - name: Derive exact failure authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('work/final-app-deep-diff-diagnosis')
+          run = json.loads((root / 'run.json').read_text())
+          jobs = json.loads((root / 'jobs.json').read_text())
+          ansi = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+          timestamp = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z\s*')
+          error_patterns = [
+              re.compile(pattern, re.I)
+              for pattern in (
+                  r'##\[error\]', r'(^|\s)error:', r'(^|\s)fatal:',
+                  r'command not found', r'no such file or directory',
+                  r'unable to locate package', r'unmet build dependencies',
+                  r'dependency problems', r'failed to', r'returned non-zero',
+                  r'process completed with exit code', r'could not resolve',
+                  r'404 not found', r'connection timed out', r'traceback',
+              )
+          ]
+
+          def clean(line: str) -> str:
+              return timestamp.sub('', ansi.sub('', line)).rstrip()
+
+          log_files = sorted(path for path in (root / 'logs').rglob('*') if path.is_file())
+          extracted = []
+          for path in log_files:
+              raw = path.read_text(encoding='utf-8-sig', errors='replace').splitlines()
+              matching = []
+              for index, line in enumerate(raw):
+                  value = clean(line)
+                  if any(pattern.search(value) for pattern in error_patterns):
+                      matching.append({
+                          'line_number': index + 1,
+                          'line': value[:2000],
+                          'context_before': [clean(x)[:2000] for x in raw[max(0, index-3):index]],
+                          'context_after': [clean(x)[:2000] for x in raw[index+1:index+4]],
+                      })
+              if matching:
+                  extracted.append({
+                      'path': path.relative_to(root / 'logs').as_posix(),
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                      'matches': matching[-120:],
+                  })
+
+          failed_jobs = []
+          for job in jobs:
+              if job.get('conclusion') not in {'failure', 'cancelled', 'timed_out', 'action_required'}:
+                  continue
+              failed_steps = [
+                  {
+                      'number': step.get('number'),
+                      'name': step.get('name'),
+                      'status': step.get('status'),
+                      'conclusion': step.get('conclusion'),
+                      'started_at': step.get('started_at'),
+                      'completed_at': step.get('completed_at'),
+                  }
+                  for step in job.get('steps', [])
+                  if step.get('conclusion') in {'failure', 'cancelled', 'timed_out', 'action_required'}
+              ]
+              failed_jobs.append({
+                  'id': job.get('id'),
+                  'name': job.get('name'),
+                  'status': job.get('status'),
+                  'conclusion': job.get('conclusion'),
+                  'started_at': job.get('started_at'),
+                  'completed_at': job.get('completed_at'),
+                  'runner_name': job.get('runner_name'),
+                  'failed_steps': failed_steps,
+              })
+
+          authority = {
+              'schema': 1,
+              'workflow_file': '.github/workflows/arm64-deep-diff-final-app-blockers-v1.yml',
+              'run': {
+                  'id': run.get('id'),
+                  'run_number': run.get('run_number'),
+                  'event': run.get('event'),
+                  'status': run.get('status'),
+                  'conclusion': run.get('conclusion'),
+                  'head_branch': run.get('head_branch'),
+                  'head_sha': run.get('head_sha'),
+                  'created_at': run.get('created_at'),
+                  'updated_at': run.get('updated_at'),
+                  'html_url': run.get('html_url'),
+              },
+              'failed_jobs': failed_jobs,
+              'error_logs': extracted,
+              'failure_count': sum(len(item['matches']) for item in extracted),
+              'diagnosis_complete': True,
+              'promotion_allowed': False,
+              'iso_assembly_allowed': False,
+          }
+          (root / 'authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          summary = {
+              'schema': 1,
+              'run_id': authority['run']['id'],
+              'run_conclusion': authority['run']['conclusion'],
+              'failed_jobs': [job['name'] for job in failed_jobs],
+              'failed_steps': [
+                  {'job': job['name'], 'steps': [step['name'] for step in job['failed_steps']]}
+                  for job in failed_jobs
+              ],
+              'first_error': (
+                  extracted[0]['matches'][0]['line'] if extracted and extracted[0]['matches'] else None
+              ),
+              'failure_count': authority['failure_count'],
+          }
+          (root / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          cat work/final-app-deep-diff-diagnosis/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal diagnosis
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/final-app-deep-diff-diagnosis
+          find "$root" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/FILE-INVENTORY.tsv"
+          (
+            cd "$root"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete diagnosis
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: final-app-deep-diff-diagnosis-${{ steps.resolve.outputs.run_id }}
+          path: work/final-app-deep-diff-diagnosis
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact failure authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/final-app-deep-diff-diagnosis
+          destination=arm64/status/final-app-deep-diff-v1-failure
+          run_id='${{ steps.resolve.outputs.run_id }}'
+          mkdir -p "$destination/runs/$run_id"
+          cp "$source/authority.json" "$destination/runs/$run_id/"
+          cp "$source/summary.json" "$destination/runs/$run_id/"
+          cp "$source/LOCKSUMS.sha256" "$destination/runs/$run_id/"
+          rm -rf "$destination/latest"
+          mkdir -p "$destination/latest"
+          cp "$source/authority.json" "$destination/latest/"
+          cp "$source/summary.json" "$destination/latest/"
+          jq -n \
+            --arg run_id "$run_id" \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.resolve.outputs.run_id }}' \
+            --arg artifact_name "final-app-deep-diff-diagnosis-$run_id" \
+            '{schema:1,run_id:$run_id,run_url:$run_url,artifact_name:$artifact_name}' \
+            > "$destination/latest/artifact-lock.json"
+          (
+            cd "$destination/latest"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Diagnosis authority is already current.'
+            exit 0
+          fi
+          git commit -m "Lock final app deep-diff failure $run_id"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
