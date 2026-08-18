@@ -44,7 +44,7 @@ jobs:
             --candidate-deb-dir work/arm64-build/debs \\
             --output-dir work/arm64-verification
           jq -e '
-'''
+          '''
           new_verify = '''          rm -rf work/arm64-verification work/arm64-artifact
           rm -f work/arm64-verifier.stdout work/arm64-verifier.stderr \\
             work/arm64-verifier.exit-status
@@ -62,7 +62,7 @@ jobs:
           cat work/arm64-verifier.stderr >&2
           test "$verifier_status" -eq 0
           jq -e '
-'''
+          '''
           if text.count(old_verify) != 1:
               raise SystemExit(f'verifier anchor count mismatch: {text.count(old_verify)}')
           text = text.replace(old_verify, new_verify)
@@ -71,7 +71,7 @@ jobs:
             work/arm64-build/debootstrap.log
             work/arm64-verification
             work/arm64-artifact/verification-summary.json
-'''
+          '''
           new_diag = '''            work/arm64-build/build.log
             work/arm64-build/debootstrap.log
             work/arm64-build/debs
@@ -80,7 +80,7 @@ jobs:
             work/arm64-verifier.stdout
             work/arm64-verifier.stderr
             work/arm64-verifier.exit-status
-'''
+          '''
           if text.count(old_diag) != 1:
               raise SystemExit(f'diagnostic anchor count mismatch: {text.count(old_diag)}')
           text = text.replace(old_diag, new_diag)
