@@ -1,0 +1,65 @@
+name: ARM64 fix - preserve Linux resolver exit status v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-linux-resolver-exit-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-fix-linux-resolver-exit-v1
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Preserve successful resolver exit status and publish
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py')
+          text = path.read_text(encoding='utf-8')
+          old = '    except BaseException as error:\n'
+          new = '    except Exception as error:\n'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected exactly one resolver BaseException handler, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          python3 -m py_compile \
+            arm64/scripts/download_debian_snapshot_binary_v1.py \
+            "$target"
+          git diff --check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          git rm .github/workflows/arm64-fix-linux-resolver-exit-v1.yml
+          git diff --cached --check
+          git commit -m 'Preserve Linux resolver exit status'
+
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
