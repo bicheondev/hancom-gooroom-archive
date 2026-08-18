@@ -1,0 +1,397 @@
+name: ARM64 port - recover linux 5.10.179 grm3u1 source v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-linux-5.10.179-grm3u1-source-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-source-v2
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: linux
+  SOURCE_VERSION: 5.10.179-1+grm3u1
+  REFERENCE_ISO_URL: https://github.com/bicheondev/hancom-gooroom-archive/releases/download/v3.3/Hancom-Gooroom-3.3-amd64.hybrid.iso
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO, APT index, and source package tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl dpkg-dev file gzip jq python3 \
+            squashfs-tools xorriso xz-utils zstd
+
+      - name: Extract exact repository lines from the reference ISO
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source-v2
+          rm -rf "$root"
+          mkdir -p "$root"/{reference,indices,downloads,source,evidence,artifact}
+          iso="$root/reference/reference.iso"
+          curl --fail --show-error --location \
+            --retry 8 --retry-delay 5 --retry-all-errors \
+            "$REFERENCE_ISO_URL" -o "$iso"
+          sha256sum "$iso" > "$root/reference/iso.sha256"
+          stat -c '%n\t%s' "$iso" > "$root/reference/iso.stat.tsv"
+          xorriso -osirrox on -indev "$iso" \
+            -extract /live/filesystem.squashfs "$root/reference/filesystem.squashfs"
+          unsquashfs -f -d "$root/reference/root" \
+            "$root/reference/filesystem.squashfs" etc/apt
+          grep -RhsE '^[[:space:]]*deb[[:space:]]' \
+            "$root/reference/root/etc/apt" \
+            | sed 's/[[:space:]]\+$//' \
+            | LC_ALL=C sort -u > "$root/reference/deb-lines.txt"
+          test -s "$root/reference/deb-lines.txt"
+
+      - name: Derive every source index candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+          from urllib.parse import quote
+
+          root = Path('work/linux-5.10.179-grm3u1-source-v2')
+          lines = (root / 'reference/deb-lines.txt').read_text(encoding='utf-8', errors='replace').splitlines()
+          rows = []
+          seen = set()
+          for raw in lines:
+              line = raw.strip()
+              if not line or line.startswith('#'):
+                  continue
+              line = re.sub(r'^deb\s+', '', line)
+              if line.startswith('['):
+                  end = line.find(']')
+                  if end < 0:
+                      continue
+                  line = line[end + 1:].strip()
+              parts = line.split()
+              if len(parts) < 3:
+                  continue
+              uri, suite, *components = parts
+              if uri.startswith('cdrom:') or uri.startswith('file:'):
+                  continue
+              uri = uri.rstrip('/')
+              for component in components:
+                  key = (uri, suite, component)
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  base = f'{uri}/dists/{suite}/{component}/source/Sources'
+                  for compression in ('.xz', '.gz', '.zst', ''):
+                      rows.append({
+                          'uri': uri,
+                          'suite': suite,
+                          'component': component,
+                          'compression': compression or 'plain',
+                          'url': base + compression,
+                      })
+          known = [
+              ('https://update.hancomgooroom.com/hancom', 'hancom-gooroom-3.3', 'main'),
+              ('https://update.hancomgooroom.com/gooroom', 'gooroom-3.3', 'main'),
+              ('https://update.hancomgooroom.com/hancom', 'stable', 'main'),
+              ('https://update.hancomgooroom.com/gooroom', 'stable', 'main'),
+          ]
+          for uri, suite, component in known:
+              key = (uri, suite, component)
+              if key in seen:
+                  continue
+              seen.add(key)
+              base = f'{uri}/dists/{suite}/{component}/source/Sources'
+              for compression in ('.xz', '.gz', '.zst', ''):
+                  rows.append({
+                      'uri': uri,
+                      'suite': suite,
+                      'component': component,
+                      'compression': compression or 'plain',
+                      'url': base + compression,
+                  })
+          (root / 'evidence/index-candidates.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (root / 'evidence/index-candidate-urls.txt').write_text(
+              ''.join(row['url'] + '\n' for row in rows), encoding='utf-8'
+          )
+          PY
+          test -s work/linux-5.10.179-grm3u1-source-v2/evidence/index-candidate-urls.txt
+
+      - name: Download source indices and locate the exact linux stanza
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=work/linux-5.10.179-grm3u1-source-v2
+          printf 'http_code\tsize\turl\n' > "$root/evidence/index-probes.tsv"
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import gzip
+          import json
+          import lzma
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work/linux-5.10.179-grm3u1-source-v2')
+          candidates = json.loads((root / 'evidence/index-candidates.json').read_text())
+          target_name = 'linux'
+          target_version = '5.10.179-1+grm3u1'
+          matches = []
+          successful = []
+
+          def parse_stanzas(text: str):
+              stanza = {}
+              current = None
+              for line in text.splitlines():
+                  if not line.strip():
+                      if stanza:
+                          yield stanza
+                      stanza = {}
+                      current = None
+                      continue
+                  if line[:1].isspace() and current:
+                      stanza[current] = stanza.get(current, '') + '\n' + line[1:]
+                      continue
+                  if ':' not in line:
+                      continue
+                  key, value = line.split(':', 1)
+                  current = key
+                  stanza[key] = value.strip()
+              if stanza:
+                  yield stanza
+
+          probe = root / 'evidence/index-probes.tsv'
+          for index, row in enumerate(candidates):
+              compressed = root / 'indices' / f'{index:04d}.index'
+              result = subprocess.run(
+                  ['curl', '--location', '--silent', '--show-error', '--max-time', '120',
+                   '--retry', '3', '--retry-delay', '2', '--retry-all-errors',
+                   '--write-out', '%{http_code}', '--output', str(compressed), row['url']],
+                  text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+              )
+              code = result.stdout.strip() if result.returncode == 0 else '000'
+              size = compressed.stat().st_size if compressed.exists() else 0
+              with probe.open('a', encoding='utf-8') as out:
+                  out.write(f"{code}\t{size}\t{row['url']}\n")
+              if code != '200' or size == 0:
+                  compressed.unlink(missing_ok=True)
+                  continue
+              try:
+                  kind = row['compression']
+                  raw = compressed.read_bytes()
+                  if kind == '.xz':
+                      data = lzma.decompress(raw)
+                  elif kind == '.gz':
+                      data = gzip.decompress(raw)
+                  elif kind == '.zst':
+                      decompressed = compressed.with_suffix('.plain')
+                      subprocess.run(['zstd', '-q', '-d', '-f', str(compressed), '-o', str(decompressed)], check=True)
+                      data = decompressed.read_bytes()
+                      decompressed.unlink()
+                  else:
+                      data = raw
+                  text = data.decode('utf-8', errors='strict')
+              except Exception as error:
+                  successful.append({**row, 'downloaded': True, 'parse_error': repr(error)})
+                  continue
+              plain = root / 'indices' / f'{index:04d}.Sources'
+              plain.write_text(text, encoding='utf-8')
+              successful.append({**row, 'downloaded': True, 'plain_path': plain.as_posix()})
+              for stanza in parse_stanzas(text):
+                  if stanza.get('Package') == target_name and stanza.get('Version') == target_version:
+                      matches.append({
+                          **row,
+                          'directory': stanza.get('Directory'),
+                          'checksums_sha256': stanza.get('Checksums-Sha256', ''),
+                          'files': stanza.get('Files', ''),
+                          'maintainer': stanza.get('Maintainer'),
+                          'binary': stanza.get('Binary'),
+                      })
+          (root / 'evidence/successful-indices.json').write_text(
+              json.dumps(successful, indent=2, sort_keys=True) + '\n'
+          )
+          (root / 'evidence/exact-source-matches.json').write_text(
+              json.dumps(matches, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+          count="$(jq 'length' "$root/evidence/exact-source-matches.json")"
+          printf 'match_count=%s\n' "$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -gt 0 ]; then
+            printf 'found=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'found=false\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download and validate the exact source archive set
+        if: steps.locate.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source-v2
+          jq '.[0]' "$root/evidence/exact-source-matches.json" > "$root/evidence/selected-source-match.json"
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          root = Path('work/linux-5.10.179-grm3u1-source-v2')
+          match = json.loads((root / 'evidence/selected-source-match.json').read_text())
+          rows = []
+          for line in match.get('checksums_sha256', '').splitlines():
+              parts = line.split()
+              if len(parts) == 3:
+                  rows.append({'sha256': parts[0], 'size': int(parts[1]), 'filename': parts[2]})
+          if not rows:
+              raise SystemExit('selected Sources stanza has no Checksums-Sha256')
+          (root / 'evidence/source-components.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+          base_uri="$(jq -r '.uri' "$root/evidence/selected-source-match.json")"
+          directory="$(jq -r '.directory' "$root/evidence/selected-source-match.json")"
+          test -n "$directory"
+          jq -r '.[].filename' "$root/evidence/source-components.json" \
+            | while IFS= read -r filename; do
+                curl --fail --show-error --location \
+                  --max-time 1800 --retry 8 --retry-delay 5 --retry-all-errors \
+                  "$base_uri/$directory/$filename" \
+                  -o "$root/downloads/$filename"
+              done
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib, json
+          from pathlib import Path
+
+          root = Path('work/linux-5.10.179-grm3u1-source-v2')
+          rows = json.loads((root / 'evidence/source-components.json').read_text())
+          for row in rows:
+              path = root / 'downloads' / row['filename']
+              if not path.is_file() or path.stat().st_size != row['size']:
+                  raise SystemExit(f'missing or wrong-size component: {path}')
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest != row['sha256']:
+                  raise SystemExit(f'checksum mismatch: {path}')
+          PY
+          dsc="$(find "$root/downloads" -maxdepth 1 -type f -name '*.dsc' -print -quit)"
+          test -n "$dsc"
+          test "$(sed -n 's/^Source:[[:space:]]*//p' "$dsc" | head -1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version:[[:space:]]*//p' "$dsc" | head -1)" = "$SOURCE_VERSION"
+          dpkg-source --no-check -x "$dsc" "$root/source/tree"
+          test "$(dpkg-parsechangelog -l"$root/source/tree/debian/changelog" -SSource)" = "$SOURCE_NAME"
+          test "$(dpkg-parsechangelog -l"$root/source/tree/debian/changelog" -SVersion)" = "$SOURCE_VERSION"
+
+      - name: Seal exact or negative v2 source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source-v2
+          found='${{ steps.locate.outputs.found }}'
+          if [ "$found" = true ]; then
+            dsc="$(find "$root/downloads" -maxdepth 1 -type f -name '*.dsc' -print -quit)"
+            tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+              -C "$root/source/tree" -cf "$root/evidence/source-tree.tar" .
+            jq -n \
+              --arg source "$SOURCE_NAME" --arg version "$SOURCE_VERSION" \
+              --arg dsc_filename "$(basename "$dsc")" \
+              --arg dsc_sha256 "$(sha256sum "$dsc" | awk '{print $1}')" \
+              --arg source_tree_sha256 "$(sha256sum "$root/evidence/source-tree.tar" | awk '{print $1}')" \
+              --slurpfile selected "$root/evidence/selected-source-match.json" '
+                {schema:2,status:"exact-source-recovered-from-apt-index",
+                 source:$source,version:$version,dsc_filename:$dsc_filename,
+                 dsc_sha256:$dsc_sha256,source_tree_archive_sha256:$source_tree_sha256,
+                 apt_source_match:$selected[0],original_source_archive_recovered:true,
+                 arm64_build_allowed:true,package_promotion_allowed:false,
+                 iso_assembly_allowed:false}
+              ' > "$root/authority.json"
+          else
+            jq -n \
+              --arg source "$SOURCE_NAME" --arg version "$SOURCE_VERSION" \
+              --argjson index_candidate_count "$(jq 'length' "$root/evidence/index-candidates.json")" \
+              --argjson successful_index_count "$(jq 'length' "$root/evidence/successful-indices.json")" '
+                {schema:2,status:"exact-source-not-found-in-reference-apt-indices",
+                 source:$source,version:$version,index_candidate_count:$index_candidate_count,
+                 successful_index_count:$successful_index_count,
+                 original_source_archive_recovered:false,arm64_build_allowed:false,
+                 package_promotion_allowed:false,iso_assembly_allowed:false}
+              ' > "$root/authority.json"
+          fi
+          find "$root" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$root/FILE-INVENTORY.tsv"
+          (
+            cd "$root"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$root/authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete APT-index source recovery
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-1-grm3u1-source-recovery-v2
+          path: work/linux-5.10.179-grm3u1-source-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact v2 source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/linux-5.10.179-grm3u1-source-v2
+          destination=arm64/locks/linux-5.10.179-grm3u1-source-v2/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/authority.json" "$destination/"
+          cp "$source/reference/iso.sha256" "$destination/"
+          cp "$source/reference/deb-lines.txt" "$destination/"
+          cp "$source/evidence/index-candidates.json" "$destination/"
+          cp "$source/evidence/index-probes.tsv" "$destination/"
+          cp "$source/evidence/successful-indices.json" "$destination/"
+          cp "$source/evidence/exact-source-matches.json" "$destination/"
+          cp "$source/evidence/selected-source-match.json" "$destination/" 2>/dev/null || true
+          cp "$source/evidence/source-components.json" "$destination/" 2>/dev/null || true
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'linux-5.10.179-1-grm3u1-source-recovery-v2' \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              artifact_name:$artifact_name}' > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Lock linux 5.10.179 grm3u1 APT source recovery v2'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
