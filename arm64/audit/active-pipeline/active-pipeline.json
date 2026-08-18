@@ -2,10 +2,10 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 241,
-    "workflow_name_count": 241,
-    "referenced_local_file_count": 332,
-    "error_count": 5,
+    "workflow_count": 239,
+    "workflow_name_count": 239,
+    "referenced_local_file_count": 330,
+    "error_count": 2,
     "warning_count": 42,
     "passed": false
   },
@@ -3825,41 +3825,6 @@
       ]
     },
     {
-      "filename": "arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      "name": "ARM64 port - run corrected gooroom-guide source patcher",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/patch_gooroom_guide_final_source.py",
-        "arm64/scripts/patch_gooroom_guide_final_source_v2.py",
-        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
-      ]
-    },
-    {
-      "filename": "arm64-run-gooroom-guide-final-source-patcher.yml",
-      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml",
-      "name": "ARM64 port - run final gooroom-guide source patcher",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/patch_gooroom_guide_final_source.py",
-        "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
-      ]
-    },
-    {
       "filename": "arm64-seal-recovered-source-bundles.yml",
       "path": ".github/workflows/arm64-seal-recovered-source-bundles.yml",
       "name": "ARM64 port - seal recovered exact source bundles",
@@ -5424,13 +5389,6 @@
     "arm64/scripts/patch_gooroom_browser_arm64_packaging.py": [
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
-    "arm64/scripts/patch_gooroom_guide_final_source.py": [
-      ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml"
-    ],
-    "arm64/scripts/patch_gooroom_guide_final_source_v2.py": [
-      ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml"
-    ],
     "arm64/scripts/prepare_composite_source_chroot.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
       ".github/workflows/arm64-build-wave5-browser.yml",
@@ -5531,8 +5489,6 @@
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v1.yml",
       ".github/workflows/arm64-diagnose-gooroom-guide-elf-v2.yml",
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml",
-      ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml",
       ".github/workflows/arm64-search-gooroom-guide-source-delta-v1.yml"
     ],
     "arm64/scripts/reconstruct_libsecurity_xsm_arm64_v2.py": [
@@ -6006,21 +5962,6 @@
     {
       "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
       "local_path": "arm64/scripts/promote_qtbase_grm3u1_arm64.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher-v2.yml",
-      "local_path": "arm64/scripts/patch_gooroom_guide_final_source_v2.py",
-      "reason": "referenced-local-code-missing"
-    },
-    {
-      "path": ".github/workflows/arm64-run-gooroom-guide-final-source-patcher.yml",
-      "local_path": "arm64/scripts/patch_gooroom_guide_final_source.py",
       "reason": "referenced-local-code-missing"
     }
   ],
