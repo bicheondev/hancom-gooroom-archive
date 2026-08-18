@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 230,
-    "workflow_name_count": 230,
-    "referenced_local_file_count": 327,
+    "workflow_count": 234,
+    "workflow_name_count": 234,
+    "referenced_local_file_count": 330,
     "error_count": 6,
-    "warning_count": 41,
+    "warning_count": 42,
     "passed": false
   },
   "workflows": [
@@ -540,6 +540,21 @@
         "arm64/scripts/test_materialize_build_dependency_repo_v2.py",
         "arm64/scripts/test_resolve_rebuild_artifact_names.py"
       ]
+    },
+    {
+      "filename": "arm64-build-final-apps-after-deep-diff-v2.yml",
+      "path": ".github/workflows/arm64-build-final-apps-after-deep-diff-v2.yml",
+      "name": "ARM64 port - build exact-source final applications after deep diff v2",
+      "events": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-build-final-live-iso-v2.yml",
@@ -1296,6 +1311,23 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml",
+      "path": ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml",
+      "name": "ARM64 port - continue after linux 5.10.0-23 grm3u1 v1",
+      "events": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json",
+        "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json"
+      ]
+    },
+    {
       "filename": "arm64-debian-map.yml",
       "path": ".github/workflows/arm64-debian-map.yml",
       "name": "ARM64 port - map exact Debian binaries",
@@ -1757,6 +1789,22 @@
       ]
     },
     {
+      "filename": "arm64-final-app-deep-diff-authority-bridge-v1.yml",
+      "path": ".github/workflows/arm64-final-app-deep-diff-authority-bridge-v1.yml",
+      "name": "ARM64 port - final app deep diff authority bridge v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/final-app-deep-diff-v2/latest/authority.json"
+      ]
+    },
+    {
       "filename": "arm64-final-from-recovered-rootfs.yml",
       "path": ".github/workflows/arm64-final-from-recovered-rootfs.yml",
       "name": "ARM64 port - assemble final ISO from recovered exact rootfs",
@@ -2011,6 +2059,22 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/inventory_iso.py"
+      ]
+    },
+    {
+      "filename": "arm64-kernel-resolution-authority-bridge-v1.yml",
+      "path": ".github/workflows/arm64-kernel-resolution-authority-bridge-v1.yml",
+      "name": "ARM64 port - kernel resolution authority bridge v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json"
       ]
     },
     {
@@ -4574,6 +4638,9 @@
       ".github/workflows/arm64-import-historical-artifacts-v2.yml",
       ".github/workflows/arm64-import-historical-artifacts-v3.yml"
     ],
+    "arm64/locks/final-app-deep-diff-v2/latest/authority.json": [
+      ".github/workflows/arm64-final-app-deep-diff-authority-bridge-v1.yml"
+    ],
     "arm64/locks/final-iso-v2/release-lock.json": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
     ],
@@ -4626,6 +4693,13 @@
       ".github/workflows/arm64-final-live-iso.yml",
       ".github/workflows/arm64-installed-system-boot.yml",
       ".github/workflows/arm64-port-coverage-v2.yml"
+    ],
+    "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json": [
+      ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml",
+      ".github/workflows/arm64-kernel-resolution-authority-bridge-v1.yml"
+    ],
+    "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json": [
+      ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml"
     ],
     "arm64/locks/linux-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-linux-apt-source-lock.yml"
@@ -5876,6 +5950,11 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-final-app-deep-diff-authority-bridge-v1.yml",
+      "local_path": "arm64/locks/final-app-deep-diff-v2/latest/authority.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
