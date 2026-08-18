@@ -1,0 +1,44 @@
+name: ARM64 port - final app deep diff authority bridge v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/locks/final-app-deep-diff-v2/latest/authority.json'
+      - 'arm64/locks/final-app-deep-diff-v2/latest/summary.json'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-final-app-deep-diff-authority-bridge-v1
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Dispatch the exact locked deep-diff run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=arm64/locks/final-app-deep-diff-v2/latest/authority.json
+          test -f "$authority"
+          run_id="$(jq -r '.actions_run_id' "$authority")"
+          test -n "$run_id"
+          test "$run_id" != null
+          gh workflow run arm64-build-final-apps-after-deep-diff-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port \
+            -f source_run_id="$run_id"
