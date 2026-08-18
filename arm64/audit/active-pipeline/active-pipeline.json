@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 236,
-    "workflow_name_count": 236,
+    "workflow_count": 237,
+    "workflow_name_count": 237,
     "referenced_local_file_count": 330,
     "error_count": 7,
     "warning_count": 42,
@@ -1485,6 +1485,22 @@
       "filename": "arm64-diagnose-final-app-deep-diff-v1.yml",
       "path": ".github/workflows/arm64-diagnose-final-app-deep-diff-v1.yml",
       "name": "ARM64 port - diagnose final app deep diff v1",
+      "events": [
+        "push",
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-diagnose-final-blocker-runs-v1.yml",
+      "path": ".github/workflows/arm64-diagnose-final-blocker-runs-v1.yml",
+      "name": "ARM64 port - diagnose final blocker runs v1",
       "events": [
         "push",
         "workflow_dispatch",
