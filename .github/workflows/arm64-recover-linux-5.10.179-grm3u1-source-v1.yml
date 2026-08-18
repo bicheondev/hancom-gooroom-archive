@@ -1,0 +1,369 @@
+name: ARM64 port - recover linux 5.10.179 grm3u1 source v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-linux-5.10.179-grm3u1-source-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-source-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: linux
+  SOURCE_VERSION: 5.10.179-1+grm3u1
+  DSC_FILENAME: linux_5.10.179-1+grm3u1.dsc
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install source-package inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl devscripts dpkg-dev file git jq python3 \
+            xz-utils zstd
+
+      - name: Derive exact candidate DSC URLs from locked authorities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source
+          rm -rf "$root"
+          mkdir -p "$root"/{candidates,downloads,source,evidence}
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+          from urllib.parse import urljoin, urlsplit, urlunsplit
+
+          repo = Path('.')
+          root = Path('work/linux-5.10.179-grm3u1-source')
+          filename = 'linux_5.10.179-1+grm3u1.dsc'
+          urls: set[str] = set()
+          url_re = re.compile(r'https?://[^\s\"\'<>]+')
+
+          def clean_url(value: str) -> str:
+              return value.rstrip('.,);]}')
+
+          for path in sorted((repo / 'arm64').rglob('*')):
+              if not path.is_file() or path.stat().st_size > 16 * 1024 * 1024:
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8', errors='ignore')
+              except OSError:
+                  continue
+              if '5.10.179-1+grm3u1' not in text and '/pool/main/l/linux/' not in text:
+                  continue
+              for match in url_re.findall(text):
+                  url = clean_url(match)
+                  if filename in url:
+                      urls.add(url)
+                  if '/pool/main/l/linux/' in url:
+                      base = url.split('/pool/main/l/linux/', 1)[0]
+                      urls.add(base + '/pool/main/l/linux/' + filename)
+                  if url.endswith('.dsc') and '/linux_' in url:
+                      directory = url.rsplit('/', 1)[0] + '/'
+                      urls.add(urljoin(directory, filename))
+
+          bases = {
+              'https://update.hancomgooroom.com/hancom',
+              'https://update.hancomgooroom.com/gooroom',
+              'http://update.hancomgooroom.com/hancom',
+              'http://update.hancomgooroom.com/gooroom',
+              'https://update.gooroom.kr/gooroom',
+              'http://update.gooroom.kr/gooroom',
+              'https://archive.gooroom.kr/gooroom',
+              'http://archive.gooroom.kr/gooroom',
+          }
+          for base in bases:
+              urls.add(base.rstrip('/') + '/pool/main/l/linux/' + filename)
+
+          (root / 'candidates' / 'dsc-urls.txt').write_text(
+              ''.join(f'{url}\n' for url in sorted(urls)), encoding='utf-8'
+          )
+          PY
+          test -s "$root/candidates/dsc-urls.txt"
+
+      - name: Probe and recover an exact DSC
+        id: recover
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=work/linux-5.10.179-grm3u1-source
+          probes="$root/evidence/dsc-probes.tsv"
+          printf 'http_code\tsize\tsha256\turl\n' > "$probes"
+          selected=''
+          while IFS= read -r url; do
+            [ -n "$url" ] || continue
+            temporary="$root/downloads/candidate.dsc"
+            rm -f "$temporary"
+            set +e
+            code="$(curl --location --silent --show-error \
+              --max-time 90 --retry 4 --retry-delay 3 --retry-all-errors \
+              --write-out '%{http_code}' --output "$temporary" "$url")"
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ]; then
+              printf '000\t0\t-\t%s\n' "$url" >> "$probes"
+              continue
+            fi
+            size="$(stat -c '%s' "$temporary" 2>/dev/null || printf 0)"
+            digest="$(sha256sum "$temporary" 2>/dev/null | awk '{print $1}' || printf '-')"
+            printf '%s\t%s\t%s\t%s\n' "$code" "$size" "$digest" "$url" >> "$probes"
+            [ "$code" = 200 ] || continue
+            source_name="$(sed -n 's/^Source:[[:space:]]*//p' "$temporary" | head -1)"
+            version="$(sed -n 's/^Version:[[:space:]]*//p' "$temporary" | head -1)"
+            [ "$source_name" = "$SOURCE_NAME" ] || continue
+            [ "$version" = "$SOURCE_VERSION" ] || continue
+            cp "$temporary" "$root/downloads/$DSC_FILENAME"
+            selected="$url"
+            break
+          done < "$root/candidates/dsc-urls.txt"
+          printf '%s\n' "$selected" > "$root/evidence/selected-dsc-url.txt"
+          if [ -n "$selected" ]; then
+            printf 'recovered=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'recovered=false\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download and verify every DSC component
+        if: steps.recover.outputs.recovered == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source
+          dsc="$root/downloads/$DSC_FILENAME"
+          selected="$(cat "$root/evidence/selected-dsc-url.txt")"
+          base_url="${selected%/*}/"
+          python3 - "$dsc" "$root/evidence/dsc-components.json" <<'PY'
+          from __future__ import annotations
+          import json, sys
+          from pathlib import Path
+
+          dsc = Path(sys.argv[1]).read_text(encoding='utf-8', errors='strict').splitlines()
+          output = Path(sys.argv[2])
+          in_sha256 = False
+          rows = []
+          for line in dsc:
+              if line == 'Checksums-Sha256:':
+                  in_sha256 = True
+                  continue
+              if in_sha256 and line and not line.startswith(' '):
+                  break
+              if in_sha256 and line.startswith(' '):
+                  parts = line.split()
+                  if len(parts) == 3:
+                      rows.append({'sha256': parts[0], 'size': int(parts[1]), 'filename': parts[2]})
+          if not rows:
+              raise SystemExit('DSC has no Checksums-Sha256 entries')
+          output.write_text(json.dumps(rows, indent=2, sort_keys=True) + '\n')
+          PY
+          jq -r '.[].filename' "$root/evidence/dsc-components.json" \
+            | while IFS= read -r filename; do
+                [ "$filename" = "$DSC_FILENAME" ] && continue
+                curl --fail --show-error --location \
+                  --max-time 1800 --retry 8 --retry-delay 5 --retry-all-errors \
+                  "$base_url$filename" -o "$root/downloads/$filename"
+              done
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib, json
+          from pathlib import Path
+
+          root = Path('work/linux-5.10.179-grm3u1-source')
+          rows = json.loads((root / 'evidence/dsc-components.json').read_text())
+          for row in rows:
+              path = root / 'downloads' / row['filename']
+              if not path.is_file():
+                  raise SystemExit(f'missing DSC component: {path}')
+              if path.stat().st_size != row['size']:
+                  raise SystemExit(f'size mismatch: {path}')
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest != row['sha256']:
+                  raise SystemExit(f'SHA-256 mismatch: {path}')
+          PY
+          (
+            cd "$root/downloads"
+            dpkg-source --no-check -x "$DSC_FILENAME" ../source/tree
+          )
+          test "$(dpkg-parsechangelog -l"$root/source/tree/debian/changelog" -SSource)" = "$SOURCE_NAME"
+          test "$(dpkg-parsechangelog -l"$root/source/tree/debian/changelog" -SVersion)" = "$SOURCE_VERSION"
+
+      - name: Search public Git histories when the DSC is unavailable
+        if: steps.recover.outputs.recovered != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source
+          : > "$root/evidence/public-git-matches.tsv"
+          printf 'repository\tref\tcommit\tchangelog_version\n' \
+            > "$root/evidence/public-git-matches.tsv"
+          repositories=(
+            gooroom/linux
+            hancomgooroom/linux
+            hancom-io/linux
+            TmaxGooroom/linux
+          )
+          gh api --method GET search/repositories \
+            -f q='linux gooroom in:name' -f per_page=100 \
+            --jq '.items[].full_name' 2>/dev/null \
+            >> "$root/evidence/repositories.txt" || true
+          printf '%s\n' "${repositories[@]}" \
+            >> "$root/evidence/repositories.txt"
+          LC_ALL=C sort -u "$root/evidence/repositories.txt" -o "$root/evidence/repositories.txt"
+          mkdir -p "$root/source/git"
+          while IFS= read -r repository; do
+            [ -n "$repository" ] || continue
+            gh api "repos/$repository" >/dev/null 2>&1 || continue
+            directory="$root/source/git/${repository//\//__}.git"
+            git clone --mirror --filter=blob:none \
+              "https://github.com/$repository.git" "$directory"
+            while IFS=$'\t' read -r ref commit; do
+              [ -n "$commit" ] || continue
+              version="$(git -C "$directory" show "$commit:debian/changelog" 2>/dev/null \
+                | dpkg-parsechangelog -l- -SVersion 2>/dev/null || true)"
+              if [ "$version" = "$SOURCE_VERSION" ]; then
+                printf '%s\t%s\t%s\t%s\n' \
+                  "$repository" "$ref" "$commit" "$version" \
+                  >> "$root/evidence/public-git-matches.tsv"
+              fi
+            done < <(git -C "$directory" for-each-ref \
+              --format='%(refname)%09%(objectname)')
+          done < "$root/evidence/repositories.txt"
+
+      - name: Build exact source recovery authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-source
+          recovered='${{ steps.recover.outputs.recovered }}'
+          if [ "$recovered" = true ]; then
+            source_tree="$root/source/tree"
+            find "$source_tree" -xdev -printf '%y\t%m\t%u\t%g\t%s\t%P\n' \
+              | LC_ALL=C sort > "$root/evidence/source-tree-inventory.tsv"
+            tar --sort=name --mtime='UTC 1970-01-01' \
+              --owner=0 --group=0 --numeric-owner \
+              -C "$source_tree" -cf "$root/evidence/source-tree.tar" .
+            tree_sha="$(sha256sum "$root/evidence/source-tree.tar" | awk '{print $1}')"
+            dsc_sha="$(sha256sum "$root/downloads/$DSC_FILENAME" | awk '{print $1}')"
+            selected_url="$(cat "$root/evidence/selected-dsc-url.txt")"
+            jq -n \
+              --arg source "$SOURCE_NAME" \
+              --arg version "$SOURCE_VERSION" \
+              --arg dsc_filename "$DSC_FILENAME" \
+              --arg dsc_sha256 "$dsc_sha" \
+              --arg selected_dsc_url "$selected_url" \
+              --arg source_tree_sha256 "$tree_sha" '
+                {schema:1,status:"exact-source-recovered",source:$source,version:$version,
+                 dsc_filename:$dsc_filename,dsc_sha256:$dsc_sha256,
+                 selected_dsc_url:$selected_dsc_url,
+                 source_tree_archive_sha256:$source_tree_sha256,
+                 original_source_archive_recovered:true,
+                 arm64_build_allowed:true,
+                 package_promotion_allowed:false,
+                 iso_assembly_allowed:false}
+              ' > "$root/authority.json"
+          else
+            matches=0
+            if [ -f "$root/evidence/public-git-matches.tsv" ]; then
+              matches=$(( $(wc -l < "$root/evidence/public-git-matches.tsv") - 1 ))
+              [ "$matches" -ge 0 ] || matches=0
+            fi
+            jq -n \
+              --arg source "$SOURCE_NAME" \
+              --arg version "$SOURCE_VERSION" \
+              --argjson public_git_match_count "$matches" '
+                {schema:1,status:"exact-source-not-recovered",source:$source,version:$version,
+                 public_git_match_count:$public_git_match_count,
+                 original_source_archive_recovered:false,
+                 arm64_build_allowed:false,
+                 package_promotion_allowed:false,
+                 iso_assembly_allowed:false}
+              ' > "$root/authority.json"
+          fi
+          find "$root" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/FILE-INVENTORY.tsv"
+          (
+            cd "$root"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$root/authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete source recovery evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-1-grm3u1-source-recovery-v1
+          path: work/linux-5.10.179-grm3u1-source
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/linux-5.10.179-grm3u1-source
+          destination=arm64/locks/linux-5.10.179-grm3u1-source/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/authority.json" "$destination/"
+          cp "$source/evidence/dsc-probes.tsv" "$destination/"
+          cp "$source/evidence/selected-dsc-url.txt" "$destination/"
+          cp "$source/candidates/dsc-urls.txt" "$destination/"
+          cp "$source/evidence/dsc-components.json" "$destination/" 2>/dev/null || true
+          cp "$source/evidence/public-git-matches.tsv" "$destination/" 2>/dev/null || true
+          cp "$source/evidence/repositories.txt" "$destination/" 2>/dev/null || true
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'linux-5.10.179-1-grm3u1-source-recovery-v1' \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              artifact_name:$artifact_name}' \
+            > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Kernel source authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock linux 5.10.179 grm3u1 source recovery'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
