@@ -1,0 +1,94 @@
+name: ARM64 one-shot fix lineage YAML tab
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - .github/workflows/arm64-fix-lineage-yaml-tab-once.yml
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out arm64-port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Replace the raw YAML tab without changing TSV output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path(".github/workflows/arm64-export-gnome-flashback-lineage-v1.yml")
+          text = path.read_text(encoding="utf-8")
+          old = (
+              "          cat > work/reports/repositories.tsv <<'EOF'"
+              + chr(10)
+              + "          repository"
+              + chr(9)
+              + "status"
+              + chr(10)
+              + "          EOF"
+              + chr(10)
+          )
+          new = (
+              "          printf 'repository"
+              + chr(92)
+              + "tstatus"
+              + chr(92)
+              + "n' > work/reports/repositories.tsv"
+              + chr(10)
+          )
+          occurrences = text.count(old)
+          if occurrences != 1:
+              raise SystemExit(
+                  f"expected exactly one raw-tab heredoc, found {occurrences}"
+              )
+          updated = text.replace(old, new, 1)
+          if chr(9) in updated:
+              raise SystemExit("raw tab remains in target workflow")
+          path.write_text(updated, encoding="utf-8")
+          PY
+          git diff --check
+          if grep -nP '[\x09]' \
+            .github/workflows/arm64-export-gnome-flashback-lineage-v1.yml; then
+            echo 'raw tab still present' >&2
+            exit 1
+          fi
+          grep -nF "printf 'repository\\tstatus\\n'" \
+            .github/workflows/arm64-export-gnome-flashback-lineage-v1.yml
+
+      - name: Commit the fix and remove this one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/arm64-fix-lineage-yaml-tab-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/arm64-export-gnome-flashback-lineage-v1.yml
+          git commit -m "ci(arm64): remove raw tab from lineage exporter"
+          git push origin HEAD:arm64-port
+
+      - name: Re-run the pipeline audit and CI-state snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run arm64-active-pipeline-audit.yml \
+            --repo "${{ github.repository }}" \
+            --ref arm64-port
+          gh workflow run arm64-ci-state-snapshot.yml \
+            --repo "${{ github.repository }}" \
+            --ref arm64-port
