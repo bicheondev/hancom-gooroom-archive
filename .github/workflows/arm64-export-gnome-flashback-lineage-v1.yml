@@ -229,9 +229,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          cat > work/reports/repositories.tsv <<'EOF'
-          repository	status
-          EOF
+          printf 'repository\tstatus\n' > work/reports/repositories.tsv
           repositories=(
             hancomgooroom/gnome-flashback
             gooroom/gnome-flashback
