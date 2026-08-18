@@ -1,0 +1,122 @@
+name: ARM64 port - exact authority and phase coverage v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/locks/effective-sources-v4/**'
+      - 'arm64/locks/rebuild-results/**'
+      - 'arm64/locks/rebuild-release/**'
+      - 'arm64/locks/acquisition-plan/**'
+      - 'arm64/locks/rootfs/**'
+      - 'arm64/locks/iso/**'
+      - 'arm64/locks/installed-system/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-port-coverage-v3
+  cancel-in-progress: true
+
+jobs:
+  summarize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out all exact authority and phase locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Detect effective source authority v4
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ -f arm64/locks/effective-sources-v4/effective-source-lock.json ]; then
+            echo 'active=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'active=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Summarize source-archive-aware exact-authority coverage
+        if: steps.gate.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile \
+            arm64/scripts/summarize_arm64_port_coverage_v2.py \
+            arm64/scripts/summarize_arm64_port_coverage_v3.py
+          rm -rf work/coverage-v3
+          arguments=(
+            --reference arm64/locks/reference/amd64-reference.json
+            --source-lock arm64/locks/effective-sources-v4/effective-source-lock.json
+            --results-dir arm64/locks/rebuild-results
+            --normalized-map arm64/locks/debian-arm64/normalized-package-map.json
+            --rebuild-release-lock arm64/locks/rebuild-release/rebuild-release-lock.json
+            --acquisition-plan arm64/locks/acquisition-plan/package-acquisition-plan.json
+            --output-dir work/coverage-v3
+          )
+          [ -f arm64/locks/rootfs/verification.json ] \
+            && arguments+=(--rootfs-verification arm64/locks/rootfs/verification.json)
+          [ -f arm64/locks/iso/release-lock.json ] \
+            && arguments+=(--iso-release-lock arm64/locks/iso/release-lock.json)
+          [ -f arm64/locks/installed-system/release-lock.json ] \
+            && arguments+=(--installed-release-lock arm64/locks/installed-system/release-lock.json)
+          python3 arm64/scripts/summarize_arm64_port_coverage_v3.py \
+            "${arguments[@]}"
+          jq -e '
+            .schema >= 3
+            and .reconstructed_source_archive_source_count >= 1
+          ' work/coverage-v3/summary.json >/dev/null
+          find work/coverage-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum \
+            > work/coverage-v3/LOCKSUMS.sha256
+          (
+            cd work/coverage-v3
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Hancom Gooroom 3.3 ARM64 source-archive-aware coverage'
+            echo
+            echo '```json'
+            cat work/coverage-v3/summary.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete phase and blocker coverage v3
+        if: steps.gate.outputs.active == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-coverage-v3-${{ github.run_id }}
+          path: work/coverage-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit non-inflated source-archive-aware coverage
+        if: steps.gate.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/status/coverage-v3
+          mkdir -p arm64/status/coverage-v3
+          cp -a work/coverage-v3/. arm64/status/coverage-v3/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/coverage-v3
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Update source-archive-aware ARM64 coverage v3'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

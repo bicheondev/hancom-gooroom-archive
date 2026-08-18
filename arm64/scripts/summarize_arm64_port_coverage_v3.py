@@ -1,96 +1,112 @@
 #!/usr/bin/env python3
-"""Apply conservative final-phase gates to exact-authority coverage v2."""
+"""Coverage v3: extend v2 with reconstructed source-archive identities."""
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import sys
 from pathlib import Path
+from typing import Any
 
-import summarize_arm64_port_coverage_v2 as base
-
-
-def load(path: Path | None) -> dict:
-    if path is None or not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+ARCHIVE_SELECTED_TYPE = "reconstructed-source-archive"
+ARCHIVE_RESULT_TYPE = "verified-reconstructed-source-archive"
 
 
-def summary(document: dict) -> dict:
+def load_v2():
+    path = Path(__file__).with_name("summarize_arm64_port_coverage_v2.py")
+    spec = importlib.util.spec_from_file_location("arm64_coverage_v2", path)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"unable to load coverage v2 implementation: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def nested(document: dict[str, Any]) -> dict[str, Any]:
     value = document.get("summary")
     return value if isinstance(value, dict) else document
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--rootfs-verification", type=Path)
-    parser.add_argument("--iso-release-lock", type=Path)
-    parser.add_argument("--installed-release-lock", type=Path)
+    parser.add_argument("--source-lock", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    args, _ = parser.parse_known_args()
+    known, _ = parser.parse_known_args()
 
-    rc = base.main()
-    coverage_path = args.output_dir / "coverage.json"
-    if not coverage_path.exists():
-        return rc or 2
-    coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
-    result_summary = coverage["summary"]
+    module = load_v2()
+    original_normalize = module.normalize_source_type
+    original_authority = module.authority_identity
+    original_result = module.result_identity
 
-    rootfs = summary(load(args.rootfs_verification))
-    iso = summary(load(args.iso_release_lock))
-    installed = summary(load(args.installed_release_lock))
+    def normalize_source_type(value: Any) -> str:
+        source_type = str(value or "git")
+        if source_type in {ARCHIVE_SELECTED_TYPE, ARCHIVE_RESULT_TYPE}:
+            return ARCHIVE_SELECTED_TYPE
+        return original_normalize(source_type)
 
-    rootfs_ready = rootfs.get("passed") is True
-    live_iso_ready = (
-        iso.get("qemu_booted") is True
-        or iso.get("live_iso_qemu_booted") is True
-        or (
-            iso.get("passed") is True
-            and iso.get("marker_found") is True
+    def authority_identity(source_row: dict[str, Any]):
+        selected = source_row.get("selected")
+        if isinstance(selected, dict) and normalize_source_type(selected.get("type")) == ARCHIVE_SELECTED_TYPE:
+            value = selected.get("source_tree_manifest_sha256") or selected.get("source_archive_sha256")
+            return (ARCHIVE_SELECTED_TYPE, value) if value else None
+        return original_authority(source_row)
+
+    def result_identity(result: dict[str, Any]):
+        build_lock = result.get("build_lock") if isinstance(result.get("build_lock"), dict) else {}
+        evidence = result.get("source_lock_evidence") if isinstance(result.get("source_lock_evidence"), dict) else {}
+        source_type = normalize_source_type(
+            result.get("source_type")
+            or build_lock.get("source_type")
+            or evidence.get("source_type")
+            or "git"
         )
-    )
-    installed_ready = (
-        installed.get("installed_gpt_system_qemu_booted") is True
-        or installed.get("installed_system_qemu_booted") is True
+        if source_type == ARCHIVE_SELECTED_TYPE:
+            selected = evidence.get("selected") if isinstance(evidence.get("selected"), dict) else {}
+            value = (
+                result.get("source_authority_sha256")
+                or build_lock.get("source_authority_sha256")
+                or selected.get("source_tree_manifest_sha256")
+                or selected.get("source_archive_sha256")
+            )
+            return (ARCHIVE_SELECTED_TYPE, value) if value else None
+        return original_result(result)
+
+    module.normalize_source_type = normalize_source_type
+    module.authority_identity = authority_identity
+    module.result_identity = result_identity
+    rc = int(module.main())
+
+    source_lock = json.loads(known.source_lock.read_text(encoding="utf-8"))
+    source_rows = source_lock.get("sources", [])
+    archive_count = sum(
+        isinstance(row, dict)
+        and isinstance(row.get("selected"), dict)
+        and row["selected"].get("type") == ARCHIVE_SELECTED_TYPE
+        for row in source_rows
     )
 
-    highest_phase = "reference-and-source-mapping"
-    if result_summary.get("source_authority_complete") is True:
-        highest_phase = "exact-source-authority"
-    if result_summary.get("native_rebuilds_complete") is True:
-        highest_phase = "verified-native-arm64-rebuilds"
-    if result_summary.get("persistent_release_complete") is True:
-        highest_phase = "persistent-exact-rebuild-packages"
-    if result_summary.get("acquisition_ready") is True:
-        highest_phase = "exact-package-acquisition-ready"
-    if rootfs_ready:
-        highest_phase = "verified-arm64-rootfs"
-    if live_iso_ready:
-        highest_phase = "qemu-booted-live-arm64-iso"
-    if installed_ready:
-        highest_phase = "qemu-booted-installed-arm64-system"
-
-    result_summary.update(
+    coverage_path = known.output_dir / "coverage.json"
+    summary_path = known.output_dir / "summary.json"
+    coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    summary = nested(coverage)
+    summary.update(
         {
-            "schema": 3,
-            "policy": "current-exact-authority-with-conservative-final-phase-gates",
-            "rootfs_ready": rootfs_ready,
-            "live_iso_qemu_booted": live_iso_ready,
-            "installed_system_qemu_booted": installed_ready,
-            "highest_completed_phase": highest_phase,
-            "port_complete": installed_ready,
+            "schema": max(int(summary.get("schema", 1)), 3),
+            "policy": "current-exact-authority-including-reconstructed-source-archive-and-phase-gate-coverage",
+            "reconstructed_source_archive_source_count": archive_count,
         }
     )
-    coverage["summary"] = result_summary
-    coverage_path.write_text(
-        json.dumps(coverage, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    (args.output_dir / "summary.json").write_text(
-        json.dumps(result_summary, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    print(json.dumps(result_summary, ensure_ascii=False, indent=2))
+    coverage["summary"] = summary
+    coverage_path.write_text(json.dumps(coverage, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({
+        "coverage_v3": True,
+        "reconstructed_source_archive_source_count": archive_count,
+        "source_blocker_count": summary.get("source_blocker_count"),
+        "native_rebuild_passed_count": summary.get("native_rebuild_passed_count"),
+    }, ensure_ascii=False, indent=2))
     return rc
 
 

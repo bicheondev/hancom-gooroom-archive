@@ -1,0 +1,222 @@
+name: ARM64 promote QtBase grm3u1 verified source archive
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/locks/qtbase-grm3u1-amd64-equivalence/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-qtbase-grm3u1-source-archive-promotion
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  TARGET_VERSION: 5.15.2+dfsg-9+grm3u1
+  PROMOTION_ARTIFACT: arm64-rebuild-qtbase-opensource-src-5.15.2-dfsg-9-grm3u1
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out persisted equivalence and ARM64 authorities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify promotion implementation and immutable authorities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file gh jq python3 unzip
+          python3 -m py_compile \
+            arm64/scripts/promote_qtbase_grm3u1_arm64.py \
+            arm64/scripts/finalize_reconstructed_source_archive_authority.py \
+            arm64/scripts/summarize_arm64_port_coverage_v3.py
+          (
+            cd arm64/locks/qtbase-grm3u1-amd64-equivalence/latest
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_status == "verified-reconstructed-amd64-equivalent"
+            and .amd64_equivalence_verified == true
+            and .native_arm64_build_verified == true
+            and .vendor_lock_verified == true
+            and .original_source_archive_recovered == false
+            and .promotion_allowed == false
+          ' arm64/locks/qtbase-grm3u1-amd64-equivalence/latest/authority.json >/dev/null
+          (
+            cd arm64/locks/qtbase-grm3u1-arm64-build/latest
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .native_arm64_build_verified == true
+            and .foreign_payload_count == 0
+            and (.verified_artifact_id | tostring | test("^[0-9]+$"))
+            and (.verified_artifact_sha256 | test("^[0-9a-f]{64}$"))
+          ' arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json >/dev/null
+
+      - name: Download the exact preserved native ARM64 artifact by immutable id
+        id: arm64_artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json
+          artifact_id="$(jq -er '.verified_artifact_id | tostring' "$authority")"
+          expected_name="$(jq -er '.verified_artifact_name' "$authority")"
+          expected_sha="$(jq -er '.verified_artifact_sha256' "$authority")"
+          rm -rf work/arm64-artifact work/arm64-artifact.zip work/arm64-artifact-metadata.json
+          mkdir -p work/arm64-artifact
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+            > work/arm64-artifact-metadata.json
+          jq -e \
+            --arg id "$artifact_id" \
+            --arg name "$expected_name" '
+              (.id | tostring) == $id
+              and .name == $name
+              and .expired == false
+            ' work/arm64-artifact-metadata.json >/dev/null
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > work/arm64-artifact.zip
+          test "$(sha256sum work/arm64-artifact.zip | awk '{print $1}')" = "$expected_sha"
+          unzip -q work/arm64-artifact.zip -d work/arm64-artifact
+          test -f work/arm64-artifact/result.json
+          test -f work/arm64-artifact/SHA256SUMS
+          (
+            cd work/arm64-artifact
+            sha256sum --check --strict SHA256SUMS
+          )
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_sha256=$expected_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Independently rescan and promote only the required Qt runtime packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/promotion
+          python3 arm64/scripts/promote_qtbase_grm3u1_arm64.py \
+            --equivalence-lock-dir arm64/locks/qtbase-grm3u1-amd64-equivalence/latest \
+            --reconstruction-authority arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json \
+            --arm64-authority arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json \
+            --arm64-artifact-dir work/arm64-artifact \
+            --artifact-zip-sha256 '${{ steps.arm64_artifact.outputs.artifact_sha256 }}' \
+            --promotion-run-id "$GITHUB_RUN_ID" \
+            --promotion-run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --artifact-name "$PROMOTION_ARTIFACT" \
+            --output-dir work/promotion
+          jq -e '
+            .schema == 4
+            and .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_type == "verified-reconstructed-source-archive"
+            and .passed == true
+            and .verification_passed == true
+            and .original_source_archive_recovered == false
+            and (.deb_artifacts | length) == 9
+          ' work/promotion/result.json >/dev/null
+          jq -e '
+            .source_count == 1
+            and (.sources | length) == 1
+            and .sources[0].selected.type == "reconstructed-source-archive"
+            and .sources[0].verification.passed == true
+          ' work/promotion/source-locks.json >/dev/null
+
+      - name: Upload publisher-compatible verified QtBase package artifact
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.PROMOTION_ARTIFACT }}
+          path: work/promotion/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload compact source-archive promotion evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-grm3u1-source-archive-promotion-evidence-${{ github.run_id }}
+          path: work/promotion/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Commit verified source-archive result and overlay authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          result_dir=arm64/locks/rebuild-results/qtbase-opensource-src/5.15.2_dfsg-9_grm3u1
+          overlay_dir=arm64/locks/reconstructed-source-archives
+          rm -rf "$result_dir"
+          mkdir -p "$result_dir" "$overlay_dir"
+          cp work/promotion/result.json "$result_dir/result.json"
+          cp work/promotion/artifact/verification.json "$result_dir/verification.json"
+          cp work/promotion/artifact/build-lock.json "$result_dir/build-lock.json"
+          cp work/promotion/artifact/source-lock-evidence.json "$result_dir/source-lock-evidence.json"
+          cp work/promotion/evidence/promotion-summary.json "$result_dir/promotion-summary.json"
+          cp work/promotion/source-locks.json "$overlay_dir/source-locks.json"
+          jq \
+            --arg artifact_id '${{ steps.upload.outputs['artifact-id'] }}' \
+            --arg artifact_digest '${{ steps.upload.outputs['artifact-digest'] }}' \
+            --arg artifact_url '${{ steps.upload.outputs['artifact-url'] }}' '
+              . + {
+                actions_artifact_id: $artifact_id,
+                actions_artifact_digest: $artifact_digest,
+                actions_artifact_url: $artifact_url
+              }
+            ' "$result_dir/result.json" > "$result_dir/result.json.tmp"
+          mv "$result_dir/result.json.tmp" "$result_dir/result.json"
+          jq \
+            --arg artifact_id '${{ steps.upload.outputs['artifact-id'] }}' \
+            --arg artifact_digest '${{ steps.upload.outputs['artifact-digest'] }}' \
+            --arg artifact_url '${{ steps.upload.outputs['artifact-url'] }}' '
+              .sources[0].verification += {
+                actions_artifact_id: $artifact_id,
+                actions_artifact_digest: $artifact_digest,
+                actions_artifact_url: $artifact_url
+              }
+            ' "$overlay_dir/source-locks.json" > "$overlay_dir/source-locks.json.tmp"
+          mv "$overlay_dir/source-locks.json.tmp" "$overlay_dir/source-locks.json"
+          (
+            cd "$result_dir"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          (
+            cd "$overlay_dir"
+            find . -maxdepth 1 -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$result_dir" "$overlay_dir"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Promote verified QtBase reconstructed source archive'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
