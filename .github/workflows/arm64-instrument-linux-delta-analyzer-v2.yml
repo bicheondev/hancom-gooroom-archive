@@ -1,0 +1,68 @@
+name: ARM64 instrument - Linux delta analyzer failure locator v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-instrument-linux-delta-analyzer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-instrument-linux-delta-analyzer-v2
+  cancel-in-progress: false
+
+jobs:
+  instrument:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add failure locator using an encoded YAML fragment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = 'Persist Linux delta analyzer failure locator'
+          fragment = base64.b64decode('CiAgICAgIC0gbmFtZTogUGVyc2lzdCBMaW51eCBkZWx0YSBhbmFseXplciBmYWlsdXJlIGxvY2F0b3IKICAgICAgICBpZjogZmFpbHVyZSgpCiAgICAgICAgc2hlbGw6IGJhc2gKICAgICAgICBydW46IHwKICAgICAgICAgIHNldCAtdXhvIHBpcGVmYWlsCiAgICAgICAgICBnaXQgcmVzZXQgLS1oYXJkIEhFQUQKICAgICAgICAgIGdpdCBjbGVhbiAtZmQKICAgICAgICAgIGdpdCBwdWxsIC0tcmViYXNlIG9yaWdpbiBhcm02NC1wb3J0IHx8IHRydWUKICAgICAgICAgIGRlc3RpbmF0aW9uPWFybTY0L2xvY2tzL2xpbnV4LTUuMTAuMTc5LWdybTN1MS1kZWx0YS12MS9mYWlsdXJlCiAgICAgICAgICBybSAtcmYgIiRkZXN0aW5hdGlvbiIKICAgICAgICAgIG1rZGlyIC1wICIkZGVzdGluYXRpb24iCiAgICAgICAgICBqcSAtbiAgICAgICAgICAgICAtLWFyZyBydW5faWQgIiRHSVRIVUJfUlVOX0lEIiAgICAgICAgICAgICAtLWFyZyBydW5fYXR0ZW1wdCAiJEdJVEhVQl9SVU5fQVRURU1QVCIgICAgICAgICAgICAgLS1hcmcgcnVuX3VybCAiaHR0cHM6Ly9naXRodWIuY29tLyRHSVRIVUJfUkVQT1NJVE9SWS9hY3Rpb25zL3J1bnMvJEdJVEhVQl9SVU5fSUQiICAgICAgICAgICAgIC0tYXJnIHdvcmtmbG93X2NvbW1pdCAiJEdJVEhVQl9TSEEiICAgICAgICAgICAgICd7c2NoZW1hOjEsc3RhdHVzOiJmYWlsZWQiLGFjdGlvbnNfcnVuX2lkOiRydW5faWQsCiAgICAgICAgICAgICAgYWN0aW9uc19ydW5fYXR0ZW1wdDokcnVuX2F0dGVtcHQsYWN0aW9uc19ydW5fdXJsOiRydW5fdXJsLAogICAgICAgICAgICAgIHdvcmtmbG93X2NvbW1pdDokd29ya2Zsb3dfY29tbWl0fScgICAgICAgICAgICAgPiAiJGRlc3RpbmF0aW9uL2ZhaWx1cmUuanNvbiIKICAgICAgICAgIHNoYTI1NnN1bSAiJGRlc3RpbmF0aW9uL2ZhaWx1cmUuanNvbiIgPiAiJGRlc3RpbmF0aW9uL0xPQ0tTVU1TLnNoYTI1NiIKICAgICAgICAgIGdpdCBjb25maWcgdXNlci5uYW1lICdnaXRodWItYWN0aW9uc1tib3RdJwogICAgICAgICAgZ2l0IGNvbmZpZyB1c2VyLmVtYWlsICc0MTg5ODI4MitnaXRodWItYWN0aW9uc1tib3RdQHVzZXJzLm5vcmVwbHkuZ2l0aHViLmNvbScKICAgICAgICAgIGdpdCBhZGQgIiRkZXN0aW5hdGlvbiIKICAgICAgICAgIGdpdCBjb21taXQgLW0gJ1JlY29yZCBMaW51eCBkZWx0YSBhbmFseXplciBmYWlsdXJlIGxvY2F0b3InIHx8IGV4aXQgMAogICAgICAgICAgZm9yIGF0dGVtcHQgaW4gMSAyIDMgNCA1IDY7IGRvCiAgICAgICAgICAgIGdpdCBwdWxsIC0tcmViYXNlIG9yaWdpbiBhcm02NC1wb3J0IHx8IHsgZ2l0IHJlYmFzZSAtLWFib3J0IHx8IHRydWU7IGNvbnRpbnVlOyB9CiAgICAgICAgICAgIGlmIGdpdCBwdXNoIG9yaWdpbiBIRUFEOmFybTY0LXBvcnQ7IHRoZW4KICAgICAgICAgICAgICBleGl0IDAKICAgICAgICAgICAgZmkKICAgICAgICAgICAgc2xlZXAgJCgoYXR0ZW1wdCAqIDIpKQogICAgICAgICAgZG9uZQogICAgICAgICAgZXhpdCAxCg==').decode('utf-8')
+          if marker not in text:
+              path.write_text(text.rstrip() + '\n' + fragment, encoding='utf-8')
+          PY
+          python3 - <<'PY'
+          import yaml
+          from pathlib import Path
+          for value in (
+              '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml',
+              '.github/workflows/arm64-instrument-linux-delta-analyzer-v2.yml',
+          ):
+              yaml.safe_load(Path(value).read_text(encoding='utf-8'))
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          git rm .github/workflows/arm64-instrument-linux-delta-analyzer-v2.yml
+          git diff --cached --check
+          git commit -m 'Instrument Linux delta analyzer failure locator'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
