@@ -1,0 +1,473 @@
+name: ARM64 port - build exact-source final applications after deep diff v2
+
+on:
+  workflow_run:
+    workflows: ['ARM64 port - deep diff final application blockers v2']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Deep-diff v2 Actions run ID
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-app-exact-source-arm64-build-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE_ARTIFACT_NAME: hancom-gooroom-3.3-final-app-deep-diff-v2
+  OUTPUT_ARTIFACT_NAME: hancom-gooroom-3.3-final-app-arm64-build-v1
+  RELEASE_TAG: v3.3-arm64-packages
+  SNAPSHOT: 20230730T235959Z
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.head_branch == 'arm64-port'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Resolve source run ID
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ '${{ github.event_name }}' = workflow_run ]; then
+            run_id='${{ github.event.workflow_run.id }}'
+          else
+            run_id='${{ inputs.source_run_id }}'
+          fi
+          if [ -z "$run_id" ]; then
+            run_id="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/arm64-deep-diff-final-app-blockers-v2.yml/runs?branch=arm64-port&per_page=20" \
+              --jq '.workflow_runs[] | select(.status == "completed") | .id' \
+              | head -1)"
+          fi
+          test -n "$run_id"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ARM64 chroot and package-pool tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binfmt-support ca-certificates curl dpkg-dev file gh jq mmdebstrap \
+            qemu-user-static unzip xz-utils zstd
+          sudo update-binfmts --enable qemu-aarch64 || true
+
+      - name: Download and verify deep-diff source authority
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          mkdir -p "$base"/{input,output,package-assets,repo,status}
+          run_id='${{ steps.source.outputs.run_id }}'
+          artifact_id="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name == "'"$SOURCE_ARTIFACT_NAME"'") | .id' \
+            | head -1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > "$base/input.zip"
+          unzip -q "$base/input.zip" -d "$base/input"
+          test -f "$base/input/summary.json"
+          jq -e '.schema == 2 and .package_count == 2' "$base/input/summary.json" >/dev/null
+          jq '[.packages[] | select(.exact_source_archive_recovered == true) | .package]' \
+            "$base/input/summary.json" > "$base/status/exact-source-packages.json"
+          count="$(jq 'length' "$base/status/exact-source-packages.json")"
+          printf '%s\n' "$artifact_id" > "$base/status/source-artifact-id.txt"
+          printf 'exact_source_count=%s\n' "$count" >> "$GITHUB_OUTPUT"
+          printf 'source_artifact_id=%s\n' "$artifact_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download the established ARM64 package release
+        if: steps.gate.outputs.exact_source_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir "$base/package-assets"
+          find "$base/package-assets" -type f -name '*.zip' -print0 \
+            | while IFS= read -r -d '' archive; do
+                destination="${archive}.d"
+                mkdir -p "$destination"
+                unzip -q "$archive" -d "$destination" || true
+              done
+          find "$base/package-assets" -type f \
+            \( -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \
+               -o -name '*.tar.xz' -o -name '*.tar.zst' \) -print0 \
+            | while IFS= read -r -d '' archive; do
+                destination="${archive}.d"
+                mkdir -p "$destination"
+                tar -xf "$archive" -C "$destination" || true
+              done
+          find "$base/package-assets" -type f -name '*.deb' -print0 \
+            | while IFS= read -r -d '' deb; do
+                cp -n "$deb" "$base/repo/$(basename "$deb")" || true
+              done
+          count="$(find "$base/repo" -maxdepth 1 -type f -name '*.deb' | wc -l)"
+          test "$count" -gt 0
+          printf '%s\n' "$count" > "$base/status/local-repo-package-count.txt"
+          (
+            cd "$base/repo"
+            dpkg-scanpackages --multiversion . /dev/null > Packages
+            gzip -9cn Packages > Packages.gz
+            find . -maxdepth 1 -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+              > FILE-INVENTORY.tsv
+          )
+
+      - name: Create a Bullseye ARM64 build chroot
+        if: steps.gate.outputs.exact_source_count != '0'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$(pwd)/work/final-app-arm64-build-v1"
+          rootfs="$base/rootfs"
+          sudo mmdebstrap \
+            --architectures=arm64 \
+            --variant=buildd \
+            --include=ca-certificates,apt-utils,build-essential,devscripts,dpkg-dev,equivs,file,gettext,git,libglib2.0-bin,pkg-config,python3 \
+            --aptopt='Acquire::Check-Valid-Until "false"' \
+            --aptopt='Acquire::Retries "5"' \
+            --aptopt='Dpkg::Use-Pty "0"' \
+            bullseye "$rootfs" \
+            "deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            2>&1 | tee "$base/status/mmdebstrap.log"
+          test -x "$rootfs/bin/bash"
+          sudo mkdir -p "$rootfs/opt/arm64-package-pool" "$rootfs/build"
+          sudo mount --bind "$base/repo" "$rootfs/opt/arm64-package-pool"
+          cat <<'EOF' | sudo tee "$rootfs/etc/apt/sources.list.d/arm64-package-pool.list" >/dev/null
+          deb [trusted=yes] file:/opt/arm64-package-pool ./
+          EOF
+          cat <<EOF | sudo tee "$rootfs/etc/apt/sources.list.d/debian-snapshot.list" >/dev/null
+          deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free
+          deb [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/$SNAPSHOT bullseye-security main contrib non-free
+          EOF
+          cat <<'EOF' | sudo tee "$rootfs/etc/apt/apt.conf.d/99-arm64-port" >/dev/null
+          Acquire::Check-Valid-Until "false";
+          Acquire::Retries "5";
+          Acquire::AllowInsecureRepositories "true";
+          Dpkg::Use-Pty "0";
+          EOF
+          cp -L /etc/resolv.conf work/final-app-arm64-build-v1/resolv.conf
+          sudo cp work/final-app-arm64-build-v1/resolv.conf "$rootfs/etc/resolv.conf"
+
+      - name: Build each exact-source package natively in the ARM64 chroot
+        if: steps.gate.outputs.exact_source_count != '0'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$(pwd)/work/final-app-arm64-build-v1"
+          rootfs="$base/rootfs"
+          cleanup() {
+            sudo umount -lf "$rootfs/opt/arm64-package-pool" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export LC_ALL=C.UTF-8
+            apt-get update
+          '
+
+          while IFS= read -r package; do
+            target="$(jq --arg package "$package" -c '.packages[] | select(.package == $package)' \
+              "$base/input/summary.json")"
+            version="$(jq -r '.version' <<<"$target")"
+            source="$base/input/sources/$package/build-source"
+            package_output="$base/output/$package"
+            mkdir -p "$package_output"
+            test -d "$source/debian"
+            sudo rm -rf "$rootfs/build/$package"
+            sudo mkdir -p "$rootfs/build/$package/source"
+            sudo cp -a "$source/." "$rootfs/build/$package/source/"
+            sudo chown -R root:root "$rootfs/build/$package"
+            set +e
+            sudo chroot "$rootfs" /bin/bash -euxo pipefail -c "
+              export DEBIAN_FRONTEND=noninteractive
+              export DEB_BUILD_OPTIONS=nocheck
+              export LC_ALL=C.UTF-8
+              cd /build/$package/source
+              test \"\$(dpkg-parsechangelog -SVersion)\" = '$version'
+              mk-build-deps --install --remove \\
+                --tool 'apt-get -y --no-install-recommends' debian/control
+              dpkg-buildpackage -us -uc -b -j2
+            " 2>&1 | tee "$package_output/build.log"
+            build_rc=${PIPESTATUS[0]}
+            set -e
+            printf '%s\n' "$build_rc" > "$package_output/build.exit-code"
+            if [ "$build_rc" -ne 0 ]; then
+              printf 'failed\n' > "$package_output/status.txt"
+              continue
+            fi
+            candidate=''
+            while IFS= read -r deb; do
+              if [ "$(sudo chroot "$rootfs" dpkg-deb -f "$deb" Package 2>/dev/null || true)" = "$package" ]; then
+                candidate="$deb"
+                break
+              fi
+            done < <(sudo find "$rootfs/build/$package" -maxdepth 1 -type f -name '*.deb' -printf '%p\n' | LC_ALL=C sort)
+            if [ -z "$candidate" ]; then
+              printf 'main-binary-not-found\n' > "$package_output/status.txt"
+              continue
+            fi
+            filename="${package}_${version}_arm64.deb"
+            sudo cp "$candidate" "$package_output/$filename"
+            sudo chown "$(id -u):$(id -g)" "$package_output/$filename"
+            test "$(dpkg-deb -f "$package_output/$filename" Package)" = "$package"
+            test "$(dpkg-deb -f "$package_output/$filename" Version)" = "$version"
+            test "$(dpkg-deb -f "$package_output/$filename" Architecture)" = arm64
+            sha256sum "$package_output/$filename" > "$package_output/SHA256SUMS"
+            mkdir -p "$package_output/root"
+            dpkg-deb -x "$package_output/$filename" "$package_output/root"
+            forbidden=0
+            arm64_elf=0
+            : > "$package_output/elf-inventory.tsv"
+            while IFS= read -r -d '' path; do
+              description="$(file -b "$path")"
+              if [[ "$description" == ELF* ]]; then
+                relative="${path#"$package_output/root/"}"
+                printf '%s\t%s\n' "$relative" "$description" >> "$package_output/elf-inventory.tsv"
+                lower="${description,,}"
+                if [[ "$lower" == *x86-64* || "$lower" == *intel\ 80386* ]]; then
+                  forbidden=$((forbidden + 1))
+                fi
+                if [[ "$lower" == *aarch64* || "$lower" == *arm64* ]]; then
+                  arm64_elf=$((arm64_elf + 1))
+                fi
+              fi
+            done < <(find "$package_output/root" -type f -print0)
+            rm -rf "$package_output/root"
+            test "$forbidden" -eq 0
+            test "$arm64_elf" -gt 0
+            jq -n \
+              --arg package "$package" --arg version "$version" \
+              --arg filename "$filename" \
+              --arg sha256 "$(sha256sum "$package_output/$filename" | awk '{print $1}')" \
+              --argjson arm64_elf_count "$arm64_elf" \
+              '{schema:1,status:"success",package:$package,version:$version,
+                architecture:"arm64",filename:$filename,sha256:$sha256,
+                exact_source_archive_recovered:true,arm64_elf_count:$arm64_elf_count,
+                forbidden_elf_count:0,promotion_allowed:true}' \
+              > "$package_output/result.json"
+            printf 'success\n' > "$package_output/status.txt"
+          done < <(jq -r '.[]' "$base/status/exact-source-packages.json")
+
+      - name: Build aggregate fail-closed authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          mkdir -p "$base"/{output,status}
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          from pathlib import Path
+
+          base = Path('work/final-app-arm64-build-v1')
+          source_summary = {}
+          if (base / 'input' / 'summary.json').is_file():
+              source_summary = json.loads((base / 'input' / 'summary.json').read_text())
+          exact = []
+          if (base / 'status' / 'exact-source-packages.json').is_file():
+              exact = json.loads((base / 'status' / 'exact-source-packages.json').read_text())
+          results = []
+          for package in exact:
+              directory = base / 'output' / package
+              result_path = directory / 'result.json'
+              if result_path.is_file():
+                  results.append(json.loads(result_path.read_text()))
+              else:
+                  results.append({
+                      'schema': 1,
+                      'package': package,
+                      'status': (directory / 'status.txt').read_text().strip()
+                          if (directory / 'status.txt').is_file() else 'not-run',
+                      'promotion_allowed': False,
+                  })
+          summary = {
+              'schema': 1,
+              'source_actions_run_id': '${{ steps.source.outputs.run_id }}',
+              'source_artifact_id': '${{ steps.gate.outputs.source_artifact_id }}',
+              'exact_source_packages': exact,
+              'exact_source_package_count': len(exact),
+              'results': results,
+              'successful_package_count': sum(r.get('status') == 'success' for r in results),
+              'all_exact_source_packages_built': bool(exact) and all(r.get('status') == 'success' for r in results),
+              'release_promotion_allowed_packages': [r['package'] for r in results if r.get('promotion_allowed')],
+              'iso_assembly_allowed': False,
+              'source_summary': source_summary,
+          }
+          (base / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          cat "$base/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish every verified exact-source ARM64 package
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          mapfile -t packages < <(jq -r '.release_promotion_allowed_packages[]?' "$base/summary.json")
+          if [ "${#packages[@]}" -eq 0 ]; then
+            exit 0
+          fi
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title 'Hancom Gooroom 3.3 ARM64 package pool' \
+              --notes 'Verified ARM64 package artifacts for the Hancom Gooroom 3.3 port.'
+          fi
+          for package in "${packages[@]}"; do
+            deb="$(find "$base/output/$package" -maxdepth 1 -type f -name '*_arm64.deb' -print -quit)"
+            test -n "$deb"
+            gh release upload "$RELEASE_TAG" "$deb#$(basename "$deb")" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          done
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > "$base/release-api.json"
+
+      - name: Seal and upload complete ARM64 build evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          artifact="$base/artifact"
+          mkdir -p "$artifact"
+          cp "$base/summary.json" "$artifact/"
+          cp -a "$base/output" "$artifact/"
+          cp -a "$base/status" "$artifact/"
+          [ ! -f "$base/release-api.json" ] || cp "$base/release-api.json" "$artifact/"
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg source_run_id '${{ steps.source.outputs.run_id }}' \
+            --arg artifact_name "$OUTPUT_ARTIFACT_NAME" '
+              {schema:1,actions_run_id:$run_id,actions_run_url:$run_url,
+               source_actions_run_id:$source_run_id,artifact_name:$artifact_name}
+            ' > "$artifact/artifact-lock.json"
+          find "$artifact" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload exact-source ARM64 application builds
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.OUTPUT_ARTIFACT_NAME }}
+          path: work/final-app-arm64-build-v1/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact ARM64 application build authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/final-app-arm64-build-v1
+          destination=arm64/locks/final-app-arm64-build-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          for package in gooroom-integration-applet gooroom-session-manager; do
+            if [ -d "$source/output/$package" ]; then
+              mkdir -p "$destination/$package"
+              for filename in result.json status.txt build.exit-code SHA256SUMS elf-inventory.tsv; do
+                [ ! -f "$source/output/$package/$filename" ] \
+                  || cp "$source/output/$package/$filename" "$destination/$package/"
+              done
+              if [ -f "$source/output/$package/build.log" ]; then
+                grep -n -E '(^| )(E:|error:|ERROR|FAILED|not found|unmet dependencies|cannot|fatal:)' \
+                  "$source/output/$package/build.log" | tail -200 \
+                  > "$destination/$package/build-errors.txt" || true
+              fi
+            fi
+          done
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg source_run_id '${{ steps.source.outputs.run_id }}' \
+            --arg artifact_name "$OUTPUT_ARTIFACT_NAME" \
+            --argjson promoted "$(jq '.release_promotion_allowed_packages' "$source/summary.json")" '
+              {schema:1,actions_run_id:$run_id,actions_run_url:$run_url,
+               source_actions_run_id:$source_run_id,artifact_name:$artifact_name,
+               promoted_packages:$promoted,iso_assembly_allowed:false}
+            ' > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Lock exact-source final application ARM64 builds'
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                break
+              fi
+              test "$attempt" -lt 6
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Request package-pool recalculation after successful promotions
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/final-app-arm64-build-v1
+          count="$(jq '.release_promotion_allowed_packages | length' "$base/summary.json")"
+          if [ "$count" -eq 0 ]; then
+            exit 0
+          fi
+          for workflow in \
+            arm64-index-rebuild-results-v2.yml \
+            arm64-recover-exact-package-pool.yml \
+            arm64-summarize-recovered-package-blockers.yml \
+            arm64-port-coverage-v2.yml \
+            arm64-ci-state-snapshot.yml; do
+            if gh workflow view "$workflow" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+              sleep 3
+            fi
+          done
