@@ -1,0 +1,114 @@
+name: ARM64 port - select linux 5.10.179 grm3u1 source v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-select-linux-5.10.179-grm3u1-source-v1.yml'
+      - 'arm64/locks/linux-5.10.179-grm3u1-source/latest/**'
+      - 'arm64/locks/linux-5.10.179-grm3u1-source-v2/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-source-canonical-v1
+  cancel-in-progress: false
+
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out all source authorities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Select the strongest exact positive authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/linux-5.10.179-grm3u1-source-canonical/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          selected=''
+          authority=''
+          artifact_lock=''
+          v2=arm64/locks/linux-5.10.179-grm3u1-source-v2/latest
+          v1=arm64/locks/linux-5.10.179-grm3u1-source/latest
+          if [ -f "$v2/authority.json" ] [ -f "$v2/artifact-lock.json" ] \
+             && [ "$(jq -r '.status // empty' "$v2/authority.json")" = exact-source-recovered-from-apt-index ] \
+             && [ "$(jq -r '.source // empty' "$v2/authority.json")" = linux ] \
+             && [ "$(jq -r '.version // empty' "$v2/authority.json")" = '5.10.179-1+grm3u1' ] \
+             && [ "$(jq -r '.arm64_build_allowed // false' "$v2/authority.json")" = true ]; then
+            selected=v2-apt-index
+            authority="$v2/authority.json"
+            artifact_lock="$v2/artifact-lock.json"
+          elif [ -f "$v1/authority.json" ] [ -f "$v1/artifact-lock.json" ] \
+             && [ "$(jq -r '.status // empty' "$v1/authority.json")" = exact-source-recovered ] \
+             && [ "$(jq -r '.source // empty' "$v1/authority.json")" = linux ] \
+             && [ "$(jq -r '.version // empty' "$v1/authority.json")" = '5.10.179-1+grm3u1' ] \
+             && [ "$(jq -r '.arm64_build_allowed // false' "$v1/authority.json")" = true ]; then
+            selected=v1-direct-dsc
+            authority="$v1/authority.json"
+            artifact_lock="$v1/artifact-lock.json"
+          fi
+          if [ -n "$selected" ]; then
+            cp "$authority" "$destination/upstream-authority.json"
+            cp "$artifact_lock" "$destination/upstream-artifact-lock.json"
+            jq -n \
+              --arg selected_authority "$selected" \
+              --arg source linux \
+              --arg version '5.10.179-1+grm3u1' \
+              --arg source_run_id "$(jq -r '.actions_run_id' "$artifact_lock")" \
+              --arg artifact_name "$(jq -r '.artifact_name' "$artifact_lock")" \
+              --arg upstream_authority_sha256 "$(sha256sum "$authority" | awk '{print $1}')" \
+              --arg upstream_artifact_lock_sha256 "$(sha256sum "$artifact_lock" | awk '{print $1}')" '
+                {schema:1,status:"exact-source-selected",selected_authority:$selected,
+                 source:$source,version:$version,source_run_id:$source_run_id,
+                 artifact_name:$artifact_name,
+                 upstream_authority_sha256:$upstream_authority_sha256,
+                 upstream_artifact_lock_sha256:$upstream_artifact_lock_sha256,
+                 original_source_archive_recovered:true,arm64_build_allowed:true,
+                 package_promotion_allowed:false,iso_assembly_allowed:false}
+              ' > "$destination/authority.json"
+          else
+            jq -n \
+              --arg source linux --arg version '5.10.179-1+grm3u1' '
+                {schema:1,status:"no-exact-source-authority-selected",source:$source,
+                 version:$version,original_source_archive_recovered:false,
+                 arm64_build_allowed:false,package_promotion_allowed:false,
+                 iso_assembly_allowed:false}
+              ' > "$destination/authority.json"
+          fi
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url}' \
+            > "$destination/selection-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$destination/authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit canonical source selection
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/linux-5.10.179-grm3u1-source-canonical/latest
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Select canonical linux 5.10.179 grm3u1 source authority'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
