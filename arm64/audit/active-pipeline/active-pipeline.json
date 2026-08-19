@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 261,
-    "workflow_name_count": 261,
+    "workflow_count": 262,
+    "workflow_name_count": 262,
     "referenced_local_file_count": 337,
     "error_count": 0,
-    "warning_count": 49,
+    "warning_count": 48,
     "passed": true
   },
   "workflows": [
@@ -26,6 +26,21 @@
       "referenced_local_files": [
         "arm64/scripts/audit_active_arm64_pipeline.py"
       ]
+    },
+    {
+      "filename": "arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml",
+      "path": ".github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml",
+      "name": "ARM64 analyze integration applet han3u3 reconstruction v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-analyze-libsecurity-xsm-history.yml",
@@ -6538,11 +6553,6 @@
     {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml",
-      "local_path": "arm64/status/final-convergence-runs/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
