@@ -1,0 +1,414 @@
+name: ARM64 recover gooroom integration applet han3u3 source v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-gooroom-integration-applet-han3u3-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-recover-gooroom-integration-applet-han3u3-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  LOCK_DIR: arm64/locks/gooroom-integration-applet-han3u3-source-recovery/latest
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install source archaeology tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3-debian xz-utils
+          mkdir -p work/mirrors work/output work/source-bundle
+
+      - name: Enumerate official repositories and public forks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/repository-seeds.txt <<'EOF'
+          https://github.com/hancomgooroom/gooroom-integration-applet.git
+          https://github.com/hancom-io/gooroom-integration-applet.git
+          https://github.com/gooroom/gooroom-integration-applet.git
+          EOF
+
+          gh api --paginate '/search/repositories?q=gooroom-integration-applet+in:name&per_page=100' \
+            --jq '.items[].clone_url' \
+            >> work/repository-seeds.txt || true
+          sed -i 's/[[:space:]]\+$//' work/repository-seeds.txt
+          sed -i '/^$/d' work/repository-seeds.txt
+          LC_ALL=C sort -u work/repository-seeds.txt > work/repositories.txt
+          head -n 80 work/repositories.txt > work/repositories.capped.txt
+          wc -l work/repositories.capped.txt
+
+      - name: Mirror every reachable history and inspect every changelog commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          source = os.environ['SOURCE']
+          version = os.environ['VERSION']
+          target_pattern = re.compile(
+              rf'^{re.escape(source)}\s+\({re.escape(version)}\)\s+', re.IGNORECASE
+          )
+          generic_pattern = re.compile(
+              rf'^{re.escape(source)}\s+\(([^)]+)\)\s+', re.IGNORECASE
+          )
+
+          def run(args, cwd=None, check=True):
+              return subprocess.run(
+                  args, cwd=cwd, check=check, text=True,
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+              )
+
+          urls = Path('work/repositories.capped.txt').read_text().splitlines()
+          repository_rows = []
+          exact = []
+          near = []
+          errors = []
+
+          for index, url in enumerate(urls):
+              parsed = urlparse(url)
+              slug = parsed.path.strip('/').removesuffix('.git')
+              safe = re.sub(r'[^A-Za-z0-9_.-]+', '__', slug)
+              mirror = Path('work/mirrors') / f'{index:03d}-{safe}.git'
+              probe = run(['git', 'ls-remote', '--symref', url, 'HEAD'], check=False)
+              row = {
+                  'url': url,
+                  'slug': slug,
+                  'reachable': probe.returncode == 0,
+                  'ls_remote_stderr': probe.stderr[-1000:],
+              }
+              if probe.returncode != 0:
+                  repository_rows.append(row)
+                  continue
+              clone = run(
+                  ['git', 'clone', '--mirror', '--filter=blob:none', url, str(mirror)],
+                  check=False,
+              )
+              if clone.returncode != 0:
+                  clone = run(['git', 'clone', '--mirror', url, str(mirror)], check=False)
+              if clone.returncode != 0:
+                  row['clone_error'] = clone.stderr[-2000:]
+                  repository_rows.append(row)
+                  continue
+
+              revs = run(['git', 'rev-list', '--all'], cwd=mirror, check=False)
+              commits = [line for line in revs.stdout.splitlines() if line]
+              row['commit_count'] = len(commits)
+              tags = run(['git', 'for-each-ref', '--format=%(refname:short)\t%(objectname)', 'refs/tags'], cwd=mirror, check=False)
+              row['tags'] = [line for line in tags.stdout.splitlines() if line][:500]
+
+              found_in_repo = 0
+              for commit in commits:
+                  show = run(['git', 'show', f'{commit}:debian/changelog'], cwd=mirror, check=False)
+                  if show.returncode != 0 or not show.stdout:
+                      continue
+                  first = show.stdout.splitlines()[0].strip()
+                  match = generic_pattern.match(first)
+                  if not match:
+                      continue
+                  candidate_version = match.group(1)
+                  if candidate_version == version or 'han3u3' in candidate_version or candidate_version.startswith('0.3.1+grm3u1'):
+                      meta = run(
+                          ['git', 'show', '-s', '--format=%H%n%T%n%aI%n%cI%n%an%n%ae%n%s', commit],
+                          cwd=mirror,
+                      ).stdout.splitlines()
+                      candidate = {
+                          'repository_url': url,
+                          'repository_slug': slug,
+                          'commit': meta[0],
+                          'tree': meta[1],
+                          'author_date': meta[2],
+                          'committer_date': meta[3],
+                          'author_name': meta[4],
+                          'author_email': meta[5],
+                          'subject': '\n'.join(meta[6:]),
+                          'changelog_first_line': first,
+                          'version': candidate_version,
+                          'exact_version': candidate_version == version,
+                      }
+                      near.append(candidate)
+                      if target_pattern.match(first):
+                          exact.append(candidate)
+                      found_in_repo += 1
+              row['matching_commit_count'] = found_in_repo
+              repository_rows.append(row)
+
+          priority_prefixes = [
+              'hancomgooroom/gooroom-integration-applet',
+              'hancom-io/gooroom-integration-applet',
+              'gooroom/gooroom-integration-applet',
+          ]
+          def priority(row):
+              slug = row['repository_slug'].lower()
+              try:
+                  official = priority_prefixes.index(slug)
+              except ValueError:
+                  official = len(priority_prefixes)
+              return (official, row['committer_date'], row['commit'])
+
+          exact = sorted(exact, key=priority)
+          selected = exact[0] if exact else None
+          result = {
+              'schema': 1,
+              'source': source,
+              'version': version,
+              'repository_count': len(repository_rows),
+              'reachable_repository_count': sum(r.get('reachable', False) for r in repository_rows),
+              'exact_candidate_count': len(exact),
+              'near_candidate_count': len(near),
+              'selected': selected,
+              'exact_candidates': exact,
+              'near_candidates': sorted(near, key=lambda r: (r['version'], r['repository_slug'], r['commit'])),
+              'repositories': repository_rows,
+              'errors': errors,
+          }
+          Path('work/output/history-candidates.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+
+          if selected:
+              selected_url = selected['repository_url']
+              selected_commit = selected['commit']
+              selected_mirror = None
+              for mirror in Path('work/mirrors').glob('*.git'):
+                  remote = run(['git', 'config', '--get', 'remote.origin.url'], cwd=mirror, check=False).stdout.strip()
+                  if remote == selected_url:
+                      selected_mirror = mirror
+                      break
+              if selected_mirror is None:
+                  raise SystemExit('selected repository mirror not found')
+              archive = Path('work/source-bundle') / f'{source}_{version}.orig-source.tar'
+              with archive.open('wb') as handle:
+                  proc = subprocess.run(
+                      ['git', 'archive', '--format=tar', '--prefix', f'{source}-{version}/', selected_commit],
+                      cwd=selected_mirror, stdout=handle, stderr=subprocess.PIPE,
+                  )
+              if proc.returncode != 0:
+                  raise SystemExit(proc.stderr.decode(errors='replace'))
+              subprocess.run(['xz', '-9e', str(archive)], check=True)
+          PY
+          jq '.' work/output/history-candidates.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify and manifest an exact recovered source tree
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import tarfile
+          from pathlib import Path
+
+          history = json.loads(Path('work/output/history-candidates.json').read_text(encoding='utf-8'))
+          selected = history.get('selected')
+          result = {
+              'schema': 1,
+              'source': os.environ['SOURCE'],
+              'version': os.environ['VERSION'],
+              'exact_version_commit_found': bool(selected),
+              'selected': selected,
+              'source_archive': None,
+              'source_tree_file_count': 0,
+              'source_tree_manifest_sha256': None,
+              'changelog_version_verified': False,
+          }
+          if selected:
+              archive = next(Path('work/source-bundle').glob('*.tar.xz'))
+              extract = Path('work/source-tree')
+              extract.mkdir(parents=True, exist_ok=True)
+              with tarfile.open(archive, 'r:xz') as tf:
+                  tf.extractall(extract, filter='data')
+              roots = [p for p in extract.iterdir() if p.is_dir()]
+              if len(roots) != 1:
+                  raise SystemExit('source archive must contain one top-level directory')
+              root = roots[0]
+              changelog = root / 'debian/changelog'
+              first = changelog.read_text(encoding='utf-8', errors='strict').splitlines()[0]
+              expected = f"{os.environ['SOURCE']} ({os.environ['VERSION']})"
+              if not first.startswith(expected):
+                  raise SystemExit(f'changelog mismatch: {first!r}')
+              result['changelog_version_verified'] = True
+              rows = []
+              for path in sorted(p for p in root.rglob('*') if p.is_file() or p.is_symlink()):
+                  rel = path.relative_to(root).as_posix()
+                  if path.is_symlink():
+                      rows.append(f'L\t{rel}\t{os.readlink(path)}')
+                  else:
+                      digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                      rows.append(f'F\t{rel}\t{path.stat().st_size}\t{digest}')
+              manifest = ('\n'.join(rows) + '\n').encode()
+              Path('work/output/source-tree-manifest.tsv').write_bytes(manifest)
+              result['source_tree_file_count'] = len(rows)
+              result['source_tree_manifest_sha256'] = hashlib.sha256(manifest).hexdigest()
+              result['source_archive'] = {
+                  'filename': archive.name,
+                  'size': archive.stat().st_size,
+                  'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+              }
+          Path('work/output/source-recovery-summary.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/output/source-recovery-summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload source archaeology and recovered bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-integration-applet-han3u3-source-recovery-${{ github.run_id }}
+          path: |
+            work/output
+            work/source-bundle
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Capture uploaded artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact_name="gooroom-integration-applet-han3u3-source-recovery-${GITHUB_RUN_ID}"
+          artifact=''
+          for attempt in $(seq 1 20); do
+            artifact="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              | jq -c --arg name "$artifact_name" \
+                '[.artifacts[] | select(.name == $name and .expired == false)] | last // empty')"
+            if [[ -n "$artifact" ]]; then
+              break
+            fi
+            sleep 3
+          done
+          test -n "$artifact"
+          printf '%s\n' "$artifact" > work/output/artifact-metadata.json
+
+      - name: Seal compact source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/output/history-candidates.json "$LOCK_DIR/"
+          cp work/output/source-recovery-summary.json "$LOCK_DIR/"
+          cp work/output/artifact-metadata.json "$LOCK_DIR/"
+          test ! -f work/output/source-tree-manifest.tsv || \
+            cp work/output/source-tree-manifest.tsv "$LOCK_DIR/"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          lock_dir = Path(os.environ['LOCK_DIR'])
+          history = json.loads((lock_dir / 'history-candidates.json').read_text(encoding='utf-8'))
+          recovery = json.loads((lock_dir / 'source-recovery-summary.json').read_text(encoding='utf-8'))
+          artifact = json.loads((lock_dir / 'artifact-metadata.json').read_text(encoding='utf-8'))
+          exact = bool(
+              recovery['exact_version_commit_found'] and
+              recovery['changelog_version_verified'] and
+              recovery['source_archive'] and
+              recovery['source_tree_manifest_sha256']
+          )
+          authority = {
+              'schema': 1,
+              'source': os.environ['SOURCE'],
+              'version': os.environ['VERSION'],
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'exact_source_recovered': exact,
+              'build_allowed': exact,
+              'selected': recovery['selected'],
+              'source_archive': recovery['source_archive'],
+              'source_tree_file_count': recovery['source_tree_file_count'],
+              'source_tree_manifest_sha256': recovery['source_tree_manifest_sha256'],
+              'candidate_counts': {
+                  'repositories': history['repository_count'],
+                  'reachable_repositories': history['reachable_repository_count'],
+                  'exact': history['exact_candidate_count'],
+                  'near': history['near_candidate_count'],
+              },
+              'artifact': {
+                  'id': str(artifact['id']),
+                  'name': artifact['name'],
+                  'digest': artifact.get('digest'),
+                  'size_in_bytes': artifact['size_in_bytes'],
+                  'expired': artifact['expired'],
+              },
+              'policy': 'exact-debian-changelog-version-plus-immutable-git-commit-and-tree-plus-source-tree-manifest',
+          }
+          (lock_dir / 'source-authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' "$LOCK_DIR/source-authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit source recovery authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          if git diff --cached --quiet; then
+            echo 'Integration applet source recovery authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock integration applet han3u3 source recovery'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
