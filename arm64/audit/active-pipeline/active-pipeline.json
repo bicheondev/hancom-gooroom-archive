@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 256,
-    "workflow_name_count": 256,
+    "workflow_count": 257,
+    "workflow_name_count": 257,
     "referenced_local_file_count": 335,
     "error_count": 0,
     "warning_count": 48,
@@ -1933,6 +1933,20 @@
       "referenced_local_files": [
         "arm64/locks/final-app-deep-diff-v2/latest/authority.json"
       ]
+    },
+    {
+      "filename": "arm64-final-convergence-v1.yml",
+      "path": ".github/workflows/arm64-final-convergence-v1.yml",
+      "name": "ARM64 final blocker convergence v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 5,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-final-from-recovered-rootfs.yml",
