@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 250,
-    "workflow_name_count": 250,
+    "workflow_count": 253,
+    "workflow_name_count": 253,
     "referenced_local_file_count": 335,
     "error_count": 0,
     "warning_count": 48,
@@ -719,6 +719,21 @@
         "arm64/scripts/reconstruct_gooroom_greeter_han3u2.py",
         "arm64/scripts/verify_gooroom_greeter_han3u2_equivalence.py"
       ]
+    },
+    {
+      "filename": "arm64-build-gooroom-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 build gooroom integration applet han3u3 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-build-gooroom-resource-access-control-v1.yml",
@@ -2578,6 +2593,20 @@
       ]
     },
     {
+      "filename": "arm64-orchestrate-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-orchestrate-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 orchestrate integration applet han3u3 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-package-acquisition-plan-v2.yml",
       "path": ".github/workflows/arm64-package-acquisition-plan-v2.yml",
       "name": "ARM64 port - build persistent exact package acquisition plan v2",
@@ -3651,6 +3680,21 @@
         "arm64/scripts/recover_vendor_sources_wayback.py",
         "arm64/status/source-blockers.json"
       ]
+    },
+    {
+      "filename": "arm64-recover-gooroom-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-recover-gooroom-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 recover gooroom integration applet han3u3 source v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-recover-linux-5.10.179-grm3u1-source-v1.yml",
