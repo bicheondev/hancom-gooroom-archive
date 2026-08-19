@@ -1,0 +1,547 @@
+name: ARM64 stable deterministic final ISO controller v5
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-final-iso-continuation-controller-v5.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-final-iso-controller-stable
+  cancel-in-progress: true
+
+env:
+  TARGET_BRANCH: arm64-port
+  FINAL_PACKAGE_WORKFLOW: arm64-merge-final-package-repository-v2.yml
+  CONTROLLER_ARTIFACT: hancom-gooroom-3.3-arm64-final-iso-controller-v5
+  LOCK_DIR: arm64/locks/final-iso-controller-v5/latest
+  STATUS_DIR: arm64/status/final-iso-controller-v5/latest
+
+jobs:
+  continue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Best-effort cancel superseded controller runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -u
+          superseded=(
+            arm64-final-iso-continuation-controller-v1.yml
+            arm64-final-iso-continuation-controller-v2.yml
+            arm64-final-iso-continuation-controller-v3.yml
+            arm64-final-iso-continuation-controller-v4.yml
+          )
+          for workflow in "${superseded[@]}"; do
+            for state in queued in_progress waiting requested; do
+              run_ids="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+                --status "$state" --limit 50 --json databaseId \
+                --jq '.[].databaseId' 2>/dev/null || true)"
+              while IFS= read -r run_id; do
+                [ -n "$run_id" ] || continue
+                gh run cancel "$run_id" --repo "$GITHUB_REPOSITORY" || true
+              done <<< "$run_ids"
+            done
+          done
+          exit 0
+
+      - name: Install orchestration and ISO inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates file jq python3 squashfs-tools unzip xorriso
+          gh --version
+
+      - name: Discover deterministic dispatchable rootfs and ISO builders
+        id: discover
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work
+          mkdir -p work/{discovery,iso-run,iso,report}
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import re
+          from pathlib import Path
+
+          excluded = re.compile(
+              r'(audit|inspect|inspection|verify|verification|test|lint|snapshot|'
+              r'cleanup|controller|one-shot|rerun|archaeology|analy[sz]e|export|'
+              r'continuation|fix-|bridge-qtbase|publish-verified)',
+              re.I,
+          )
+          rows = []
+          workflow_root = Path('.github/workflows')
+          for path in sorted(workflow_root.glob('*.yml')):
+              text = path.read_text(encoding='utf-8', errors='replace')
+              lower = text.lower()
+              name = path.name.lower()
+              dispatchable = 'workflow_dispatch:' in lower
+              rootfs_score = 0
+              iso_score = 0
+              rootfs_reasons = []
+              iso_reasons = []
+
+              if 'rootfs' in name:
+                  rootfs_score += 16
+                  rootfs_reasons.append('filename-rootfs')
+              if 'final-package-repository-v2' in lower:
+                  rootfs_score += 12
+                  rootfs_reasons.append('consumes-final-package-repository-v2')
+              if 'debootstrap' in lower or 'mmdebstrap' in lower:
+                  rootfs_score += 10
+                  rootfs_reasons.append('constructs-rootfs')
+              if 'mksquashfs' in lower:
+                  rootfs_score += 8
+                  rootfs_reasons.append('creates-squashfs')
+              if 'dpkg --root' in lower or 'chroot' in lower:
+                  rootfs_score += 3
+                  rootfs_reasons.append('installs-rootfs')
+              if any(word in name for word in ('assemble', 'build', 'create', 'final')):
+                  rootfs_score += 2
+                  rootfs_reasons.append('filename-builder')
+
+              if re.search(r'(^|[-_])iso([-. _]|$)', name):
+                  iso_score += 20
+                  iso_reasons.append('filename-iso')
+              if 'xorriso' in lower:
+                  iso_score += 16
+                  iso_reasons.append('uses-xorriso')
+              if 'grub-mkstandalone' in lower or 'bootaa64.efi' in lower:
+                  iso_score += 16
+                  iso_reasons.append('creates-aarch64-uefi')
+              if 'mksquashfs' in lower:
+                  iso_score += 7
+                  iso_reasons.append('creates-squashfs')
+              if '.iso' in lower or 'iso9660' in lower:
+                  iso_score += 5
+                  iso_reasons.append('emits-iso')
+              if any(word in name for word in ('assemble', 'build', 'create', 'final')):
+                  iso_score += 2
+                  iso_reasons.append('filename-builder')
+
+              is_excluded = bool(excluded.search(path.name))
+              if path.name == 'arm64-merge-final-package-repository-v2.yml':
+                  is_excluded = True
+              rows.append({
+                  'workflow': path.name,
+                  'dispatchable': dispatchable,
+                  'excluded': is_excluded,
+                  'rootfs_score': rootfs_score,
+                  'iso_score': iso_score,
+                  'rootfs_reasons': rootfs_reasons,
+                  'iso_reasons': iso_reasons,
+              })
+
+          rootfs_candidates = sorted(
+              (
+                  row for row in rows
+                  if row['dispatchable'] and not row['excluded'] and row['rootfs_score'] >= 8
+              ),
+              key=lambda row: (-row['rootfs_score'], row['workflow']),
+          )
+          iso_candidates = sorted(
+              (
+                  row for row in rows
+                  if row['dispatchable'] and not row['excluded'] and row['iso_score'] >= 12
+              ),
+              key=lambda row: (-row['iso_score'], row['workflow']),
+          )
+          selected_iso = iso_candidates[0] if iso_candidates else None
+          selected_rootfs = rootfs_candidates[0] if rootfs_candidates else None
+          if selected_rootfs is None and selected_iso is not None and selected_iso['rootfs_score'] >= 8:
+              selected_rootfs = selected_iso
+
+          report = {
+              'schema': 5,
+              'workflows': rows,
+              'rootfs_candidates': rootfs_candidates,
+              'iso_candidates': iso_candidates,
+              'selected_rootfs_workflow': selected_rootfs['workflow'] if selected_rootfs else None,
+              'selected_iso_workflow': selected_iso['workflow'] if selected_iso else None,
+          }
+          Path('work/discovery/workflows.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          Path('work/discovery/rootfs-workflow.txt').write_text(
+              (report['selected_rootfs_workflow'] or '') + '\n', encoding='utf-8'
+          )
+          Path('work/discovery/iso-workflow.txt').write_text(
+              (report['selected_iso_workflow'] or '') + '\n', encoding='utf-8'
+          )
+          if selected_rootfs:
+              source = workflow_root / selected_rootfs['workflow']
+              Path('work/discovery/selected-rootfs-workflow.yml').write_text(
+                  source.read_text(encoding='utf-8'), encoding='utf-8'
+              )
+          if selected_iso:
+              source = workflow_root / selected_iso['workflow']
+              Path('work/discovery/selected-iso-workflow.yml').write_text(
+                  source.read_text(encoding='utf-8'), encoding='utf-8'
+              )
+          PY
+          cat work/discovery/workflows.json
+          rootfs_workflow="$(tr -d '\n' < work/discovery/rootfs-workflow.txt)"
+          iso_workflow="$(tr -d '\n' < work/discovery/iso-workflow.txt)"
+          test -n "$rootfs_workflow"
+          test -n "$iso_workflow"
+          gh workflow view "$rootfs_workflow" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh workflow view "$iso_workflow" --repo "$GITHUB_REPOSITORY" >/dev/null
+          echo "rootfs_workflow=$rootfs_workflow" >> "$GITHUB_OUTPUT"
+          echo "iso_workflow=$iso_workflow" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure final exact package repository is ready
+        id: package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=arm64/locks/final-package-repository-v2/summary.json
+          initially_ready=false
+          if [ -f "$summary" ] && jq -e '.final_repository_ready == true and .blocker_count == 0' "$summary" >/dev/null; then
+            initially_ready=true
+          fi
+          run_id=''
+          if [ "$initially_ready" != true ]; then
+            before="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            gh workflow run "$FINAL_PACKAGE_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref "$TARGET_BRANCH"
+            for attempt in $(seq 1 24); do
+              runs="$(gh run list --repo "$GITHUB_REPOSITORY" \
+                --workflow "$FINAL_PACKAGE_WORKFLOW" --branch "$TARGET_BRANCH" \
+                --event workflow_dispatch --limit 20 --json databaseId,createdAt)"
+              run_id="$(jq -r --arg before "$before" \
+                '[.[] | select(.createdAt >= $before)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty' \
+                <<<"$runs")"
+              [ -n "$run_id" ] && break
+              sleep 5
+            done
+            test -n "$run_id"
+            gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status
+            git fetch origin "$TARGET_BRANCH"
+            git reset --hard origin/"$TARGET_BRANCH"
+          fi
+          test -f "$summary"
+          jq -e '.final_repository_ready == true and .blocker_count == 0' "$summary" >/dev/null
+          echo "initially_ready=$initially_ready" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Run selected rootfs builder from fresh branch state
+        id: rootfs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROOTFS_WORKFLOW: ${{ steps.discover.outputs.rootfs_workflow }}
+          ISO_WORKFLOW: ${{ steps.discover.outputs.iso_workflow }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "$ROOTFS_WORKFLOW" = "$ISO_WORKFLOW" ]; then
+            echo 'Selected ISO workflow constructs the rootfs; separate rootfs dispatch is not needed.'
+            echo 'deferred=true' >> "$GITHUB_OUTPUT"
+            echo 'run_id=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          before="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$ROOTFS_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref "$TARGET_BRANCH"
+          run_id=''
+          for attempt in $(seq 1 24); do
+            runs="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$ROOTFS_WORKFLOW" --branch "$TARGET_BRANCH" \
+              --event workflow_dispatch --limit 20 --json databaseId,createdAt)"
+            run_id="$(jq -r --arg before "$before" \
+              '[.[] | select(.createdAt >= $before)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty' \
+              <<<"$runs")"
+            [ -n "$run_id" ] && break
+            sleep 5
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status
+          echo 'deferred=false' >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Run selected AArch64 ISO builder
+        id: iso_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISO_WORKFLOW: ${{ steps.discover.outputs.iso_workflow }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          before="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$ISO_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref "$TARGET_BRANCH"
+          run_id=''
+          for attempt in $(seq 1 24); do
+            runs="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$ISO_WORKFLOW" --branch "$TARGET_BRANCH" \
+              --event workflow_dispatch --limit 20 --json databaseId,createdAt)"
+            run_id="$(jq -r --arg before "$before" \
+              '[.[] | select(.createdAt >= $before)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty' \
+              <<<"$runs")"
+            [ -n "$run_id" ] && break
+            sleep 5
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download only selected ISO builder run artifacts
+        id: recover
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISO_RUN_ID: ${{ steps.iso_build.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -n "$ISO_RUN_ID"
+          rm -rf work/iso-run
+          mkdir -p work/iso-run
+          gh run download "$ISO_RUN_ID" --repo "$GITHUB_REPOSITORY" --dir work/iso-run
+          find work/iso-run -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > work/discovery/iso-run-files.tsv
+          mapfile -t isos < <(find work/iso-run -type f -name '*.iso' | LC_ALL=C sort)
+          test "${#isos[@]}" -eq 1
+          cp "${isos[0]}" work/iso/Hancom-Gooroom-3.3-arm64.hybrid.iso
+          test -s work/iso/Hancom-Gooroom-3.3-arm64.hybrid.iso
+          artifact_name="$(realpath --relative-to=work/iso-run "${isos[0]}" | cut -d/ -f1)"
+          echo "source_artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+
+      - name: Independently verify fresh ISO as AArch64-only live media
+        id: verify
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso=work/iso/Hancom-Gooroom-3.3-arm64.hybrid.iso
+          test -s "$iso"
+          sha256sum "$iso" | tee work/iso/Hancom-Gooroom-3.3-arm64.hybrid.iso.sha256
+          file "$iso" | tee work/report/file.txt
+          xorriso -indev "$iso" -report_el_torito plain > work/report/el-torito.txt 2>&1
+          xorriso -indev "$iso" -find / -type f -print > work/report/iso-files.txt 2>&1
+          grep -Eiq '/EFI/BOOT/BOOTAA64\.EFI' work/report/iso-files.txt
+          if grep -Eiq '/EFI/BOOT/BOOTX64\.EFI' work/report/iso-files.txt; then
+            echo 'Unexpected x86-64 fallback EFI binary is present.' >&2
+            exit 1
+          fi
+          squash_path="$(grep -Eio '/[^ ]+\.squashfs' work/report/iso-files.txt | head -n1)"
+          test -n "$squash_path"
+          mkdir -p work/extracted
+          xorriso -osirrox on -indev "$iso" -extract "$squash_path" work/extracted/filesystem.squashfs
+          unsquashfs -s work/extracted/filesystem.squashfs > work/report/squashfs-superblock.txt
+          unsquashfs -no-progress -d work/extracted/rootfs work/extracted/filesystem.squashfs >/dev/null
+          test -e work/extracted/rootfs/etc/os-release
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          iso = Path('work/iso/Hancom-Gooroom-3.3-arm64.hybrid.iso')
+          root = Path('work/extracted/rootfs')
+          foreign = []
+          arm64 = 0
+          for path in root.rglob('*'):
+              if not path.is_file() or path.is_symlink():
+                  continue
+              try:
+                  with path.open('rb') as stream:
+                      if stream.read(4) != b'\x7fELF':
+                          continue
+                  desc = subprocess.check_output(
+                      ['file', '-b', str(path)], text=True, stderr=subprocess.DEVNULL
+                  ).strip()
+              except Exception:
+                  continue
+              if 'x86-64' in desc or 'Intel 80386' in desc:
+                  foreign.append({'path': str(path.relative_to(root)), 'file': desc})
+              if 'ARM aarch64' in desc or 'ARM64' in desc:
+                  arm64 += 1
+
+          installed_foreign = []
+          status = root / 'var/lib/dpkg/status'
+          if status.is_file():
+              package = None
+              architecture = None
+              for line in status.read_text(errors='replace').splitlines() + ['']:
+                  if line.startswith('Package: '):
+                      package = line.split(':', 1)[1].strip()
+                  elif line.startswith('Architecture: '):
+                      architecture = line.split(':', 1)[1].strip()
+                  elif not line:
+                      if architecture in {'amd64', 'i386'}:
+                          installed_foreign.append({'package': package, 'architecture': architecture})
+                      package = architecture = None
+
+          digest = hashlib.sha256()
+          with iso.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  digest.update(block)
+          passed = arm64 > 0 and not foreign and not installed_foreign
+          report = {
+              'schema': 5,
+              'iso_filename': iso.name,
+              'iso_size': iso.stat().st_size,
+              'iso_sha256': digest.hexdigest(),
+              'bootaa64_present': True,
+              'bootx64_absent': True,
+              'arm64_elf_count': arm64,
+              'foreign_x86_elf_count': len(foreign),
+              'foreign_x86_elfs': foreign,
+              'installed_foreign_package_count': len(installed_foreign),
+              'installed_foreign_packages': installed_foreign,
+              'static_iso_verification_passed': passed,
+          }
+          Path('work/report/verification.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          if not passed:
+              raise SystemExit('static ARM64 ISO verification failed')
+          PY
+          cat work/report/verification.json
+          echo "sha256=$(jq -r '.iso_sha256' work/report/verification.json)" >> "$GITHUB_OUTPUT"
+          echo "size=$(jq -r '.iso_size' work/report/verification.json)" >> "$GITHUB_OUTPUT"
+          rm -rf work/extracted/rootfs
+
+      - name: Seal fresh-build provenance
+        shell: bash
+        env:
+          ROOTFS_WORKFLOW: ${{ steps.discover.outputs.rootfs_workflow }}
+          ISO_WORKFLOW: ${{ steps.discover.outputs.iso_workflow }}
+          PACKAGE_RUN_ID: ${{ steps.package.outputs.run_id }}
+          ROOTFS_RUN_ID: ${{ steps.rootfs.outputs.run_id }}
+          ISO_RUN_ID: ${{ steps.iso_build.outputs.run_id }}
+          SOURCE_ARTIFACT_NAME: ${{ steps.recover.outputs.source_artifact_name }}
+        run: |
+          set -euxo pipefail
+          jq -n \
+            --arg mode 'fresh-deterministic-build' \
+            --arg rootfs_workflow "$ROOTFS_WORKFLOW" \
+            --arg iso_workflow "$ISO_WORKFLOW" \
+            --arg package_run_id "$PACKAGE_RUN_ID" \
+            --arg rootfs_run_id "$ROOTFS_RUN_ID" \
+            --arg iso_run_id "$ISO_RUN_ID" \
+            --arg source_artifact_name "$SOURCE_ARTIFACT_NAME" \
+            --arg controller_run_id "$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg iso_sha256 '${{ steps.verify.outputs.sha256 }}' \
+            --argjson iso_size '${{ steps.verify.outputs.size }}' \
+            '{schema:5,mode:$mode,
+              selected_workflows:{rootfs:$rootfs_workflow,iso:$iso_workflow},
+              dispatched_runs:{package:$package_run_id,rootfs:$rootfs_run_id,iso:$iso_run_id},
+              source_artifact_name:$source_artifact_name,
+              controller_run_id:$controller_run_id,head_sha:$head_sha,
+              iso:{filename:"Hancom-Gooroom-3.3-arm64.hybrid.iso",sha256:$iso_sha256,size:$iso_size},
+              verified:true}' > work/report/provenance.json
+          find work/iso work/report work/discovery -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > work/report/LOCKSUMS.sha256
+
+      - name: Upload verified fresh ISO and evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.CONTROLLER_ARTIFACT }}
+          path: |
+            work/iso
+            work/report
+            work/discovery/workflows.json
+            work/discovery/iso-run-files.tsv
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit immutable fresh ISO lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin "$TARGET_BRANCH"
+          git reset --hard origin/"$TARGET_BRANCH"
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/report/verification.json "$LOCK_DIR/"
+          cp work/report/provenance.json "$LOCK_DIR/"
+          cp work/report/LOCKSUMS.sha256 "$LOCK_DIR/"
+          cp work/discovery/workflows.json "$LOCK_DIR/workflow-discovery.json"
+          jq -n \
+            --arg actions_run_id "$GITHUB_RUN_ID" \
+            --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_name "$CONTROLLER_ARTIFACT" \
+            --arg artifact_expected_filename 'Hancom-Gooroom-3.3-arm64.hybrid.iso' \
+            --arg iso_sha256 '${{ steps.verify.outputs.sha256 }}' \
+            '{schema:5,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              artifact_name:$artifact_name,artifact_expected_filename:$artifact_expected_filename,
+              iso_sha256:$iso_sha256}' > "$LOCK_DIR/artifact-lock.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          git commit -m 'Lock verified Hancom Gooroom 3.3 ARM64 fresh ISO artifact v5'
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            if git push origin HEAD:"$TARGET_BRANCH"; then
+              pushed=true
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = true
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-final-iso-controller-v5-failure
+          path: |
+            work/discovery
+            work/report
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+
+      - name: Commit compact failure status
+        if: failure()
+        continue-on-error: true
+        env:
+          STEPS_JSON: ${{ toJSON(steps) }}
+        shell: bash
+        run: |
+          set -uxo pipefail
+          git fetch origin "$TARGET_BRANCH" || exit 0
+          git reset --hard origin/"$TARGET_BRANCH" || exit 0
+          rm -rf "$STATUS_DIR"
+          mkdir -p "$STATUS_DIR"
+          printf '%s\n' "$STEPS_JSON" | jq '.' > "$STATUS_DIR/steps.json" || true
+          if [ -f work/discovery/workflows.json ]; then
+            cp work/discovery/workflows.json "$STATUS_DIR/workflow-discovery.json"
+          fi
+          jq -n \
+            --arg actions_run_id "$GITHUB_RUN_ID" \
+            --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            '{schema:5,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              head_sha:$head_sha,completed:false}' > "$STATUS_DIR/summary.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$STATUS_DIR"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Record ARM64 final ISO controller v5 failure status' || exit 0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin "$TARGET_BRANCH" || exit 0
+            if git push origin HEAD:"$TARGET_BRANCH"; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 0
