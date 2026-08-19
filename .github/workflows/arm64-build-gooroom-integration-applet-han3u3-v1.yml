@@ -1,0 +1,357 @@
+name: ARM64 build gooroom integration applet han3u3 v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-build-gooroom-integration-applet-han3u3-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  SOURCE_AUTHORITY: arm64/locks/gooroom-integration-applet-han3u3-source-recovery/latest/source-authority.json
+  LOCK_DIR: arm64/locks/gooroom-integration-applet-han3u3-arm64-build/latest
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install host and emulation tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binfmt-support dpkg-dev file jq qemu-user-static unzip
+          sudo update-binfmts --enable qemu-aarch64 || true
+          docker run --rm --privileged tonistiigi/binfmt:qemu-v8.1.5 \
+            --install arm64
+          mkdir -p work/download work/source work/build-output work/validation
+
+      - name: Require exact recovered source authority
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s "$SOURCE_AUTHORITY"
+          jq -e --arg source "$SOURCE" --arg version "$VERSION" '
+            .schema == 1 and
+            .source == $source and
+            .version == $version and
+            .exact_source_recovered == true and
+            .build_allowed == true and
+            .selected.commit != null and
+            .selected.tree != null and
+            .source_archive.sha256 != null and
+            .source_tree_manifest_sha256 != null and
+            .artifact.expired == false and
+            (.artifact.id | tostring | test("^[0-9]+$"))
+          ' "$SOURCE_AUTHORITY" >/dev/null
+
+      - name: Download locked recovered source bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact_id="$(jq -r '.artifact.id' "$SOURCE_AUTHORITY")"
+          expected_name="$(jq -r '.artifact.name' "$SOURCE_AUTHORITY")"
+          expected_digest="$(jq -r '.artifact.digest // empty' "$SOURCE_AUTHORITY")"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+            > work/download/source-artifact-metadata.json
+          jq -e --arg id "$artifact_id" --arg name "$expected_name" --arg digest "$expected_digest" '
+            (.id | tostring) == $id and
+            .name == $name and
+            .expired == false and
+            ($digest == "" or (.digest // "") == $digest)
+          ' work/download/source-artifact-metadata.json >/dev/null
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > work/download/source-artifact.zip
+          unzip -q work/download/source-artifact.zip -d work/download/source-artifact
+          archive="$(find work/download/source-artifact -type f -name '*.tar.xz' -print -quit)"
+          test -n "$archive"
+          actual_sha="$(sha256sum "$archive" | cut -d' ' -f1)"
+          expected_sha="$(jq -r '.source_archive.sha256' "$SOURCE_AUTHORITY")"
+          test "$actual_sha" = "$expected_sha"
+          tar -xJf "$archive" -C work/source --strip-components=1
+          test -s work/source/debian/changelog
+          first="$(head -n1 work/source/debian/changelog)"
+          [[ "$first" == "$SOURCE ($VERSION)"* ]]
+
+      - name: Build native ARM64 binary packages in Debian 11
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source_date_epoch="$(date -u -d "$(jq -r '.selected.committer_date' "$SOURCE_AUTHORITY")" +%s)"
+          chmod -R a+rX work/source
+          docker run --rm --platform linux/arm64 \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e SOURCE="$SOURCE" \
+            -e VERSION="$VERSION" \
+            -e SOURCE_DATE_EPOCH="$source_date_epoch" \
+            -e DEB_BUILD_OPTIONS='parallel=2' \
+            -e DEB_BUILD_MAINT_OPTIONS='hardening=+all reproducible=+fixfilepath' \
+            -v "$PWD/work/source:/input:ro" \
+            -v "$PWD/work/build-output:/output" \
+            debian:bullseye \
+            bash -euxo pipefail -c '
+              printf "%s\n" \
+                "deb http://deb.debian.org/debian bullseye main contrib non-free" \
+                "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" \
+                "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" \
+                > /etc/apt/sources.list
+              apt-get -o Acquire::Retries=5 update
+              apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
+                build-essential ca-certificates debhelper devscripts dpkg-dev equivs fakeroot git
+              mkdir -p /build/source
+              cp -a /input/. /build/source/
+              cd /build/source
+              mk-build-deps --install --remove \
+                --tool "apt-get -o Acquire::Retries=5 -y --no-install-recommends" \
+                debian/control
+              dpkg-buildpackage -b -us -uc -j2
+              cp -av /build/*.deb /build/*.buildinfo /build/*.changes /output/
+            '
+          find work/build-output -maxdepth 1 -type f -printf '%f\t%s\n' | sort
+          test -n "$(find work/build-output -maxdepth 1 -type f -name '*.deb' -print -quit)"
+
+      - name: Validate package metadata and reject every foreign ELF
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          source = os.environ['SOURCE']
+          version = os.environ['VERSION']
+          output = Path('work/build-output')
+          extracted = Path('work/validation/extracted')
+          extracted.mkdir(parents=True, exist_ok=True)
+          rows = []
+          errors = []
+
+          def field(path: Path, key: str) -> str:
+              return subprocess.check_output(['dpkg-deb', '-f', str(path), key], text=True).strip()
+
+          for deb in sorted(output.glob('*.deb')):
+              package = field(deb, 'Package')
+              package_version = field(deb, 'Version')
+              architecture = field(deb, 'Architecture')
+              source_field = field(deb, 'Source')
+              root = extracted / package
+              subprocess.run(['dpkg-deb', '-x', str(deb), str(root)], check=True)
+              elf_rows = []
+              for path in sorted(p for p in root.rglob('*') if p.is_file()):
+                  head = path.read_bytes()[:4]
+                  if head != b'\x7fELF':
+                      continue
+                  description = subprocess.check_output(['file', '-b', str(path)], text=True).strip()
+                  rel = path.relative_to(root).as_posix()
+                  ok = ('ARM aarch64' in description or 'ARM64' in description)
+                  elf_rows.append({'path': rel, 'file': description, 'arm64': ok})
+                  if not ok:
+                      errors.append({'kind': 'foreign-elf', 'package': package, 'path': rel, 'file': description})
+              checks = {
+                  'version': package_version == version,
+                  'architecture': architecture in {'arm64', 'all'},
+                  'source': source_field.split(' ', 1)[0] == source,
+              }
+              if not all(checks.values()):
+                  errors.append({
+                      'kind': 'metadata-mismatch', 'filename': deb.name,
+                      'actual': {
+                          'package': package, 'version': package_version,
+                          'architecture': architecture, 'source': source_field,
+                      },
+                      'checks': checks,
+                  })
+              rows.append({
+                  'filename': deb.name,
+                  'package': package,
+                  'version': package_version,
+                  'architecture': architecture,
+                  'source': source_field,
+                  'size': deb.stat().st_size,
+                  'sha256': hashlib.sha256(deb.read_bytes()).hexdigest(),
+                  'checks': checks,
+                  'elfs': elf_rows,
+              })
+
+          principal = [r for r in rows if r['package'] == source and r['architecture'] == 'arm64']
+          if len(principal) != 1:
+              errors.append({'kind': 'principal-package-count', 'count': len(principal)})
+          report = {
+              'schema': 1,
+              'source': source,
+              'version': version,
+              'target_architecture': 'arm64',
+              'package_count': len(rows),
+              'principal_package_count': len(principal),
+              'foreign_elf_count': sum(1 for e in errors if e['kind'] == 'foreign-elf'),
+              'errors': errors,
+              'packages': rows,
+              'verified': not errors and bool(rows),
+          }
+          Path('work/validation/build-verification.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          if errors or not rows:
+              raise SystemExit(json.dumps(report, indent=2, sort_keys=True))
+          PY
+          jq -e '.verified == true and .foreign_elf_count == 0 and .principal_package_count == 1' \
+            work/validation/build-verification.json >/dev/null
+          jq '.' work/validation/build-verification.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified ARM64 packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-integration-applet-han3u3-arm64-${{ github.run_id }}
+          path: |
+            work/build-output
+            work/validation/build-verification.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Capture package artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact_name="gooroom-integration-applet-han3u3-arm64-${GITHUB_RUN_ID}"
+          artifact=''
+          for attempt in $(seq 1 20); do
+            artifact="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              | jq -c --arg name "$artifact_name" \
+                '[.artifacts[] | select(.name == $name and .expired == false)] | last // empty')"
+            if [[ -n "$artifact" ]]; then
+              break
+            fi
+            sleep 3
+          done
+          test -n "$artifact"
+          printf '%s\n' "$artifact" > work/validation/artifact-metadata.json
+
+      - name: Seal native package promotion authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/validation/build-verification.json "$LOCK_DIR/"
+          cp work/validation/artifact-metadata.json "$LOCK_DIR/"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          source_authority_path = Path(os.environ['SOURCE_AUTHORITY'])
+          source_authority = json.loads(source_authority_path.read_text(encoding='utf-8'))
+          verification = json.loads(Path('work/validation/build-verification.json').read_text(encoding='utf-8'))
+          artifact = json.loads(Path('work/validation/artifact-metadata.json').read_text(encoding='utf-8'))
+          authority = {
+              'schema': 1,
+              'source': os.environ['SOURCE'],
+              'source_version': os.environ['VERSION'],
+              'target_architecture': 'arm64',
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'exact_source_authority_path': str(source_authority_path),
+              'exact_source_authority_sha256': hashlib.sha256(source_authority_path.read_bytes()).hexdigest(),
+              'source_commit': source_authority['selected']['commit'],
+              'source_tree': source_authority['selected']['tree'],
+              'source_tree_manifest_sha256': source_authority['source_tree_manifest_sha256'],
+              'native_arm64_build_verified': verification['verified'],
+              'foreign_elf_count': verification['foreign_elf_count'],
+              'package_layer_promotion_allowed': bool(
+                  verification['verified'] and
+                  verification['foreign_elf_count'] == 0 and
+                  verification['principal_package_count'] == 1
+              ),
+              'package_count': verification['package_count'],
+              'packages': [
+                  {
+                      key: row[key]
+                      for key in ('filename', 'package', 'version', 'architecture', 'size', 'sha256')
+                  }
+                  for row in verification['packages']
+              ],
+              'artifact': {
+                  'id': str(artifact['id']),
+                  'name': artifact['name'],
+                  'digest': artifact.get('digest'),
+                  'size_in_bytes': artifact['size_in_bytes'],
+                  'expired': artifact['expired'],
+              },
+              'policy': 'exact-version-immutable-source-tree-plus-native-arm64-build-plus-zero-foreign-elf',
+          }
+          Path(os.environ['LOCK_DIR'], 'package-promotion-authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '.package_layer_promotion_allowed == true and .foreign_elf_count == 0' \
+            "$LOCK_DIR/package-promotion-authority.json" >/dev/null
+
+      - name: Commit compact build authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          git commit -m 'Lock integration applet han3u3 ARM64 build'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch final package repository reconciliation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-merge-final-package-repository-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
