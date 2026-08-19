@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 246,
-    "workflow_name_count": 246,
+    "workflow_count": 247,
+    "workflow_name_count": 247,
     "referenced_local_file_count": 334,
     "error_count": 0,
     "warning_count": 48,
@@ -1621,6 +1621,24 @@
         "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
+    },
+    {
+      "filename": "arm64-diagnose-integration-applet-public-bases-v1.yml",
+      "path": ".github/workflows/arm64-diagnose-integration-applet-public-bases-v1.yml",
+      "name": "ARM64 diagnose integration applet public bases v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-dispatch-browser-after-jq-fix.yml",
