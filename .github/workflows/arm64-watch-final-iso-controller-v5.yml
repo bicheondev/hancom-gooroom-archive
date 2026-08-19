@@ -1,0 +1,144 @@
+name: ARM64 watch final ISO controller v5
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-watch-final-iso-controller-v5.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-watch-final-iso-controller-v5
+  cancel-in-progress: true
+
+env:
+  TARGET_BRANCH: arm64-port
+  CONTROLLER_WORKFLOW: arm64-final-iso-continuation-controller-v5.yml
+  STATUS_DIR: arm64/status/final-iso-controller-v5/runtime
+
+jobs:
+  watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out active branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Locate latest v5 controller run
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id=''
+          for attempt in $(seq 1 24); do
+            runs="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$CONTROLLER_WORKFLOW" --branch "$TARGET_BRANCH" \
+              --limit 20 --json databaseId,createdAt,status,conclusion,headSha,url)"
+            run_id="$(jq -r 'sort_by(.createdAt) | reverse | .[0].databaseId // empty' <<<"$runs")"
+            [ -n "$run_id" ] && break
+            sleep 5
+          done
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          jq -e --argjson id "$run_id" '.[] | select(.databaseId == $id)' <<<"$runs" \
+            > located-run.json
+
+      - name: Wait for controller completion
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.locate.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          while :; do
+            gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --json databaseId,status,conclusion,createdAt,startedAt,updatedAt,headSha,url,jobs \
+              > run.json
+            status="$(jq -r '.status' run.json)"
+            if [ "$status" = completed ]; then
+              break
+            fi
+            sleep 30
+          done
+          conclusion="$(jq -r '.conclusion' run.json)"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed \
+            > failed.log 2>&1 || true
+
+      - name: Seal runtime status in branch
+        env:
+          RUN_ID: ${{ steps.locate.outputs.run_id }}
+          CONCLUSION: ${{ steps.wait.outputs.conclusion }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin "$TARGET_BRANCH"
+          git reset --hard origin/"$TARGET_BRANCH"
+          rm -rf "$STATUS_DIR"
+          mkdir -p "$STATUS_DIR"
+          cp run.json "$STATUS_DIR/run.json"
+          cp failed.log "$STATUS_DIR/failed.log"
+          if [ -f arm64/status/final-iso-controller-v5/latest/workflow-discovery.json ]; then
+            cp arm64/status/final-iso-controller-v5/latest/workflow-discovery.json \
+              "$STATUS_DIR/workflow-discovery.json"
+          elif [ -f arm64/locks/final-iso-controller-v5/latest/workflow-discovery.json ]; then
+            cp arm64/locks/final-iso-controller-v5/latest/workflow-discovery.json \
+              "$STATUS_DIR/workflow-discovery.json"
+          fi
+          lock_present=false
+          if [ -f arm64/locks/final-iso-controller-v5/latest/artifact-lock.json ]; then
+            lock_present=true
+            cp arm64/locks/final-iso-controller-v5/latest/artifact-lock.json \
+              "$STATUS_DIR/controller-artifact-lock.json"
+          fi
+          jq -n \
+            --arg run_id "$RUN_ID" \
+            --arg conclusion "$CONCLUSION" \
+            --argjson lock_present "$lock_present" \
+            '{schema:5,controller_run_id:$run_id,conclusion:$conclusion,
+              verified_artifact_lock_present:$lock_present,
+              consistent:(($conclusion == "success" and $lock_present) or
+                          ($conclusion != "success" and ($lock_present | not)))}' \
+            > "$STATUS_DIR/summary.json"
+          find "$STATUS_DIR" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$STATUS_DIR/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$STATUS_DIR"
+          git commit -m "Lock ARM64 final ISO controller v5 runtime result: $CONCLUSION"
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            if git push origin HEAD:"$TARGET_BRANCH"; then
+              pushed=true
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = true
+
+      - name: Upload runtime status evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-final-iso-controller-v5-runtime
+          path: ${{ env.STATUS_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+
+      - name: Enforce success consistency
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.consistent == true' "$STATUS_DIR/summary.json"
+          test '${{ steps.wait.outputs.conclusion }}' = success
