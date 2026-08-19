@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 272,
-    "workflow_name_count": 272,
-    "referenced_local_file_count": 342,
+    "workflow_count": 273,
+    "workflow_name_count": 273,
+    "referenced_local_file_count": 343,
     "error_count": 0,
-    "warning_count": 51,
+    "warning_count": 52,
     "passed": true
   },
   "workflows": [
@@ -5016,6 +5016,22 @@
       ]
     },
     {
+      "filename": "arm64-watch-integration-reconstruction-v2.yml",
+      "path": ".github/workflows/arm64-watch-integration-reconstruction-v2.yml",
+      "name": "ARM64 watch integration reconstruction v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/status/integration-reconstruction-v2/latest.json"
+      ]
+    },
+    {
       "filename": "arm64-wave1-v3-record.yml",
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
       "name": "ARM64 port - record package wave 1 v3 evidence",
@@ -6509,6 +6525,9 @@
     "arm64/status/integration-reconstruction-v2-runs/latest.json": [
       ".github/workflows/arm64-snapshot-integration-reconstruction-v2-once.yml"
     ],
+    "arm64/status/integration-reconstruction-v2/latest.json": [
+      ".github/workflows/arm64-watch-integration-reconstruction-v2.yml"
+    ],
     "arm64/status/source-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
@@ -6773,6 +6792,11 @@
     {
       "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
       "local_path": "arm64/status/final-iso-controller-v5/latest/workflow-discovery.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-watch-integration-reconstruction-v2.yml",
+      "local_path": "arm64/status/integration-reconstruction-v2/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
