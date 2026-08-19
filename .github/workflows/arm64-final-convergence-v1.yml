@@ -1,0 +1,428 @@
+name: ARM64 final blocker convergence v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-final-convergence-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-final-convergence-v1
+  cancel-in-progress: false
+
+env:
+  QTBASE_WORKFLOW: arm64-bridge-qtbase-runtime-subset-v1.yml
+  INTEGRATION_WORKFLOW: arm64-orchestrate-integration-applet-han3u3-v1.yml
+  SESSION_WORKFLOW: arm64-orchestrate-session-manager-han3u2-v1.yml
+  KERNEL_WORKFLOW: arm64-orchestrate-kernel-resolution-v1.yml
+
+jobs:
+  qtbase:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      run_id: ${{ steps.run.outputs.run_id }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+      url: ${{ steps.run.outputs.url }}
+    steps:
+      - name: Dispatch and watch qtbase bridge
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow="$QTBASE_WORKFLOW"
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 10 --exit-status || true
+          view="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json conclusion,url)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' <<<"$view")" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<<"$view")" >> "$GITHUB_OUTPUT"
+
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    outputs:
+      run_id: ${{ steps.run.outputs.run_id }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+      url: ${{ steps.run.outputs.url }}
+    steps:
+      - name: Dispatch and watch integration applet recovery and build
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow="$INTEGRATION_WORKFLOW"
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status || true
+          view="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json conclusion,url)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' <<<"$view")" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<<"$view")" >> "$GITHUB_OUTPUT"
+
+  session:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    outputs:
+      run_id: ${{ steps.run.outputs.run_id }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+      url: ${{ steps.run.outputs.url }}
+    steps:
+      - name: Dispatch and watch session manager analysis and build
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow="$SESSION_WORKFLOW"
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status || true
+          view="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json conclusion,url)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' <<<"$view")" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<<"$view")" >> "$GITHUB_OUTPUT"
+
+  kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 270
+    outputs:
+      run_id: ${{ steps.run.outputs.run_id }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+      url: ${{ steps.run.outputs.url }}
+    steps:
+      - name: Dispatch and watch kernel continuation
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow="$KERNEL_WORKFLOW"
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 20 --exit-status || true
+          view="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json conclusion,url)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' <<<"$view")" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<<"$view")" >> "$GITHUB_OUTPUT"
+
+  converge:
+    if: always()
+    needs: [qtbase, integration, session, kernel]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      QTBASE_RUN_ID: ${{ needs.qtbase.outputs.run_id }}
+      QTBASE_CONCLUSION: ${{ needs.qtbase.outputs.conclusion }}
+      QTBASE_RUN_URL: ${{ needs.qtbase.outputs.url }}
+      INTEGRATION_RUN_ID: ${{ needs.integration.outputs.run_id }}
+      INTEGRATION_CONCLUSION: ${{ needs.integration.outputs.conclusion }}
+      INTEGRATION_RUN_URL: ${{ needs.integration.outputs.url }}
+      SESSION_RUN_ID: ${{ needs.session.outputs.run_id }}
+      SESSION_CONCLUSION: ${{ needs.session.outputs.conclusion }}
+      SESSION_RUN_URL: ${{ needs.session.outputs.url }}
+      KERNEL_RUN_ID: ${{ needs.kernel.outputs.run_id }}
+      KERNEL_CONCLUSION: ${{ needs.kernel.outputs.conclusion }}
+      KERNEL_RUN_URL: ${{ needs.kernel.outputs.url }}
+      LOCK_DIR: arm64/locks/final-convergence-v1/latest
+      QTBASE_AUTHORITY: arm64/locks/qtbase-grm3u1-iso-package-bridge/latest/bridge-authority.json
+      INTEGRATION_AUTHORITY: arm64/locks/gooroom-integration-applet-han3u3-arm64-build/latest/package-promotion-authority.json
+      SESSION_AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-arm64-build/latest/package-promotion-authority.json
+    steps:
+      - name: Check out converged branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Refresh committed authorities and evaluate closure
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin arm64-port
+          git reset --hard origin/arm64-port
+          mkdir -p work "$LOCK_DIR"
+
+          qtbase=false
+          integration=false
+          session=false
+          kernel=false
+
+          if [[ -s "$QTBASE_AUTHORITY" ]] && jq -e '
+            .scope == "qtbase-runtime-package-subset-only" and
+            .global_iso_safety_policy_changed == false and
+            .global_iso_assembly_allowed == false and
+            .qtbase_runtime_subset_inclusion_allowed == true and
+            .final_package_repository_consumption_allowed == true and
+            .rootfs_consumption_allowed == true and
+            .package_count == 9 and
+            all(.packages[]; .architecture == "arm64")
+          ' "$QTBASE_AUTHORITY" >/dev/null; then
+            qtbase=true
+          fi
+
+          if [[ -s "$INTEGRATION_AUTHORITY" ]] && jq -e '
+            .source == "gooroom-integration-applet" and
+            .source_version == "0.3.1+grm3u1+han3u3" and
+            .target_architecture == "arm64" and
+            .native_arm64_build_verified == true and
+            .foreign_elf_count == 0 and
+            .package_layer_promotion_allowed == true and
+            .artifact.expired == false
+          ' "$INTEGRATION_AUTHORITY" >/dev/null; then
+            integration=true
+          fi
+
+          if [[ -s "$SESSION_AUTHORITY" ]] && jq -e '
+            .source == "gooroom-session-manager" and
+            .source_version == "0.3.9+grm3u1+han3u2" and
+            .target_architecture == "arm64" and
+            .native_arm64_build_verified == true and
+            .foreign_elf_count == 0 and
+            .package_layer_promotion_allowed == true and
+            .artifact.expired == false
+          ' "$SESSION_AUTHORITY" >/dev/null; then
+            session=true
+          fi
+
+          if [[ "$KERNEL_CONCLUSION" == success ]]; then
+            kernel=true
+          fi
+
+          all_ready=false
+          if [[ "$qtbase" == true && "$integration" == true && "$session" == true && "$kernel" == true ]]; then
+            all_ready=true
+          fi
+          printf '%s\n' \
+            "qtbase=$qtbase" "integration=$integration" "session=$session" \
+            "kernel=$kernel" "all_ready=$all_ready" \
+            | tee work/gate.env
+          cat work/gate.env >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch and wait for final package repository
+        if: steps.gate.outputs.all_ready == 'true'
+        id: repository
+        shell: bash
+        run: |
+          set -euxo pipefail
+          workflow=arm64-merge-final-package-repository-v2.yml
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status || true
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,url,createdAt,updatedAt,headSha \
+            > work/final-package-repository-run.json
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' work/final-package-repository-run.json)" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch and wait for final rootfs
+        if: steps.repository.outputs.conclusion == 'success'
+        id: rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          workflow=arm64-build-final-rootfs-v2.yml
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 20 --exit-status || true
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,url,createdAt,updatedAt,headSha \
+            > work/final-rootfs-run.json
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' work/final-rootfs-run.json)" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch and wait for final ARM64 live ISO
+        if: steps.rootfs.outputs.conclusion == 'success'
+        id: iso
+        shell: bash
+        run: |
+          set -euxo pipefail
+          workflow=arm64-build-final-live-iso-v2.yml
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 20 --exit-status || true
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,url,createdAt,updatedAt,headSha \
+            > work/final-iso-run.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" \
+            > work/final-iso-artifacts.json
+          echo "conclusion=$(jq -r '.conclusion // "unknown"' work/final-iso-run.json)" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Seal convergence status
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/gate.env "$LOCK_DIR/"
+          test ! -f work/final-package-repository-run.json || cp work/final-package-repository-run.json "$LOCK_DIR/"
+          test ! -f work/final-rootfs-run.json || cp work/final-rootfs-run.json "$LOCK_DIR/"
+          test ! -f work/final-iso-run.json || cp work/final-iso-run.json "$LOCK_DIR/"
+          test ! -f work/final-iso-artifacts.json || cp work/final-iso-artifacts.json "$LOCK_DIR/"
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          lock_dir = Path(os.environ['LOCK_DIR'])
+          gate = {}
+          for line in Path('work/gate.env').read_text().splitlines():
+              key, value = line.split('=', 1)
+              gate[key] = value == 'true'
+
+          def read_optional(path):
+              p = Path(path)
+              return json.loads(p.read_text(encoding='utf-8')) if p.exists() else None
+
+          status = {
+              'schema': 1,
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'blocker_gates': gate,
+              'orchestrators': {
+                  'qtbase': {'run_id': os.environ.get('QTBASE_RUN_ID'), 'conclusion': os.environ.get('QTBASE_CONCLUSION'), 'url': os.environ.get('QTBASE_RUN_URL')},
+                  'integration': {'run_id': os.environ.get('INTEGRATION_RUN_ID'), 'conclusion': os.environ.get('INTEGRATION_CONCLUSION'), 'url': os.environ.get('INTEGRATION_RUN_URL')},
+                  'session': {'run_id': os.environ.get('SESSION_RUN_ID'), 'conclusion': os.environ.get('SESSION_CONCLUSION'), 'url': os.environ.get('SESSION_RUN_URL')},
+                  'kernel': {'run_id': os.environ.get('KERNEL_RUN_ID'), 'conclusion': os.environ.get('KERNEL_CONCLUSION'), 'url': os.environ.get('KERNEL_RUN_URL')},
+              },
+              'final_package_repository': read_optional('work/final-package-repository-run.json'),
+              'final_rootfs': read_optional('work/final-rootfs-run.json'),
+              'final_iso': read_optional('work/final-iso-run.json'),
+              'final_iso_artifacts': read_optional('work/final-iso-artifacts.json'),
+              'iso_completed': bool(
+                  read_optional('work/final-iso-run.json') and
+                  read_optional('work/final-iso-run.json').get('conclusion') == 'success'
+              ),
+              'policy': 'all-four-blockers-must-close-before-final-repository-rootfs-and-iso-dispatch',
+          }
+          (lock_dir / 'status.json').write_text(
+              json.dumps(status, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' "$LOCK_DIR/status.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit compact convergence authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          if git diff --cached --quiet; then
+            echo 'Convergence authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock final ARM64 blocker convergence status'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
