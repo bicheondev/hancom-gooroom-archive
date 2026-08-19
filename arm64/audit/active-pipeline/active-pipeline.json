@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 277,
-    "workflow_name_count": 277,
+    "workflow_count": 278,
+    "workflow_name_count": 278,
     "referenced_local_file_count": 343,
     "error_count": 0,
     "warning_count": 51,
@@ -1363,6 +1363,20 @@
         "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
+    },
+    {
+      "filename": "arm64-capture-integration-v3-run.yml",
+      "path": ".github/workflows/arm64-capture-integration-v3-run.yml",
+      "name": "ARM64 capture integration reconstruction v3 run",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-capture-nimf-probe-run-v1.yml",
