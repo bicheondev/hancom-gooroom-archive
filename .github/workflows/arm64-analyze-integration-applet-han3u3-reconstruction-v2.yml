@@ -77,28 +77,36 @@ jobs:
           else
             rm -f work/downloads/target-dbgsym.deb
           fi
-          printf '%s\n' "$debug_available" > work/source-authority/vendor-dbgsym-available.txt
+          printf '%s\n' "$debug_available" \
+            > work/source-authority/vendor-dbgsym-available.txt
 
-          changelog="$(find work/downloads/target-root/usr/share/doc -type f -name changelog.gz -print -quit)"
+          changelog="$(find work/downloads/target-root/usr/share/doc \
+            -type f -name changelog.gz -print -quit)"
           test -n "$changelog"
           gzip -dc "$changelog" > work/reconstructed/source/debian/changelog
-          test "$(dpkg-parsechangelog -lwork/reconstructed/source/debian/changelog -SVersion)" = "$VERSION"
+          test "$(dpkg-parsechangelog \
+            -lwork/reconstructed/source/debian/changelog -SVersion)" = "$VERSION"
 
           while IFS= read -r icon; do
             name="$(basename "$icon")"
             test -f "work/reconstructed/source/icons/$name"
             cp "$icon" "work/reconstructed/source/icons/$name"
-          done < <(find work/downloads/target-root/usr/share/icons/hicolor/scalable -type f -name '*.svg' | LC_ALL=C sort)
+          done < <(find work/downloads/target-root/usr/share/icons/hicolor/scalable \
+            -type f -name '*.svg' | LC_ALL=C sort)
 
           for locale in en_GB ko; do
             mo="work/downloads/target-root/usr/share/locale/$locale/LC_MESSAGES/${SOURCE}.mo"
+            po="work/reconstructed/source/po/$locale.po"
+            recompiled="work/reconstructed/source/po/$locale.recompiled.mo"
+            vendor_normalized="work/reconstructed/source/po/$locale.vendor.normalized.po"
+            rebuilt_normalized="work/reconstructed/source/po/$locale.recompiled.normalized.po"
             test -f "$mo"
-            msgunfmt "$mo" -o "work/reconstructed/source/po/$locale.po"
-            msgfmt --check --check-compatibility \
-              "work/reconstructed/source/po/$locale.po" \
-              -o "work/reconstructed/source/po/$locale.recompiled.mo"
-            cmp "$mo" "work/reconstructed/source/po/$locale.recompiled.mo"
-            rm "work/reconstructed/source/po/$locale.recompiled.mo"
+            msgunfmt "$mo" -o "$po"
+            msgfmt "$po" -o "$recompiled"
+            msgunfmt --no-wrap --sort-output "$mo" -o "$vendor_normalized"
+            msgunfmt --no-wrap --sort-output "$recompiled" -o "$rebuilt_normalized"
+            cmp "$vendor_normalized" "$rebuilt_normalized"
+            rm "$recompiled" "$vendor_normalized" "$rebuilt_normalized"
           done
 
           git -C work/reconstructed/source diff --binary --full-index \
@@ -110,7 +118,9 @@ jobs:
             > work/source-authority/reconstructed-source.tar
           xz -9e work/source-authority/reconstructed-source.tar
 
-          source_date_epoch="$(date -u -d "$(dpkg-parsechangelog -lwork/reconstructed/source/debian/changelog -SDate)" +%s)"
+          source_date_epoch="$(date -u -d \
+            "$(dpkg-parsechangelog -lwork/reconstructed/source/debian/changelog -SDate)" \
+            +%s)"
           jq -n \
             --arg source "$SOURCE" --arg version "$VERSION" \
             --arg repository "$BASE_REPOSITORY" \
@@ -123,9 +133,9 @@ jobs:
             --argjson icon_count "$(find work/downloads/target-root/usr/share/icons/hicolor/scalable -type f -name '*.svg' | wc -l)" \
             --argjson dbgsym_available "$debug_available" '
               {schema:1,source:$source,version:$version,
-               reconstruction_policy:"public-gooroom-3.0-merged-lineage-plus-exact-vendor-changelog-icons-and-translation-catalogs",
-               base_repository:$repository,base_commit_sha:$base_commit,base_tree_sha:$base_tree,
-               reconstructed_tree_sha:$reconstructed_tree,
+               reconstruction_policy:"public-gooroom-3.0-merged-lineage-plus-exact-vendor-changelog-icons-and-normalized-translation-catalogs",
+               base_repository:$repository,base_commit_sha:$base_commit,
+               base_tree_sha:$base_tree,reconstructed_tree_sha:$reconstructed_tree,
                source_date_epoch:($source_date_epoch|tonumber),
                reconstruction_patch_sha256:$patch_sha256,
                source_archive_sha256:$archive_sha256,
@@ -161,7 +171,8 @@ jobs:
           sudo mkdir -p "$rootfs/build/source"
           sudo tar -xJf "$base/source-authority/reconstructed-source.tar.xz" \
             -C "$rootfs/build/source"
-          source_date_epoch="$(jq -r '.source_date_epoch' "$base/source-authority/source-lock.json")"
+          source_date_epoch="$(jq -r '.source_date_epoch' \
+            "$base/source-authority/source-lock.json")"
           sudo chroot "$rootfs" /bin/bash -euxo pipefail -c "
             export DEBIAN_FRONTEND=noninteractive
             export DEB_BUILD_OPTIONS=nocheck
@@ -180,7 +191,8 @@ jobs:
           mkdir -p "$base/build/debs"
           while IFS= read -r deb; do
             sudo cp "$deb" "$base/build/debs/"
-          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          done < <(sudo find "$rootfs/build" -maxdepth 1 \
+            -type f -name '*.deb' | LC_ALL=C sort)
           sudo chown -R "$(id -u):$(id -g)" "$base/build"
           for deb in "$base/build/debs"/*.deb; do
             if [[ "$(dpkg-deb -f "$deb" Package)" == "$SOURCE" ]]; then
@@ -198,10 +210,11 @@ jobs:
           set -euxo pipefail
           base=work
           for side in target candidate; do
-            mkdir -p "$base/comparison/$side/root"
+            mkdir -p "$base/comparison/$side/root" "$base/comparison/$side/control"
             dpkg-deb -x "$base/downloads/$side.deb" "$base/comparison/$side/root"
             dpkg-deb -e "$base/downloads/$side.deb" "$base/comparison/$side/control"
-            dpkg-deb -f "$base/downloads/$side.deb" > "$base/comparison/$side/control-fields.txt"
+            dpkg-deb -f "$base/downloads/$side.deb" \
+              > "$base/comparison/$side/control-fields.txt"
           done
 
           python3 - <<'PY'
@@ -219,28 +232,28 @@ jobs:
           version = os.environ['VERSION']
 
           def sha256(path: Path) -> str:
-              h = hashlib.sha256()
+              digest = hashlib.sha256()
               with path.open('rb') as stream:
                   for block in iter(lambda: stream.read(1024 * 1024), b''):
-                      h.update(block)
-              return h.hexdigest()
+                      digest.update(block)
+              return digest.hexdigest()
 
           def is_elf(path: Path) -> bool:
               with path.open('rb') as stream:
                   return stream.read(4) == b'\x7fELF'
 
-          def command(*args: str) -> str:
-              return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT)
+          def output(*args: str) -> str:
+              return subprocess.check_output(
+                  args, text=True, stderr=subprocess.STDOUT
+              )
 
           def build_id(path: Path) -> str | None:
-              text = command('readelf', '-nW', str(path))
-              match = re.search(r'Build ID: ([0-9a-f]+)', text)
+              match = re.search(r'Build ID: ([0-9a-f]+)', output('readelf', '-nW', str(path)))
               return match.group(1) if match else None
 
           def allocated_sections(path: Path) -> dict[str, dict]:
-              text = command('readelf', '-SW', str(path))
               names = []
-              for line in text.splitlines():
+              for line in output('readelf', '-SW', str(path)).splitlines():
                   match = re.match(
                       r'\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',
                       line,
@@ -248,35 +261,37 @@ jobs:
                   if not match:
                       continue
                   name, flags = match.groups()
-                  if 'A' not in flags:
-                      continue
-                  if name in {'.note.gnu.build-id'}:
-                      continue
-                  names.append(name)
+                  if 'A' in flags and name != '.note.gnu.build-id':
+                      names.append(name)
               result = {}
-              with tempfile.TemporaryDirectory() as tmp:
-                  tmp_path = Path(tmp)
+              with tempfile.TemporaryDirectory() as temporary:
+                  root = Path(temporary)
                   for index, name in enumerate(names):
-                      output = tmp_path / f'{index:04d}.bin'
-                      proc = subprocess.run(
-                          ['objcopy', f'--dump-section', f'{name}={output}', str(path)],
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                      target = root / f'{index:04d}.bin'
+                      process = subprocess.run(
+                          ['objcopy', '--dump-section', f'{name}={target}', str(path)],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          text=True,
                       )
-                      if proc.returncode != 0 or not output.exists():
-                          result[name] = {'error': proc.stderr.strip()}
+                      if process.returncode or not target.exists():
+                          result[name] = {'error': process.stderr.strip()}
                       else:
                           result[name] = {
-                              'size': output.stat().st_size,
-                              'sha256': sha256(output),
+                              'size': target.stat().st_size,
+                              'sha256': sha256(target),
                           }
               return result
 
           def inventory(root: Path) -> dict[str, dict]:
               rows = {}
               for path in sorted(root.rglob('*')):
-                  rel = path.relative_to(root).as_posix()
+                  relative = path.relative_to(root).as_posix()
                   if path.is_symlink():
-                      rows[rel] = {'kind': 'symlink', 'target': os.readlink(path)}
+                      rows[relative] = {
+                          'kind': 'symlink',
+                          'target': os.readlink(path),
+                      }
                   elif path.is_file():
                       elf = is_elf(path)
                       row = {
@@ -287,16 +302,16 @@ jobs:
                       if elf:
                           row['build_id'] = build_id(path)
                           row['allocated_sections'] = allocated_sections(path)
-                      rows[rel] = row
+                      rows[relative] = row
               return rows
 
           target = inventory(base / 'comparison/target/root')
           candidate = inventory(base / 'comparison/candidate/root')
           comparisons = []
-          for rel in sorted(set(target) | set(candidate)):
-              left = target.get(rel)
-              right = candidate.get(rel)
-              row = {'path': rel, 'target': left, 'candidate': right}
+          for relative in sorted(set(target) | set(candidate)):
+              left = target.get(relative)
+              right = candidate.get(relative)
+              row = {'path': relative, 'target': left, 'candidate': right}
               if left is None:
                   row['status'] = 'candidate-only'
               elif right is None:
@@ -308,11 +323,11 @@ jobs:
                   row['allocated_sections_equal'] = (
                       left['allocated_sections'] == right['allocated_sections']
                   )
-                  left_names = set(left['allocated_sections'])
-                  right_names = set(right['allocated_sections'])
+                  names = set(left['allocated_sections']) | set(right['allocated_sections'])
                   row['different_allocated_sections'] = [
-                      name for name in sorted(left_names | right_names)
-                      if left['allocated_sections'].get(name) != right['allocated_sections'].get(name)
+                      name for name in sorted(names)
+                      if left['allocated_sections'].get(name)
+                      != right['allocated_sections'].get(name)
                   ]
               else:
                   row['status'] = 'different'
@@ -322,53 +337,75 @@ jobs:
               row['path'] for row in comparisons
               if row['status'] in {'different', 'target-only', 'candidate-only'}
           ]
-          elf_rows = [row for row in comparisons if row['status'] == 'elf-different']
+          elf_rows = [
+              row for row in comparisons if row['status'] == 'elf-different'
+          ]
           summary = {
               'schema': 1,
               'source': source,
               'version': version,
               'path_set_identical': set(target) == set(candidate),
               'payload_path_count': len(comparisons),
-              'identical_payload_count': sum(r['status'] == 'identical' for r in comparisons),
+              'identical_payload_count': sum(
+                  row['status'] == 'identical' for row in comparisons
+              ),
               'non_elf_difference_count': len(non_elf_differences),
               'non_elf_differences': non_elf_differences,
-              'elf_count': sum((r.get('target') or {}).get('kind') == 'elf' for r in comparisons),
+              'elf_count': sum(
+                  (row.get('target') or {}).get('kind') == 'elf'
+                  for row in comparisons
+              ),
               'elf_different_count': len(elf_rows),
-              'elf_allocated_sections_equal_count': sum(r.get('allocated_sections_equal') is True for r in elf_rows),
-              'elf_allocated_sections_different_count': sum(r.get('allocated_sections_equal') is False for r in elf_rows),
+              'elf_allocated_sections_equal_count': sum(
+                  row.get('allocated_sections_equal') is True for row in elf_rows
+              ),
+              'elf_allocated_sections_different_count': sum(
+                  row.get('allocated_sections_equal') is False for row in elf_rows
+              ),
               'elf_differences': [
                   {
-                      'path': r['path'],
-                      'target_sha256': r['target']['sha256'],
-                      'candidate_sha256': r['candidate']['sha256'],
-                      'target_build_id': r['target'].get('build_id'),
-                      'candidate_build_id': r['candidate'].get('build_id'),
-                      'allocated_sections_equal': r.get('allocated_sections_equal'),
-                      'different_allocated_sections': r.get('different_allocated_sections', []),
+                      'path': row['path'],
+                      'target_sha256': row['target']['sha256'],
+                      'candidate_sha256': row['candidate']['sha256'],
+                      'target_build_id': row['target'].get('build_id'),
+                      'candidate_build_id': row['candidate'].get('build_id'),
+                      'allocated_sections_equal': row.get('allocated_sections_equal'),
+                      'different_allocated_sections': row.get(
+                          'different_allocated_sections', []
+                      ),
                   }
-                  for r in elf_rows
+                  for row in elf_rows
               ],
-              'exact_payload_equivalent': bool(comparisons) and all(r['status'] == 'identical' for r in comparisons),
-              'allocated_runtime_payload_equivalent': bool(comparisons) and not non_elf_differences and all(
-                  r['status'] == 'identical' or
-                  (r['status'] == 'elf-different' and r.get('allocated_sections_equal') is True)
-                  for r in comparisons
+              'exact_payload_equivalent': bool(comparisons) and all(
+                  row['status'] == 'identical' for row in comparisons
+              ),
+              'allocated_runtime_payload_equivalent': bool(comparisons)
+              and not non_elf_differences
+              and all(
+                  row['status'] == 'identical'
+                  or (
+                      row['status'] == 'elf-different'
+                      and row.get('allocated_sections_equal') is True
+                  )
+                  for row in comparisons
               ),
               'target_deb_sha256': sha256(base / 'downloads/target.deb'),
               'candidate_deb_sha256': sha256(base / 'downloads/candidate.deb'),
           }
           (base / 'comparison/payload-comparison.json').write_text(
-              json.dumps(comparisons, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              json.dumps(comparisons, indent=2, sort_keys=True, ensure_ascii=False)
+              + '\n',
               encoding='utf-8',
           )
           (base / 'comparison/summary.json').write_text(
-              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False)
+              + '\n',
               encoding='utf-8',
           )
           PY
           jq '.' work/comparison/summary.json | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - name: Seal and upload reconstruction evidence
+      - name: Seal complete reconstruction evidence
         shell: bash
         run: |
           set -euxo pipefail
@@ -376,7 +413,8 @@ jobs:
           cp -a work/comparison work/artifact/
           cp work/downloads/target.deb work/artifact/
           cp work/downloads/candidate.deb work/artifact/
-          test ! -f work/downloads/target-dbgsym.deb || cp work/downloads/target-dbgsym.deb work/artifact/
+          test ! -f work/downloads/target-dbgsym.deb \
+            || cp work/downloads/target-dbgsym.deb work/artifact/
           cp work/build/build.log work/artifact/
           cp work/build/debootstrap.log work/artifact/
           find work/artifact -type f -printf '%P\t%s\n' | LC_ALL=C sort \
@@ -424,9 +462,12 @@ jobs:
             --arg actions_run_id "$GITHUB_RUN_ID" \
             --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             --argjson artifact "$artifact" '
-              {schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
-               artifact:{id:($artifact.id|tostring),name:$artifact.name,digest:$artifact.digest,
-                         size_in_bytes:$artifact.size_in_bytes,expired:$artifact.expired}}
+              {schema:1,actions_run_id:$actions_run_id,
+               actions_run_url:$actions_run_url,
+               artifact:{id:($artifact.id|tostring),name:$artifact.name,
+                         digest:$artifact.digest,
+                         size_in_bytes:$artifact.size_in_bytes,
+                         expired:$artifact.expired}}
             ' > "$LOCK_DIR/artifact-lock.json"
           find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
             > "$LOCK_DIR/FILE-INVENTORY.tsv"
