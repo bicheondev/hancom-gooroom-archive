@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 259,
-    "workflow_name_count": 259,
+    "workflow_count": 260,
+    "workflow_name_count": 260,
     "referenced_local_file_count": 335,
     "error_count": 0,
     "warning_count": 48,
@@ -1720,6 +1720,18 @@
       "filename": "arm64-dispatch-browser-after-jq-fix.yml",
       "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
       "name": "ARM64 port - dispatch browser after composite jq fix",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-dispatch-final-convergence-once.yml",
+      "path": ".github/workflows/arm64-dispatch-final-convergence-once.yml",
+      "name": "ARM64 one-shot dispatch final convergence",
       "events": [
         "push",
         "workflow_dispatch"
