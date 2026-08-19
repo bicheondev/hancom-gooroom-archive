@@ -1,0 +1,717 @@
+name: ARM64 reconstruct build and promote session manager han3u2 v2
+
+'on':
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-reconstruct-build-promote-session-manager-han3u2-v2.yml'
+      - 'arm64/reconstruction/gooroom-session-manager/0.3.9+grm3u1+han3u2/exact-source-v2.patch'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-session-manager-han3u2-v2
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-session-manager
+  VERSION: 0.3.9+grm3u1+han3u2
+  REPOSITORY: gooroom/gooroom-session-manager
+  BASE_COMMIT: d70dfbd27ea62e7a71f51c0018eb48cfe6fa0794
+  BASE_TREE: e8fb3bd1279ae7cd0a3526ae4f4c7b375835e1d5
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb
+  DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager-dbgsym_0.3.9+grm3u1+han3u2_amd64.deb
+  TARGET_SHA256: 6cdc971c8258ae3e05a97b314128ca212141a7a8913c82ebf7690c79d3fc6c4d
+  TARGET_SIZE: '20328'
+  DEBUG_SHA256: 9bb1b701f9182e27b2f67e9f21b2c5fd1f3653350bdeb45193ce7f7d5a875d14
+  DEBUG_SIZE: '51260'
+  PATCH: arm64/reconstruction/gooroom-session-manager/0.3.9+grm3u1+han3u2/exact-source-v2.patch
+  SOURCE_ARTIFACT: gooroom-session-manager-han3u2-source-authority-v2
+  ARM64_ARTIFACT: gooroom-session-manager-han3u2-exact-arm64-v2
+
+jobs:
+  amd64-equivalence:
+    name: Verify exact AMD64 payload equivalence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact reconstruction inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install historical build and comparison tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file git jq python3 tar xz-utils
+
+      - name: Reconstruct the exact Hancom source candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-v2
+          rm -rf "$root"
+          mkdir -p "$root"/{source-authority,downloads,build,comparison,diagnostics}
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" "$root/source"
+          git -C "$root/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          test -s "$PATCH"
+          git -C "$root/source" apply --check "$(pwd)/$PATCH"
+          git -C "$root/source" apply "$(pwd)/$PATCH"
+          prefix=arm64/locks/final-three-blockers-inspection-v1/gooroom-session-manager/vendor-changelog-prefix
+          test -s "$prefix"
+          cat "$prefix" "$root/source/debian/changelog" \
+            > "$root/source/debian/changelog.new"
+          mv "$root/source/debian/changelog.new" "$root/source/debian/changelog"
+          test "$(dpkg-parsechangelog -l"$root/source/debian/changelog" -SVersion)" = "$VERSION"
+
+          git -C "$root/source" diff --binary --full-index \
+            > "$root/source-authority/complete-reconstruction.patch"
+          cp "$PATCH" "$root/source-authority/exact-source-v2.patch"
+          git -C "$root/source" add debian/changelog src/gooroom-session-manager.c
+          tree="$(git -C "$root/source" write-tree)"
+          git -C "$root/source" archive --format=tar "$tree" \
+            > "$root/source-authority/reconstructed-source.tar"
+          jq -n \
+            --arg source "$PACKAGE" --arg version "$VERSION" \
+            --arg repository "$REPOSITORY" --arg base_commit "$BASE_COMMIT" \
+            --arg base_tree "$BASE_TREE" --arg reconstructed_tree "$tree" \
+            --arg patch_sha256 "$(sha256sum "$PATCH" | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum "$root/source-authority/reconstructed-source.tar" | awk '{print $1}')" '
+              {
+                schema: 2,
+                source: $source,
+                source_version: $version,
+                source_type: "verified-reconstructed-git-tree",
+                source_status: "candidate-pending-amd64-equivalence",
+                repository_full_name: $repository,
+                base_commit_sha: $base_commit,
+                base_tree_sha: $base_tree,
+                reconstructed_tree_sha: $reconstructed_tree,
+                reconstruction_patch_sha256: $patch_sha256,
+                source_archive_sha256: $archive_sha256,
+                reconstruction_policy: "public-base-plus-exact-vendor-changelog-and-binary-derived-source-delta-v2",
+                original_source_archive_recovered: false,
+                amd64_equivalence_verified: false,
+                native_arm64_build_verified: false,
+                package_layer_promotion_allowed: false
+              }
+            ' > "$root/source-authority/source-lock.json"
+
+      - name: Download and lock the exact vendor AMD64 packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-v2
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o "$root/downloads/target.deb"
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$DEBUG_URL" -o "$root/downloads/target-dbgsym.deb"
+          test "$(stat -c '%s' "$root/downloads/target.deb")" = "$TARGET_SIZE"
+          test "$(stat -c '%s' "$root/downloads/target-dbgsym.deb")" = "$DEBUG_SIZE"
+          echo "$TARGET_SHA256  $root/downloads/target.deb" | sha256sum --check --strict -
+          echo "$DEBUG_SHA256  $root/downloads/target-dbgsym.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Architecture)" = amd64
+          jq -n \
+            --arg package "$PACKAGE" --arg version "$VERSION" \
+            --arg target_sha256 "$TARGET_SHA256" --argjson target_size "$TARGET_SIZE" \
+            --arg debug_sha256 "$DEBUG_SHA256" --argjson debug_size "$DEBUG_SIZE" '
+              {
+                schema: 1,
+                package: $package,
+                version: $version,
+                architecture: "amd64",
+                target: {sha256: $target_sha256, size: $target_size},
+                dbgsym: {sha256: $debug_sha256, size: $debug_size}
+              }
+            ' > "$root/source-authority/target-binary-lock.json"
+
+      - name: Build the reconstructed AMD64 candidate in the historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root="$(pwd)/work/session-manager-v2"
+          rootfs="$root/build/rootfs"
+          mkdir -p "$root/build/debs"
+          sudo debootstrap \
+            --arch=amd64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$root/build/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "5";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf "$root/source-authority/reconstructed-source.tar" \
+            -C "$rootfs/build/source"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -y --no-install-recommends" debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$root/build/build.log"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$root/build/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$root/build"
+          for deb in "$root/build/debs"/*.deb; do
+            case "$(dpkg-deb -f "$deb" Package)" in
+              "$PACKAGE") cp "$deb" "$root/downloads/candidate.deb" ;;
+              "$PACKAGE-dbgsym") cp "$deb" "$root/downloads/candidate-dbgsym.deb" ;;
+            esac
+          done
+          test -f "$root/downloads/candidate.deb"
+          test -f "$root/downloads/candidate-dbgsym.deb"
+          test "$(dpkg-deb -f "$root/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/candidate.deb" Architecture)" = amd64
+          rm -rf "$rootfs"
+
+      - name: Compare the complete vendor and reconstructed payloads
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-v2
+          for side in target candidate; do
+            mkdir -p "$root/comparison/$side"/{root,control}
+            dpkg-deb -x "$root/downloads/$side.deb" "$root/comparison/$side/root"
+            dpkg-deb -e "$root/downloads/$side.deb" "$root/comparison/$side/control"
+            dpkg-deb -f "$root/downloads/$side.deb" \
+              > "$root/comparison/$side/control-fields.txt"
+          done
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work/session-manager-v2')
+          package = os.environ['PACKAGE']
+          version = os.environ['VERSION']
+
+          def sha256(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def inventory(base: Path) -> dict[str, dict]:
+              rows: dict[str, dict] = {}
+              for path in sorted(base.rglob('*')):
+                  relative = path.relative_to(base).as_posix()
+                  if path.is_symlink():
+                      rows[relative] = {'kind': 'symlink', 'target': os.readlink(path)}
+                  elif path.is_file():
+                      rows[relative] = {
+                          'kind': 'file',
+                          'size': path.stat().st_size,
+                          'sha256': sha256(path),
+                      }
+              return rows
+
+          def control(deb: Path) -> dict[str, str]:
+              fields = [
+                  'Package', 'Version', 'Architecture', 'Maintainer', 'Installed-Size',
+                  'Depends', 'Section', 'Priority', 'Description',
+              ]
+              values = {}
+              for field in fields:
+                  result = subprocess.run(
+                      ['dpkg-deb', '-f', str(deb), field], check=True,
+                      stdout=subprocess.PIPE, text=True,
+                  )
+                  values[field] = result.stdout.rstrip('\n')
+              return values
+
+          target = inventory(root / 'comparison/target/root')
+          candidate = inventory(root / 'comparison/candidate/root')
+          paths = sorted(set(target) | set(candidate))
+          differences = []
+          for path in paths:
+              if target.get(path) != candidate.get(path):
+                  differences.append({
+                      'path': path,
+                      'target': target.get(path),
+                      'candidate': candidate.get(path),
+                  })
+          main = 'usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager'
+          target_control = control(root / 'downloads/target.deb')
+          candidate_control = control(root / 'downloads/candidate.deb')
+          summary = {
+              'schema': 2,
+              'source': package,
+              'source_version': version,
+              'comparison_policy': 'exact-control-fields-and-complete-payload-file-set-and-sha256',
+              'path_set_identical': set(target) == set(candidate),
+              'payload_file_count': len(paths),
+              'different_payload_count': len(differences),
+              'different_paths': [row['path'] for row in differences],
+              'exact_payload_equivalent': not differences and bool(paths),
+              'main_elf_path': main,
+              'target_main_elf': target.get(main),
+              'candidate_main_elf': candidate.get(main),
+              'exact_main_elf_equivalent': target.get(main) == candidate.get(main),
+              'control_fields_identical': target_control == candidate_control,
+              'target_control': target_control,
+              'candidate_control': candidate_control,
+              'target_deb_sha256': sha256(root / 'downloads/target.deb'),
+              'candidate_deb_sha256': sha256(root / 'downloads/candidate.deb'),
+              'target_dbgsym_sha256': sha256(root / 'downloads/target-dbgsym.deb'),
+              'candidate_dbgsym_sha256': sha256(root / 'downloads/candidate-dbgsym.deb'),
+          }
+          (root / 'comparison/payload-differences.json').write_text(
+              json.dumps(differences, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (root / 'comparison/summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          jq '.' "$root/comparison/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal the reconstructed source authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-v2
+          authority="$root/source-authority"
+          cp "$root/comparison/summary.json" "$authority/amd64-equivalence-summary.json" || true
+          cp "$root/comparison/payload-differences.json" "$authority/amd64-payload-differences.json" || true
+          if jq -e '
+            .path_set_identical == true
+            and .exact_payload_equivalent == true
+            and .exact_main_elf_equivalent == true
+            and .control_fields_identical == true
+            and .different_payload_count == 0
+          ' "$root/comparison/summary.json" >/dev/null 2>&1; then
+            jq '
+              .source_status = "verified-reconstructed-amd64-equivalent"
+              | .amd64_equivalence_verified = true
+            ' "$authority/source-lock.json" > "$authority/source-lock.tmp"
+            mv "$authority/source-lock.tmp" "$authority/source-lock.json"
+          fi
+          find "$authority" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$authority/FILE-INVENTORY.tsv"
+          (
+            cd "$authority"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload reconstructed source authority
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: work/session-manager-v2/source-authority
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload AMD64 diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-session-manager-han3u2-amd64-diagnostics-v2-${{ github.run_id }}
+          path: |
+            work/session-manager-v2/comparison
+            work/session-manager-v2/build/build.log
+            work/session-manager-v2/build/debootstrap.log
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Require exact vendor AMD64 equivalence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '
+            .path_set_identical == true
+            and .payload_file_count == 10
+            and .different_payload_count == 0
+            and .exact_payload_equivalent == true
+            and .exact_main_elf_equivalent == true
+            and .control_fields_identical == true
+          ' work/session-manager-v2/comparison/summary.json >/dev/null
+          jq -e '
+            .source_status == "verified-reconstructed-amd64-equivalent"
+            and .amd64_equivalence_verified == true
+          ' work/session-manager-v2/source-authority/source-lock.json >/dev/null
+
+  arm64-build-and-promote:
+    name: Build natively on ARM64 and promote the verified package
+    needs: amd64-equivalence
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact native builder inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download and validate the AMD64-equivalent source authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: work/source-authority
+
+      - name: Install native ARM64 build and verification tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file jq python3 xz-utils
+          (cd work/source-authority && sha256sum --check --strict LOCKSUMS.sha256)
+          jq -e '
+            .source == "gooroom-session-manager"
+            and .source_version == "0.3.9+grm3u1+han3u2"
+            and .source_status == "verified-reconstructed-amd64-equivalent"
+            and .amd64_equivalence_verified == true
+          ' work/source-authority/source-lock.json >/dev/null
+
+      - name: Build in a clean native ARM64 historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root="$(pwd)/work/arm64-session-manager"
+          rootfs="$root/rootfs"
+          rm -rf "$root"
+          mkdir -p "$root"/{debs,verification,artifact}
+          sudo debootstrap \
+            --arch=arm64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$root/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "5";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf work/source-authority/reconstructed-source.tar \
+            -C "$rootfs/build/source"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -y --no-install-recommends" debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$root/build.log"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$root/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$root"
+          rm -rf "$rootfs"
+          test "$(find "$root/debs" -maxdepth 1 -type f -name '*.deb' | wc -l)" -ge 1
+
+      - name: Verify every package and executable payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work/arm64-session-manager')
+          source = 'gooroom-session-manager'
+          version = '0.3.9+grm3u1+han3u2'
+
+          def output(*args: str) -> str:
+              return subprocess.run(
+                  list(args), check=True, stdout=subprocess.PIPE, text=True
+              ).stdout.strip()
+
+          def sha256(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          artifacts = []
+          main_deb = None
+          for deb in sorted((root / 'debs').glob('*.deb')):
+              package = output('dpkg-deb', '-f', str(deb), 'Package')
+              package_version = output('dpkg-deb', '-f', str(deb), 'Version')
+              architecture = output('dpkg-deb', '-f', str(deb), 'Architecture')
+              if package_version != version:
+                  raise SystemExit(f'wrong version in {deb}: {package_version}')
+              if architecture != 'arm64':
+                  raise SystemExit(f'wrong architecture in {deb}: {architecture}')
+              if package == source:
+                  main_deb = deb
+              artifacts.append({
+                  'package': package,
+                  'version': package_version,
+                  'architecture': architecture,
+                  'filename': deb.name,
+                  'sha256': sha256(deb),
+                  'size': deb.stat().st_size,
+                  'source': source,
+                  'source_version': version,
+              })
+          if main_deb is None:
+              raise SystemExit('main session manager package was not produced')
+
+          extract = root / 'verification/root'
+          subprocess.run(['dpkg-deb', '-x', str(main_deb), str(extract)], check=True)
+          elf_rows = []
+          wrong = []
+          for path in sorted(extract.rglob('*')):
+              if not path.is_file():
+                  continue
+              with path.open('rb') as stream:
+                  if stream.read(4) != b'\x7fELF':
+                      continue
+              header = output('readelf', '-h', str(path))
+              machine = ''
+              for line in header.splitlines():
+                  if 'Machine:' in line:
+                      machine = line.split(':', 1)[1].strip()
+                      break
+              relative = path.relative_to(extract).as_posix()
+              row = {
+                  'path': relative,
+                  'machine': machine,
+                  'sha256': sha256(path),
+                  'size': path.stat().st_size,
+              }
+              elf_rows.append(row)
+              if machine != 'AArch64':
+                  wrong.append(row)
+          if not elf_rows:
+              raise SystemExit('no ELF payload found in main package')
+
+          summary = {
+              'schema': 2,
+              'verified': not wrong,
+              'source': source,
+              'source_version': version,
+              'target_architecture': 'arm64',
+              'native_arm64_build_verified': not wrong,
+              'amd64_equivalence_verified': True,
+              'package_layer_promotion_allowed': not wrong,
+              'wrong_architecture_executables': wrong,
+              'elf_file_count': len(elf_rows),
+              'elf_files': elf_rows,
+              'deb_artifacts': artifacts,
+              'verification_errors': [] if not wrong else ['foreign executable payloads found'],
+          }
+          (root / 'verification/deb-artifacts.json').write_text(
+              json.dumps(artifacts, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (root / 'verification/verification-summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          jq -e '
+            .verified == true
+            and .native_arm64_build_verified == true
+            and .amd64_equivalence_verified == true
+            and .package_layer_promotion_allowed == true
+            and .wrong_architecture_executables == []
+            and .elf_file_count >= 1
+            and (.deb_artifacts | map(select(.package == "gooroom-session-manager" and .architecture == "arm64")) | length) == 1
+          ' work/arm64-session-manager/verification/verification-summary.json >/dev/null
+
+      - name: Seal native ARM64 artifact
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/arm64-session-manager
+          artifact="$root/artifact"
+          mkdir -p "$artifact/debs"
+          cp "$root/debs"/*.deb "$artifact/debs/"
+          cp "$root/verification/deb-artifacts.json" "$artifact/"
+          cp "$root/verification/verification-summary.json" "$artifact/"
+          cp work/source-authority/source-lock.json "$artifact/"
+          cp work/source-authority/amd64-equivalence-summary.json "$artifact/"
+          cp "$root/build.log" "$artifact/"
+          cp "$root/debootstrap.log" "$artifact/"
+          find "$artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$artifact"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload exact native ARM64 packages
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARM64_ARTIFACT }}
+          path: work/arm64-session-manager/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Generate schema-4 promotion authority
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: |
+          set -euxo pipefail
+          result_dir=arm64/locks/rebuild-results/gooroom-session-manager/0.3.9_grm3u1_han3u2
+          lock_dir=arm64/locks/gooroom-session-manager-han3u2-reconstruction-v2/latest
+          rm -rf "$result_dir" "$lock_dir"
+          mkdir -p "$result_dir" "$lock_dir"
+          cp work/source-authority/source-lock.json "$lock_dir/"
+          cp work/source-authority/amd64-equivalence-summary.json "$lock_dir/"
+          cp work/arm64-session-manager/verification/verification-summary.json \
+            "$lock_dir/arm64-verification-summary.json"
+          cp work/arm64-session-manager/verification/deb-artifacts.json \
+            "$lock_dir/deb-artifacts.json"
+          reconstructed_tree="$(jq -r '.reconstructed_tree_sha' work/source-authority/source-lock.json)"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_name "$ARM64_ARTIFACT" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg repository "$REPOSITORY" \
+            --arg commit_sha "$BASE_COMMIT" \
+            --arg tree_sha "$reconstructed_tree" \
+            --slurpfile packages work/arm64-session-manager/verification/deb-artifacts.json \
+            --slurpfile verification work/arm64-session-manager/verification/verification-summary.json \
+            --slurpfile source_lock work/source-authority/source-lock.json '
+              {
+                schema: 4,
+                source: "gooroom-session-manager",
+                source_version: "0.3.9+grm3u1+han3u2",
+                source_type: "verified-reconstructed-git-tree",
+                source_status: "verified-reconstructed-amd64-equivalent",
+                provenance: "public-base-plus-exact-vendor-changelog-and-exact-amd64-payload-equivalence",
+                repository_full_name: $repository,
+                commit_sha: $commit_sha,
+                tree_sha: $tree_sha,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_name: $artifact_name,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                build_exit_code: "0",
+                build_outcome: "success",
+                verify_outcome: "success",
+                passed: true,
+                verification_passed: true,
+                job_passed: true,
+                original_source_archive_recovered: false,
+                amd64_equivalence_verified: true,
+                native_arm64_build_verified: true,
+                package_layer_promotion_allowed: true,
+                deb_artifacts: $packages[0],
+                verification_summary: $verification[0],
+                source_lock_evidence: $source_lock[0],
+                required_native_packages: ["gooroom-session-manager"],
+                reused_all_packages: [],
+                verification_errors: []
+              }
+            ' > "$result_dir/result.json"
+          cp "$result_dir/result.json" "$lock_dir/result.json"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_name "$ARM64_ARTIFACT" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_name: $artifact_name,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest
+              }
+            ' > "$lock_dir/artifact-lock.json"
+          find "$lock_dir" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$lock_dir/FILE-INVENTORY.tsv"
+          (
+            cd "$lock_dir"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .schema == 4
+            and .source == "gooroom-session-manager"
+            and .source_version == "0.3.9+grm3u1+han3u2"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .passed == true
+            and .verification_passed == true
+            and .job_passed == true
+            and .build_outcome == "success"
+            and .verify_outcome == "success"
+            and (.deb_artifacts | map(select(.package == "gooroom-session-manager" and .architecture == "arm64")) | length) == 1
+            and .verification_summary.verified == true
+            and .verification_summary.wrong_architecture_executables == []
+          ' "$result_dir/result.json" >/dev/null
+
+      - name: Commit the exact ARM64 promotion authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-session-manager/0.3.9_grm3u1_han3u2 \
+            arm64/locks/gooroom-session-manager-han3u2-reconstruction-v2/latest
+          git commit -m 'Promote exact session manager han3u2 ARM64 build'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
