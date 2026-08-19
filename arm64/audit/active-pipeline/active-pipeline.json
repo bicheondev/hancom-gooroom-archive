@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 260,
-    "workflow_name_count": 260,
-    "referenced_local_file_count": 336,
+    "workflow_count": 261,
+    "workflow_name_count": 261,
+    "referenced_local_file_count": 337,
     "error_count": 0,
     "warning_count": 49,
     "passed": true
@@ -4205,6 +4205,22 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-snapshot-final-convergence-runs-once.yml",
+      "path": ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml",
+      "name": "ARM64 snapshot final convergence runs once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/status/final-convergence-runs/latest.json"
+      ]
+    },
+    {
       "filename": "arm64-source-archive-authority-v1.yml",
       "path": ".github/workflows/arm64-source-archive-authority-v1.yml",
       "name": "ARM64 source authority - verified reconstructed archives v1",
@@ -6290,6 +6306,9 @@
     "arm64/status/final-convergence-dispatch/latest.json": [
       ".github/workflows/arm64-dispatch-final-convergence-once.yml"
     ],
+    "arm64/status/final-convergence-runs/latest.json": [
+      ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml"
+    ],
     "arm64/status/source-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
@@ -6359,11 +6378,6 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-dispatch-final-convergence-once.yml",
-      "local_path": "arm64/status/final-convergence-dispatch/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
@@ -6524,6 +6538,11 @@
     {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml",
+      "local_path": "arm64/status/final-convergence-runs/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
