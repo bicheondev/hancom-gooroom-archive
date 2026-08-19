@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 243,
-    "workflow_name_count": 243,
+    "workflow_count": 244,
+    "workflow_name_count": 244,
     "referenced_local_file_count": 334,
     "error_count": 0,
     "warning_count": 48,
@@ -3780,6 +3780,18 @@
         "arm64/locks/reconstructed-sources/source-locks.json",
         "arm64/scripts/promote_gnome_flashback_han3u4.py"
       ]
+    },
+    {
+      "filename": "arm64-rerun-session-manager-forensics-once.yml",
+      "path": ".github/workflows/arm64-rerun-session-manager-forensics-once.yml",
+      "name": "ARM64 one-shot rerun session manager forensics",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml",
