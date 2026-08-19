@@ -1,0 +1,67 @@
+name: ARM64 orchestrate kernel resolution v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-orchestrate-kernel-resolution-v1.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: arm64-orchestrate-kernel-resolution-v1
+  cancel-in-progress: false
+
+env:
+  CONTINUATION_WORKFLOW: arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml
+
+jobs:
+  continue-kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Dispatch locked kernel continuation and wait
+        id: kernel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$CONTINUATION_WORKFLOW" \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$CONTINUATION_WORKFLOW" \
+              --branch arm64-port --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 20 --exit-status
+
+      - name: Dispatch final package repository after kernel closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-merge-final-package-repository-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
