@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 264,
-    "workflow_name_count": 264,
+    "workflow_count": 265,
+    "workflow_name_count": 265,
     "referenced_local_file_count": 339,
     "error_count": 0,
     "warning_count": 48,
@@ -2015,6 +2015,23 @@
         "arm64/scripts/build_arm64_live_iso.sh",
         "arm64/scripts/finalize_arm64_live_rootfs.sh",
         "arm64/scripts/test_arm64_iso_qemu.sh"
+      ]
+    },
+    {
+      "filename": "arm64-final-iso-continuation-controller-v1.yml",
+      "path": ".github/workflows/arm64-final-iso-continuation-controller-v1.yml",
+      "name": "ARM64 final ISO continuation controller v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/final-package-repository-v2/summary.json"
       ]
     },
     {
@@ -5133,7 +5150,8 @@
     ],
     "arm64/locks/final-package-repository-v2/summary.json": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
-      ".github/workflows/arm64-build-final-rootfs-v2.yml"
+      ".github/workflows/arm64-build-final-rootfs-v2.yml",
+      ".github/workflows/arm64-final-iso-continuation-controller-v1.yml"
     ],
     "arm64/locks/final-recovered-iso/release-lock.json": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
