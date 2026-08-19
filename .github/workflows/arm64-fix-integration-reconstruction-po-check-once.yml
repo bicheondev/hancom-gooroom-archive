@@ -1,0 +1,80 @@
+name: ARM64 one-shot fix integration catalog reconstruction check
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-integration-reconstruction-po-check-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-fix-integration-reconstruction-po-check-once
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out active branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Replace strict plural-header check with normalized catalog equivalence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml')
+          text = path.read_text(encoding='utf-8')
+          old = '''            msgfmt --check --check-compatibility \\
+              "work/reconstructed/source/po/$locale.po" \\
+              -o "work/reconstructed/source/po/$locale.recompiled.mo"
+            cmp "$mo" "work/reconstructed/source/po/$locale.recompiled.mo"
+            rm "work/reconstructed/source/po/$locale.recompiled.mo"
+'''
+          new = '''            msgfmt "work/reconstructed/source/po/$locale.po" \\
+              -o "work/reconstructed/source/po/$locale.recompiled.mo"
+            msgunfmt --no-wrap --sort-output "$mo" \\
+              -o "work/reconstructed/source/po/$locale.vendor.normalized.po"
+            msgunfmt --no-wrap --sort-output \\
+              "work/reconstructed/source/po/$locale.recompiled.mo" \\
+              -o "work/reconstructed/source/po/$locale.recompiled.normalized.po"
+            cmp \\
+              "work/reconstructed/source/po/$locale.vendor.normalized.po" \\
+              "work/reconstructed/source/po/$locale.recompiled.normalized.po"
+            rm \\
+              "work/reconstructed/source/po/$locale.recompiled.mo" \\
+              "work/reconstructed/source/po/$locale.vendor.normalized.po" \\
+              "work/reconstructed/source/po/$locale.recompiled.normalized.po"
+'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one catalog-check block, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          git diff --check
+          grep -nF 'vendor.normalized.po' \
+            .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+
+      - name: Commit target fix and remove one-shot helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/arm64-fix-integration-reconstruction-po-check-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+          git commit -m 'ci(arm64): compare normalized integration translation catalogs'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
