@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 257,
-    "workflow_name_count": 257,
+    "workflow_count": 258,
+    "workflow_name_count": 258,
     "referenced_local_file_count": 335,
     "error_count": 0,
     "warning_count": 48,
@@ -3231,6 +3231,20 @@
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/promote_verified_git_arm64_artifact.py"
       ]
+    },
+    {
+      "filename": "arm64-publish-final-iso-preview-v1.yml",
+      "path": ".github/workflows/arm64-publish-final-iso-preview-v1.yml",
+      "name": "ARM64 publish verified final ISO preview v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-publish-rebuild-packages.yml",
