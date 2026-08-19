@@ -1,0 +1,303 @@
+name: ARM64 analyze integration applet han3u3 reconstruction v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-analyze-integration-applet-han3u3-reconstruction-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  BASE_REPOSITORY: gooroom/gooroom-integration-applet
+  BASE_COMMIT: 168ff81421ea1f5bae9e715c5ccdd559e015d44c
+  BASE_TREE: bfe05561e97c72e01b7ce2f052f38be2c0a59d3a
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+  LOCK_DIR: arm64/locks/gooroom-integration-applet-han3u3-reconstruction-v3/latest
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 160
+    steps:
+      - name: Check out authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file gettext git jq python3 tar xz-utils
+
+      - name: Verify and download locked nimf AMD64 build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '
+            .schema == 1 and
+            .source == "nimf" and
+            .source_version == "2023.06.30+grm3u1" and
+            .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d" and
+            (.packages | length) == 2 and
+            all(.packages[]; .architecture == "amd64") and
+            ([.packages[].package] | sort) == ["libnimf1","nimf-dev"]
+          ' "$NIMF_AUTHORITY" >/dev/null
+          rm -rf work
+          mkdir -p work/{downloads,deps,reconstructed,source-authority,build,comparison,artifact}
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            file="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            expected_sha="$(jq -r '.sha256' <<<"$row")"
+            expected_package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 6 --retry-delay 2 \
+              --retry-all-errors "$url" -o "work/deps/$file"
+            test "$(sha256sum "work/deps/$file" | awk '{print $1}')" = "$expected_sha"
+            test "$(dpkg-deb -f "work/deps/$file" Package)" = "$expected_package"
+            test "$(dpkg-deb -f "work/deps/$file" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "work/deps/$file" Architecture)" = amd64
+          done
+
+      - name: Reconstruct exact vendor-visible source inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" work/reconstructed/source
+          git -C work/reconstructed/source fetch --depth=1 origin "$BASE_COMMIT"
+          git -C work/reconstructed/source checkout --detach "$BASE_COMMIT"
+          test "$(git -C work/reconstructed/source rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C work/reconstructed/source rev-parse HEAD^{tree})" = "$BASE_TREE"
+
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o work/downloads/target.deb
+          test "$(dpkg-deb -f work/downloads/target.deb Package)" = "$SOURCE"
+          test "$(dpkg-deb -f work/downloads/target.deb Version)" = "$VERSION"
+          test "$(dpkg-deb -f work/downloads/target.deb Architecture)" = amd64
+          mkdir -p work/downloads/target-root
+          dpkg-deb -x work/downloads/target.deb work/downloads/target-root
+
+          changelog="$(find work/downloads/target-root/usr/share/doc -type f -name changelog.gz -print -quit)"
+          test -n "$changelog"
+          gzip -dc "$changelog" > work/reconstructed/source/debian/changelog
+          test "$(dpkg-parsechangelog -lwork/reconstructed/source/debian/changelog -SVersion)" = "$VERSION"
+
+          while IFS= read -r icon; do
+            name="$(basename "$icon")"
+            test -f "work/reconstructed/source/icons/$name"
+            cp "$icon" "work/reconstructed/source/icons/$name"
+          done < <(find work/downloads/target-root/usr/share/icons/hicolor/scalable -type f -name '*.svg' | LC_ALL=C sort)
+
+          for locale in en_GB ko; do
+            mo="work/downloads/target-root/usr/share/locale/$locale/LC_MESSAGES/${SOURCE}.mo"
+            po="work/reconstructed/source/po/$locale.po"
+            recompiled="work/reconstructed/source/po/$locale.recompiled.mo"
+            vendor_normalized="work/reconstructed/source/po/$locale.vendor.normalized.po"
+            rebuilt_normalized="work/reconstructed/source/po/$locale.recompiled.normalized.po"
+            test -f "$mo"
+            msgunfmt "$mo" -o "$po"
+            msgfmt "$po" -o "$recompiled"
+            msgunfmt --no-wrap --sort-output "$mo" -o "$vendor_normalized"
+            msgunfmt --no-wrap --sort-output "$recompiled" -o "$rebuilt_normalized"
+            cmp "$vendor_normalized" "$rebuilt_normalized"
+            rm "$recompiled" "$vendor_normalized" "$rebuilt_normalized"
+          done
+
+          git -C work/reconstructed/source diff --binary --full-index > work/source-authority/reconstruction.patch
+          test -s work/source-authority/reconstruction.patch
+          git -C work/reconstructed/source add -A
+          reconstructed_tree="$(git -C work/reconstructed/source write-tree)"
+          git -C work/reconstructed/source archive --format=tar "$reconstructed_tree" > work/source-authority/reconstructed-source.tar
+          xz -9e work/source-authority/reconstructed-source.tar
+          source_date_epoch="$(date -u -d "$(dpkg-parsechangelog -lwork/reconstructed/source/debian/changelog -SDate)" +%s)"
+          jq -n \
+            --arg source "$SOURCE" --arg version "$VERSION" \
+            --arg repository "$BASE_REPOSITORY" --arg base_commit "$BASE_COMMIT" \
+            --arg base_tree "$BASE_TREE" --arg reconstructed_tree "$reconstructed_tree" \
+            --arg source_date_epoch "$source_date_epoch" \
+            --arg patch_sha256 "$(sha256sum work/source-authority/reconstruction.patch | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum work/source-authority/reconstructed-source.tar.xz | awk '{print $1}')" \
+            --arg target_sha256 "$(sha256sum work/downloads/target.deb | awk '{print $1}')" \
+            --arg nimf_authority_sha256 "$(sha256sum "$NIMF_AUTHORITY" | awk '{print $1}')" '
+            {schema:1,source:$source,version:$version,
+             reconstruction_policy:"public-merged-lineage-plus-exact-vendor-changelog-icons-normalized-catalogs-plus-locked-nimf-builddeps",
+             base_repository:$repository,base_commit_sha:$base_commit,base_tree_sha:$base_tree,
+             reconstructed_tree_sha:$reconstructed_tree,source_date_epoch:($source_date_epoch|tonumber),
+             reconstruction_patch_sha256:$patch_sha256,source_archive_sha256:$archive_sha256,
+             target_deb_sha256:$target_sha256,nimf_authority_sha256:$nimf_authority_sha256}
+          ' > work/source-authority/source-lock.json
+
+      - name: Build reconstructed AMD64 package in historical chroot
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$(pwd)/work"
+          rootfs="$base/build/rootfs"
+          sudo debootstrap --arch=amd64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$base/build/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' 'Acquire::Check-Valid-Until "false";' 'Acquire::Retries "8";' 'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo cp /etc/resolv.conf "$rootfs/etc/resolv.conf"
+          sudo mkdir -p "$rootfs/build/source" "$rootfs/build/deps"
+          sudo tar -xJf "$base/source-authority/reconstructed-source.tar.xz" -C "$rootfs/build/source"
+          sudo cp "$base/deps"/*.deb "$rootfs/build/deps/"
+          source_date_epoch="$(jq -r '.source_date_epoch' "$base/source-authority/source-lock.json")"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c "
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export DEB_BUILD_MAINT_OPTIONS='hardening=+all reproducible=+fixfilepath'
+            export SOURCE_DATE_EPOCH='$source_date_epoch'
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends build-essential devscripts dpkg-dev equivs git
+            apt-get install -y /build/deps/libnimf1_2023.06.30+grm3u1_amd64.deb /build/deps/nimf-dev_2023.06.30+grm3u1_amd64.deb
+            cd /build/source
+            mk-build-deps --install --remove --tool 'apt-get -o Acquire::Retries=8 -y --no-install-recommends' debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          " 2>&1 | tee "$base/build/build.log"
+          mkdir -p "$base/build/debs"
+          while IFS= read -r deb; do sudo cp "$deb" "$base/build/debs/"; done \
+            < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$base/build"
+          for deb in "$base/build/debs"/*.deb; do
+            if [[ "$(dpkg-deb -f "$deb" Package)" == "$SOURCE" ]]; then cp "$deb" "$base/downloads/candidate.deb"; fi
+          done
+          test -f "$base/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb Architecture)" = amd64
+          sudo rm -rf "$rootfs"
+
+      - name: Compare payload and allocated ELF sections
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for side in target candidate; do
+            mkdir -p "work/comparison/$side/root"
+            dpkg-deb -x "work/downloads/$side.deb" "work/comparison/$side/root"
+          done
+          python3 - <<'PY'
+          import hashlib,json,os,re,subprocess,tempfile
+          from pathlib import Path
+          base=Path('work')
+          def sha(p):
+              h=hashlib.sha256(); h.update(p.read_bytes()); return h.hexdigest()
+          def elf(p): return p.read_bytes()[:4]==b'\x7fELF'
+          def allocated(p):
+              text=subprocess.check_output(['readelf','-SW',str(p)],text=True,stderr=subprocess.STDOUT)
+              names=[]
+              for line in text.splitlines():
+                  m=re.match(r'\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',line)
+                  if m and 'A' in m.group(2) and m.group(1)!='.note.gnu.build-id': names.append(m.group(1))
+              out={}
+              with tempfile.TemporaryDirectory() as td:
+                  for i,n in enumerate(names):
+                      q=Path(td)/str(i)
+                      r=subprocess.run(['objcopy','--dump-section',f'{n}={q}',str(p)],capture_output=True,text=True)
+                      out[n]={'size':q.stat().st_size,'sha256':sha(q)} if r.returncode==0 and q.exists() else {'error':r.stderr}
+              return out
+          def inv(root):
+              x={}
+              for p in sorted(root.rglob('*')):
+                  rel=p.relative_to(root).as_posix()
+                  if p.is_symlink(): x[rel]={'kind':'symlink','target':os.readlink(p)}
+                  elif p.is_file():
+                      row={'kind':'elf' if elf(p) else 'file','size':p.stat().st_size,'sha256':sha(p)}
+                      if row['kind']=='elf': row['allocated']=allocated(p)
+                      x[rel]=row
+              return x
+          a=inv(base/'comparison/target/root'); b=inv(base/'comparison/candidate/root')
+          rows=[]
+          for rel in sorted(set(a)|set(b)):
+              x=a.get(rel); y=b.get(rel); row={'path':rel}
+              if x is None: row['status']='candidate-only'
+              elif y is None: row['status']='target-only'
+              elif x==y: row['status']='identical'
+              elif x['kind']==y['kind']=='elf':
+                  row['status']='elf-different'; row['allocated_sections_equal']=x['allocated']==y['allocated']
+                  row['different_allocated_sections']=[n for n in sorted(set(x['allocated'])|set(y['allocated'])) if x['allocated'].get(n)!=y['allocated'].get(n)]
+              else: row['status']='different'
+              rows.append(row)
+          nonelf=[r['path'] for r in rows if r['status'] in ('different','target-only','candidate-only')]
+          elfdiff=[r for r in rows if r['status']=='elf-different']
+          summary={'schema':1,'source':os.environ['SOURCE'],'version':os.environ['VERSION'],
+            'path_set_identical':set(a)==set(b),'payload_path_count':len(rows),
+            'identical_payload_count':sum(r['status']=='identical' for r in rows),
+            'non_elf_difference_count':len(nonelf),'non_elf_differences':nonelf,
+            'elf_different_count':len(elfdiff),
+            'elf_allocated_sections_different_count':sum(r.get('allocated_sections_equal') is False for r in elfdiff),
+            'elf_differences':elfdiff,
+            'exact_payload_equivalent':bool(rows) and all(r['status']=='identical' for r in rows),
+            'allocated_runtime_payload_equivalent':bool(rows) and not nonelf and all(r['status']=='identical' or (r['status']=='elf-different' and r.get('allocated_sections_equal')) for r in rows),
+            'target_deb_sha256':sha(base/'downloads/target.deb'),'candidate_deb_sha256':sha(base/'downloads/candidate.deb')}
+          (base/'comparison/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          (base/'comparison/payload-comparison.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          PY
+          jq '.' work/comparison/summary.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-integration-applet-han3u3-reconstruction-v3-${{ github.run_id }}
+          path: |
+            work/source-authority
+            work/comparison
+            work/downloads/target.deb
+            work/downloads/candidate.deb
+            work/build/build.log
+            work/build/debootstrap.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6
+
+      - name: Seal compact authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact_name="gooroom-integration-applet-han3u3-reconstruction-v3-${GITHUB_RUN_ID}"
+          artifact=''
+          for attempt in $(seq 1 20); do
+            artifact="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" | jq -c --arg name "$artifact_name" '[.artifacts[]|select(.name==$name and .expired==false)]|last//empty')"
+            [[ -n "$artifact" ]] && break
+            sleep 3
+          done
+          test -n "$artifact"
+          rm -rf "$LOCK_DIR"; mkdir -p "$LOCK_DIR"
+          cp work/source-authority/source-lock.json "$LOCK_DIR/"
+          cp work/comparison/summary.json "$LOCK_DIR/"
+          jq -n --arg run_id "$GITHUB_RUN_ID" --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --argjson artifact "$artifact" '
+            {schema:1,actions_run_id:$run_id,actions_run_url:$run_url,
+             reconstruction_verified:($artifact.expired==false),
+             artifact:{id:($artifact.id|tostring),name:$artifact.name,digest:$artifact.digest,size_in_bytes:$artifact.size_in_bytes,expired:$artifact.expired}}
+          ' > "$LOCK_DIR/authority.json"
+          (cd "$LOCK_DIR" && sha256sum *.json > LOCKSUMS.sha256 && sha256sum -c LOCKSUMS.sha256)
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"; git commit -m 'Lock integration applet han3u3 reconstruction v3'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
