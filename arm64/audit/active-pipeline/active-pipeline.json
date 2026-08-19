@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 273,
-    "workflow_name_count": 273,
+    "workflow_count": 274,
+    "workflow_name_count": 274,
     "referenced_local_file_count": 343,
     "error_count": 0,
-    "warning_count": 52,
+    "warning_count": 51,
     "passed": true
   },
   "workflows": [
@@ -1316,6 +1316,20 @@
         "arm64/scripts/run_locked_source_arm64_component_compat.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
+    },
+    {
+      "filename": "arm64-capture-blocker-runs-v1.yml",
+      "path": ".github/workflows/arm64-capture-blocker-runs-v1.yml",
+      "name": "ARM64 capture blocker workflow runs v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-capture-gooroom-guide-latest-elf.yml",
@@ -6792,11 +6806,6 @@
     {
       "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
       "local_path": "arm64/status/final-iso-controller-v5/latest/workflow-discovery.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-watch-integration-reconstruction-v2.yml",
-      "local_path": "arm64/status/integration-reconstruction-v2/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
