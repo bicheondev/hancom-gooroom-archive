@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 271,
-    "workflow_name_count": 271,
-    "referenced_local_file_count": 339,
+    "workflow_count": 272,
+    "workflow_name_count": 272,
+    "referenced_local_file_count": 342,
     "error_count": 0,
-    "warning_count": 48,
+    "warning_count": 51,
     "passed": true
   },
   "workflows": [
@@ -4997,6 +4997,25 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-watch-final-iso-controller-v5.yml",
+      "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
+      "name": "ARM64 watch final ISO controller v5",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/final-iso-controller-v5/latest/artifact-lock.json",
+        "arm64/locks/final-iso-controller-v5/latest/workflow-discovery.json",
+        "arm64/status/final-iso-controller-v5/latest/workflow-discovery.json"
+      ]
+    },
+    {
       "filename": "arm64-wave1-v3-record.yml",
       "path": ".github/workflows/arm64-wave1-v3-record.yml",
       "name": "ARM64 port - record package wave 1 v3 evidence",
@@ -5235,6 +5254,12 @@
     ],
     "arm64/locks/final-app-deep-diff-v2/latest/authority.json": [
       ".github/workflows/arm64-final-app-deep-diff-authority-bridge-v1.yml"
+    ],
+    "arm64/locks/final-iso-controller-v5/latest/artifact-lock.json": [
+      ".github/workflows/arm64-watch-final-iso-controller-v5.yml"
+    ],
+    "arm64/locks/final-iso-controller-v5/latest/workflow-discovery.json": [
+      ".github/workflows/arm64-watch-final-iso-controller-v5.yml"
     ],
     "arm64/locks/final-iso-v2/release-lock.json": [
       ".github/workflows/arm64-build-final-live-iso-v2.yml"
@@ -6478,6 +6503,9 @@
     "arm64/status/final-convergence-runs/latest.json": [
       ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml"
     ],
+    "arm64/status/final-iso-controller-v5/latest/workflow-discovery.json": [
+      ".github/workflows/arm64-watch-final-iso-controller-v5.yml"
+    ],
     "arm64/status/integration-reconstruction-v2-runs/latest.json": [
       ".github/workflows/arm64-snapshot-integration-reconstruction-v2-once.yml"
     ],
@@ -6730,6 +6758,21 @@
     {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
       "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
+      "local_path": "arm64/locks/final-iso-controller-v5/latest/artifact-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
+      "local_path": "arm64/locks/final-iso-controller-v5/latest/workflow-discovery.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-watch-final-iso-controller-v5.yml",
+      "local_path": "arm64/status/final-iso-controller-v5/latest/workflow-discovery.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
