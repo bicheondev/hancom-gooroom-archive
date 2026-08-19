@@ -34,19 +34,21 @@ jobs:
 
           workflow = Path('.github/workflows/arm64-verify-session-manager-han3u2-reconstruction-v1.yml')
           text = workflow.read_text(encoding='utf-8')
-          old = '''          source=work/gooroom-session-manager
-          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest
-          rm -rf "$destination"
-'''
-          new = '''          source=work/gooroom-session-manager
-          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest
-          if [ ! -s "$source/comparison/summary.json" ] \\
-             || [ ! -s "$source/comparison/payload-comparison.json" ]; then
-            echo 'Comparison did not complete; preserving the previous complete authority.'
-            exit 0
-          fi
-          rm -rf "$destination"
-'''
+          old = (
+              '          source=work/gooroom-session-manager\n'
+              '          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest\n'
+              '          rm -rf "$destination"\n'
+          )
+          new = (
+              '          source=work/gooroom-session-manager\n'
+              '          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest\n'
+              '          if [ ! -s "$source/comparison/summary.json" ] \\\n'
+              '             || [ ! -s "$source/comparison/payload-comparison.json" ]; then\n'
+              "            echo 'Comparison did not complete; preserving the previous complete authority.'\n"
+              '            exit 0\n'
+              '          fi\n'
+              '          rm -rf "$destination"\n'
+          )
           if text.count(old) != 1:
               raise SystemExit('session-manager authority replacement anchor count was not one')
           workflow.write_text(text.replace(old, new, 1), encoding='utf-8')
