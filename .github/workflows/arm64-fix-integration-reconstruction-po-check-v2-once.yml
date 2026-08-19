@@ -1,0 +1,92 @@
+name: ARM64 one-shot normalize reconstructed integration catalogs
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-integration-reconstruction-po-check-v2-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-fix-integration-reconstruction-po-check-v2-once
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out active branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply normalized catalog equivalence check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml')
+          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+          matches = [
+              index for index, line in enumerate(lines)
+              if line.strip() == 'msgfmt --check --check-compatibility \\'
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f'expected one strict msgfmt block, found {len(matches)}')
+          index = matches[0]
+          expected = [
+              'msgfmt --check --check-compatibility \\',
+              '"work/reconstructed/source/po/$locale.po" \\',
+              '-o "work/reconstructed/source/po/$locale.recompiled.mo"',
+              'cmp "$mo" "work/reconstructed/source/po/$locale.recompiled.mo"',
+              'rm "work/reconstructed/source/po/$locale.recompiled.mo"',
+          ]
+          actual = [line.strip() for line in lines[index:index + len(expected)]]
+          if actual != expected:
+              raise SystemExit(f'unexpected strict msgfmt block: {actual!r}')
+          indent = lines[index][:-len(lines[index].lstrip())]
+          replacement = [
+              indent + 'msgfmt "work/reconstructed/source/po/$locale.po" \\\n',
+              indent + '  -o "work/reconstructed/source/po/$locale.recompiled.mo"\n',
+              indent + 'msgunfmt --no-wrap --sort-output "$mo" \\\n',
+              indent + '  -o "work/reconstructed/source/po/$locale.vendor.normalized.po"\n',
+              indent + 'msgunfmt --no-wrap --sort-output \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.recompiled.mo" \\\n',
+              indent + '  -o "work/reconstructed/source/po/$locale.recompiled.normalized.po"\n',
+              indent + 'cmp \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.vendor.normalized.po" \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.recompiled.normalized.po"\n',
+              indent + 'rm \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.recompiled.mo" \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.vendor.normalized.po" \\\n',
+              indent + '  "work/reconstructed/source/po/$locale.recompiled.normalized.po"\n',
+          ]
+          lines[index:index + len(expected)] = replacement
+          path.write_text(''.join(lines), encoding='utf-8')
+          PY
+          git diff --check
+          grep -nF 'vendor.normalized.po' \
+            .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+
+      - name: Commit repair and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/arm64-fix-integration-reconstruction-po-check-v2-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+          git commit -m 'ci(arm64): compare normalized integration translation catalogs'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
