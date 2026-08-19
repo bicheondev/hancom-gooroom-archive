@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 264,
-    "workflow_name_count": 264,
-    "referenced_local_file_count": 338,
+    "workflow_count": 265,
+    "workflow_name_count": 265,
+    "referenced_local_file_count": 339,
     "error_count": 0,
-    "warning_count": 48,
+    "warning_count": 49,
     "passed": true
   },
   "workflows": [
@@ -4234,6 +4234,22 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-snapshot-active-resolution-runs-once.yml",
+      "path": ".github/workflows/arm64-snapshot-active-resolution-runs-once.yml",
+      "name": "ARM64 snapshot active blocker resolution runs once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/status/active-resolution-runs/latest.json"
+      ]
+    },
+    {
       "filename": "arm64-snapshot-final-convergence-runs-once.yml",
       "path": ".github/workflows/arm64-snapshot-final-convergence-runs-once.yml",
       "name": "ARM64 snapshot final convergence runs once",
@@ -6336,6 +6352,9 @@
     "arm64/source-recovery-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/status/active-resolution-runs/latest.json": [
+      ".github/workflows/arm64-snapshot-active-resolution-runs-once.yml"
+    ],
     "arm64/status/build-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
@@ -6586,6 +6605,11 @@
     {
       "path": ".github/workflows/arm64-recovery-stage0-v1.yml",
       "local_path": "arm64/locks/stage0-recovery/release-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-snapshot-active-resolution-runs-once.yml",
+      "local_path": "arm64/status/active-resolution-runs/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
