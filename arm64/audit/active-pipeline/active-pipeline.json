@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 260,
     "workflow_name_count": 260,
-    "referenced_local_file_count": 335,
+    "referenced_local_file_count": 336,
     "error_count": 0,
-    "warning_count": 48,
+    "warning_count": 49,
     "passed": true
   },
   "workflows": [
@@ -1737,8 +1737,12 @@
         "workflow_dispatch"
       ],
       "job_count": 1,
-      "uses": [],
-      "referenced_local_files": []
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/status/final-convergence-dispatch/latest.json"
+      ]
     },
     {
       "filename": "arm64-dispatch-gnome-flashback-han3u4-v2.yml",
@@ -6283,6 +6287,9 @@
     "arm64/status/coverage.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
+    "arm64/status/final-convergence-dispatch/latest.json": [
+      ".github/workflows/arm64-dispatch-final-convergence-once.yml"
+    ],
     "arm64/status/source-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
@@ -6352,6 +6359,11 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-dispatch-final-convergence-once.yml",
+      "local_path": "arm64/status/final-convergence-dispatch/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
