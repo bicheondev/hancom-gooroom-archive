@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 247,
-    "workflow_name_count": 247,
-    "referenced_local_file_count": 334,
+    "workflow_count": 250,
+    "workflow_name_count": 250,
+    "referenced_local_file_count": 335,
     "error_count": 0,
     "warning_count": 48,
     "passed": true
@@ -61,6 +61,21 @@
       "referenced_local_files": [
         "arm64/scripts/download_debian_snapshot_binary_v1.py"
       ]
+    },
+    {
+      "filename": "arm64-analyze-session-manager-elf-delta-v2.yml",
+      "path": ".github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml",
+      "name": "ARM64 analyze session manager ELF delta v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-apply-gf-arm64-verifier-instrumentation-v2.yml",
@@ -496,6 +511,23 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
+      ]
+    },
+    {
+      "filename": "arm64-bridge-qtbase-runtime-subset-v1.yml",
+      "path": ".github/workflows/arm64-bridge-qtbase-runtime-subset-v1.yml",
+      "name": "ARM64 bridge verified qtbase runtime subset",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/qtbase-grm3u1-package-promotion/latest/package-promotion-authority.json"
       ]
     },
     {
@@ -2426,6 +2458,20 @@
         "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json",
         "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
       ]
+    },
+    {
+      "filename": "arm64-monitor-targeted-runs-v1.yml",
+      "path": ".github/workflows/arm64-monitor-targeted-runs-v1.yml",
+      "name": "ARM64 monitor targeted runs v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-native-rebuild-backlog.yml",
@@ -4965,6 +5011,9 @@
     ],
     "arm64/locks/qtbase-grm3u1-arm64-build/latest/authority.json": [
       ".github/workflows/arm64-promote-qtbase-grm3u1-source-archive.yml"
+    ],
+    "arm64/locks/qtbase-grm3u1-package-promotion/latest/package-promotion-authority.json": [
+      ".github/workflows/arm64-bridge-qtbase-runtime-subset-v1.yml"
     ],
     "arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
