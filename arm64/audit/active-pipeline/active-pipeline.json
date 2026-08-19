@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 265,
-    "workflow_name_count": 265,
+    "workflow_count": 266,
+    "workflow_name_count": 266,
     "referenced_local_file_count": 339,
     "error_count": 0,
     "warning_count": 48,
@@ -3324,6 +3324,21 @@
       "referenced_local_files": [
         "arm64/scripts/prepare_rebuild_release_assets_v2.py"
       ]
+    },
+    {
+      "filename": "arm64-publish-verified-iso-release-v1.yml",
+      "path": ".github/workflows/arm64-publish-verified-iso-release-v1.yml",
+      "name": "ARM64 publish verified ISO release v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-qtbase-apt-source-lock-v2.yml",
