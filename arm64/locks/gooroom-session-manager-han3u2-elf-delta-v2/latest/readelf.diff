@@ -1,0 +1,40 @@
+--- work/target-readelf.txt	2026-08-19 05:58:08.316113989 +0000
++++ work/candidate-readelf.txt	2026-08-19 05:58:08.317113978 +0000
+@@ -35,8 +35,8 @@
+   [11] .init             PROGBITS        0000000000003000 003000 000017 00  AX  0   0  4
+   [12] .plt              PROGBITS        0000000000003020 003020 000610 10  AX  0   0 16
+   [13] .plt.got          PROGBITS        0000000000003630 003630 000008 08  AX  0   0  8
+-  [14] .text             PROGBITS        0000000000003640 003640 002b71 00  AX  0   0 16
+-  [15] .fini             PROGBITS        00000000000061b4 0061b4 000009 00  AX  0   0  4
++  [14] .text             PROGBITS        0000000000003640 003640 002b81 00  AX  0   0 16
++  [15] .fini             PROGBITS        00000000000061c4 0061c4 000009 00  AX  0   0  4
+   [16] .rodata           PROGBITS        0000000000007000 007000 000f73 00   A  0   0 16
+   [17] .eh_frame_hdr     PROGBITS        0000000000007f74 007f74 00015c 00   A  0   0  4
+   [18] .eh_frame         PROGBITS        00000000000080d0 0080d0 0007d0 00   A  0   0  8
+@@ -62,7 +62,7 @@
+   INTERP         0x0002a8 0x00000000000002a8 0x00000000000002a8 0x00001c 0x00001c R   0x1
+       [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
+   LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x002200 0x002200 R   0x1000
+-  LOAD           0x003000 0x0000000000003000 0x0000000000003000 0x0031bd 0x0031bd R E 0x1000
++  LOAD           0x003000 0x0000000000003000 0x0000000000003000 0x0031cd 0x0031cd R E 0x1000
+   LOAD           0x007000 0x0000000000007000 0x0000000000007000 0x0018a0 0x0018a0 R   0x1000
+   LOAD           0x008d70 0x0000000000009d70 0x0000000000009d70 0x0005b8 0x000600 RW  0x1000
+   DYNAMIC        0x008d88 0x0000000000009d88 0x0000000000009d88 0x000240 0x000240 RW  0x8
+@@ -95,7 +95,7 @@
+  0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]
+  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+  0x000000000000000c (INIT)               0x3000
+- 0x000000000000000d (FINI)               0x61b4
++ 0x000000000000000d (FINI)               0x61c4
+  0x0000000000000019 (INIT_ARRAY)         0x9d70
+  0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+  0x000000000000001a (FINI_ARRAY)         0x9d78
+@@ -162,7 +162,7 @@
+ 
+ Displaying notes found in: .note.gnu.build-id
+   Owner                Data size 	Description
+-  GNU                  0x00000014	NT_GNU_BUILD_ID (unique build ID bitstring)	    Build ID: 7c33c21222de035d6e46614939ff4256d7de8796
++  GNU                  0x00000014	NT_GNU_BUILD_ID (unique build ID bitstring)	    Build ID: 8a85390025ac2689e3fc64b47e9bbe51788a260e
+ 
+ Displaying notes found in: .note.ABI-tag
+   Owner                Data size 	Description
