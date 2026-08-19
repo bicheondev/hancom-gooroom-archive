@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 267,
-    "workflow_name_count": 267,
+    "workflow_count": 269,
+    "workflow_name_count": 269,
     "referenced_local_file_count": 339,
     "error_count": 0,
     "warning_count": 48,
@@ -2052,6 +2052,24 @@
       ]
     },
     {
+      "filename": "arm64-final-iso-continuation-controller-v4.yml",
+      "path": ".github/workflows/arm64-final-iso-continuation-controller-v4.yml",
+      "name": "ARM64 deterministic final ISO continuation controller v4",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/final-package-repository-v2/summary.json"
+      ]
+    },
+    {
       "filename": "arm64-final-live-iso.yml",
       "path": ".github/workflows/arm64-final-live-iso.yml",
       "name": "ARM64 port - assemble and boot-test final live ISO",
@@ -3346,6 +3364,21 @@
       "filename": "arm64-publish-verified-iso-release-v3.yml",
       "path": ".github/workflows/arm64-publish-verified-iso-release-v3.yml",
       "name": "ARM64 publish locked verified ISO release v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-publish-verified-iso-release-v4.yml",
+      "path": ".github/workflows/arm64-publish-verified-iso-release-v4.yml",
+      "name": "ARM64 publish locked verified fresh ISO release v4",
       "events": [
         "push",
         "workflow_dispatch"
@@ -5184,7 +5217,8 @@
       ".github/workflows/arm64-build-final-live-iso-v2.yml",
       ".github/workflows/arm64-build-final-rootfs-v2.yml",
       ".github/workflows/arm64-final-iso-continuation-controller-v2.yml",
-      ".github/workflows/arm64-final-iso-continuation-controller-v3.yml"
+      ".github/workflows/arm64-final-iso-continuation-controller-v3.yml",
+      ".github/workflows/arm64-final-iso-continuation-controller-v4.yml"
     ],
     "arm64/locks/final-recovered-iso/release-lock.json": [
       ".github/workflows/arm64-final-from-recovered-rootfs.yml"
