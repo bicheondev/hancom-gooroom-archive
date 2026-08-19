@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 274,
-    "workflow_name_count": 274,
+    "workflow_count": 276,
+    "workflow_name_count": 276,
     "referenced_local_file_count": 343,
     "error_count": 0,
     "warning_count": 51,
@@ -1348,6 +1348,20 @@
         "arm64/scripts/build_gooroom_guide_han3u1_chroot.sh",
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
       ]
+    },
+    {
+      "filename": "arm64-capture-nimf-probe-run-v1.yml",
+      "path": ".github/workflows/arm64-capture-nimf-probe-run-v1.yml",
+      "name": "ARM64 capture nimf probe run v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-ci-state-snapshot.yml",
@@ -3131,6 +3145,20 @@
       "referenced_local_files": [
         "arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh"
       ]
+    },
+    {
+      "filename": "arm64-probe-nimf-amd64-builddeps-v1.yml",
+      "path": ".github/workflows/arm64-probe-nimf-amd64-builddeps-v1.yml",
+      "name": "ARM64 probe exact nimf amd64 build dependencies v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-probe-reference-apt-dsc-pools.yml",
