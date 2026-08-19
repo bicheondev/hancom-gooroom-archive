@@ -42,8 +42,7 @@ jobs:
           new = (
               '          source=work/gooroom-session-manager\n'
               '          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest\n'
-              '          if [ ! -s "$source/comparison/summary.json" ] \\\n'
-              '             || [ ! -s "$source/comparison/payload-comparison.json" ]; then\n'
+              '          if [ ! -s "$source/comparison/summary.json" ] || [ ! -s "$source/comparison/payload-comparison.json" ]; then\n'
               "            echo 'Comparison did not complete; preserving the previous complete authority.'\n"
               '            exit 0\n'
               '          fi\n'
