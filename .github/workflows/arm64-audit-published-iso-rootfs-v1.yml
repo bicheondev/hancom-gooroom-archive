@@ -1,0 +1,305 @@
+name: ARM64 audit published ISO rootfs v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-published-iso-rootfs-v1.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-audit-published-iso-rootfs-v1
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v3.3-arm64-preview.1
+  ISO_NAME: Hancom-Gooroom-3.3-arm64.hybrid.iso
+  LOCK_DIR: arm64/locks/final-iso-rootfs-audit-v1/latest
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install extraction and audit tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            dpkg file jq squashfs-tools xorriso
+          mkdir -p work/release work/iso work/rootfs work/report
+
+      - name: Download published ISO and manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" --pattern 'release-manifest.json' \
+            --dir work/release --clobber
+          test -s "work/release/$ISO_NAME"
+          test -s work/release/release-manifest.json
+          actual_sha="$(sha256sum "work/release/$ISO_NAME" | cut -d' ' -f1)"
+          actual_size="$(stat -c '%s' "work/release/$ISO_NAME")"
+          expected_sha="$(jq -r '.sha256' work/release/release-manifest.json)"
+          expected_size="$(jq -r '.size' work/release/release-manifest.json)"
+          test "$actual_sha" = "$expected_sha"
+          test "$actual_size" = "$expected_size"
+
+      - name: Extract live SquashFS
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/release/$ISO_NAME"
+          xorriso -indev "$iso" -find / -type f -print \
+            > work/iso/file-list.txt 2>work/iso/xorriso-find.log
+          squash_path="$(grep -Ei 'filesystem\.squashfs$|\.squashfs$' work/iso/file-list.txt | head -n1)"
+          test -n "$squash_path"
+          printf '%s\n' "$squash_path" > work/iso/squashfs-path.txt
+          xorriso -osirrox on -indev "$iso" \
+            -extract "$squash_path" work/iso/filesystem.squashfs \
+            >work/iso/xorriso-extract.log 2>&1
+          test -s work/iso/filesystem.squashfs
+          unsquashfs -f -d work/rootfs work/iso/filesystem.squashfs \
+            >work/iso/unsquashfs.log 2>&1
+          test -s work/rootfs/var/lib/dpkg/status
+
+      - name: Verify exact packages, architecture and every ELF header
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import struct
+
+          root = Path('work/rootfs')
+          status_path = root / 'var/lib/dpkg/status'
+          paragraphs = []
+          for raw in status_path.read_text(encoding='utf-8', errors='replace').split('\n\n'):
+              if not raw.strip():
+                  continue
+              fields = {}
+              key = None
+              for line in raw.splitlines():
+                  if line.startswith((' ', '\t')) and key:
+                      fields[key] += '\n' + line[1:]
+                  elif ':' in line:
+                      key, value = line.split(':', 1)
+                      fields[key] = value.lstrip()
+              if fields.get('Status') == 'install ok installed' and fields.get('Package'):
+                  paragraphs.append(fields)
+          packages = {row['Package']: row for row in paragraphs}
+
+          required = {
+              'gooroom-integration-applet': '0.3.1+grm3u1+han3u3',
+              'gooroom-session-manager': '0.3.9+grm3u1+han3u2',
+              'libqt5core5a': '5.15.2+dfsg-9+grm3u1',
+              'libqt5dbus5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5gui5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5network5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5printsupport5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5sql5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5test5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5widgets5': '5.15.2+dfsg-9+grm3u1',
+              'libqt5xml5': '5.15.2+dfsg-9+grm3u1',
+          }
+          required_rows = []
+          errors = []
+          for package, expected_version in required.items():
+              actual = packages.get(package)
+              row = {
+                  'package': package,
+                  'expected_version': expected_version,
+                  'present': actual is not None,
+                  'actual_version': actual.get('Version') if actual else None,
+                  'architecture': actual.get('Architecture') if actual else None,
+                  'source': actual.get('Source') if actual else None,
+              }
+              row['version_match'] = row['actual_version'] == expected_version
+              row['architecture_allowed'] = row['architecture'] in {'arm64', 'all'}
+              if not (row['present'] and row['version_match'] and row['architecture_allowed']):
+                  errors.append({'kind': 'required-package-failed', **row})
+              required_rows.append(row)
+
+          architecture_counts = {}
+          foreign_packages = []
+          for row in paragraphs:
+              architecture = row.get('Architecture', 'unknown')
+              architecture_counts[architecture] = architecture_counts.get(architecture, 0) + 1
+              if architecture not in {'arm64', 'all'}:
+                  foreign_packages.append({
+                      'package': row['Package'],
+                      'version': row.get('Version'),
+                      'architecture': architecture,
+                  })
+          if foreign_packages:
+              errors.append({'kind': 'foreign-package-architecture', 'count': len(foreign_packages)})
+
+          machine_names = {3: 'EM_386', 40: 'EM_ARM', 62: 'EM_X86_64', 183: 'EM_AARCH64'}
+          elf_machine_counts = {}
+          foreign_elfs = []
+          unknown_elfs = []
+          scan_errors = []
+          for path in root.rglob('*'):
+              try:
+                  if not path.is_file() or path.is_symlink():
+                      continue
+                  with path.open('rb') as handle:
+                      header = handle.read(20)
+                  if len(header) < 20 or header[:4] != b'\x7fELF':
+                      continue
+                  endian = '<' if header[5] == 1 else '>' if header[5] == 2 else None
+                  if endian is None:
+                      scan_errors.append({'path': str(path.relative_to(root)), 'error': 'unknown-endian'})
+                      continue
+                  machine = struct.unpack(endian + 'H', header[18:20])[0]
+                  name = machine_names.get(machine, f'EM_{machine}')
+                  elf_machine_counts[name] = elf_machine_counts.get(name, 0) + 1
+                  item = {'path': str(path.relative_to(root)), 'e_machine': machine, 'machine': name}
+                  if machine in {3, 62}:
+                      foreign_elfs.append(item)
+                  elif machine not in {40, 183}:
+                      unknown_elfs.append(item)
+              except Exception as exc:
+                  scan_errors.append({'path': str(path.relative_to(root)), 'error': repr(exc)})
+          if foreign_elfs:
+              errors.append({'kind': 'foreign-x86-elf', 'count': len(foreign_elfs)})
+
+          kernel_packages = []
+          for package, row in packages.items():
+              if package.startswith(('linux-image', 'linux-modules', 'linux-headers')):
+                  kernel_packages.append({
+                      'package': package,
+                      'version': row.get('Version'),
+                      'architecture': row.get('Architecture'),
+                      'source': row.get('Source'),
+                  })
+          arm64_kernel_images = [
+              row for row in kernel_packages
+              if row['package'].startswith('linux-image') and row['architecture'] == 'arm64'
+          ]
+          if not arm64_kernel_images:
+              errors.append({'kind': 'arm64-kernel-package-missing'})
+
+          iso = Path('work/release') / os.environ['ISO_NAME']
+          squashfs = Path('work/iso/filesystem.squashfs')
+          report = {
+              'schema': 1,
+              'iso': {
+                  'filename': iso.name,
+                  'size': iso.stat().st_size,
+                  'sha256': hashlib.sha256(iso.read_bytes()).hexdigest(),
+                  'squashfs_path': Path('work/iso/squashfs-path.txt').read_text().strip(),
+                  'squashfs_sha256': hashlib.sha256(squashfs.read_bytes()).hexdigest(),
+              },
+              'installed_package_count': len(paragraphs),
+              'package_architecture_counts': architecture_counts,
+              'foreign_package_architecture_count': len(foreign_packages),
+              'foreign_packages': foreign_packages,
+              'required_packages': required_rows,
+              'kernel_packages': sorted(kernel_packages, key=lambda row: row['package']),
+              'arm64_kernel_image_count': len(arm64_kernel_images),
+              'elf_machine_counts': elf_machine_counts,
+              'foreign_x86_elf_count': len(foreign_elfs),
+              'foreign_x86_elfs': foreign_elfs,
+              'unknown_non_arm_elf_count': len(unknown_elfs),
+              'unknown_non_arm_elfs': unknown_elfs,
+              'elf_scan_errors': scan_errors,
+              'errors': errors,
+              'verified': not errors,
+          }
+          Path('work/report/independent-rootfs-audit.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          Path('work/report/SUMMARY.txt').write_text(
+              '\n'.join([
+                  'Hancom Gooroom 3.3 ARM64 independent ISO rootfs audit',
+                  f"verified: {report['verified']}",
+                  f"installed packages: {report['installed_package_count']}",
+                  f"foreign package architectures: {report['foreign_package_architecture_count']}",
+                  f"foreign x86 ELF files: {report['foreign_x86_elf_count']}",
+                  f"ARM64 kernel image packages: {report['arm64_kernel_image_count']}",
+              ]) + '\n', encoding='utf-8'
+          )
+          if errors:
+              raise SystemExit(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False))
+          PY
+          jq -e '
+            .verified == true and
+            .foreign_package_architecture_count == 0 and
+            .foreign_x86_elf_count == 0 and
+            .arm64_kernel_image_count > 0 and
+            all(.required_packages[];
+              .present == true and
+              .version_match == true and
+              .architecture_allowed == true)
+          ' work/report/independent-rootfs-audit.json >/dev/null
+          cat work/report/SUMMARY.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish audit beside the ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            work/report/independent-rootfs-audit.json \
+            work/report/SUMMARY.txt
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,url,isDraft,isPrerelease,publishedAt,targetCommitish,assets \
+            > work/report/release.json
+          jq -e '
+            ([.assets[].name] | index("independent-rootfs-audit.json")) != null and
+            ([.assets[].name] | index("SUMMARY.txt")) != null
+          ' work/report/release.json >/dev/null
+
+      - name: Seal independent rootfs audit authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/report/independent-rootfs-audit.json "$LOCK_DIR/"
+          cp work/report/SUMMARY.txt "$LOCK_DIR/"
+          cp work/report/release.json "$LOCK_DIR/"
+          cp work/iso/squashfs-path.txt "$LOCK_DIR/"
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Commit compact independent audit authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          git commit -m 'Lock independent ARM64 ISO rootfs audit'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
