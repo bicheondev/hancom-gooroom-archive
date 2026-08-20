@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 280,
-    "workflow_name_count": 280,
-    "referenced_local_file_count": 344,
+    "workflow_count": 281,
+    "workflow_name_count": 281,
+    "referenced_local_file_count": 351,
     "error_count": 0,
-    "warning_count": 52,
+    "warning_count": 58,
     "passed": true
   },
   "workflows": [
@@ -4061,6 +4061,29 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-recover-linux-source-v2.yml",
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "name": "ARM64 recover exact Gooroom Linux source v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/linux-source-recovery-v2/latest/apt-authorities.json",
+        "arm64/locks/linux-source-recovery-v2/latest/direct-probes.json",
+        "arm64/locks/linux-source-recovery-v2/latest/downloaded-source-stanzas.json",
+        "arm64/locks/linux-source-recovery-v2/latest/index-probes.json",
+        "arm64/locks/linux-source-recovery-v2/latest/installed-kernel-packages.json",
+        "arm64/locks/linux-source-recovery-v2/latest/source-stanza-matches.json",
+        "arm64/status/linux-source-recovery-v2/latest.json"
+      ]
+    },
+    {
       "filename": "arm64-recover-reference-apt-sources.yml",
       "path": ".github/workflows/arm64-recover-reference-apt-sources.yml",
       "name": "ARM64 port - recover exact sources from reference APT metadata",
@@ -5455,6 +5478,24 @@
     "arm64/locks/linux-apt-source/apt-source-lock.json": [
       ".github/workflows/arm64-linux-apt-source-lock.yml"
     ],
+    "arm64/locks/linux-source-recovery-v2/latest/apt-authorities.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
+    "arm64/locks/linux-source-recovery-v2/latest/direct-probes.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
+    "arm64/locks/linux-source-recovery-v2/latest/downloaded-source-stanzas.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
+    "arm64/locks/linux-source-recovery-v2/latest/index-probes.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
+    "arm64/locks/linux-source-recovery-v2/latest/installed-kernel-packages.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
+    "arm64/locks/linux-source-recovery-v2/latest/source-stanza-matches.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
     "arm64/locks/minimal-boot-attempt/minimal-boot-attempt-summary.json": [
       ".github/workflows/arm64-minimal-boot-record.yml"
     ],
@@ -6634,6 +6675,9 @@
     "arm64/status/integration-reconstruction-v2/latest.json": [
       ".github/workflows/arm64-watch-integration-reconstruction-v2.yml"
     ],
+    "arm64/status/linux-source-recovery-v2/latest.json": [
+      ".github/workflows/arm64-recover-linux-source-v2.yml"
+    ],
     "arm64/status/source-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml",
       ".github/workflows/arm64-recover-from-signed-sources-index-v1.yml",
@@ -6704,11 +6748,6 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-continuation-orchestrator-v1.yml",
-      "local_path": "arm64/status/continuation-orchestrator-v1/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
@@ -6864,6 +6903,41 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/apt-authorities.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/direct-probes.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/downloaded-source-stanzas.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/index-probes.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/installed-kernel-packages.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/locks/linux-source-recovery-v2/latest/source-stanza-matches.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-recover-linux-source-v2.yml",
+      "local_path": "arm64/status/linux-source-recovery-v2/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
