@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 290,
-    "workflow_name_count": 290,
+    "workflow_count": 291,
+    "workflow_name_count": 291,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -2887,6 +2887,20 @@
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/normalize_debian_arm64_map_v2.py"
       ]
+    },
+    {
+      "filename": "arm64-observe-session-manager-dynsym-v3-once.yml",
+      "path": ".github/workflows/arm64-observe-session-manager-dynsym-v3-once.yml",
+      "name": "ARM64 observe session manager dynsym v3 build once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-orchestrate-integration-applet-han3u3-v1.yml",
