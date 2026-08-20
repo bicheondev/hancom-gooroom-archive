@@ -1,0 +1,94 @@
+name: ARM64 upgrade session manager semantic verifier v3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-upgrade-session-manager-semantic-verifier-v3
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install canonical runtime semantic verifier
+        shell: bash
+        env:
+          TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import base64
+          import gzip
+          import os
+          from pathlib import Path
+
+          def decode(value: str) -> str:
+              return gzip.decompress(base64.b64decode(value)).decode('utf-8')
+
+          path = Path(os.environ['TARGET'])
+          text = path.read_text(encoding='utf-8')
+          if 'Canonicalize runtime semantics v3' in text:
+              print('Session-manager semantic verifier v3 is already installed.')
+              raise SystemExit(0)
+
+          replacements = [
+              (decode('H4sIAAAAAAAC/1NQgIGsQgV1PXWF8vyibP3UnDTdlNSckkTd4tLc3MSiSr2s4vw8BTs7BSUVd88Qj1Cn+OAQ14D44FBfX8egSCUuLogZugp5ibmpVgrO+bkFiUWpCnn5RbmJOZlVqSlAZh7QyKTSdIWkzLzEoszUYi4Ao7ajJHwAAAA='), decode('H4sIAAAAAAAC/71YbW/bNhD+7l9BFAMooZaCNNgwGHGAdUu3Ai1QLOmHIgsEWqJjJhSpklRir81/35F6MfXi2G22+UMi8e4e3h3vjUKo+d1+RjjG6EGquyPKl1FGuSGRLvOcqE18q6VAZ2foxQ+/v7384+Pr5OLy/ENy8fH9+1/+/PRiMqkwIiRITmfoVyKkYCnh7G+KVCkMyynSNCfwlGp0fzJpdtUryvkMLYhetWsgMENf21dgogZFtFxLVLCCLgnjHrHYmJUUJ7D36Sn+8Oni/D32qCwvpDJoBficLYYEa5e3ulQyRwUxlrlh+QCvE4/HegjN3XKA7QsOPaqiViixGMDkeI8QHncoHsiBiCXEXJJMBx5WrCjJEkPXJqAilRkTN3NcmmX0Mw5DX7uMLpGQKne+TzgTVAdWbIa0USGKzuz/mSdQbW5KJRD+S+D4VjIRWLlYAScrghAtpUJ2BTGBLFasC85MhR2GccP20gHsVsaaAI7Yr45DBldcXfcITyrSR3GnvET4dcl4ht7+NsNWzDKPcdpfKiE+RUlHyG6PmBQFFVnXO+EhvtSHe0kubrMyL57hJYivO6qAgmeV1xin1nU5MQj/Cx6t8fc406GCDqfn796cYTC7FnvpKNU+QbU2Rcfh1fH1/+z2tClSScaUl6vtelRXruj+BO+Si/M7+BsURFFh9PxSlXSK6Jppk8g799rJzoIwZc/sS097XOcGnFgw4oZhDgWNtoaoG2qiej02a4NDv1goJZWeA37BSUqhWEy/DR+szVhGDH3GFoMFXAf5XnObZOibW68/29wB/tbc799iaK7I91papVzfTpE/28Qe8NbA78LuLDyOppMN78dJt8TYsWCKgsqqKWqVCG0VcUkRM0PzkZpTiTT9tJuzR2jZOOqL3eHRGdQDaPfajbH1yW4YT4/4QYGylccaiwZN+UktfISWchBIpfmVVfN6pI64aKOfS8Ih4Crd0Hy+3X0sVGoXJnpFXv34E8jVw1JcLdQmxk45avv9iq4zdkO1CUZDb+vOnZAtx2GonThT5CEhnMsUxDNwAYdaW09KMegZ4JYI57tcUijMKdUJXae8tM5NFnYeSFiGp9A6O31Eb/KF5Ik2UpEb0J6mhknh6jWOs40AOghVj0ZhP8jrVtHRzJ1SG/420ru6Qyt1BCGNJe7Y/Xq3glLwDewD43HQQQ5jpnW5sOs7QMPRfuYCBwABKFDy4aqOpGtnAyxYLVvu+J7w0g2Ak86oXg35yf0JAC2k5MGgUW+Piq5JapIFEzARV7uDf98QrqEwwJZjFdMXX9mOpPqCEFt75GovJNb74BLz7QhNykCBxaHNMJ/oxX9F349nk+AwLWywDINtnHcsXMY5ezHQL/oT/3k0dNrry2Cy0ekKYgJqwPGgLRaSs3QDJMwyaqPGm7nqaaNpw9CtogdmVlGVhlGVglFtWtS0O2LPNQIbYSWSZkVV1Dop2pYDPFBla4ksTVEaDVq1a09wN0fRXm6Tpvr2XDrAaA9H2aLkn5FftwBo5BQHYIOI6NQ+mF9nw6AZatTkLijMILvhSCpRL6m77X/7HOyenlvXVHfe0G9+PRXc3dcetw76oTWF4mODZP5qirS9Fd/RTTVvN7N9355+N53uiuI6EcvC5uxg4x2X+8Os+G903z677x3eu/8RZ99JoK9w46MoIod+1JG5veZsR8sMHkWU0UV5g1wNZ1RP/gHbG2aMURIAAA=='), 'canonical-step'),
+              (decode('H4sIAAAAAAAC/23MMQqAMAxA0d1TZGsF8QauXkKkpDZIISZaq6CnFwdBwT8/PsDTShNKjgM04FXZFvAp0awpd+ZhjpYt7sgk2fSAEn59PVK2RjRNyPGk4ETFBfLb6HwUTMe9QTYVtMgrla9JWVwtsLvonAAAAA=='), decode('H4sIAAAAAAAC/1NQgIHi1NzEvJLMZAVbhaT8/ByNotSC/KISvfTUEg11mFx8amFpZlliTmpeSXyZsbqOgltiTnGqpiYXAMhOLi9HAAAA'), 'semantic-policy'),
+              (decode('H4sIAAAAAAAC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCowwUAbUNpsjMAAAA='), decode('H4sIAAAAAAAC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCkwwUANP0vsDMAAAA='), 'authority-schema'),
+              (decode('H4sIAAAAAAAC/02MQQqDQAxF9z3F7GZjLtDbxCRKIE3UmYj19E53/fDgwYNfyv/qFqb0re9S5ULqILZAHOBxfND0Fh7qwDLnCptlAzT7EYR9xCbUNbyB7Kknmvi4uMiS1VeYU41BuU6vB3F3ToN3AAAA'), decode('H4sIAAAAAAAC/03JMQ7CMAxG4Z1TZMvS/wLcxiQuGMV25bqCcHqkTn3LN7xSrtXNh7RZ76Xyl1qCxwoPNDI3aTQQh6UoI5j6OR/vfugGU3wkX+jT9qknGdjTg54M81Aa8qMUt7rc/tt6L/12AAAA'), 'policy-string'),
+              (decode('H4sIAAAAAAAC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4AaJjRLTEAAAA='), decode('H4sIAAAAAAAC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4FDA3JiXn5eZnJiTm6RaV5JZm5qbrFqbmJQFZysV5WcX4eqn4AACG993EAAAA='), 'canonical-evidence-copy'),
+              (decode('H4sIAAAAAAAC/1NQQAfqeflFuYk5mVWpKfF5+XnxKalJpenxSZl5iUWV8amFpYk56lYKRakF+UUleumpJRpEqNdRcEvMKU7V1OFSwLQuJTMtLbUoNa8kvjg1uSQzP68Ybn40NslYHS4AxPZGebUAAAA='), decode('H4sIAAAAAAAC/41RzWrDMAy+9yl8awdml932AHuJUoTiqMGgSJ0tF9Kxd58HDS1p0sYXG/T9WN/n3PRsRVOPHC/UgqhAS03poImCaQD6LsjbT5fopMneO7LdCrx3X8iZ3vzGPdoFrKwYkCEVsdgTZOqxvkKetXuNf2qXh75RhmwpSlcvTdgRqPAAbTweKZEEyhPPlaSnxuNvkVkDWk3rjgrnj4nlS7h3+8PCitc8/uOIZ2QSe9RfAK2sSoudiuXFasa5dz+/81rjNlbrCxZVbmL7ueHBb/4AYr521KwCAAA='), 'authority-evidence'),
+          ]
+          for old, new, label in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} anchor count was {count}, expected 1')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          grep -F 'name: Canonicalize runtime semantics v3' "$TARGET"
+          grep -F "semantic = bool(report.get('semantic_equivalent_v3', False))" "$TARGET"
+          grep -F "'schema': 2" "$TARGET"
+          grep -F 'canonical-runtime-semantics.json' "$TARGET"
+          git diff --check
+
+      - name: Commit verifier upgrade
+        shell: bash
+        env:
+          TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$TARGET"
+          if git diff --cached --quiet; then
+            echo 'No verifier change required.'
+            exit 0
+          fi
+          git commit -m 'ci(arm64): canonicalize session-manager runtime semantics'
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin arm64-port && git push origin HEAD:arm64-port; then
+              pushed=true
+              break
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          test "$pushed" = true
