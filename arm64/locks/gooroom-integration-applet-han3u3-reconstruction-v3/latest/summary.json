@@ -1,0 +1,71 @@
+{
+  "allocated_runtime_payload_equivalent": false,
+  "candidate_deb_sha256": "b6962f5e14105860b4efd447939531f9a4bf79deabbd2eb4476bc578f182f1f3",
+  "elf_allocated_sections_different_count": 2,
+  "elf_differences": [
+    {
+      "allocated_sections_equal": false,
+      "different_allocated_sections": [
+        ".bss",
+        ".data",
+        ".dynamic",
+        ".dynstr",
+        ".dynsym",
+        ".eh_frame",
+        ".eh_frame_hdr",
+        ".fini_array",
+        ".gnu.hash",
+        ".gnu.version",
+        ".gnu.version_r",
+        ".got",
+        ".got.plt",
+        ".gresource.applet",
+        ".gresource.datetime_control",
+        ".gresource.nimf_control",
+        ".gresource.security_control",
+        ".gresource.updater_control",
+        ".gresource.user_control",
+        ".init_array",
+        ".plt",
+        ".plt.got",
+        ".rela.dyn",
+        ".rela.plt",
+        ".rodata",
+        ".text"
+      ],
+      "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+      "status": "elf-different"
+    },
+    {
+      "allocated_sections_equal": false,
+      "different_allocated_sections": [
+        ".bss",
+        ".data",
+        ".dynamic",
+        ".got",
+        ".got.plt",
+        ".init",
+        ".plt",
+        ".plt.got",
+        ".rela.dyn",
+        ".rela.plt",
+        ".text"
+      ],
+      "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+      "status": "elf-different"
+    }
+  ],
+  "elf_different_count": 2,
+  "exact_payload_equivalent": false,
+  "identical_payload_count": 42,
+  "non_elf_difference_count": 1,
+  "non_elf_differences": [
+    "usr/share/icons/hicolor/scalable/status/cleanmode.svg"
+  ],
+  "path_set_identical": false,
+  "payload_path_count": 45,
+  "schema": 1,
+  "source": "gooroom-integration-applet",
+  "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+  "version": "0.3.1+grm3u1+han3u3"
+}
