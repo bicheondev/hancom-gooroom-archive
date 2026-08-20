@@ -1,0 +1,177 @@
+name: ARM64 post-recovery gate v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/status/linux-source-recovery-v2/latest.json'
+      - 'arm64/status/session-manager-source-recovery-v2/latest.json'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: arm64-post-recovery-gate-v1
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: arm64-port
+    steps:
+      - name: Check out latest ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Evaluate exact-source locks
+        id: locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/post-recovery-gate-v1 arm64/status/post-recovery-gate-v1
+          linux_status=arm64/status/linux-source-recovery-v2/latest.json
+          session_status=arm64/status/session-manager-source-recovery-v2/latest.json
+          linux_ready=false
+          session_ready=false
+          [[ -f "$linux_status" ]] && linux_ready="$(jq -r '.source_locked == true and .ambiguous == false and .verified_source_stanza_count == 1' "$linux_status")"
+          [[ -f "$session_status" ]] && session_ready="$(jq -r '.source_locked == true and ((.missing // []) | length) == 0 and ((.ambiguous // []) | length) == 0' "$session_status")"
+          jq -n \
+            --argjson linux_ready "$linux_ready" \
+            --argjson session_ready "$session_ready" \
+            --arg linux_status "$linux_status" \
+            --arg session_status "$session_status" \
+            '{schema:1,linux_source_ready:$linux_ready,session_manager_source_ready:$session_ready,linux_status:$linux_status,session_manager_status:$session_status,all_sources_ready:($linux_ready and $session_ready)}' \
+            > work/post-recovery-gate-v1/locks.json
+          echo "all_sources_ready=$(jq -r '.all_sources_ready' work/post-recovery-gate-v1/locks.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Discover integration v3 workflow
+        if: steps.locks.outputs.all_sources_ready == 'true'
+        id: discover
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow list --all --limit 300 --json name,path,state > work/post-recovery-gate-v1/workflows.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=json.loads(Path('work/post-recovery-gate-v1/workflows.json').read_text())
+          candidates=[]
+          for wf in rows:
+              path=wf.get('path',''); name=wf.get('name',''); text=f'{path} {name}'.lower()
+              score=None
+              if 'integration' in text and 'v3' in text: score=0
+              elif 'integration' in text and 'nimf' in text: score=1
+              if score is not None: candidates.append((score,path,wf))
+          for path in Path('.github/workflows').glob('*.y*ml'):
+              text=path.read_text(errors='replace').lower()
+              if 'nimf-amd64-builddeps-v1' not in text: continue
+              if not ('integration' in text or 'reconstruct' in text): continue
+              if path.name in {'arm64-continuation-orchestrator-v1.yml','arm64-post-recovery-gate-v1.yml'}: continue
+              if not any(x[1]==str(path) for x in candidates): candidates.append((2,str(path),{'name':path.name,'path':str(path),'state':'unknown'}))
+          candidates.sort(key=lambda x:(x[0],x[1]))
+          out=[x[2] | {'score':x[0]} for x in candidates]
+          Path('work/post-recovery-gate-v1/integration-candidates.json').write_text(json.dumps(out,indent=2)+'\n')
+          Path('work/post-recovery-gate-v1/integration-workflow.txt').write_text((out[0]['path'] if out else '')+'\n')
+          PY
+          workflow="$(tr -d '\n' < work/post-recovery-gate-v1/integration-workflow.txt)"
+          test -n "$workflow"
+          echo "workflow=$workflow" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch and wait for integration v3
+        if: steps.locks.outputs.all_sources_ready == 'true' && steps.discover.outputs.workflow != ''
+        id: integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow='${{ steps.discover.outputs.workflow }}'
+          before="$(gh run list --workflow "$workflow" --branch "$BRANCH" --limit 1 --json databaseId | jq -r '.[0].databaseId // 0')"
+          gh workflow run "$workflow" --ref "$BRANCH"
+          run_id=0
+          for _ in $(seq 1 24); do
+            sleep 5
+            run_id="$(gh run list --workflow "$workflow" --branch "$BRANCH" --limit 1 --json databaseId | jq -r '.[0].databaseId // 0')"
+            [[ "$run_id" != 0 && "$run_id" != "$before" ]] && break
+          done
+          test "$run_id" != 0
+          test "$run_id" != "$before"
+          result='null'
+          for _ in $(seq 1 180); do
+            result="$(gh run view "$run_id" --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt)"
+            [[ "$(jq -r '.status' <<<"$result")" == completed ]] && break
+            sleep 10
+          done
+          printf '%s\n' "$result" > work/post-recovery-gate-v1/integration-run.json
+          jq -e '.status == "completed" and .conclusion == "success"' work/post-recovery-gate-v1/integration-run.json
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Refresh branch and dispatch continuation audit
+        if: steps.integration.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin arm64-port
+          gh workflow run '.github/workflows/arm64-continuation-orchestrator-v1.yml' --ref arm64-port
+
+      - name: Write authoritative gate record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+          work=Path('work/post-recovery-gate-v1')
+          locks=json.loads((work/'locks.json').read_text()) if (work/'locks.json').exists() else None
+          candidates=json.loads((work/'integration-candidates.json').read_text()) if (work/'integration-candidates.json').exists() else []
+          integration=json.loads((work/'integration-run.json').read_text()) if (work/'integration-run.json').exists() else None
+          report={
+            'schema':1,
+            'generated_at':datetime.now(timezone.utc).isoformat(),
+            'head_sha_at_checkout':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'locks':locks,
+            'integration_candidates':candidates,
+            'integration_run':integration,
+            'integration_passed':bool(integration and integration.get('status')=='completed' and integration.get('conclusion')=='success'),
+            'iso_gate_modified':False,
+          }
+          Path('arm64/status/post-recovery-gate-v1/latest.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Commit gate record
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/post-recovery-gate-v1/latest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Record ARM64 post-recovery gate state'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload gate evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: arm64-post-recovery-gate-v1-${{ github.run_id }}
+          path: |
+            work/post-recovery-gate-v1
+            arm64/status/post-recovery-gate-v1
+          if-no-files-found: error
+          retention-days: 30
