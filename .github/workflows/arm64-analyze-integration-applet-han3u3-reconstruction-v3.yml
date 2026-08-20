@@ -184,8 +184,8 @@ jobs:
             if [[ "$(dpkg-deb -f "$deb" Package)" == "$SOURCE" ]]; then cp "$deb" "$base/downloads/candidate.deb"; fi
           done
           test -f "$base/downloads/candidate.deb"
-          test "$(dpkg-deb -f "$base/downloads/candidate.deb Version)" = "$VERSION"
-          test "$(dpkg-deb -f "$base/downloads/candidate.deb Architecture)" = amd64
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64
           sudo rm -rf "$rootfs"
 
       - name: Compare payload and allocated ELF sections
