@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 282,
-    "workflow_name_count": 282,
-    "referenced_local_file_count": 352,
+    "workflow_count": 283,
+    "workflow_name_count": 283,
+    "referenced_local_file_count": 353,
     "error_count": 0,
     "warning_count": 52,
     "passed": true
@@ -3188,6 +3188,25 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/audit_arm64_port_state.py"
+      ]
+    },
+    {
+      "filename": "arm64-post-recovery-gate-v1.yml",
+      "path": ".github/workflows/arm64-post-recovery-gate-v1.yml",
+      "name": "ARM64 post-recovery gate v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08"
+      ],
+      "referenced_local_files": [
+        "arm64/status/linux-source-recovery-v2/latest.json",
+        "arm64/status/post-recovery-gate-v1/latest.json",
+        "arm64/status/session-manager-source-recovery-v2/latest.json"
       ]
     },
     {
@@ -6693,9 +6712,14 @@
       ".github/workflows/arm64-watch-integration-reconstruction-v2.yml"
     ],
     "arm64/status/linux-source-recovery-v2/latest.json": [
+      ".github/workflows/arm64-post-recovery-gate-v1.yml",
       ".github/workflows/arm64-recover-linux-source-v2.yml"
     ],
+    "arm64/status/post-recovery-gate-v1/latest.json": [
+      ".github/workflows/arm64-post-recovery-gate-v1.yml"
+    ],
     "arm64/status/session-manager-source-recovery-v2/latest.json": [
+      ".github/workflows/arm64-post-recovery-gate-v1.yml",
       ".github/workflows/arm64-recover-session-manager-source-v2.yml"
     ],
     "arm64/status/source-blockers.json": [
@@ -6911,6 +6935,11 @@
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
+      "path": ".github/workflows/arm64-post-recovery-gate-v1.yml",
+      "local_path": "arm64/status/post-recovery-gate-v1/latest.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
@@ -6923,11 +6952,6 @@
     {
       "path": ".github/workflows/arm64-qtbase-apt-source-lock.yml",
       "local_path": "arm64/locks/qtbase-apt-source/apt-source-lock.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-recover-session-manager-source-v2.yml",
-      "local_path": "arm64/status/session-manager-source-recovery-v2/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
