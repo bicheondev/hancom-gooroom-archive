@@ -1,0 +1,53 @@
+{
+  "actions_run_id": "32393052322",
+  "arm64_build_allowed": true,
+  "candidate_sha256": "8e1eb4a6292d8095c15dfe88ee5b16ae5593b6006c0667f8e17e31303e7ca22d",
+  "created_at": "2026-08-20T16:37:52.040298+00:00",
+  "evidence": {
+    "canonical_abi_verification": "canonical-abi-verification.json",
+    "source_artifact_metadata": "source-artifact-metadata.json",
+    "source_lock": "source-lock.json"
+  },
+  "global_exact_binary_reproducibility_claimed": false,
+  "iso_assembly_allowed": false,
+  "main_elf": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+  "package": "gooroom-session-manager",
+  "package_layer_promotion_allowed": true,
+  "policy": "exact-non-main-payload-plus-identical-code-relocations-dynamic-tags-logical-dynsym-and-all-allocated-sections-excluding-dynsym-dynstr-build-id",
+  "schema": 3,
+  "semantic_binary_equivalent_v3": true,
+  "source_artifact": {
+    "digest": "sha256:dd3cfe2bef25a3df27dba5b7f5ad62a19743c98ed9e1adfcd8e6c439bc9ae7bf",
+    "expired": false,
+    "id": "9395357037",
+    "name": "gooroom-session-manager-han3u2-reconstruction-v1",
+    "size_in_bytes": 981652
+  },
+  "source_lock": {
+    "base_commit_sha": "d70dfbd27ea62e7a71f51c0018eb48cfe6fa0794",
+    "base_tree_sha": "e8fb3bd1279ae7cd0a3526ae4f4c7b375835e1d5",
+    "package": "gooroom-session-manager",
+    "reconstructed_tree_sha": "1e73648b25dfa42acccc00a76ed5006cc82ee729",
+    "reconstruction_patch_sha256": "f317f87b303ab3c993515cbf74fb566a0bcfc9d569f2c11dcd96ee294e49db14",
+    "reconstruction_policy": "public-base-plus-exact-vendor-changelog-and-binary-derived-hancom-source-delta",
+    "repository": "gooroom/gooroom-session-manager",
+    "schema": 1,
+    "source_archive_sha256": "cf1ed3db0f18a46921afcc89fb3c295a65cd662d15f89fd0f6b2868fc9a9bb1a",
+    "version": "0.3.9+grm3u1+han3u2"
+  },
+  "source_reconstruction_semantically_verified": true,
+  "target_sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66",
+  "verification_checks": {
+    "all_allocated_sections_equal_excluding_dynsym_dynstr_build_id": true,
+    "all_non_main_payload_equal": true,
+    "disassembly_equal": true,
+    "dynamic_symbols_equal": true,
+    "dynamic_tags_equal": true,
+    "elf_header_equal": true,
+    "payload_path_set_equal": true,
+    "program_headers_equal": true,
+    "relocations_equal": true,
+    "same_size": true
+  },
+  "version": "0.3.9+grm3u1+han3u2"
+}

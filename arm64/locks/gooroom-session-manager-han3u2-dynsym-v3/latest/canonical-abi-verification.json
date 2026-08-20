@@ -1,0 +1,744 @@
+{
+  "candidate_sha256": "8e1eb4a6292d8095c15dfe88ee5b16ae5593b6006c0667f8e17e31303e7ca22d",
+  "checks": {
+    "all_allocated_sections_equal_excluding_dynsym_dynstr_build_id": true,
+    "all_non_main_payload_equal": true,
+    "disassembly_equal": true,
+    "dynamic_symbols_equal": true,
+    "dynamic_tags_equal": true,
+    "elf_header_equal": true,
+    "payload_path_set_equal": true,
+    "program_headers_equal": true,
+    "relocations_equal": true,
+    "same_size": true
+  },
+  "main_elf": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+  "package": "gooroom-session-manager",
+  "raw_differences_permitted_only_in": [
+    ".dynstr",
+    ".dynsym",
+    ".gnu_debuglink",
+    ".note.gnu.build-id",
+    ".shstrtab"
+  ],
+  "schema": 3,
+  "section_comparison": {
+    ".bss": {
+      "candidate_header": {
+        "address": "000000000000a328",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "009328",
+        "size": "000048",
+        "type": "NOBITS"
+      },
+      "equal": true,
+      "target_header": {
+        "address": "000000000000a328",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "009328",
+        "size": "000048",
+        "type": "NOBITS"
+      }
+    },
+    ".data": {
+      "candidate_header": {
+        "address": "000000000000a318",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "009318",
+        "size": "000010",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "b412340ecb8ae6b29e2ca0ce19e84711b8161cdfddd01f811b4f7086f91baf66",
+        "size": 16
+      },
+      "equal": true,
+      "target_header": {
+        "address": "000000000000a318",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "009318",
+        "size": "000010",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "b412340ecb8ae6b29e2ca0ce19e84711b8161cdfddd01f811b4f7086f91baf66",
+        "size": 16
+      }
+    },
+    ".data.rel.ro": {
+      "candidate_header": {
+        "address": "0000000000009d80",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "008d80",
+        "size": "000008",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "size": 8
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000009d80",
+        "entry_size": "00",
+        "flags": "WA",
+        "offset": "008d80",
+        "size": "000008",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "size": 8
+      }
+    },
+    ".dynamic": {
+      "candidate_header": {
+        "address": "0000000000009d88",
+        "entry_size": "10",
+        "flags": "WA",
+        "offset": "008d88",
+        "size": "000240",
+        "type": "DYNAMIC"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "47e445dbef09f96a133e9078c922026cb26736568cc7cac5bf646223a829b96c",
+        "size": 576
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000009d88",
+        "entry_size": "10",
+        "flags": "WA",
+        "offset": "008d88",
+        "size": "000240",
+        "type": "DYNAMIC"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "47e445dbef09f96a133e9078c922026cb26736568cc7cac5bf646223a829b96c",
+        "size": 576
+      }
+    },
+    ".dynstr": {
+      "candidate_header": {
+        "address": "0000000000000e50",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "000e50",
+        "size": "000883",
+        "type": "STRTAB"
+      },
+      "excluded_from_byte_identity": true,
+      "target_header": {
+        "address": "0000000000000e50",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "000e50",
+        "size": "000883",
+        "type": "STRTAB"
+      }
+    },
+    ".dynsym": {
+      "candidate_header": {
+        "address": "0000000000000370",
+        "entry_size": "18",
+        "flags": "A",
+        "offset": "000370",
+        "size": "000ae0",
+        "type": "DYNSYM"
+      },
+      "excluded_from_byte_identity": true,
+      "target_header": {
+        "address": "0000000000000370",
+        "entry_size": "18",
+        "flags": "A",
+        "offset": "000370",
+        "size": "000ae0",
+        "type": "DYNSYM"
+      }
+    },
+    ".eh_frame": {
+      "candidate_header": {
+        "address": "00000000000080d0",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0080d0",
+        "size": "0007d0",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "f3fd9d29f4c76de33b653f866aa9c40d52c0623bf47940562e02da6d0da5fb5e",
+        "size": 2000
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000080d0",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0080d0",
+        "size": "0007d0",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "f3fd9d29f4c76de33b653f866aa9c40d52c0623bf47940562e02da6d0da5fb5e",
+        "size": 2000
+      }
+    },
+    ".eh_frame_hdr": {
+      "candidate_header": {
+        "address": "0000000000007f74",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "007f74",
+        "size": "00015c",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "2b8ae3f1aee6d842f6744bc9f9c47edda29603ab8a9c148fc4433986548f32c9",
+        "size": 348
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000007f74",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "007f74",
+        "size": "00015c",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "2b8ae3f1aee6d842f6744bc9f9c47edda29603ab8a9c148fc4433986548f32c9",
+        "size": 348
+      }
+    },
+    ".fini": {
+      "candidate_header": {
+        "address": "00000000000061b4",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "0061b4",
+        "size": "000009",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+        "size": 9
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000061b4",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "0061b4",
+        "size": "000009",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+        "size": 9
+      }
+    },
+    ".fini_array": {
+      "candidate_header": {
+        "address": "0000000000009d78",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008d78",
+        "size": "000008",
+        "type": "FINI_ARRAY"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "f6bf45de126e969a360b997848e1278f4f32c78690946344e6dfae65806386ae",
+        "size": 8
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000009d78",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008d78",
+        "size": "000008",
+        "type": "FINI_ARRAY"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "f6bf45de126e969a360b997848e1278f4f32c78690946344e6dfae65806386ae",
+        "size": 8
+      }
+    },
+    ".gnu.hash": {
+      "candidate_header": {
+        "address": "0000000000000308",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "000308",
+        "size": "000064",
+        "type": "GNU_HASH"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "0f2ff8e5e50767f013796e2c8e2f66a1f2087a6e72f3b194efbf384b2f465b9b",
+        "size": 100
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000000308",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "000308",
+        "size": "000064",
+        "type": "GNU_HASH"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "0f2ff8e5e50767f013796e2c8e2f66a1f2087a6e72f3b194efbf384b2f465b9b",
+        "size": 100
+      }
+    },
+    ".gnu.version": {
+      "candidate_header": {
+        "address": "00000000000016d4",
+        "entry_size": "02",
+        "flags": "A",
+        "offset": "0016d4",
+        "size": "0000e8",
+        "type": "VERSYM"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "2e2997135b3eef26c037ce8f714768b626dee2bbc358d5e8aea01accc4aae527",
+        "size": 232
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000016d4",
+        "entry_size": "02",
+        "flags": "A",
+        "offset": "0016d4",
+        "size": "0000e8",
+        "type": "VERSYM"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "2e2997135b3eef26c037ce8f714768b626dee2bbc358d5e8aea01accc4aae527",
+        "size": 232
+      }
+    },
+    ".gnu.version_r": {
+      "candidate_header": {
+        "address": "00000000000017c0",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0017c0",
+        "size": "000050",
+        "type": "VERNEED"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "409ff8913f46c5d3940b32cef018e2008c2008cc1f33926f58fad3a9828f8889",
+        "size": 80
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000017c0",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0017c0",
+        "size": "000050",
+        "type": "VERNEED"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "409ff8913f46c5d3940b32cef018e2008c2008cc1f33926f58fad3a9828f8889",
+        "size": 80
+      }
+    },
+    ".got": {
+      "candidate_header": {
+        "address": "0000000000009fc8",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008fc8",
+        "size": "000030",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+        "size": 48
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000009fc8",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008fc8",
+        "size": "000030",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+        "size": 48
+      }
+    },
+    ".got.plt": {
+      "candidate_header": {
+        "address": "000000000000a000",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "009000",
+        "size": "000318",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "c2d183eeeda1d7947ece9cbbf7885c547e3036672788d195190a6fa549473218",
+        "size": 792
+      },
+      "equal": true,
+      "target_header": {
+        "address": "000000000000a000",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "009000",
+        "size": "000318",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "c2d183eeeda1d7947ece9cbbf7885c547e3036672788d195190a6fa549473218",
+        "size": 792
+      }
+    },
+    ".init": {
+      "candidate_header": {
+        "address": "0000000000003000",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "003000",
+        "size": "000017",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "d9f9ffce386390dc4a58ffd2ab20a6a9be7da7fc69318d1a39065b330f8b0022",
+        "size": 23
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000003000",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "003000",
+        "size": "000017",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "d9f9ffce386390dc4a58ffd2ab20a6a9be7da7fc69318d1a39065b330f8b0022",
+        "size": 23
+      }
+    },
+    ".init_array": {
+      "candidate_header": {
+        "address": "0000000000009d70",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008d70",
+        "size": "000008",
+        "type": "INIT_ARRAY"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "40b1336890a253bf09374b097c0c84f8da84aa9ca9bebcf08f1724bb938f4fb6",
+        "size": 8
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000009d70",
+        "entry_size": "08",
+        "flags": "WA",
+        "offset": "008d70",
+        "size": "000008",
+        "type": "INIT_ARRAY"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "40b1336890a253bf09374b097c0c84f8da84aa9ca9bebcf08f1724bb938f4fb6",
+        "size": 8
+      }
+    },
+    ".interp": {
+      "candidate_header": {
+        "address": "00000000000002a8",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002a8",
+        "size": "00001c",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "9097c98ea70f6f3b01d50145eb72bf55ad1f4e9713bccf27bd6405d6254eed00",
+        "size": 28
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000002a8",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002a8",
+        "size": "00001c",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "9097c98ea70f6f3b01d50145eb72bf55ad1f4e9713bccf27bd6405d6254eed00",
+        "size": 28
+      }
+    },
+    ".note.ABI-tag": {
+      "candidate_header": {
+        "address": "00000000000002e8",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002e8",
+        "size": "000020",
+        "type": "NOTE"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "6e48317ad93a8ac2dc04321465ede06d1274543fc8ab172e68171a9d684bb313",
+        "size": 32
+      },
+      "equal": true,
+      "target_header": {
+        "address": "00000000000002e8",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002e8",
+        "size": "000020",
+        "type": "NOTE"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "6e48317ad93a8ac2dc04321465ede06d1274543fc8ab172e68171a9d684bb313",
+        "size": 32
+      }
+    },
+    ".note.gnu.build-id": {
+      "candidate_header": {
+        "address": "00000000000002c4",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002c4",
+        "size": "000024",
+        "type": "NOTE"
+      },
+      "excluded_from_byte_identity": true,
+      "target_header": {
+        "address": "00000000000002c4",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "0002c4",
+        "size": "000024",
+        "type": "NOTE"
+      }
+    },
+    ".plt": {
+      "candidate_header": {
+        "address": "0000000000003020",
+        "entry_size": "10",
+        "flags": "AX",
+        "offset": "003020",
+        "size": "000610",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "f69645c9ea212768d0d511310fc96871df4714459256a96f6dc8355161f04437",
+        "size": 1552
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000003020",
+        "entry_size": "10",
+        "flags": "AX",
+        "offset": "003020",
+        "size": "000610",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "f69645c9ea212768d0d511310fc96871df4714459256a96f6dc8355161f04437",
+        "size": 1552
+      }
+    },
+    ".plt.got": {
+      "candidate_header": {
+        "address": "0000000000003630",
+        "entry_size": "08",
+        "flags": "AX",
+        "offset": "003630",
+        "size": "000008",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "063dae5046ed95a344d7cc98a8b17fadf287b1144630c9edadd8e9e6b3559d48",
+        "size": 8
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000003630",
+        "entry_size": "08",
+        "flags": "AX",
+        "offset": "003630",
+        "size": "000008",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "063dae5046ed95a344d7cc98a8b17fadf287b1144630c9edadd8e9e6b3559d48",
+        "size": 8
+      }
+    },
+    ".rela.dyn": {
+      "candidate_header": {
+        "address": "0000000000001810",
+        "entry_size": "18",
+        "flags": "A",
+        "offset": "001810",
+        "size": "0000f0",
+        "type": "RELA"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "13370ff3cdf155bd1a2b004cee029d5e0257b2574ad837d3734c1998df836c67",
+        "size": 240
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000001810",
+        "entry_size": "18",
+        "flags": "A",
+        "offset": "001810",
+        "size": "0000f0",
+        "type": "RELA"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "13370ff3cdf155bd1a2b004cee029d5e0257b2574ad837d3734c1998df836c67",
+        "size": 240
+      }
+    },
+    ".rela.plt": {
+      "candidate_header": {
+        "address": "0000000000001900",
+        "entry_size": "18",
+        "flags": "AI",
+        "offset": "001900",
+        "size": "000900",
+        "type": "RELA"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "8723f819e42d814a92578a0aac96ad3846ed4e0b53b103bbc1fc23e997f90183",
+        "size": 2304
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000001900",
+        "entry_size": "18",
+        "flags": "AI",
+        "offset": "001900",
+        "size": "000900",
+        "type": "RELA"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "8723f819e42d814a92578a0aac96ad3846ed4e0b53b103bbc1fc23e997f90183",
+        "size": 2304
+      }
+    },
+    ".rodata": {
+      "candidate_header": {
+        "address": "0000000000007000",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "007000",
+        "size": "000f73",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "33bc5948068a46c708c76f5c42cf946e38df94074726a3b3b73834765cec8bf4",
+        "size": 3955
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000007000",
+        "entry_size": "00",
+        "flags": "A",
+        "offset": "007000",
+        "size": "000f73",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "33bc5948068a46c708c76f5c42cf946e38df94074726a3b3b73834765cec8bf4",
+        "size": 3955
+      }
+    },
+    ".text": {
+      "candidate_header": {
+        "address": "0000000000003640",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "003640",
+        "size": "002b71",
+        "type": "PROGBITS"
+      },
+      "candidate_payload": {
+        "dumped": true,
+        "sha256": "15caac963456146606621287d1a6ddc16f29c18932b2671a52fd27a4f684d3b5",
+        "size": 11121
+      },
+      "equal": true,
+      "target_header": {
+        "address": "0000000000003640",
+        "entry_size": "00",
+        "flags": "AX",
+        "offset": "003640",
+        "size": "002b71",
+        "type": "PROGBITS"
+      },
+      "target_payload": {
+        "dumped": true,
+        "sha256": "15caac963456146606621287d1a6ddc16f29c18932b2671a52fd27a4f684d3b5",
+        "size": 11121
+      }
+    }
+  },
+  "semantic_binary_equivalent_v3": true,
+  "target_sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66",
+  "version": "0.3.9+grm3u1+han3u2"
+}
