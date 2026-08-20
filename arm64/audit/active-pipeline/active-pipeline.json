@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 284,
-    "workflow_name_count": 284,
+    "workflow_count": 285,
+    "workflow_name_count": 285,
     "referenced_local_file_count": 354,
     "error_count": 0,
-    "warning_count": 53,
+    "warning_count": 52,
     "passed": true
   },
   "workflows": [
@@ -5006,6 +5006,20 @@
       ]
     },
     {
+      "filename": "arm64-upgrade-session-manager-semantic-verifier-v3.yml",
+      "path": ".github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml",
+      "name": "ARM64 upgrade session manager semantic verifier v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-upstream-probe.yml",
       "path": ".github/workflows/arm64-upstream-probe.yml",
       "name": "ARM64 port - probe archived upstream repositories",
@@ -6778,11 +6792,6 @@
   },
   "errors": [],
   "warnings": [
-    {
-      "path": ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
-      "local_path": "arm64/status/branch-native-post-recovery-v1/latest.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
       "local_path": "arm64/locks/final-iso-v2/release-lock.json",
