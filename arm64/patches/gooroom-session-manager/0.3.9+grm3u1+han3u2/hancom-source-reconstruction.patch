@@ -98,7 +98,7 @@
 +	if (schema) {
 +		g_icon_settings = g_settings_new_full (schema, NULL, NULL);
 +		theme_property_notified (g_icon_settings, "icon-theme", NULL);
-+		g_signal_connect (G_OBJECT (g_icon_settings), "changed",
++		g_signal_connect (g_icon_settings, "changed",
 +	                          G_CALLBACK (theme_property_notified), NULL);
 +		g_settings_schema_unref (schema);
 +	}
