@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 286,
-    "workflow_name_count": 286,
+    "workflow_count": 287,
+    "workflow_name_count": 287,
     "referenced_local_file_count": 356,
     "error_count": 0,
-    "warning_count": 54,
+    "warning_count": 53,
     "passed": true
   },
   "workflows": [
@@ -5022,6 +5022,20 @@
       ]
     },
     {
+      "filename": "arm64-touch-session-semantic-installer-once.yml",
+      "path": ".github/workflows/arm64-touch-session-semantic-installer-once.yml",
+      "name": "ARM64 branch-native trigger session semantic installer once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
       "filename": "arm64-upgrade-session-manager-semantic-verifier-v3.yml",
       "path": ".github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml",
       "name": "ARM64 upgrade session manager semantic verifier v3",
@@ -6854,11 +6868,6 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-drive-session-semantic-v3-once.yml",
-      "local_path": "arm64/status/session-semantic-v3-driver/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
