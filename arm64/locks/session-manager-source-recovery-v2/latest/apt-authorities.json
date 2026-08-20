@@ -1,0 +1,68 @@
+[
+  {
+    "file": "etc/apt/sources.list",
+    "kind": "deb",
+    "base": "https://deb.debian.org/debian",
+    "suite": "bullseye",
+    "components": [
+      "main",
+      "contrib"
+    ]
+  },
+  {
+    "file": "etc/apt/sources.list",
+    "kind": "deb",
+    "base": "https://deb.debian.org/debian",
+    "suite": "bullseye-updates",
+    "components": [
+      "main",
+      "contrib"
+    ]
+  },
+  {
+    "file": "etc/apt/sources.list",
+    "kind": "deb",
+    "base": "https://deb.debian.org/debian-security",
+    "suite": "bullseye-security",
+    "components": [
+      "main",
+      "contrib"
+    ]
+  },
+  {
+    "file": "etc/apt/sources.list.d/official-package-repositories.list",
+    "kind": "deb",
+    "base": "https://update.hancomgooroom.com/gooroom",
+    "suite": "gooroom-3.0",
+    "components": [
+      "main"
+    ]
+  },
+  {
+    "file": "etc/apt/sources.list.d/official-package-repositories.list",
+    "kind": "deb",
+    "base": "https://update.hancomgooroom.com/hancom",
+    "suite": "hancom-3.0",
+    "components": [
+      "main"
+    ]
+  },
+  {
+    "file": "fallback",
+    "kind": "fallback",
+    "base": "https://update.hancomgooroom.com/gooroom",
+    "suite": "stable",
+    "components": [
+      "main"
+    ]
+  },
+  {
+    "file": "fallback",
+    "kind": "fallback",
+    "base": "https://update.hancomgooroom.com/hancom",
+    "suite": "stable",
+    "components": [
+      "main"
+    ]
+  }
+]
