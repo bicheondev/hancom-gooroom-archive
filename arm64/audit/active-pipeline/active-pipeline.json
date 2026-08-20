@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 283,
-    "workflow_name_count": 283,
-    "referenced_local_file_count": 353,
+    "workflow_count": 284,
+    "workflow_name_count": 284,
+    "referenced_local_file_count": 354,
     "error_count": 0,
-    "warning_count": 52,
+    "warning_count": 53,
     "passed": true
   },
   "workflows": [
@@ -555,6 +555,25 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/reconstruct_gooroom_guide_han3u1.py"
+      ]
+    },
+    {
+      "filename": "arm64-branch-native-post-recovery-trigger-v1.yml",
+      "path": ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
+      "name": "ARM64 branch-native post-recovery trigger v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08"
+      ],
+      "referenced_local_files": [
+        "arm64/status/branch-native-post-recovery-v1/latest.json",
+        "arm64/status/linux-source-recovery-v2/latest.json",
+        "arm64/status/session-manager-source-recovery-v2/latest.json"
       ]
     },
     {
@@ -6681,6 +6700,9 @@
     "arm64/status/active-resolution-runs/latest.json": [
       ".github/workflows/arm64-snapshot-active-resolution-runs-once.yml"
     ],
+    "arm64/status/branch-native-post-recovery-v1/latest.json": [
+      ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml"
+    ],
     "arm64/status/build-blockers.json": [
       ".github/workflows/arm64-port-coverage.yml"
     ],
@@ -6712,6 +6734,7 @@
       ".github/workflows/arm64-watch-integration-reconstruction-v2.yml"
     ],
     "arm64/status/linux-source-recovery-v2/latest.json": [
+      ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
       ".github/workflows/arm64-post-recovery-gate-v1.yml",
       ".github/workflows/arm64-recover-linux-source-v2.yml"
     ],
@@ -6719,6 +6742,7 @@
       ".github/workflows/arm64-post-recovery-gate-v1.yml"
     ],
     "arm64/status/session-manager-source-recovery-v2/latest.json": [
+      ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
       ".github/workflows/arm64-post-recovery-gate-v1.yml",
       ".github/workflows/arm64-recover-session-manager-source-v2.yml"
     ],
@@ -6754,6 +6778,11 @@
   },
   "errors": [],
   "warnings": [
+    {
+      "path": ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
+      "local_path": "arm64/status/branch-native-post-recovery-v1/latest.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
       "local_path": "arm64/locks/final-iso-v2/release-lock.json",
