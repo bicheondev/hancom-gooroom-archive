@@ -1,0 +1,50 @@
+name: ARM64 branch-native trigger session semantic installer once
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-touch-session-semantic-installer-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-touch-session-semantic-installer-once
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Touch the registered installer workflow on arm64-port
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=.github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml
+          test -s "$target"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin arm64-port
+            git reset --hard origin/arm64-port
+            printf '\n# branch-native semantic verifier trigger: %s-%s\n' \
+              "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$target"
+            git add -- "$target"
+            git diff --cached --check
+            git commit -m 'ci(arm64): trigger session semantic verifier installer'
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
