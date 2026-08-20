@@ -1,9 +1,54 @@
 {
-  "schema": 1,
-  "state": "started",
-  "observer_run_id": "32410409273",
+  "artifacts": [],
+  "branch": "arm64-port",
+  "branch_head_before_record": "0255b57920858de309e3eca1ffef06b8a8c476ce",
+  "failed_steps": [
+    {
+      "job": "build",
+      "job_id": 96558476080,
+      "name": "Verify metadata and reject every foreign ELF",
+      "number": 7
+    }
+  ],
+  "generated_at": "2026-08-20T19:53:59.625863+00:00",
+  "jobs": [
+    {
+      "conclusion": "failure",
+      "failed_steps": [
+        {
+          "name": "Verify metadata and reject every foreign ELF",
+          "number": 7
+        }
+      ],
+      "id": 96558476080,
+      "name": "build",
+      "status": "completed"
+    }
+  ],
   "observer_run_attempt": "1",
-  "trigger_sha": "9d35c7f0b189f780b532045a0b0d1b85572d5456",
+  "observer_run_id": "32410409273",
+  "package_artifact": null,
+  "package_authority_path": "arm64/locks/gooroom-session-manager-han3u2-arm64-build/latest/package-promotion-authority.json",
+  "package_authority_present": false,
+  "package_layer_promotion_allowed": false,
+  "packages": [],
+  "schema": 1,
+  "state": "completed",
+  "target_run": {
+    "conclusion": "failure",
+    "created_at": "2026-08-20T19:42:58Z",
+    "event": "push",
+    "head_branch": "arm64-port",
+    "head_sha": "9d35c7f0b189f780b532045a0b0d1b85572d5456",
+    "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32410165136",
+    "id": 32410165136,
+    "name": "ARM64 build session manager han3u2 after ABI v3",
+    "path": ".github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-08-20T19:53:55Z"
+  },
+  "target_run_id": "32410165136",
   "target_workflow": ".github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml",
-  "started_at": "2026-08-20T19:45:44Z"
+  "trigger_sha": "9d35c7f0b189f780b532045a0b0d1b85572d5456"
 }
