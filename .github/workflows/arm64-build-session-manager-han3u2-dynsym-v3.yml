@@ -166,7 +166,15 @@ jobs:
               package = field(deb, 'Package')
               actual_version = field(deb, 'Version')
               architecture = field(deb, 'Architecture')
-              source_field = field(deb, 'Source').split(' ', 1)[0]
+              source_control_field = field(deb, 'Source')
+              # Debian binary control may omit Source when its source package
+              # name is identical to Package.  Treat that omission as the
+              # canonical package name instead of an empty-source mismatch.
+              source_field = (
+                  source_control_field.split(' ', 1)[0]
+                  if source_control_field
+                  else package
+              )
               pkgroot = extracted / package
               subprocess.run(['dpkg-deb', '-x', str(deb), str(pkgroot)], check=True)
               elfs = []
@@ -176,23 +184,37 @@ jobs:
                           continue
                   desc = subprocess.check_output(['file', '-b', str(path)], text=True).strip()
                   arm64 = 'ARM aarch64' in desc or 'ARM64' in desc
+                  relative_path = path.relative_to(pkgroot).as_posix()
                   elfs.append({
-                      'path': path.relative_to(pkgroot).as_posix(),
+                      'path': relative_path,
                       'file': desc,
                       'arm64': arm64,
                   })
                   if not arm64:
-                      errors.append({'kind': 'foreign-elf', 'package': package, 'file': desc})
+                      errors.append({
+                          'kind': 'foreign-elf',
+                          'package': package,
+                          'path': relative_path,
+                          'file': desc,
+                      })
               checks = {
                   'version': actual_version == version,
                   'architecture': architecture in {'arm64', 'all'},
                   'source': source_field == source,
               }
               if not all(checks.values()):
-                  errors.append({'kind': 'metadata', 'package': package, 'checks': checks})
+                  errors.append({
+                      'kind': 'metadata',
+                      'package': package,
+                      'source_control_field': source_control_field or None,
+                      'effective_source': source_field,
+                      'checks': checks,
+                  })
               packages.append({
                   'filename': deb.name,
                   'package': package,
+                  'source_control_field': source_control_field or None,
+                  'effective_source': source_field,
                   'version': actual_version,
                   'architecture': architecture,
                   'size': deb.stat().st_size,
