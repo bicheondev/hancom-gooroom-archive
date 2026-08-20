@@ -1,19 +1,19 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-18T13:30:59Z",
+    "generated_at": "2026-08-20T16:26:19Z",
     "branch": "arm64-port",
-    "head_sha": "3d99c17ecd88c5ff136818dcfc8b1c7d808fd85f",
+    "head_sha": "cf21110d196df62667d2e2a498bae5c926886356",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 4,
+      "completed": 7,
       "in_progress": 1,
-      "no-run": 95
+      "no-run": 92
     },
     "latest_run_conclusion_counts": {
-      "failure": 3,
-      "none": 96,
-      "success": 1
+      "failure": 1,
+      "none": 93,
+      "success": 6
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -33,18 +33,7 @@
       "name": ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml",
       "path": ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml",
       "state": "active",
-      "latest_run": {
-        "id": 32142323206,
-        "run_number": 6,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "146718ccc0ee8bb9ffaeab67a1c01c96dcfc0217",
-        "created_at": "2026-08-18T13:26:00Z",
-        "updated_at": "2026-08-18T13:26:11Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32142323206",
-        "display_title": "Fix Linux ARM64 build workflow YAML"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 328534864,
@@ -61,9 +50,52 @@
       "latest_run": null
     },
     {
-      "workflow_id": 331936112,
-      "name": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
-      "path": ".github/workflows/arm64-dispatch-qtbase-reconstruction-path-fix.yml",
+      "workflow_id": 337087167,
+      "name": "ARM64 analyze - linux 5.10.179 grm3u1 binary delta v1",
+      "path": ".github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32339678568,
+        "run_number": 2,
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "0faf45044304075864082f80676d20be06cdadde",
+        "created_at": "2026-08-20T06:27:34Z",
+        "updated_at": "2026-08-20T06:28:08Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32339678568",
+        "display_title": "ARM64 analyze - linux 5.10.179 grm3u1 binary delta v1"
+      }
+    },
+    {
+      "workflow_id": 337554139,
+      "name": "ARM64 analyze integration applet han3u3 reconstruction v2",
+      "path": ".github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 338031953,
+      "name": "ARM64 analyze integration applet han3u3 reconstruction v3",
+      "path": ".github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v3.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32337007537,
+        "run_number": 2,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c5ca2d64fcf896f09ebf652da1e6b89a2f514eac",
+        "created_at": "2026-08-20T05:48:22Z",
+        "updated_at": "2026-08-20T05:58:17Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32337007537",
+        "display_title": "ci(arm64): fix integration v3 candidate metadata quoting"
+      }
+    },
+    {
+      "workflow_id": 337517261,
+      "name": "ARM64 analyze session manager ELF delta v2",
+      "path": ".github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml",
       "state": "active",
       "latest_run": null
     },
@@ -89,6 +121,13 @@
       "latest_run": null
     },
     {
+      "workflow_id": 337529654,
+      "name": "ARM64 audit published ISO rootfs v1",
+      "path": ".github/workflows/arm64-audit-published-iso-rootfs-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 336189910,
       "name": "ARM64 bootstrap - install QtBase source-archive gates",
       "path": ".github/workflows/arm64-bootstrap-install-qtbase-source-archive-gates.yml",
@@ -103,6 +142,88 @@
       "latest_run": null
     },
     {
+      "workflow_id": 338384326,
+      "name": "ARM64 branch-native post-recovery trigger v1",
+      "path": ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32340966003,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "af3fcc9b41aca2653b307e9ac3ec72cde78f61ed",
+        "created_at": "2026-08-20T06:45:54Z",
+        "updated_at": "2026-08-20T06:46:08Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32340966003",
+        "display_title": "ci(arm64): add branch-native integration retrigger fallback"
+      }
+    },
+    {
+      "workflow_id": 337515865,
+      "name": "ARM64 bridge verified qtbase runtime subset",
+      "path": ".github/workflows/arm64-bridge-qtbase-runtime-subset-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 337519611,
+      "name": "ARM64 build gooroom integration applet han3u3 v1",
+      "path": ".github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 337521472,
+      "name": "ARM64 build session manager han3u2 v1",
+      "path": ".github/workflows/arm64-build-session-manager-han3u2-arm64-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 338025307,
+      "name": "ARM64 capture blocker workflow runs v1",
+      "path": ".github/workflows/arm64-capture-blocker-runs-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 338032098,
+      "name": "ARM64 capture integration reconstruction v3 run",
+      "path": ".github/workflows/arm64-capture-integration-v3-run.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32286700211,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "4ada71ea53de5b28ad6775a30dfbdb78af428c42",
+        "created_at": "2026-08-19T18:19:34Z",
+        "updated_at": "2026-08-19T18:29:44Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32286700211",
+        "display_title": "ci(arm64): capture integration reconstruction v3 run"
+      }
+    },
+    {
+      "workflow_id": 338031052,
+      "name": "ARM64 capture nimf probe run v1",
+      "path": ".github/workflows/arm64-capture-nimf-probe-run-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32286539156,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "d00c21b57982525da311b27759fde29f0936f479",
+        "created_at": "2026-08-19T18:17:52Z",
+        "updated_at": "2026-08-19T18:18:14Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32286539156",
+        "display_title": "ci(arm64): capture nimf probe run"
+      }
+    },
+    {
       "workflow_id": 335507196,
       "name": "ARM64 continuation - gnome-flashback han3u4 to Stage 0 v3",
       "path": ".github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml",
@@ -115,6 +236,24 @@
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "state": "active",
       "latest_run": null
+    },
+    {
+      "workflow_id": 338374655,
+      "name": "ARM64 continuation orchestrator v1",
+      "path": ".github/workflows/arm64-continuation-orchestrator-v1.yml",
+      "state": "active",
+      "latest_run": {
+        "id": 32339654155,
+        "run_number": 1,
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "9705c591a5f1287705c202679feb24c8435b2800",
+        "created_at": "2026-08-20T06:27:13Z",
+        "updated_at": "2026-08-20T06:28:21Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32339654155",
+        "display_title": "ci(arm64): add continuation orchestrator for remaining blockers"
+      }
     },
     {
       "workflow_id": 335436899,
@@ -241,16 +380,16 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 32142323161,
-        "run_number": 651,
+        "id": 32391822663,
+        "run_number": 727,
         "event": "push",
         "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "146718ccc0ee8bb9ffaeab67a1c01c96dcfc0217",
-        "created_at": "2026-08-18T13:26:00Z",
-        "updated_at": "2026-08-18T13:26:30Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32142323161",
-        "display_title": "Fix Linux ARM64 build workflow YAML"
+        "conclusion": "success",
+        "head_sha": "8ee4450d5a4a6d413a8db54a6628936a72825c72",
+        "created_at": "2026-08-20T16:24:36Z",
+        "updated_at": "2026-08-20T16:24:59Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32391822663",
+        "display_title": "ci(arm64): drive session-manager semantic verifier v3"
       }
     },
     {
@@ -513,122 +652,16 @@
       "latest_run": null
     },
     {
-      "workflow_id": 333400696,
-      "name": "ARM64 port - diagnose exact Gooroom Guide AMD64 ELF delta v1",
-      "path": ".github/workflows/arm64-diagnose-gooroom-guide-elf-v1.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 336643547,
       "name": "ARM64 port - diagnose final app deep diff v1",
       "path": ".github/workflows/arm64-diagnose-final-app-deep-diff-v1.yml",
       "state": "active",
-      "latest_run": {
-        "id": 32093287361,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "70a7a3226c53b32f3b9f069c56168b1b28862844",
-        "created_at": "2026-08-18T02:50:26Z",
-        "updated_at": "2026-08-18T02:50:37Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32093287361",
-        "display_title": "Diagnose final application deep-diff failures"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 336648493,
       "name": "ARM64 port - diagnose final blocker runs v1",
       "path": ".github/workflows/arm64-diagnose-final-blocker-runs-v1.yml",
-      "state": "active",
-      "latest_run": {
-        "id": 32094021733,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "6f9bcae67bc25447f9c7cd69e31ffd7c2db0a2e1",
-        "created_at": "2026-08-18T03:02:38Z",
-        "updated_at": "2026-08-18T03:02:52Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32094021733",
-        "display_title": "Diagnose final ARM64 blocker workflows"
-      }
-    },
-    {
-      "workflow_id": 333218112,
-      "name": "ARM64 port - diagnose gooroom-guide AMD64 ELF delta",
-      "path": ".github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 333424680,
-      "name": "ARM64 port - diagnose reduced Gooroom Guide AMD64 ELF delta v2",
-      "path": ".github/workflows/arm64-diagnose-gooroom-guide-elf-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 329047780,
-      "name": "ARM64 port - dispatch browser after composite jq fix",
-      "path": ".github/workflows/arm64-dispatch-browser-after-jq-fix.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 334620923,
-      "name": "ARM64 port - dispatch corrected gnome-flashback han3u4 pipeline v2",
-      "path": ".github/workflows/arm64-dispatch-gnome-flashback-han3u4-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 333768672,
-      "name": "ARM64 port - dispatch gooroom-guide after final patch",
-      "path": ".github/workflows/arm64-dispatch-gooroom-guide-after-final-patch.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 333228698,
-      "name": "ARM64 port - dispatch gooroom-guide reconstruction v2",
-      "path": ".github/workflows/arm64-dispatch-gooroom-guide-reconstruction-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 329241005,
-      "name": "ARM64 port - dispatch reconstructed libsecurity rerun",
-      "path": ".github/workflows/arm64-dispatch-libsecurity-reconstruction-rerun.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 329149581,
-      "name": "ARM64 port - dispatch recovery after control center build",
-      "path": ".github/workflows/arm64-dispatch-recovery-after-gnome-control-center.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 329053114,
-      "name": "ARM64 port - dispatch resolved exact source builds",
-      "path": ".github/workflows/arm64-dispatch-resolved-source-builds.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 329039905,
-      "name": "ARM64 port - dispatch user-aware source archaeology",
-      "path": ".github/workflows/arm64-dispatch-source-archaeology.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328446712,
-      "name": "ARM64 port - enforce effective exact source lock",
-      "path": ".github/workflows/arm64-effective-source-lock.yml",
       "state": "active",
       "latest_run": null
     },
@@ -757,16 +790,16 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 32142794020,
-        "run_number": 25,
+        "id": 32391967514,
+        "run_number": 26,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "3d99c17ecd88c5ff136818dcfc8b1c7d808fd85f",
-        "created_at": "2026-08-18T13:30:49Z",
-        "updated_at": "2026-08-18T13:30:52Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32142794020",
-        "display_title": "Repair empty kernel blocker summary lock"
+        "head_sha": "cf21110d196df62667d2e2a498bae5c926886356",
+        "created_at": "2026-08-20T16:26:09Z",
+        "updated_at": "2026-08-20T16:26:12Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32391967514",
+        "display_title": "fix(arm64): close false-positive integration reconstruction authority"
       }
     },
     {
@@ -782,14 +815,14 @@
       "exists": true,
       "path": "arm64/audit/pipeline-lint/summary.json",
       "values": {
-        "passed": false
+        "passed": true
       }
     },
     "active_pipeline": {
       "exists": true,
       "path": "arm64/audit/active-pipeline/summary.json",
       "values": {
-        "passed": false
+        "passed": true
       }
     },
     "workflow_secrets": {
