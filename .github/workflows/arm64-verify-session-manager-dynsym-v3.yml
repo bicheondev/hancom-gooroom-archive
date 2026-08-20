@@ -1,0 +1,373 @@
+name: ARM64 verify session manager canonical dynamic ABI v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-verify-session-manager-dynsym-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-verify-session-manager-dynsym-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE: gooroom-session-manager
+  VERSION: 0.3.9+grm3u1+han3u2
+  SOURCE_ARTIFACT_ID: '9395357037'
+  SOURCE_ARTIFACT_NAME: gooroom-session-manager-han3u2-reconstruction-v1
+  SOURCE_ARTIFACT_DIGEST: sha256:dd3cfe2bef25a3df27dba5b7f5ad62a19743c98ed9e1adfcd8e6c439bc9ae7bf
+  MAIN_ELF: usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager
+  LOCK_DIR: arm64/locks/gooroom-session-manager-han3u2-dynsym-v3/latest
+  STATUS_DIR: arm64/status/gooroom-session-manager-han3u2-dynsym-v3
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic ELF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file jq python3 unzip
+          rm -rf work/session-manager-dynsym-v3
+          mkdir -p work/session-manager-dynsym-v3/{artifact,payload,report}
+
+      - name: Download immutable reconstruction authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-dynsym-v3
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}" \
+            > "$root/artifact/metadata.json"
+          jq -e \
+            --arg id "$SOURCE_ARTIFACT_ID" \
+            --arg name "$SOURCE_ARTIFACT_NAME" \
+            --arg digest "$SOURCE_ARTIFACT_DIGEST" '
+              (.id | tostring) == $id and
+              .name == $name and
+              .digest == $digest and
+              .expired == false
+            ' "$root/artifact/metadata.json" >/dev/null
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
+            > "$root/artifact/reconstruction.zip"
+          unzip -q "$root/artifact/reconstruction.zip" -d "$root/artifact/unpacked"
+          for side in target candidate; do
+            deb="$(find "$root/artifact/unpacked" -type f \
+              -path "*/downloads/${side}.deb" -print -quit)"
+            test -n "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$SOURCE"
+            test "$(dpkg-deb -f "$deb" Version)" = "$VERSION"
+            test "$(dpkg-deb -f "$deb" Architecture)" = amd64
+            mkdir -p "$root/payload/$side"
+            dpkg-deb -x "$deb" "$root/payload/$side"
+            cp "$deb" "$root/report/${side}.deb"
+          done
+          source_lock="$(find "$root/artifact/unpacked" -type f \
+            -path '*/source-authority/source-lock.json' -print -quit)"
+          test -n "$source_lock"
+          cp "$source_lock" "$root/report/source-lock.json"
+          jq -e --arg package "$SOURCE" --arg version "$VERSION" '
+            .schema == 1 and .package == $package and .version == $version and
+            .source_archive_sha256 != null and .reconstructed_tree_sha != null
+          ' "$root/report/source-lock.json" >/dev/null
+
+      - name: Canonicalize dynamic ABI and compare runtime semantics
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          root = Path('work/session-manager-dynsym-v3')
+          relative = Path(os.environ['MAIN_ELF'])
+          target = root / 'payload' / 'target' / relative
+          candidate = root / 'payload' / 'candidate' / relative
+          if not target.is_file() or not candidate.is_file():
+              raise SystemExit('main ELF is missing')
+
+          def run(*args: str) -> str:
+              return subprocess.check_output(
+                  list(args), text=True, stderr=subprocess.STDOUT
+              )
+
+          def sha256(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(block)
+              return h.hexdigest()
+
+          def section_headers(path: Path) -> dict[str, dict[str, str]]:
+              rows = {}
+              pattern = re.compile(
+                  r'^\s*\[\s*\d+\]\s+(\S+)\s+(\S+)\s+'
+                  r'([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+'
+                  r'([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s*'
+                  r'([A-Z]*)\s+\d+\s+\d+\s+\d+\s*$'
+              )
+              for line in run('readelf', '-SW', str(path)).splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  name, kind, address, offset, size, entry_size, flags = match.groups()
+                  rows[name] = {
+                      'type': kind,
+                      'address': address,
+                      'offset': offset,
+                      'size': size,
+                      'entry_size': entry_size,
+                      'flags': flags,
+                  }
+              return rows
+
+          def section_payload(path: Path, name: str) -> dict[str, object]:
+              with tempfile.TemporaryDirectory() as directory:
+                  output = Path(directory) / 'section'
+                  result = subprocess.run(
+                      ['objcopy', '--dump-section', f'{name}={output}', str(path)],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                      check=False,
+                  )
+                  if result.returncode or not output.exists():
+                      return {'dumped': False, 'tool_output': result.stdout}
+                  return {
+                      'dumped': True,
+                      'size': output.stat().st_size,
+                      'sha256': sha256(output),
+                  }
+
+          def normalized_disassembly(path: Path) -> list[str]:
+              lines = run('objdump', '-dW', str(path)).splitlines()
+              while lines and not lines[0].startswith('Disassembly of section'):
+                  lines.pop(0)
+              return lines
+
+          target_sections = section_headers(target)
+          candidate_sections = section_headers(candidate)
+          excluded = {
+              '.dynsym', '.dynstr', '.note.gnu.build-id',
+              '.gnu_debuglink', '.shstrtab',
+          }
+          allocated = sorted(
+              {name for name, row in target_sections.items() if 'A' in row['flags']} |
+              {name for name, row in candidate_sections.items() if 'A' in row['flags']}
+          )
+          section_comparison = {}
+          for name in allocated:
+              target_header = target_sections.get(name)
+              candidate_header = candidate_sections.get(name)
+              row = {
+                  'target_header': target_header,
+                  'candidate_header': candidate_header,
+              }
+              if name in excluded:
+                  row['excluded_from_byte_identity'] = True
+              elif (
+                  target_header and candidate_header and
+                  target_header['type'] == candidate_header['type'] == 'NOBITS'
+              ):
+                  row['equal'] = target_header == candidate_header
+              else:
+                  row['target_payload'] = section_payload(target, name)
+                  row['candidate_payload'] = section_payload(candidate, name)
+                  row['equal'] = (
+                      target_header == candidate_header and
+                      row['target_payload'] == row['candidate_payload']
+                  )
+              section_comparison[name] = row
+
+          inventories = {}
+          for side in ('target', 'candidate'):
+              payload_root = root / 'payload' / side
+              inventory = {}
+              for path in sorted(payload_root.rglob('*')):
+                  rel = path.relative_to(payload_root).as_posix()
+                  if path.is_symlink():
+                      inventory[rel] = {'kind': 'symlink', 'target': os.readlink(path)}
+                  elif path.is_file():
+                      inventory[rel] = {
+                          'kind': 'file',
+                          'size': path.stat().st_size,
+                          'sha256': sha256(path),
+                      }
+              inventories[side] = inventory
+          other_paths = sorted(
+              (set(inventories['target']) | set(inventories['candidate'])) -
+              {relative.as_posix()}
+          )
+
+          checks = {
+              'same_size': target.stat().st_size == candidate.stat().st_size,
+              'elf_header_equal': run('readelf', '-hW', str(target)) == run('readelf', '-hW', str(candidate)),
+              'program_headers_equal': run('readelf', '-lW', str(target)) == run('readelf', '-lW', str(candidate)),
+              'dynamic_tags_equal': run('readelf', '-dW', str(target)) == run('readelf', '-dW', str(candidate)),
+              'dynamic_symbols_equal': run('readelf', '--dyn-syms', '--wide', str(target)) == run('readelf', '--dyn-syms', '--wide', str(candidate)),
+              'relocations_equal': run('readelf', '-rW', str(target)) == run('readelf', '-rW', str(candidate)),
+              'disassembly_equal': normalized_disassembly(target) == normalized_disassembly(candidate),
+              'all_allocated_sections_equal_excluding_dynsym_dynstr_build_id': all(
+                  row.get('equal', True) for row in section_comparison.values()
+              ),
+              'payload_path_set_equal': set(inventories['target']) == set(inventories['candidate']),
+              'all_non_main_payload_equal': all(
+                  inventories['target'].get(path) == inventories['candidate'].get(path)
+                  for path in other_paths
+              ),
+          }
+          report = {
+              'schema': 3,
+              'package': os.environ['SOURCE'],
+              'version': os.environ['VERSION'],
+              'main_elf': relative.as_posix(),
+              'target_sha256': sha256(target),
+              'candidate_sha256': sha256(candidate),
+              'checks': checks,
+              'semantic_binary_equivalent_v3': all(checks.values()),
+              'raw_differences_permitted_only_in': sorted(excluded),
+              'section_comparison': section_comparison,
+          }
+          (root / 'report' / 'canonical-abi-verification.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          jq -e '
+            .schema == 3 and
+            .semantic_binary_equivalent_v3 == true and
+            all(.checks[]; . == true)
+          ' work/session-manager-dynsym-v3/report/canonical-abi-verification.json >/dev/null
+
+      - name: Write fail-closed authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/session-manager-dynsym-v3
+          rm -rf "$LOCK_DIR" "$STATUS_DIR"
+          mkdir -p "$LOCK_DIR" "$STATUS_DIR"
+          cp "$root/report/canonical-abi-verification.json" "$LOCK_DIR/"
+          cp "$root/report/source-lock.json" "$LOCK_DIR/"
+          cp "$root/artifact/metadata.json" "$LOCK_DIR/source-artifact-metadata.json"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path('work/session-manager-dynsym-v3')
+          report = json.loads((root / 'report/canonical-abi-verification.json').read_text())
+          source_lock = json.loads((root / 'report/source-lock.json').read_text())
+          artifact = json.loads((root / 'artifact/metadata.json').read_text())
+          verified = bool(report['semantic_binary_equivalent_v3'])
+          authority = {
+              'schema': 3,
+              'package': os.environ['SOURCE'],
+              'version': os.environ['VERSION'],
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'main_elf': os.environ['MAIN_ELF'],
+              'semantic_binary_equivalent_v3': verified,
+              'source_reconstruction_semantically_verified': verified,
+              'arm64_build_allowed': verified,
+              'package_layer_promotion_allowed': verified,
+              'iso_assembly_allowed': False,
+              'verification_checks': report['checks'],
+              'target_sha256': report['target_sha256'],
+              'candidate_sha256': report['candidate_sha256'],
+              'source_lock': source_lock,
+              'source_artifact': {
+                  'id': str(artifact['id']),
+                  'name': artifact['name'],
+                  'digest': artifact.get('digest'),
+                  'size_in_bytes': artifact['size_in_bytes'],
+                  'expired': artifact['expired'],
+              },
+              'evidence': {
+                  'canonical_abi_verification': 'canonical-abi-verification.json',
+                  'source_lock': 'source-lock.json',
+                  'source_artifact_metadata': 'source-artifact-metadata.json',
+              },
+              'policy': 'exact-non-main-payload-plus-identical-code-relocations-dynamic-tags-logical-dynsym-and-all-allocated-sections-excluding-dynsym-dynstr-build-id',
+              'global_exact_binary_reproducibility_claimed': False,
+          }
+          lock = Path(os.environ['LOCK_DIR'])
+          (lock / 'authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          status = {
+              'schema': 1,
+              'package': authority['package'],
+              'version': authority['version'],
+              'semantic_binary_equivalent_v3': verified,
+              'arm64_build_allowed': authority['arm64_build_allowed'],
+              'package_layer_promotion_allowed': authority['package_layer_promotion_allowed'],
+              'authority_path': str(lock / 'authority.json'),
+              'authority_sha256': hashlib.sha256((lock / 'authority.json').read_bytes()).hexdigest(),
+          }
+          Path(os.environ['STATUS_DIR'], 'latest.json').write_text(
+              json.dumps(status, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .semantic_binary_equivalent_v3 == true and
+            .source_reconstruction_semantically_verified == true and
+            .arm64_build_allowed == true and
+            .package_layer_promotion_allowed == true and
+            .iso_assembly_allowed == false
+          ' "$LOCK_DIR/authority.json" >/dev/null
+
+      - name: Commit canonical ABI authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR" "$STATUS_DIR"
+          git commit -m 'Lock session manager han3u2 canonical dynamic ABI v3'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Upload complete ABI evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-session-manager-han3u2-dynsym-v3-${{ github.run_id }}
+          path: |
+            work/session-manager-dynsym-v3/report
+            arm64/locks/gooroom-session-manager-han3u2-dynsym-v3/latest
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
