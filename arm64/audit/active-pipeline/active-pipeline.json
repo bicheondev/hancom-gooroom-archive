@@ -4,9 +4,9 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 285,
     "workflow_name_count": 285,
-    "referenced_local_file_count": 354,
+    "referenced_local_file_count": 355,
     "error_count": 0,
-    "warning_count": 52,
+    "warning_count": 53,
     "passed": true
   },
   "workflows": [
@@ -5017,7 +5017,9 @@
       "uses": [
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
-      "referenced_local_files": []
+      "referenced_local_files": [
+        "arm64/status/session-manager-semantic-verifier-v3/latest.json"
+      ]
     },
     {
       "filename": "arm64-upstream-probe.yml",
@@ -6755,6 +6757,9 @@
     "arm64/status/post-recovery-gate-v1/latest.json": [
       ".github/workflows/arm64-post-recovery-gate-v1.yml"
     ],
+    "arm64/status/session-manager-semantic-verifier-v3/latest.json": [
+      ".github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml"
+    ],
     "arm64/status/session-manager-source-recovery-v2/latest.json": [
       ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
       ".github/workflows/arm64-post-recovery-gate-v1.yml",
@@ -7015,6 +7020,11 @@
     {
       "path": ".github/workflows/arm64-stage0-v3-record.yml",
       "local_path": "arm64/locks/stage0-v3-attempt/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml",
+      "local_path": "arm64/status/session-manager-semantic-verifier-v3/latest.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
