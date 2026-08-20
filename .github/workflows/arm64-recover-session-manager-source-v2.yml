@@ -1,0 +1,370 @@
+name: ARM64 recover exact session-manager source v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-session-manager-source-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-recover-session-manager-source-v2
+  cancel-in-progress: false
+
+env:
+  REFERENCE_ISO_URL: https://github.com/bicheondev/hancom-gooroom-archive/releases/download/v3.3/Hancom-Gooroom-3.3-amd64.hybrid.iso
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install recovery tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y curl jq python3 xz-utils gzip bzip2 zstd p7zip-full squashfs-tools dpkg-dev git ca-certificates
+
+      - name: Extract authoritative package and repository metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf work/session-manager-source-recovery-v2
+          mkdir -p work/session-manager-source-recovery-v2/{iso,rootfs,indexes,git,source,logs} \
+                   arm64/locks/session-manager-source-recovery-v2/latest \
+                   arm64/status/session-manager-source-recovery-v2
+          iso=work/session-manager-source-recovery-v2/reference.iso
+          curl --fail --location --retry 5 --retry-all-errors --output "$iso" "$REFERENCE_ISO_URL"
+          sha256sum "$iso" | tee work/session-manager-source-recovery-v2/reference-iso.sha256
+          7z x -y -owork/session-manager-source-recovery-v2/iso "$iso" > work/session-manager-source-recovery-v2/logs/7z-iso.log
+          squashfs="$(find work/session-manager-source-recovery-v2/iso -type f \( -name 'filesystem.squashfs' -o -name '*.squashfs' \) -print -quit)"
+          test -n "$squashfs"
+          unsquashfs -d work/session-manager-source-recovery-v2/rootfs "$squashfs" \
+            etc/apt var/lib/dpkg/status etc/os-release usr/lib/os-release \
+            > work/session-manager-source-recovery-v2/logs/unsquashfs.log 2>&1 || true
+
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          work = Path('work/session-manager-source-recovery-v2')
+          root = work/'rootfs'
+          status = (root/'var/lib/dpkg/status').read_text(errors='replace')
+          candidates = []
+          for stanza in re.split(r'\n\s*\n', status):
+              fields = {}
+              current = None
+              for line in stanza.splitlines():
+                  if line[:1].isspace() and current:
+                      fields[current] += '\n' + line
+                  elif ': ' in line:
+                      current, value = line.split(': ', 1)
+                      fields[current] = value
+              package = fields.get('Package','')
+              source_raw = fields.get('Source', package)
+              version = fields.get('Version','')
+              haystack = f'{package} {source_raw}'.lower()
+              vendor = '+grm' in version or '+han' in version
+              likely = (
+                  'session-manager' in haystack or
+                  'session_manager' in haystack or
+                  ('gooroom' in haystack and 'session' in haystack)
+              )
+              if not (vendor and likely):
+                  continue
+              source = source_raw.split(' ',1)[0]
+              source_version = version
+              m = re.search(r'\(([^)]+)\)', source_raw)
+              if m:
+                  source_version = m.group(1)
+              candidates.append({
+                  'package': package,
+                  'binary_version': version,
+                  'architecture': fields.get('Architecture'),
+                  'source_raw': source_raw,
+                  'source': source,
+                  'source_version': source_version,
+              })
+
+          # Existing machine-readable locks may identify the source even when the binary name is generic.
+          text_matches = []
+          pattern = re.compile(r'(?i)([a-z0-9][a-z0-9+.-]*(?:session-manager|session_manager)[a-z0-9+.-]*)')
+          for base in (Path('arm64/status'), Path('arm64/locks')):
+              if not base.exists():
+                  continue
+              for path in base.rglob('*'):
+                  if not path.is_file() or path.stat().st_size > 8_000_000:
+                      continue
+                  try:
+                      text = path.read_text(errors='replace')
+                  except Exception:
+                      continue
+                  for m in pattern.finditer(text):
+                      text_matches.append({'file':str(path),'match':m.group(1)})
+          work.joinpath('installed-candidates.json').write_text(json.dumps(candidates,indent=2)+'\n')
+          work.joinpath('lock-text-matches.json').write_text(json.dumps(text_matches[:1000],indent=2)+'\n')
+
+          sources = []
+          apt = root/'etc/apt'
+          for path in sorted(apt.rglob('*')) if apt.exists() else []:
+              if not path.is_file():
+                  continue
+              if path.name == 'sources.list' or path.suffix == '.list':
+                  for raw in path.read_text(errors='replace').splitlines():
+                      line = raw.strip()
+                      if not line or line.startswith('#'):
+                          continue
+                      parts = line.split()
+                      if not parts or parts[0] not in {'deb','deb-src'}:
+                          continue
+                      i = 1
+                      if i < len(parts) and parts[i].startswith('['):
+                          while i < len(parts) and not parts[i].endswith(']'):
+                              i += 1
+                          i += 1
+                      if i + 1 >= len(parts):
+                          continue
+                      sources.append({'file':str(path.relative_to(root)),'kind':parts[0],'base':parts[i].rstrip('/').replace('http://','https://',1),'suite':parts[i+1],'components':parts[i+2:]})
+              elif path.suffix == '.sources':
+                  for stanza in re.split(r'\n\s*\n', path.read_text(errors='replace')):
+                      fields = dict(line.split(': ',1) for line in stanza.splitlines() if ': ' in line)
+                      for base in fields.get('URIs','').split():
+                          for suite in fields.get('Suites','').split():
+                              sources.append({'file':str(path.relative_to(root)),'kind':'deb822','base':base.rstrip('/').replace('http://','https://',1),'suite':suite,'components':fields.get('Components','').split()})
+          fallbacks = [
+              {'file':'fallback','kind':'fallback','base':'https://update.hancomgooroom.com/gooroom','suite':'gooroom-3.0','components':['main']},
+              {'file':'fallback','kind':'fallback','base':'https://update.hancomgooroom.com/gooroom','suite':'stable','components':['main']},
+              {'file':'fallback','kind':'fallback','base':'https://update.hancomgooroom.com/hancom','suite':'hancom-3.0','components':['main']},
+              {'file':'fallback','kind':'fallback','base':'https://update.hancomgooroom.com/hancom','suite':'stable','components':['main']},
+          ]
+          seen = {(x['base'],x['suite'],tuple(x['components'])) for x in sources}
+          for x in fallbacks:
+              key=(x['base'],x['suite'],tuple(x['components']))
+              if key not in seen:
+                  sources.append(x)
+          work.joinpath('apt-authorities.json').write_text(json.dumps(sources,indent=2)+'\n')
+          PY
+
+      - name: Search vendor APT source indexes and Git history
+        id: recover
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import bz2
+          import gzip
+          import hashlib
+          import json
+          import lzma
+          import os
+          import re
+          import shutil
+          import subprocess
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          work = Path('work/session-manager-source-recovery-v2')
+          candidates = json.loads((work/'installed-candidates.json').read_text())
+          authorities = json.loads((work/'apt-authorities.json').read_text())
+          exact = {(x['source'],x['source_version']) for x in candidates if x.get('source') and x.get('source_version')}
+
+          def fetch(url, target):
+              req=urllib.request.Request(url,headers={'User-Agent':'hancom-gooroom-arm64-session-source-recovery-v2'})
+              try:
+                  with urllib.request.urlopen(req,timeout=45) as r: data=r.read()
+              except Exception: return None
+              target.parent.mkdir(parents=True,exist_ok=True)
+              target.write_bytes(data)
+              return data
+
+          def decompress(data,suffix):
+              return lzma.decompress(data) if suffix=='.xz' else gzip.decompress(data) if suffix=='.gz' else bz2.decompress(data) if suffix=='.bz2' else data
+
+          def paragraphs(text):
+              for raw in re.split(r'\n\s*\n',text):
+                  f={}; current=None
+                  for line in raw.splitlines():
+                      if line.startswith((' ','\t')) and current: f[current]+='\n'+line
+                      elif ': ' in line: current,value=line.split(': ',1); f[current]=value
+                  if f: yield f
+
+          probes=[]; matches=[]
+          for ai,auth in enumerate(authorities):
+              for component in auth.get('components') or ['main']:
+                  for suffix in ('.xz','.gz','.bz2',''):
+                      url=f"{auth['base']}/dists/{auth['suite']}/{component}/source/Sources{suffix}"
+                      target=work/'indexes'/f'{ai:03d}-{component}-Sources{suffix or ".txt"}'
+                      data=fetch(url,target)
+                      probes.append({'url':url,'downloaded':data is not None,'size':len(data) if data else None})
+                      if data is None: continue
+                      try: text=decompress(data,suffix).decode('utf-8','replace')
+                      except Exception as exc:
+                          probes[-1]['decode_error']=str(exc); break
+                      for fields in paragraphs(text):
+                          key=(fields.get('Package'),fields.get('Version'))
+                          if key in exact:
+                              matches.append({'authority':auth,'component':component,'index_url':url,'fields':fields})
+                      break
+          (work/'index-probes.json').write_text(json.dumps(probes,indent=2)+'\n')
+          (work/'source-stanza-matches.json').write_text(json.dumps(matches,indent=2)+'\n')
+
+          verified_apt=[]
+          for mi,match in enumerate(matches):
+              f=match['fields']; directory=f.get('Directory','').strip('/')
+              checks={}
+              for line in f.get('Checksums-Sha256','').splitlines():
+                  p=line.split()
+                  if len(p)==3: checks[p[2]]={'sha256':p[0],'size':int(p[1])}
+              if not checks: continue
+              files=[]; ok=True
+              for name,meta in checks.items():
+                  url=f"{match['authority']['base']}/{directory}/{urllib.parse.quote(name,safe='+._-~')}"
+                  target=work/'source'/f'apt-{mi:03d}'/name
+                  data=fetch(url,target)
+                  actual_sha=hashlib.sha256(data).hexdigest() if data is not None else None
+                  actual_size=len(data) if data is not None else None
+                  valid=data is not None and actual_sha==meta['sha256'] and actual_size==meta['size']
+                  files.append({'name':name,'url':url,**meta,'actual_sha256':actual_sha,'actual_size':actual_size,'valid':valid,'path':str(target) if data is not None else None})
+                  ok=ok and valid
+              row={'method':'apt-source-stanza','source':f.get('Package'),'version':f.get('Version'),'directory':directory,'index_url':match['index_url'],'authority':match['authority'],'files':files,'valid':ok}
+              if ok and any(x['name'].endswith('.dsc') for x in files): verified_apt.append(row)
+          (work/'verified-apt-sources.json').write_text(json.dumps(verified_apt,indent=2)+'\n')
+
+          # Build a narrow GitHub repository candidate set from exact source names.
+          repos=[]
+          orgs=['gooroom','hancomgooroom','hancom-io','hancom']
+          for source,version in sorted(exact):
+              terms={source,source.replace('_','-'),source.replace('gooroom-','')}
+              for org in orgs:
+                  for term in sorted(terms):
+                      try:
+                          raw=subprocess.check_output(['gh','api','-X','GET','search/repositories','-f',f'q={term} org:{org}','-f','per_page=20'],text=True,stderr=subprocess.DEVNULL)
+                          data=json.loads(raw)
+                      except Exception:
+                          continue
+                      for item in data.get('items',[]):
+                          repos.append({'source':source,'version':version,'org':org,'full_name':item['full_name'],'clone_url':item['clone_url'],'default_branch':item.get('default_branch')})
+          unique={r['full_name']:r for r in repos}
+          repos=[unique[k] for k in sorted(unique)]
+          (work/'github-repository-candidates.json').write_text(json.dumps(repos,indent=2)+'\n')
+
+          verified_git=[]; git_probes=[]
+          for ri,repo in enumerate(repos):
+              target=work/'git'/f'{ri:03d}-{repo["full_name"].replace("/","__")}'
+              try:
+                  subprocess.run(['git','clone','--filter=blob:none','--no-checkout',repo['clone_url'],str(target)],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180)
+                  subprocess.run(['git','-C',str(target),'fetch','--all','--tags','--prune'],check=False,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180)
+              except Exception as exc:
+                  git_probes.append({**repo,'cloned':False,'error':str(exc)})
+                  continue
+              try:
+                  commits=subprocess.check_output(['git','-C',str(target),'rev-list','--all','--','debian/changelog'],text=True,stderr=subprocess.DEVNULL).splitlines()
+              except Exception:
+                  commits=[]
+              examined=0; found=[]
+              for commit in commits[:3000]:
+                  examined+=1
+                  try:
+                      first=subprocess.check_output(['git','-C',str(target),'show',f'{commit}:debian/changelog'],text=True,stderr=subprocess.DEVNULL).splitlines()[0]
+                  except Exception:
+                      continue
+                  m=re.match(r'^([^ ]+) \(([^)]+)\)',first)
+                  if not m: continue
+                  source,version=m.groups()
+                  if (source,version) not in exact: continue
+                  tree=subprocess.check_output(['git','-C',str(target),'rev-parse',f'{commit}^{{tree}}'],text=True).strip()
+                  found.append({'method':'github-exact-changelog','source':source,'version':version,'repository':repo['full_name'],'commit_sha':commit,'tree_sha':tree,'changelog_first_line':first,'valid':True})
+              git_probes.append({**repo,'cloned':True,'commit_count_examined':examined,'matches':len(found)})
+              verified_git.extend(found)
+          # Deduplicate identical source trees while retaining provenance.
+          dedup={}
+          for row in verified_git:
+              dedup.setdefault((row['source'],row['version'],row['tree_sha']),row)
+          verified_git=[dedup[k] for k in sorted(dedup)]
+          (work/'git-probes.json').write_text(json.dumps(git_probes,indent=2)+'\n')
+          (work/'verified-git-sources.json').write_text(json.dumps(verified_git,indent=2)+'\n')
+
+          authorities_out=verified_apt+verified_git
+          exact_keys=sorted({(x['source'],x['version']) for x in authorities_out})
+          candidate_keys=sorted(exact)
+          missing=[{'source':s,'version':v} for s,v in candidate_keys if (s,v) not in exact_keys]
+          ambiguous=[]
+          for key in candidate_keys:
+              rows=[x for x in authorities_out if (x['source'],x['version'])==key]
+              identities=set()
+              for x in rows:
+                  if x['method']=='github-exact-changelog': identities.add(('git',x['tree_sha']))
+                  else: identities.add(('apt',tuple((f['name'],f['sha256']) for f in x['files'])))
+              if len(identities)>1: ambiguous.append({'source':key[0],'version':key[1],'authority_count':len(identities)})
+          result={
+              'schema':2,
+              'installed_candidates':candidates,
+              'exact_source_version_candidates':[{'source':s,'version':v} for s,v in candidate_keys],
+              'verified_apt_authority_count':len(verified_apt),
+              'verified_git_authority_count':len(verified_git),
+              'verified_authorities':authorities_out,
+              'missing':missing,
+              'ambiguous':ambiguous,
+              'source_locked':bool(candidate_keys) and not missing and not ambiguous,
+          }
+          (work/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+
+          cp work/session-manager-source-recovery-v2/result.json arm64/status/session-manager-source-recovery-v2/latest.json
+          for name in reference-iso.sha256 installed-candidates.json lock-text-matches.json apt-authorities.json index-probes.json source-stanza-matches.json verified-apt-sources.json github-repository-candidates.json git-probes.json verified-git-sources.json; do
+            cp "work/session-manager-source-recovery-v2/$name" "arm64/locks/session-manager-source-recovery-v2/latest/$name"
+          done
+          find arm64/locks/session-manager-source-recovery-v2/latest -type f -print0 | sort -z | xargs -0 sha256sum > arm64/locks/session-manager-source-recovery-v2/latest/LOCKSUMS.sha256
+          echo "source_locked=$(jq -r '.source_locked' work/session-manager-source-recovery-v2/result.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit exact-source evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/session-manager-source-recovery-v2 arm64/status/session-manager-source-recovery-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Record exact session-manager source recovery v2'
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload source-recovery evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: session-manager-source-recovery-v2-${{ github.run_id }}
+          path: |
+            work/session-manager-source-recovery-v2
+            arm64/locks/session-manager-source-recovery-v2
+            arm64/status/session-manager-source-recovery-v2
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce exact-source gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f arm64/status/session-manager-source-recovery-v2/latest.json
+          jq -e '.source_locked == true and (.missing | length) == 0 and (.ambiguous | length) == 0' arm64/status/session-manager-source-recovery-v2/latest.json
