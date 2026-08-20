@@ -1,0 +1,347 @@
+name: ARM64 continuation orchestrator v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-continuation-orchestrator-v1.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: arm64-continuation-orchestrator-v1
+  cancel-in-progress: false
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      BRANCH: arm64-port
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install audit dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y jq python3
+          gh --version
+
+      - name: Discover and continue pipeline workflows
+        id: continue
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/continuation-v1 arm64/status/continuation-orchestrator-v1
+          gh workflow list --all --limit 300 --json name,path,state > work/continuation-v1/workflows.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          workflows = json.loads(Path('work/continuation-v1/workflows.json').read_text())
+          rows = []
+          for wf in workflows:
+              path = wf.get('path', '')
+              name = wf.get('name', '')
+              text = f'{path} {name}'.lower()
+              stage = None
+              priority = 999
+              if 'integration' in text and ('v3' in text or 'nimf' in text):
+                  stage, priority = 'integration-v3', 10
+              elif ('session-manager' in text or 'session_manager' in text or 'session manager' in text) and ('reconstruct' in text or 'delta' in text or 'arm64' in text):
+                  stage, priority = 'session-manager', 20
+              elif ('linux' in text or 'kernel' in text) and ('reconstruct' in text or 'delta' in text or 'arm64' in text):
+                  stage, priority = 'kernel', 30
+              elif ('final' in text or 'iso' in text) and 'arm64' in text:
+                  stage, priority = 'final-iso', 40
+              if stage:
+                  rows.append({**wf, 'stage': stage, 'priority': priority})
+
+          # A content search catches workflows whose display name is generic.
+          for path in sorted(Path('.github/workflows').glob('*')):
+              if not path.is_file() or path.suffix not in {'.yml', '.yaml'}:
+                  continue
+              text = path.read_text(errors='replace').lower()
+              known = next((row for row in rows if row['path'] == str(path)), None)
+              stage = None
+              priority = 999
+              if 'nimf-amd64-builddeps-v1' in text or ('integration' in text and 'v3' in text):
+                  stage, priority = 'integration-v3', 10
+              elif 'session-manager' in text or 'session_manager' in text:
+                  stage, priority = 'session-manager', 20
+              elif ('linux-5.10.179' in text or 'kernel' in text) and ('delta' in text or 'reconstruct' in text):
+                  stage, priority = 'kernel', 30
+              elif ('iso' in text and 'arm64' in text) and ('assemble' in text or 'release' in text or 'squashfs' in text):
+                  stage, priority = 'final-iso', 40
+              if stage and not known:
+                  rows.append({'name': path.name, 'path': str(path), 'state': 'unknown', 'stage': stage, 'priority': priority})
+
+          # Keep one deterministic candidate per path and exclude this orchestrator.
+          unique = {}
+          for row in sorted(rows, key=lambda r: (r['priority'], r['path'])):
+              if row['path'].endswith('arm64-continuation-orchestrator-v1.yml'):
+                  continue
+              unique.setdefault(row['path'], row)
+          Path('work/continuation-v1/candidates.json').write_text(json.dumps(list(unique.values()), indent=2) + '\n')
+          PY
+
+          cat > work/continuation-v1/run-records.jsonl <<'EOF'
+          EOF
+
+          latest_run_json() {
+            local workflow="$1"
+            gh run list \
+              --workflow "$workflow" \
+              --branch "$BRANCH" \
+              --limit 1 \
+              --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt \
+              2>/dev/null | jq '.[0] // null'
+          }
+
+          wait_for_run() {
+            local run_id="$1"
+            local workflow="$2"
+            local stage="$3"
+            local i data status conclusion
+            for i in $(seq 1 72); do
+              data="$(gh run view "$run_id" --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt 2>/dev/null || true)"
+              status="$(jq -r '.status // "unknown"' <<<"${data:-null}")"
+              conclusion="$(jq -r '.conclusion // ""' <<<"${data:-null}")"
+              if [[ "$status" == "completed" ]]; then
+                jq -cn --arg stage "$stage" --arg workflow "$workflow" --argjson run "${data:-null}" \
+                  '{stage:$stage,workflow:$workflow,action:"waited",run:$run}' >> work/continuation-v1/run-records.jsonl
+                [[ "$conclusion" == "success" ]]
+                return
+              fi
+              sleep 10
+            done
+            jq -cn --arg stage "$stage" --arg workflow "$workflow" --arg run_id "$run_id" \
+              '{stage:$stage,workflow:$workflow,action:"timeout",run_id:$run_id}' >> work/continuation-v1/run-records.jsonl
+            return 1
+          }
+
+          run_or_reuse() {
+            local stage="$1"
+            local workflow="$2"
+            local latest status conclusion run_id before after
+            latest="$(latest_run_json "$workflow")"
+            status="$(jq -r '.status // "none"' <<<"$latest")"
+            conclusion="$(jq -r '.conclusion // ""' <<<"$latest")"
+            run_id="$(jq -r '.databaseId // ""' <<<"$latest")"
+
+            if [[ "$status" == "completed" && "$conclusion" == "success" ]]; then
+              jq -cn --arg stage "$stage" --arg workflow "$workflow" --argjson run "$latest" \
+                '{stage:$stage,workflow:$workflow,action:"reused-success",run:$run}' >> work/continuation-v1/run-records.jsonl
+              return 0
+            fi
+
+            if [[ "$status" == "queued" || "$status" == "in_progress" || "$status" == "waiting" || "$status" == "requested" || "$status" == "pending" ]]; then
+              wait_for_run "$run_id" "$workflow" "$stage"
+              return
+            fi
+
+            before="$(jq -r '.databaseId // 0' <<<"$latest")"
+            if ! gh workflow run "$workflow" --ref "$BRANCH"; then
+              jq -cn --arg stage "$stage" --arg workflow "$workflow" \
+                '{stage:$stage,workflow:$workflow,action:"dispatch-failed"}' >> work/continuation-v1/run-records.jsonl
+              return 1
+            fi
+
+            after=""
+            for _ in $(seq 1 18); do
+              sleep 5
+              latest="$(latest_run_json "$workflow")"
+              after="$(jq -r '.databaseId // 0' <<<"$latest")"
+              if [[ "$after" != "0" && "$after" != "$before" ]]; then
+                break
+              fi
+            done
+            if [[ -z "$after" || "$after" == "0" || "$after" == "$before" ]]; then
+              jq -cn --arg stage "$stage" --arg workflow "$workflow" \
+                '{stage:$stage,workflow:$workflow,action:"dispatch-not-observed"}' >> work/continuation-v1/run-records.jsonl
+              return 1
+            fi
+            wait_for_run "$after" "$workflow" "$stage"
+          }
+
+          overall=0
+          # Run only the strongest candidate per stage. Each stage is fail-closed.
+          for stage in integration-v3 session-manager kernel; do
+            workflow="$(jq -r --arg stage "$stage" '[.[] | select(.stage == $stage)] | sort_by(.priority,.path) | .[0].path // empty' work/continuation-v1/candidates.json)"
+            if [[ -z "$workflow" ]]; then
+              jq -cn --arg stage "$stage" '{stage:$stage,action:"no-workflow-candidate"}' >> work/continuation-v1/run-records.jsonl
+              overall=1
+              continue
+            fi
+            if ! run_or_reuse "$stage" "$workflow"; then
+              overall=1
+              # Integration failure invalidates later reconstruction comparisons.
+              if [[ "$stage" == "integration-v3" ]]; then
+                break
+              fi
+            fi
+          done
+
+          jq -s '.' work/continuation-v1/run-records.jsonl > work/continuation-v1/run-records.json
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+
+      - name: Produce deterministic blocker audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path('.')
+          records_path = Path('work/continuation-v1/run-records.json')
+          candidates_path = Path('work/continuation-v1/candidates.json')
+          records = json.loads(records_path.read_text()) if records_path.exists() else []
+          candidates = json.loads(candidates_path.read_text()) if candidates_path.exists() else []
+
+          summary_path = Path('arm64/status/summary.json')
+          summary = json.loads(summary_path.read_text()) if summary_path.exists() else None
+
+          blockers = []
+          interesting = re.compile(r'(block|fail|pending|missing|unresolved|not.ready|not.allowed)', re.I)
+          for base in (Path('arm64/status'), Path('arm64/locks')):
+              if not base.exists():
+                  continue
+              for path in base.rglob('*.json'):
+                  if 'continuation-orchestrator-v1' in str(path):
+                      continue
+                  try:
+                      data = json.loads(path.read_text())
+                  except Exception:
+                      continue
+                  def walk(value, trail=''):
+                      if isinstance(value, dict):
+                          for key, item in value.items():
+                              next_trail = f'{trail}.{key}' if trail else key
+                              if interesting.search(key) and item not in (None, False, 0, '', [], {}):
+                                  blockers.append({'file': str(path), 'key': next_trail, 'value': item})
+                              walk(item, next_trail)
+                      elif isinstance(value, list):
+                          for index, item in enumerate(value):
+                              walk(item, f'{trail}[{index}]')
+                  walk(data)
+
+          # Bound report size while preserving deterministic order.
+          blockers.sort(key=lambda x: (x['file'], x['key'], json.dumps(x['value'], sort_keys=True, default=str)))
+          blockers = blockers[:500]
+          successful_stages = sorted({r.get('stage') for r in records if r.get('run', {}).get('conclusion') == 'success'})
+          failed_stages = sorted({r.get('stage') for r in records if r.get('action') in {'dispatch-failed','dispatch-not-observed','timeout','no-workflow-candidate'} or r.get('run', {}).get('conclusion') not in (None, 'success')})
+
+          package_ready = bool(summary and summary.get('package_layer_ready'))
+          iso_allowed = bool(summary and summary.get('iso_assembly_allowed'))
+          report = {
+              'schema': 1,
+              'generated_at': datetime.now(timezone.utc).isoformat(),
+              'branch': 'arm64-port',
+              'head_sha_at_checkout': None,
+              'summary': summary,
+              'candidate_workflows': candidates,
+              'workflow_records': records,
+              'successful_stages': successful_stages,
+              'failed_or_missing_stages': failed_stages,
+              'package_layer_ready': package_ready,
+              'iso_assembly_allowed': iso_allowed,
+              'final_iso_dispatched': False,
+              'blocker_evidence': blockers,
+          }
+          import subprocess
+          report['head_sha_at_checkout'] = subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip()
+
+          out = Path('arm64/status/continuation-orchestrator-v1/latest.json')
+          out.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + '\n')
+
+          md = [
+              '# ARM64 continuation orchestrator v1',
+              '',
+              f"- Checkout: `{report['head_sha_at_checkout']}`",
+              f"- Successful stages: {', '.join(successful_stages) if successful_stages else 'none'}",
+              f"- Failed or missing stages: {', '.join(failed_stages) if failed_stages else 'none'}",
+              f"- Package layer ready: `{package_ready}`",
+              f"- ISO assembly allowed: `{iso_allowed}`",
+              '',
+              'The JSON file is the authoritative machine-readable record.',
+          ]
+          Path('arm64/status/continuation-orchestrator-v1/latest.md').write_text('\n'.join(md) + '\n')
+          PY
+
+      - name: Dispatch final ISO only when the authoritative gate is open
+        shell: bash
+        run: |
+          set -euo pipefail
+          summary=arm64/status/summary.json
+          report=arm64/status/continuation-orchestrator-v1/latest.json
+          package_ready="$(jq -r '.package_layer_ready // false' "$summary" 2>/dev/null || echo false)"
+          iso_allowed="$(jq -r '.iso_assembly_allowed // false' "$summary" 2>/dev/null || echo false)"
+          if [[ "$package_ready" != "true" || "$iso_allowed" != "true" ]]; then
+            echo 'Final ISO gate remains closed.'
+            exit 0
+          fi
+
+          workflow="$(jq -r '[.[] | select(.stage == "final-iso")] | sort_by(.priority,.path) | .[0].path // empty' work/continuation-v1/candidates.json)"
+          if [[ -z "$workflow" ]]; then
+            jq '.final_iso_dispatch = {"action":"no-workflow-candidate"}' "$report" > "$report.tmp"
+            mv "$report.tmp" "$report"
+            exit 0
+          fi
+
+          latest="$(gh run list --workflow "$workflow" --branch "$BRANCH" --limit 1 --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt 2>/dev/null | jq '.[0] // null')"
+          if [[ "$(jq -r '.status // "none"' <<<"$latest")" == completed && "$(jq -r '.conclusion // ""' <<<"$latest")" == success ]]; then
+            jq --arg workflow "$workflow" --argjson run "$latest" '.final_iso_dispatched=true | .final_iso_dispatch={action:"reused-success",workflow:$workflow,run:$run}' "$report" > "$report.tmp"
+            mv "$report.tmp" "$report"
+            exit 0
+          fi
+
+          gh workflow run "$workflow" --ref "$BRANCH"
+          jq --arg workflow "$workflow" '.final_iso_dispatched=true | .final_iso_dispatch={action:"dispatched",workflow:$workflow}' "$report" > "$report.tmp"
+          mv "$report.tmp" "$report"
+
+      - name: Commit continuation record
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/continuation-orchestrator-v1/latest.json arm64/status/continuation-orchestrator-v1/latest.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          for attempt in 1 2 3 4; do
+            git commit -m 'Record ARM64 continuation orchestrator state' || true
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload continuation evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: arm64-continuation-orchestrator-v1-${{ github.run_id }}
+          path: |
+            work/continuation-v1
+            arm64/status/continuation-orchestrator-v1
+          if-no-files-found: error
+          retention-days: 30
