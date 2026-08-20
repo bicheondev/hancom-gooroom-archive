@@ -1,0 +1,147 @@
+name: ARM64 drive session-manager semantic verifier v3 once
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-drive-session-semantic-v3-once.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-drive-session-semantic-v3-once
+  cancel-in-progress: false
+
+jobs:
+  drive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: arm64-port
+      INSTALLER: arm64-upgrade-session-manager-semantic-verifier-v3.yml
+      ANALYZER: arm64-analyze-session-manager-elf-delta-v2.yml
+      AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-elf-delta-v2/latest/semantic-authority.json
+    steps:
+      - name: Check out ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Dispatch installer and analyzer sequentially
+        id: drive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/session-semantic-v3 arm64/status/session-semantic-v3-driver
+          : > work/session-semantic-v3/runs.jsonl
+
+          dispatch_and_wait() {
+            local workflow="$1"
+            local label="$2"
+            local before latest run_id status conclusion
+            before="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+              --branch "$BRANCH" --limit 1 --json databaseId \
+              | jq -r '.[0].databaseId // 0')"
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+            run_id=''
+            for _ in $(seq 1 36); do
+              sleep 5
+              latest="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+                --branch "$BRANCH" --limit 1 \
+                --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt \
+                | jq '.[0] // null')"
+              run_id="$(jq -r '.databaseId // 0' <<<"$latest")"
+              if [[ "$run_id" != 0 && "$run_id" != "$before" ]]; then
+                break
+              fi
+            done
+            if [[ -z "$run_id" || "$run_id" == 0 || "$run_id" == "$before" ]]; then
+              jq -cn --arg label "$label" --arg workflow "$workflow" \
+                '{label:$label,workflow:$workflow,status:"dispatch-not-observed"}' \
+                >> work/session-semantic-v3/runs.jsonl
+              return 1
+            fi
+            gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 10 --exit-status
+            latest="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" \
+              --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt)"
+            jq -cn --arg label "$label" --arg workflow "$workflow" --argjson run "$latest" \
+              '{label:$label,workflow:$workflow,run:$run}' \
+              >> work/session-semantic-v3/runs.jsonl
+            conclusion="$(jq -r '.conclusion // ""' <<<"$latest")"
+            [[ "$conclusion" == success ]]
+          }
+
+          dispatch_and_wait "$INSTALLER" installer
+          dispatch_and_wait "$ANALYZER" analyzer
+          jq -s '.' work/session-semantic-v3/runs.jsonl > work/session-semantic-v3/runs.json
+
+      - name: Refresh and validate the committed semantic authority
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin arm64-port
+          git reset --hard origin/arm64-port
+          jq -s '.' work/session-semantic-v3/runs.jsonl > work/session-semantic-v3/runs.json
+          authority_present=false
+          authority_allowed=false
+          schema=null
+          if [[ -s "$AUTHORITY" ]]; then
+            authority_present=true
+            schema="$(jq -r '.schema // null' "$AUTHORITY")"
+            if jq -e '
+              .package == "gooroom-session-manager" and
+              .version == "0.3.9+grm3u1+han3u2" and
+              .arm64_build_allowed == true and
+              .package_layer_promotion_allowed == true and
+              .source_reconstruction_semantically_verified == true
+            ' "$AUTHORITY" >/dev/null; then
+              authority_allowed=true
+            fi
+          fi
+          jq -n \
+            --argjson runs "$(cat work/session-semantic-v3/runs.json)" \
+            --argjson authority_present "$authority_present" \
+            --argjson authority_allowed "$authority_allowed" \
+            --argjson authority_schema "$schema" \
+            --arg authority_path "$AUTHORITY" \
+            --arg branch_head "$(git rev-parse HEAD)" \
+            '{schema:1,runs:$runs,authority_present:$authority_present,
+              authority_allowed:$authority_allowed,authority_schema:$authority_schema,
+              authority_path:$authority_path,branch_head:$branch_head}' \
+            > arm64/status/session-semantic-v3-driver/latest.json
+          cat arm64/status/session-semantic-v3-driver/latest.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit driver state
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- arm64/status/session-semantic-v3-driver/latest.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record session-manager semantic v3 driver state'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce semantic authority opened
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.authority_present == true and .authority_allowed == true' \
+            arm64/status/session-semantic-v3-driver/latest.json >/dev/null
