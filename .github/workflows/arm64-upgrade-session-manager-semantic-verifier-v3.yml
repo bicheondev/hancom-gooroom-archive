@@ -30,8 +30,12 @@ jobs:
         env:
           TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
         run: |
-          set -euxo pipefail
-          python3 - <<'PY_PATCH'
+          set -uo pipefail
+          rm -rf work/session-manager-semantic-verifier-v3
+          mkdir -p work/session-manager-semantic-verifier-v3 \
+                   arm64/status/session-manager-semantic-verifier-v3
+          set +e
+          python3 - <<'PY_PATCH' 2>&1 | tee work/session-manager-semantic-verifier-v3/patch.log
           import base64
           import gzip
           import os
@@ -65,29 +69,71 @@ jobs:
                   raise SystemExit(f'{label} anchor count was {count}, expected 1')
               text = text.replace(old, new, 1)
 
+          required = [
+              'name: Canonicalize runtime semantics v3',
+              "semantic = bool(report.get('semantic_equivalent_v3', False))",
+              "'schema': 2",
+              'canonical-runtime-semantics.json',
+          ]
+          missing = [needle for needle in required if needle not in text]
+          if missing:
+              raise SystemExit(f'missing post-patch markers: {missing}')
           path.write_text(text, encoding='utf-8')
           PY_PATCH
+          rc=${PIPESTATUS[0]}
+          set -e
+          export PATCH_RC="$rc"
+          python3 - <<'PY_STATUS'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
 
-          grep -F 'name: Canonicalize runtime semantics v3' "$TARGET"
-          grep -F "semantic = bool(report.get('semantic_equivalent_v3', False))" "$TARGET"
-          grep -F "'schema': 2" "$TARGET"
-          grep -F 'canonical-runtime-semantics.json' "$TARGET"
-          git diff --check
+          target = Path(os.environ['TARGET'])
+          rc = int(os.environ['PATCH_RC'])
+          status_dir = Path('arm64/status/session-manager-semantic-verifier-v3')
+          status_dir.mkdir(parents=True, exist_ok=True)
+          log = Path('work/session-manager-semantic-verifier-v3/patch.log')
+          result = {
+              'schema': 1,
+              'generated_at': datetime.now(timezone.utc).isoformat(),
+              'patch_exit_code': rc,
+              'patched': rc == 0 and 'Canonicalize runtime semantics v3' in target.read_text(encoding='utf-8'),
+              'target': str(target),
+              'target_size': target.stat().st_size,
+              'log_tail': log.read_text(encoding='utf-8', errors='replace').splitlines()[-80:] if log.exists() else [],
+          }
+          (status_dir / 'latest.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          if log.exists():
+              (status_dir / 'patch.log').write_text(log.read_text(encoding='utf-8', errors='replace'), encoding='utf-8')
+          PY_STATUS
 
-      - name: Commit verifier upgrade
+      - name: Commit verifier upgrade or diagnostics
+        if: always()
         shell: bash
         env:
           TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
         run: |
           set -euxo pipefail
+          status=arm64/status/session-manager-semantic-verifier-v3/latest.json
+          test -s "$status"
+          rc="$(jq -r '.patch_exit_code' "$status")"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "$TARGET"
+          git add -- "$TARGET" arm64/status/session-manager-semantic-verifier-v3
           if git diff --cached --quiet; then
-            echo 'No verifier change required.'
+            test "$rc" = 0
             exit 0
           fi
-          git commit -m 'ci(arm64): canonicalize session-manager runtime semantics'
+          if [ "$rc" = 0 ]; then
+            message='ci(arm64): canonicalize session-manager runtime semantics'
+          else
+            message='Record session-manager semantic verifier v3 failure'
+          fi
+          git commit -m "$message"
           pushed=false
           for attempt in 1 2 3 4 5 6 7 8; do
             if git pull --rebase origin arm64-port && git push origin HEAD:arm64-port; then
@@ -98,3 +144,4 @@ jobs:
             sleep $((attempt * 2))
           done
           test "$pushed" = true
+          test "$rc" = 0
