@@ -31,7 +31,7 @@ jobs:
           TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
         run: |
           set -euxo pipefail
-          python3 - <<'PY'
+          python3 - <<'PY_PATCH'
           import base64
           import gzip
           import os
@@ -46,21 +46,27 @@ jobs:
               print('Session-manager semantic verifier v3 is already installed.')
               raise SystemExit(0)
 
+          canonical_step = decode('H4sIACPKhmoC/7VYW2/bNhR+968gigGSUEtFGmwYjDhA23VbH9oFS/pQZIFAS7TNhKJUkkrspfnvO6RulETZKdDlwZHJcz/fucgI6b8QcZyRBXqHec5pghn9lyBRckUzgiTJMDwlEt2fzlD9J7eEsQVaYbltz4Bhgb61X4GIKBSScpejghZkjSmzLou92ub8FHSfnXkXX+J3bz799cmzCGhW5EKhLahgdDW+uJU5t07XIs9QgZUmbkgu4OvMoknJGizHr3/+JVZkp3z9sUBSiQCF5/r/wiI2LhFVCt7YEFW8hi0iPMlT4nulWoe/ekEQbckupRsilR8MdfJcZCaosSA4JWx9XDOjnEi0RNf6Aa1zYU4Q5cholwWjytD4AaJr5L0tKUvRh98WHmhTmk7f3rj98f7hXnSbU+4bEQF6aY6mzc5Xt2mZFd9h9lDzQQ+GUkyWwalFxUqZiUCGFfIaz1wsjQGg3ztbUY7F/twl4qWhqizwXUrm6CS4PrmZucXLCBcF4akJXvCDIsyzZ6Oxkz0KpEtP0hR1nFIBodFF4XsPubh71V55wRRDlN3Bp19gQbiSyytRkjkiOypVnN+ZrzZr64/QIHgc2O/V6IeQjypiPqStIdejrc9GtDzrkfHMpniynsnXEjNtmX2oq9uAtneqAau74txySoPPcjGiimQO+CosNtD6lhatb6K+rsJe3YePWvxTpHbKCyIdhqopmcZC+WZZtxYItxC5kEsIX8FwQqDZDBRCxlKaYkWmdbYkP1Ct34fWK7T2XK49CIhT3XDNNYgeKHuG5AkHLOEtxXH5BgfXWs4NhKzJ17IL5IC+gkjL8OjoDLXrcTUjAI+9QWPugrmLr9XpZm2vR9xPdpVDkmDixXoA9mscaiuEAlM4lGWWQUuM9ODsRaTiBTZ9E7Ecp9K35B0ASQ8SUuUCb6BKOdvHkiSK5tyUlReley73GWCqelTCs0stIwqDh9jFueFlnJJVuYEOd2cEwHgj+jha6ZEX0rQnCzOWP5AUYLNeE92zbHluC79NGDAbiE0gCamWQlQdngiS6nvtXas0ITImu4SVOlaxsTMGO+cwFnsRa410SB07MOZPAPy6SIDdZm2OW87Y4B34H596ea82vLilb9ojeOQPwLbKc+bfY1aOJl7XKM217pGNwKZBzkajXTM0i4ozKxaLzV5ysiuABILdSwn4TlK/OwrdUidE2RCpJHWZCQ9AyoV+SQTV/RdrCqMdpA6j2Rl6tjzqv2HgqYWWs+UBo3qR623j1R4f35+CRSafo/2iw9BWj2XRAud3zOQo89oom6e2INbJBXPU93HrdfoZHE7MHhHdtGaYil6g+3xPb9d/zb1DVjUu2vXlZpqk2VoOkMCy4rqdxo+DWFeOqxSOkx5DSTt4XftbN5VlsgU4wag6mU8TFTmjyR6IurOwjmFYByrkWViwUoZ1XsMmr2FjaPhA1TasBkhYDY+wjlWYC8BoqHJGBIam6x2wpdZbA2wxSukB1trUIWub6gOsPBty6ewfYKgWDSCvHkaUI/gPWvxiokBGgqbhpvePycuRnKYPNSzWCNSCqm7q7sWTstpx7BTmHtZjaa76GEh0kRyS0zS4SSmNNeNwN80XskFhTuqGfX+qneq68tRLi+uFra2X9teZeq2zF+KBEWa705CV3Xo9hwGcgjHL13MT3/iO7Ku3vOZVcujK6D1hYlLXLbYsdGvtFAbunfV5ZlcM/5/NejGBdmnlZPQKjqkk6HIvYbF5v9M/H7S/mY1+MENtrhMCw7tqxQWWsjdjmp++rKPbr7DmeuhZGUfn5+jFT398uPrz89v48ur9RXz5+ePHN39/eTGb/QeKdD6e3RMAAA==')
+          seal_marker = decode('H4sIACPKhmoC/1NQAAFdhbzE3FQrheDUxByF5PzcgsTkEoXi1NzEvJLMZIXE0pKM/KLMkkouAMilSsguAAAA')
+          if text.count(seal_marker) != 1:
+              raise SystemExit(f'seal marker count was {text.count(seal_marker)}, expected 1')
+          text = text.replace(seal_marker, canonical_step + seal_marker, 1)
+
           replacements = [
-              (decode('H4sIAAAAAAAC/1NQgIGsQgV1PXWF8vyibP3UnDTdlNSckkTd4tLc3MSiSr2s4vw8BTs7BSUVd88Qj1Cn+OAQ14D44FBfX8egSCUuLogZugp5ibmpVgrO+bkFiUWpCnn5RbmJOZlVqSlAZh7QyKTSdIWkzLzEoszUYi4Ao7ajJHwAAAA='), decode('H4sIAAAAAAAC/71YbW/bNhD+7l9BFAMooZaCNNgwGHGAdUu3Ai1QLOmHIgsEWqJjJhSpklRir81/35F6MfXi2G22+UMi8e4e3h3vjUKo+d1+RjjG6EGquyPKl1FGuSGRLvOcqE18q6VAZ2foxQ+/v7384+Pr5OLy/ENy8fH9+1/+/PRiMqkwIiRITmfoVyKkYCnh7G+KVCkMyynSNCfwlGp0fzJpdtUryvkMLYhetWsgMENf21dgogZFtFxLVLCCLgnjHrHYmJUUJ7D36Sn+8Oni/D32qCwvpDJoBficLYYEa5e3ulQyRwUxlrlh+QCvE4/HegjN3XKA7QsOPaqiViixGMDkeI8QHncoHsiBiCXEXJJMBx5WrCjJEkPXJqAilRkTN3NcmmX0Mw5DX7uMLpGQKne+TzgTVAdWbIa0USGKzuz/mSdQbW5KJRD+S+D4VjIRWLlYAScrghAtpUJ2BTGBLFasC85MhR2GccP20gHsVsaaAI7Yr45DBldcXfcITyrSR3GnvET4dcl4ht7+NsNWzDKPcdpfKiE+RUlHyG6PmBQFFVnXO+EhvtSHe0kubrMyL57hJYivO6qAgmeV1xin1nU5MQj/Cx6t8fc406GCDqfn796cYTC7FnvpKNU+QbU2Rcfh1fH1/+z2tClSScaUl6vtelRXruj+BO+Si/M7+BsURFFh9PxSlXSK6Jppk8g799rJzoIwZc/sS097XOcGnFgw4oZhDgWNtoaoG2qiej02a4NDv1goJZWeA37BSUqhWEy/DR+szVhGDH3GFoMFXAf5XnObZOibW68/29wB/tbc799iaK7I91papVzfTpE/28Qe8NbA78LuLDyOppMN78dJt8TYsWCKgsqqKWqVCG0VcUkRM0PzkZpTiTT9tJuzR2jZOOqL3eHRGdQDaPfajbH1yW4YT4/4QYGylccaiwZN+UktfISWchBIpfmVVfN6pI64aKOfS8Ih4Crd0Hy+3X0sVGoXJnpFXv34E8jVw1JcLdQmxk45avv9iq4zdkO1CUZDb+vOnZAtx2GonThT5CEhnMsUxDNwAYdaW09KMegZ4JYI57tcUijMKdUJXae8tM5NFnYeSFiGp9A6O31Eb/KF5Ik2UpEb0J6mhknh6jWOs40AOghVj0ZhP8jrVtHRzJ1SG/420ru6Qyt1BCGNJe7Y/Xq3glLwDewD43HQQQ5jpnW5sOs7QMPRfuYCBwABKFDy4aqOpGtnAyxYLVvu+J7w0g2Ak86oXg35yf0JAC2k5MGgUW+Piq5JapIFEzARV7uDf98QrqEwwJZjFdMXX9mOpPqCEFt75GovJNb74BLz7QhNykCBxaHNMJ/oxX9F349nk+AwLWywDINtnHcsXMY5ezHQL/oT/3k0dNrry2Cy0ekKYgJqwPGgLRaSs3QDJMwyaqPGm7nqaaNpw9CtogdmVlGVhlGVglFtWtS0O2LPNQIbYSWSZkVV1Dop2pYDPFBla4ksTVEaDVq1a09wN0fRXm6Tpvr2XDrAaA9H2aLkn5FftwBo5BQHYIOI6NQ+mF9nw6AZatTkLijMILvhSCpRL6m77X/7HOyenlvXVHfe0G9+PRXc3dcetw76oTWF4mODZP5qirS9Fd/RTTVvN7N9355+N53uiuI6EcvC5uxg4x2X+8Os+G903z677x3eu/8RZ99JoK9w46MoIod+1JG5veZsR8sMHkWU0UV5g1wNZ1RP/gHbG2aMURIAAA=='), 'canonical-step'),
-              (decode('H4sIAAAAAAAC/23MMQqAMAxA0d1TZGsF8QauXkKkpDZIISZaq6CnFwdBwT8/PsDTShNKjgM04FXZFvAp0awpd+ZhjpYt7sgk2fSAEn59PVK2RjRNyPGk4ETFBfLb6HwUTMe9QTYVtMgrla9JWVwtsLvonAAAAA=='), decode('H4sIAAAAAAAC/1NQgIHi1NzEvJLMZAVbhaT8/ByNotSC/KISvfTUEg11mFx8amFpZlliTmpeSXyZsbqOgltiTnGqpiYXAMhOLi9HAAAA'), 'semantic-policy'),
-              (decode('H4sIAAAAAAAC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCowwUAbUNpsjMAAAA='), decode('H4sIAAAAAAAC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCkwwUANP0vsDMAAAA='), 'authority-schema'),
-              (decode('H4sIAAAAAAAC/02MQQqDQAxF9z3F7GZjLtDbxCRKIE3UmYj19E53/fDgwYNfyv/qFqb0re9S5ULqILZAHOBxfND0Fh7qwDLnCptlAzT7EYR9xCbUNbyB7Kknmvi4uMiS1VeYU41BuU6vB3F3ToN3AAAA'), decode('H4sIAAAAAAAC/03JMQ7CMAxG4Z1TZMvS/wLcxiQuGMV25bqCcHqkTn3LN7xSrtXNh7RZ76Xyl1qCxwoPNDI3aTQQh6UoI5j6OR/vfugGU3wkX+jT9qknGdjTg54M81Aa8qMUt7rc/tt6L/12AAAA'), 'policy-string'),
-              (decode('H4sIAAAAAAAC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4AaJjRLTEAAAA='), decode('H4sIAAAAAAAC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4FDA3JiXn5eZnJiTm6RaV5JZm5qbrFqbmJQFZysV5WcX4eqn4AACG993EAAAA='), 'canonical-evidence-copy'),
-              (decode('H4sIAAAAAAAC/1NQQAfqeflFuYk5mVWpKfF5+XnxKalJpenxSZl5iUWV8amFpYk56lYKRakF+UUleumpJRpEqNdRcEvMKU7V1OFSwLQuJTMtLbUoNa8kvjg1uSQzP68Ybn40NslYHS4AxPZGebUAAAA='), decode('H4sIAAAAAAAC/41RzWrDMAy+9yl8awdml932AHuJUoTiqMGgSJ0tF9Kxd58HDS1p0sYXG/T9WN/n3PRsRVOPHC/UgqhAS03poImCaQD6LsjbT5fopMneO7LdCrx3X8iZ3vzGPdoFrKwYkCEVsdgTZOqxvkKetXuNf2qXh75RhmwpSlcvTdgRqPAAbTweKZEEyhPPlaSnxuNvkVkDWk3rjgrnj4nlS7h3+8PCitc8/uOIZ2QSe9RfAK2sSoudiuXFasa5dz+/81rjNlbrCxZVbmL7ueHBb/4AYr521KwCAAA='), 'authority-evidence'),
+              ('semantic block', decode('H4sIACPKhmoC/23MMQqAMAxA0d1TZGsF8QauXkKkpDZIISZaq6CnFwdBwT8/PsDTShNKjgM04FXZFvAp0awpd+ZhjpYt7sgk2fSAEn59PVK2RjRNyPGk4ETFBfLb6HwUTMe9QTYVtMgrla9JWVwtsLvonAAAAA=='), decode('H4sIACPKhmoC/1NQgIHi1NzEvJLMZAVbhaT8/ByNotSC/KISvfTUEg11mFx8amFpZlliTmpeSXyZsbqOgltiTnGqpiYXAMhOLi9HAAAA')),
+              ('authority schema', decode('H4sIACPKhmoC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCowwUAbUNpsjMAAAA='), decode('H4sIACPKhmoC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCkwwUANP0vsDMAAAA=')),
+              ('authority policy', decode('H4sIACPKhmoC/02MQQqDQAxF9z3F7GZjLtDbxCRKIE3UmYj19E53/fDgwYNfyv/qFqb0re9S5ULqILZAHOBxfND0Fh7qwDLnCptlAzT7EYR9xCbUNbyB7Kknmvi4uMiS1VeYU41BuU6vB3F3ToN3AAAA'), decode('H4sIACPKhmoC/02LMQ7DMAzE9r7Cm5felK2/EWQ1MWBLhay28e8TZAoXcmFKd/LHWuWZXynLThyQ9oY5mNS0MjX4V6N2wZBOZ/HAb8G/xoYydcx+KRwjzGmVcy7iCGvipCz5+TgAGyqzEHIAAAA=')),
+              ('authority evidence copy', decode('H4sIACPKhmoC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4AaJjRLTEAAAA='), decode('H4sIACPKhmoC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4FDA3JiXn5eZnJiTm6RaV5JZm5qbrFqbmJQFZysV5WcX4eHv26iWhGoKoFACS4+PadAAAA')),
+              ('authority evidence fields', decode('H4sIACPKhmoC/1NQQAfqeflFuYk5mVWpKfF5+XnxKalJpenxSZl5iUWV8amFpYk56lYKRakF+UUleumpJRpEqNdRcEvMKU7V1OECAIHjUF5vAAAA'), decode('H4sIACPKhmoC/42SQW7DIBBF9z0Fu7SS1U12OUAvUVVoDGOLCAZ3gLTJ6QNVWqkOwbBi8f77IwYh1mdHnh1Yc0EtyZPUOKZZjoaAzxI/E9jdQTAunuPrjPG5gx/EG9iAL8OTuK9TkFNGgZWMoNFO1ZJHVKfaj0ed3LKh/k91qsltWP+AppATReNQKjbxJxZQReMpVO1bdLMqRM8wY86wKYuDkpSe7HnV0gDbBeggz6fKMOYEFinK034tr0NNMVjrv/I/+x1Mm2lCRlIYVvYWOYj3j7o/EX4v+SVzsAgUlNvjkk28q+m2ur6eGnxruQLMxijOywMAAA==')),
           ]
-          for old, new, label in replacements:
+          for label, old, new in replacements:
               count = text.count(old)
               if count != 1:
                   raise SystemExit(f'{label} anchor count was {count}, expected 1')
               text = text.replace(old, new, 1)
+
           path.write_text(text, encoding='utf-8')
-          PY
+          PY_PATCH
 
           grep -F 'name: Canonicalize runtime semantics v3' "$TARGET"
           grep -F "semantic = bool(report.get('semantic_equivalent_v3', False))" "$TARGET"
