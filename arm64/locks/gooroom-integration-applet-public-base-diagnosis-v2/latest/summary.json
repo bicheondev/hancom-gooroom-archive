@@ -1,0 +1,3358 @@
+{
+  "candidate_count": 5,
+  "closest_candidate": {
+    "allocated_runtime_payload_equivalent": false,
+    "artifact_directory": "integration-applet-public-base-v2-0.3.1-grm3u1",
+    "candidate_commit_sha": "0f7897ad068da63c6529c5725afdf569152ca4c7",
+    "candidate_deb_sha256": "4e45fb253baa2adea45c7a903b5ff55f6739454e1a9e695be0872d4dcd54041b",
+    "candidate_label": "0.3.1-grm3u1",
+    "comparison_rank": [
+      0,
+      36,
+      2,
+      37,
+      8280
+    ],
+    "different_allocated_section_count": 37,
+    "different_elf_count": 2,
+    "different_non_elf_count": 36,
+    "different_paths": [
+      "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+      "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+      "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+      "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+      "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+      "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+      "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+      "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+    ],
+    "elf_absolute_size_delta_sum": 8280,
+    "elf_differences": [
+      {
+        "absolute_size_delta": 7944,
+        "allocated_sections_equal": false,
+        "candidate": {
+          "allocated_sections": {
+            ".bss": {
+              "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+            },
+            ".data": {
+              "sha256": "d7ddb31420031adbea157251804644fa92494e1fcb920d5db77a21a6d742659a",
+              "size": 456
+            },
+            ".dynamic": {
+              "sha256": "c7d2a94da302d8fc8fe00ae2e9ac838ecded1c25afb0d364f65e2d3c2b1cb05c",
+              "size": 784
+            },
+            ".dynstr": {
+              "sha256": "5f6ac99fa6743880a53683674fb195b8ff6c2ffa2f35f4751f518b1a22582545",
+              "size": 11728
+            },
+            ".dynsym": {
+              "sha256": "2e7952749f39d7dba31021cce4d085f9150f855c7df98ca451fe288c5c139357",
+              "size": 11856
+            },
+            ".eh_frame": {
+              "sha256": "70ac2ffde25b22152e67d67062c5447468e73b8d1ad43448cd13bc2442af288b",
+              "size": 13316
+            },
+            ".eh_frame_hdr": {
+              "sha256": "b701299974d689c50cebeb08ec898e075083840963e527e369a052931aafefe8",
+              "size": 2172
+            },
+            ".fini": {
+              "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+              "size": 9
+            },
+            ".fini_array": {
+              "sha256": "4fba41a69b43558cdbac8936874e99eb2a7c49842a46c6f2c878a62358b0b5e6",
+              "size": 64
+            },
+            ".gnu.hash": {
+              "sha256": "0adc5173857dd68db5df9b884e95d6d4d1d3262f35336b27b73207ced1f372fa",
+              "size": 920
+            },
+            ".gnu.version": {
+              "sha256": "dcf1eb437c429840cb4f6ebda8ea59ad79ab85be0a14f67e35e53668da9883e4",
+              "size": 988
+            },
+            ".gnu.version_r": {
+              "sha256": "7f68ecebf468a9d168a67701adcc28b5ada25414678bd8fc1d5a17fa1389204b",
+              "size": 160
+            },
+            ".got": {
+              "sha256": "b92a252a36efba87ae911d3768c2ee9732e61f11bcf714903312195a11b415d7",
+              "size": 3832
+            },
+            ".gresource.applet": {
+              "sha256": "98f1f6b2bbfb23f9245fc32c2ce96e3d4885354054b5087a10ec2ef3e3678736",
+              "size": 31496
+            },
+            ".gresource.datetime_control": {
+              "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+              "size": 2544
+            },
+            ".gresource.endsession_control": {
+              "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+              "size": 10624
+            },
+            ".gresource.nimf_control": {
+              "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+              "size": 2856
+            },
+            ".gresource.security_control": {
+              "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+              "size": 7488
+            },
+            ".gresource.updater_control": {
+              "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+              "size": 6912
+            },
+            ".gresource.user_control": {
+              "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+              "size": 1904
+            },
+            ".init": {
+              "sha256": "7e57c604b40556ed0caaca441eb73b92ef0a364e2f1fceffac6528ca951d5589",
+              "size": 23
+            },
+            ".init_array": {
+              "sha256": "70b47370f314c353a917694a598fc0acde1e081f2b66a7adbb3bdacb13d445d1",
+              "size": 64
+            },
+            ".plt": {
+              "sha256": "97b3a10c1530ccf241e7b670045a5968610c78181293bd56551c619ecc1b97f6",
+              "size": 7408
+            },
+            ".plt.got": {
+              "sha256": "3ba3001b31b67cbb2d4c725152baa957baa108c1afe0073762edbb7a898c22ad",
+              "size": 48
+            },
+            ".rela.dyn": {
+              "sha256": "331ac011643a7ed688e672832cb967240a30fd8d09373fd170c78eadadaf016c",
+              "size": 912
+            },
+            ".rela.plt": {
+              "sha256": "b0e4b70761bb514d0f0778058079f2e6d5f1c29590752570204841e667b0064b",
+              "size": 11088
+            },
+            ".rodata": {
+              "sha256": "d7c22dd282b9a6e16e1821973130157e1c89fe4350437db863fe836c15a321a2",
+              "size": 10100
+            },
+            ".text": {
+              "sha256": "50997bbd7ebbbfae101199127f42c8fbf0141493a8b15f5775831eaa754f2289",
+              "size": 56989
+            }
+          },
+          "kind": "elf",
+          "sha256": "71b7d80adb13cccedb7b37fb7654fd7f47009e0abdf89872cbe33453697fc4e1",
+          "size": 203664
+        },
+        "different_allocated_sections": [
+          ".bss",
+          ".data",
+          ".dynamic",
+          ".dynstr",
+          ".dynsym",
+          ".eh_frame",
+          ".eh_frame_hdr",
+          ".fini_array",
+          ".gnu.hash",
+          ".gnu.version",
+          ".gnu.version_r",
+          ".got",
+          ".got.plt",
+          ".gresource.applet",
+          ".gresource.datetime_control",
+          ".gresource.nimf_control",
+          ".gresource.security_control",
+          ".gresource.updater_control",
+          ".init",
+          ".init_array",
+          ".plt",
+          ".plt.got",
+          ".rela.dyn",
+          ".rela.plt",
+          ".rodata",
+          ".text"
+        ],
+        "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "status": "elf-different",
+        "target": {
+          "allocated_sections": {
+            ".bss": {
+              "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+            },
+            ".data": {
+              "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+              "size": 456
+            },
+            ".dynamic": {
+              "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+              "size": 752
+            },
+            ".dynstr": {
+              "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+              "size": 11864
+            },
+            ".dynsym": {
+              "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+              "size": 12000
+            },
+            ".eh_frame": {
+              "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+              "size": 13412
+            },
+            ".eh_frame_hdr": {
+              "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+              "size": 2188
+            },
+            ".fini": {
+              "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+              "size": 9
+            },
+            ".fini_array": {
+              "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+              "size": 64
+            },
+            ".gnu.hash": {
+              "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+              "size": 920
+            },
+            ".gnu.version": {
+              "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+              "size": 1000
+            },
+            ".gnu.version_r": {
+              "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+              "size": 160
+            },
+            ".got": {
+              "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+              "size": 112
+            },
+            ".got.plt": {
+              "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+              "size": 3768
+            },
+            ".gresource.applet": {
+              "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+              "size": 37744
+            },
+            ".gresource.datetime_control": {
+              "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+              "size": 3080
+            },
+            ".gresource.endsession_control": {
+              "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+              "size": 10624
+            },
+            ".gresource.nimf_control": {
+              "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+              "size": 2856
+            },
+            ".gresource.security_control": {
+              "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+              "size": 7488
+            },
+            ".gresource.updater_control": {
+              "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+              "size": 7080
+            },
+            ".gresource.user_control": {
+              "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+              "size": 1904
+            },
+            ".init": {
+              "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+              "size": 23
+            },
+            ".init_array": {
+              "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+              "size": 64
+            },
+            ".plt": {
+              "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+              "size": 7504
+            },
+            ".plt.got": {
+              "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+              "size": 48
+            },
+            ".rela.dyn": {
+              "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+              "size": 912
+            },
+            ".rela.plt": {
+              "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+              "size": 11232
+            },
+            ".rodata": {
+              "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+              "size": 10292
+            },
+            ".text": {
+              "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+              "size": 57917
+            }
+          },
+          "kind": "elf",
+          "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+          "size": 211608
+        }
+      },
+      {
+        "absolute_size_delta": 336,
+        "allocated_sections_equal": false,
+        "candidate": {
+          "allocated_sections": {
+            ".bss": {
+              "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+            },
+            ".data": {
+              "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+              "size": 8
+            },
+            ".data.rel.ro": {
+              "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+              "size": 88
+            },
+            ".dynamic": {
+              "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+              "size": 560
+            },
+            ".dynstr": {
+              "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+              "size": 931
+            },
+            ".dynsym": {
+              "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+              "size": 912
+            },
+            ".eh_frame": {
+              "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+              "size": 864
+            },
+            ".eh_frame_hdr": {
+              "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+              "size": 164
+            },
+            ".fini": {
+              "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+              "size": 9
+            },
+            ".fini_array": {
+              "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+              "size": 8
+            },
+            ".gnu.hash": {
+              "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+              "size": 52
+            },
+            ".gnu.version": {
+              "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+              "size": 76
+            },
+            ".gnu.version_r": {
+              "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+              "size": 48
+            },
+            ".got": {
+              "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+              "size": 304
+            },
+            ".init": {
+              "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+              "size": 23
+            },
+            ".init_array": {
+              "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+              "size": 8
+            },
+            ".plt": {
+              "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+              "size": 496
+            },
+            ".plt.got": {
+              "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+              "size": 8
+            },
+            ".rela.dyn": {
+              "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+              "size": 216
+            },
+            ".rela.plt": {
+              "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+              "size": 720
+            },
+            ".rodata": {
+              "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+              "size": 910
+            },
+            ".text": {
+              "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+              "size": 2293
+            }
+          },
+          "kind": "elf",
+          "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+          "size": 14248
+        },
+        "different_allocated_sections": [
+          ".bss",
+          ".data",
+          ".dynamic",
+          ".got",
+          ".got.plt",
+          ".init",
+          ".plt",
+          ".plt.got",
+          ".rela.dyn",
+          ".rela.plt",
+          ".text"
+        ],
+        "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "status": "elf-different",
+        "target": {
+          "allocated_sections": {
+            ".bss": {
+              "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+            },
+            ".data": {
+              "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+              "size": 8
+            },
+            ".data.rel.ro": {
+              "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+              "size": 88
+            },
+            ".dynamic": {
+              "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+              "size": 528
+            },
+            ".dynstr": {
+              "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+              "size": 931
+            },
+            ".dynsym": {
+              "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+              "size": 912
+            },
+            ".eh_frame": {
+              "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+              "size": 864
+            },
+            ".eh_frame_hdr": {
+              "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+              "size": 164
+            },
+            ".fini": {
+              "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+              "size": 9
+            },
+            ".fini_array": {
+              "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+              "size": 8
+            },
+            ".gnu.hash": {
+              "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+              "size": 52
+            },
+            ".gnu.version": {
+              "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+              "size": 76
+            },
+            ".gnu.version_r": {
+              "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+              "size": 48
+            },
+            ".got": {
+              "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+              "size": 40
+            },
+            ".got.plt": {
+              "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+              "size": 264
+            },
+            ".init": {
+              "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+              "size": 23
+            },
+            ".init_array": {
+              "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+              "size": 8
+            },
+            ".plt": {
+              "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+              "size": 496
+            },
+            ".plt.got": {
+              "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+              "size": 8
+            },
+            ".rela.dyn": {
+              "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+              "size": 216
+            },
+            ".rela.plt": {
+              "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+              "size": 720
+            },
+            ".rodata": {
+              "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+              "size": 910
+            },
+            ".text": {
+              "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+              "size": 2293
+            }
+          },
+          "kind": "elf",
+          "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+          "size": 14584
+        }
+      }
+    ],
+    "elf_path_count": 2,
+    "exact_payload_equivalent": false,
+    "identical_path_count": 6,
+    "missing_path_count": 0,
+    "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+    "non_elf_payload_equivalent": false,
+    "path_set_identical": true,
+    "payload_path_count": 44,
+    "schema": 2,
+    "source": "gooroom-integration-applet",
+    "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+    "target_version": "0.3.1+grm3u1+han3u3"
+  },
+  "exact_or_runtime_equivalent_candidate_count": 0,
+  "ranked_candidates": [
+    {
+      "allocated_runtime_payload_equivalent": false,
+      "artifact_directory": "integration-applet-public-base-v2-0.3.1-grm3u1",
+      "candidate_commit_sha": "0f7897ad068da63c6529c5725afdf569152ca4c7",
+      "candidate_deb_sha256": "4e45fb253baa2adea45c7a903b5ff55f6739454e1a9e695be0872d4dcd54041b",
+      "candidate_label": "0.3.1-grm3u1",
+      "comparison_rank": [
+        0,
+        36,
+        2,
+        37,
+        8280
+      ],
+      "different_allocated_section_count": 37,
+      "different_elf_count": 2,
+      "different_non_elf_count": 36,
+      "different_paths": [
+        "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+        "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+      ],
+      "elf_absolute_size_delta_sum": 8280,
+      "elf_differences": [
+        {
+          "absolute_size_delta": 7944,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "d7ddb31420031adbea157251804644fa92494e1fcb920d5db77a21a6d742659a",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "c7d2a94da302d8fc8fe00ae2e9ac838ecded1c25afb0d364f65e2d3c2b1cb05c",
+                "size": 784
+              },
+              ".dynstr": {
+                "sha256": "5f6ac99fa6743880a53683674fb195b8ff6c2ffa2f35f4751f518b1a22582545",
+                "size": 11728
+              },
+              ".dynsym": {
+                "sha256": "2e7952749f39d7dba31021cce4d085f9150f855c7df98ca451fe288c5c139357",
+                "size": 11856
+              },
+              ".eh_frame": {
+                "sha256": "70ac2ffde25b22152e67d67062c5447468e73b8d1ad43448cd13bc2442af288b",
+                "size": 13316
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b701299974d689c50cebeb08ec898e075083840963e527e369a052931aafefe8",
+                "size": 2172
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "4fba41a69b43558cdbac8936874e99eb2a7c49842a46c6f2c878a62358b0b5e6",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "0adc5173857dd68db5df9b884e95d6d4d1d3262f35336b27b73207ced1f372fa",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "dcf1eb437c429840cb4f6ebda8ea59ad79ab85be0a14f67e35e53668da9883e4",
+                "size": 988
+              },
+              ".gnu.version_r": {
+                "sha256": "7f68ecebf468a9d168a67701adcc28b5ada25414678bd8fc1d5a17fa1389204b",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b92a252a36efba87ae911d3768c2ee9732e61f11bcf714903312195a11b415d7",
+                "size": 3832
+              },
+              ".gresource.applet": {
+                "sha256": "98f1f6b2bbfb23f9245fc32c2ce96e3d4885354054b5087a10ec2ef3e3678736",
+                "size": 31496
+              },
+              ".gresource.datetime_control": {
+                "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+                "size": 2544
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+                "size": 6912
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "7e57c604b40556ed0caaca441eb73b92ef0a364e2f1fceffac6528ca951d5589",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "70b47370f314c353a917694a598fc0acde1e081f2b66a7adbb3bdacb13d445d1",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "97b3a10c1530ccf241e7b670045a5968610c78181293bd56551c619ecc1b97f6",
+                "size": 7408
+              },
+              ".plt.got": {
+                "sha256": "3ba3001b31b67cbb2d4c725152baa957baa108c1afe0073762edbb7a898c22ad",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "331ac011643a7ed688e672832cb967240a30fd8d09373fd170c78eadadaf016c",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "b0e4b70761bb514d0f0778058079f2e6d5f1c29590752570204841e667b0064b",
+                "size": 11088
+              },
+              ".rodata": {
+                "sha256": "d7c22dd282b9a6e16e1821973130157e1c89fe4350437db863fe836c15a321a2",
+                "size": 10100
+              },
+              ".text": {
+                "sha256": "50997bbd7ebbbfae101199127f42c8fbf0141493a8b15f5775831eaa754f2289",
+                "size": 56989
+              }
+            },
+            "kind": "elf",
+            "sha256": "71b7d80adb13cccedb7b37fb7654fd7f47009e0abdf89872cbe33453697fc4e1",
+            "size": 203664
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".dynstr",
+            ".dynsym",
+            ".eh_frame",
+            ".eh_frame_hdr",
+            ".fini_array",
+            ".gnu.hash",
+            ".gnu.version",
+            ".gnu.version_r",
+            ".got",
+            ".got.plt",
+            ".gresource.applet",
+            ".gresource.datetime_control",
+            ".gresource.nimf_control",
+            ".gresource.security_control",
+            ".gresource.updater_control",
+            ".init",
+            ".init_array",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".rodata",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+                "size": 752
+              },
+              ".dynstr": {
+                "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+                "size": 11864
+              },
+              ".dynsym": {
+                "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+                "size": 12000
+              },
+              ".eh_frame": {
+                "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+                "size": 13412
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+                "size": 2188
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+                "size": 1000
+              },
+              ".gnu.version_r": {
+                "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+                "size": 112
+              },
+              ".got.plt": {
+                "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+                "size": 3768
+              },
+              ".gresource.applet": {
+                "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+                "size": 37744
+              },
+              ".gresource.datetime_control": {
+                "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+                "size": 3080
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+                "size": 7080
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+                "size": 7504
+              },
+              ".plt.got": {
+                "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+                "size": 11232
+              },
+              ".rodata": {
+                "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+                "size": 10292
+              },
+              ".text": {
+                "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+                "size": 57917
+              }
+            },
+            "kind": "elf",
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+            "size": 211608
+          }
+        },
+        {
+          "absolute_size_delta": 336,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+                "size": 560
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+                "size": 304
+              },
+              ".init": {
+                "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+            "size": 14248
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".got",
+            ".got.plt",
+            ".init",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+                "size": 528
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+                "size": 40
+              },
+              ".got.plt": {
+                "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+                "size": 264
+              },
+              ".init": {
+                "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+            "size": 14584
+          }
+        }
+      ],
+      "elf_path_count": 2,
+      "exact_payload_equivalent": false,
+      "identical_path_count": 6,
+      "missing_path_count": 0,
+      "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+      "non_elf_payload_equivalent": false,
+      "path_set_identical": true,
+      "payload_path_count": 44,
+      "schema": 2,
+      "source": "gooroom-integration-applet",
+      "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "target_version": "0.3.1+grm3u1+han3u3"
+    },
+    {
+      "allocated_runtime_payload_equivalent": false,
+      "artifact_directory": "integration-applet-public-base-v2-0.3.2-grm3u1",
+      "candidate_commit_sha": "888931318857682df5c13f94128462c1eb80570c",
+      "candidate_deb_sha256": "a9406beaaa1a8fea04262c2e463433c98e98b38eec330f96d4b2155537ef4942",
+      "candidate_label": "0.3.2-grm3u1",
+      "comparison_rank": [
+        0,
+        36,
+        2,
+        37,
+        8280
+      ],
+      "different_allocated_section_count": 37,
+      "different_elf_count": 2,
+      "different_non_elf_count": 36,
+      "different_paths": [
+        "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+        "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+      ],
+      "elf_absolute_size_delta_sum": 8280,
+      "elf_differences": [
+        {
+          "absolute_size_delta": 7944,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "bcc8a3a0407d2f24c51e744a4b57dc5059dc39d41a19de0b111dc6493ef932b1",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "c7d2a94da302d8fc8fe00ae2e9ac838ecded1c25afb0d364f65e2d3c2b1cb05c",
+                "size": 784
+              },
+              ".dynstr": {
+                "sha256": "5f6ac99fa6743880a53683674fb195b8ff6c2ffa2f35f4751f518b1a22582545",
+                "size": 11728
+              },
+              ".dynsym": {
+                "sha256": "2e7952749f39d7dba31021cce4d085f9150f855c7df98ca451fe288c5c139357",
+                "size": 11856
+              },
+              ".eh_frame": {
+                "sha256": "b8c5a8957fd63133f982e20091d65ca48920075c058a0875d68df7152f1650dd",
+                "size": 13316
+              },
+              ".eh_frame_hdr": {
+                "sha256": "52afbcc05b12ecb96b3fb11fe00ca85d72489a255ca9ae7d61e73ca87f08145f",
+                "size": 2172
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "4fba41a69b43558cdbac8936874e99eb2a7c49842a46c6f2c878a62358b0b5e6",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "0adc5173857dd68db5df9b884e95d6d4d1d3262f35336b27b73207ced1f372fa",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "dcf1eb437c429840cb4f6ebda8ea59ad79ab85be0a14f67e35e53668da9883e4",
+                "size": 988
+              },
+              ".gnu.version_r": {
+                "sha256": "7f68ecebf468a9d168a67701adcc28b5ada25414678bd8fc1d5a17fa1389204b",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b92a252a36efba87ae911d3768c2ee9732e61f11bcf714903312195a11b415d7",
+                "size": 3832
+              },
+              ".gresource.applet": {
+                "sha256": "c68fb65b3404c9024d29ec72a93390b5f0a770ef8b398b8519e4586d85fde75d",
+                "size": 31504
+              },
+              ".gresource.datetime_control": {
+                "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+                "size": 2544
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+                "size": 6912
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "7e57c604b40556ed0caaca441eb73b92ef0a364e2f1fceffac6528ca951d5589",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "70b47370f314c353a917694a598fc0acde1e081f2b66a7adbb3bdacb13d445d1",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "97b3a10c1530ccf241e7b670045a5968610c78181293bd56551c619ecc1b97f6",
+                "size": 7408
+              },
+              ".plt.got": {
+                "sha256": "3ba3001b31b67cbb2d4c725152baa957baa108c1afe0073762edbb7a898c22ad",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "7adbfceb44038d7e3c571d2e6b91f76bf4c4f576cd76281e28b6c736494ba96e",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "b0e4b70761bb514d0f0778058079f2e6d5f1c29590752570204841e667b0064b",
+                "size": 11088
+              },
+              ".rodata": {
+                "sha256": "d7c22dd282b9a6e16e1821973130157e1c89fe4350437db863fe836c15a321a2",
+                "size": 10100
+              },
+              ".text": {
+                "sha256": "50997bbd7ebbbfae101199127f42c8fbf0141493a8b15f5775831eaa754f2289",
+                "size": 56989
+              }
+            },
+            "kind": "elf",
+            "sha256": "f74fc29c4531120a5d1af6725443e2d1a65f6586bcd330f720b5708cdf5d9a95",
+            "size": 203664
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".dynstr",
+            ".dynsym",
+            ".eh_frame",
+            ".eh_frame_hdr",
+            ".fini_array",
+            ".gnu.hash",
+            ".gnu.version",
+            ".gnu.version_r",
+            ".got",
+            ".got.plt",
+            ".gresource.applet",
+            ".gresource.datetime_control",
+            ".gresource.nimf_control",
+            ".gresource.security_control",
+            ".gresource.updater_control",
+            ".init",
+            ".init_array",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".rodata",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+                "size": 752
+              },
+              ".dynstr": {
+                "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+                "size": 11864
+              },
+              ".dynsym": {
+                "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+                "size": 12000
+              },
+              ".eh_frame": {
+                "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+                "size": 13412
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+                "size": 2188
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+                "size": 1000
+              },
+              ".gnu.version_r": {
+                "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+                "size": 112
+              },
+              ".got.plt": {
+                "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+                "size": 3768
+              },
+              ".gresource.applet": {
+                "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+                "size": 37744
+              },
+              ".gresource.datetime_control": {
+                "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+                "size": 3080
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+                "size": 7080
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+                "size": 7504
+              },
+              ".plt.got": {
+                "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+                "size": 11232
+              },
+              ".rodata": {
+                "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+                "size": 10292
+              },
+              ".text": {
+                "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+                "size": 57917
+              }
+            },
+            "kind": "elf",
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+            "size": 211608
+          }
+        },
+        {
+          "absolute_size_delta": 336,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+                "size": 560
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+                "size": 304
+              },
+              ".init": {
+                "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+            "size": 14248
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".got",
+            ".got.plt",
+            ".init",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+                "size": 528
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+                "size": 40
+              },
+              ".got.plt": {
+                "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+                "size": 264
+              },
+              ".init": {
+                "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+            "size": 14584
+          }
+        }
+      ],
+      "elf_path_count": 2,
+      "exact_payload_equivalent": false,
+      "identical_path_count": 6,
+      "missing_path_count": 0,
+      "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+      "non_elf_payload_equivalent": false,
+      "path_set_identical": true,
+      "payload_path_count": 44,
+      "schema": 2,
+      "source": "gooroom-integration-applet",
+      "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "target_version": "0.3.1+grm3u1+han3u3"
+    },
+    {
+      "allocated_runtime_payload_equivalent": false,
+      "artifact_directory": "integration-applet-public-base-v2-0.3.3-grm3u1",
+      "candidate_commit_sha": "bc1ffb09ce84b3d7f0428ecc9bbe46ef929074f5",
+      "candidate_deb_sha256": "5685dd0233ab87e525f92744bf9480ee0717d9b797c2218c0812551af23b0d0a",
+      "candidate_label": "0.3.3-grm3u1",
+      "comparison_rank": [
+        1,
+        37,
+        2,
+        37,
+        4184
+      ],
+      "different_allocated_section_count": 37,
+      "different_elf_count": 2,
+      "different_non_elf_count": 37,
+      "different_paths": [
+        "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+        "usr/share/icons/hicolor/scalable/status/cleanmode.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+        "usr/share/locale/en_GB/LC_MESSAGES/gooroom-integration-applet.mo",
+        "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+      ],
+      "elf_absolute_size_delta_sum": 4184,
+      "elf_differences": [
+        {
+          "absolute_size_delta": 3848,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "928f62960d573af3bf3e2bd4c22f0a7e55011959de75b80eb01a08c28c6a7d2b",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "d561c0eee12e6a55f445fc4e1cb3885d10aea7e3fea54d0458e46cb86e9f56ab",
+                "size": 784
+              },
+              ".dynstr": {
+                "sha256": "413f4a6b6eb579dd65a6b6cc9e48cf8d294f0a42e588992cec87aaf0bd48fd51",
+                "size": 11765
+              },
+              ".dynsym": {
+                "sha256": "0f1514fa1ce7b0215d49d96953e19a5779c0a7d454206169a9d7648a3fbf6f6e",
+                "size": 11880
+              },
+              ".eh_frame": {
+                "sha256": "5a651f2311c65d851f2d347b9100533551b52d1c8dba219fca0eeba3daec8899",
+                "size": 13332
+              },
+              ".eh_frame_hdr": {
+                "sha256": "20727cd358875dfc63848d63a866245d624f9e123fc27d0986ed0c19a7ab7212",
+                "size": 2172
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "50797921b0b97c2620a650d1df666e1b15e62425a7392731b5d79fb3871b481e",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "37e7faa48ee38b69998c77edfa146dcedb546b4583ddb892bd38db06dd4d3ad6",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "bb61d5866d451d4a0f11b24b93c057a23db57ae861968c055c09d6abf0c38e0f",
+                "size": 990
+              },
+              ".gnu.version_r": {
+                "sha256": "6b6f6fb23f8369a099acac0600dc27c7a3f20fb2e8e0763e57e9c761d3e680c6",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "38b20d2ad65f70bb195affbec6ca2bf71b89fbeadaa1902ec9494139747c723d",
+                "size": 3840
+              },
+              ".gresource.applet": {
+                "sha256": "9e5754188709b8d0531f79fe6a8fa43d74fa4e8f81888afdda975c0d39ae4ae6",
+                "size": 31560
+              },
+              ".gresource.datetime_control": {
+                "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+                "size": 2544
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+                "size": 6912
+              },
+              ".gresource.user_control": {
+                "sha256": "f52e8b4870efb30fc1d7e6cc45a047caca9c63ab3128586b410c49d4eb81ffe0",
+                "size": 2584
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "683b7d5cdf126ced793fd78c76c7b272f6a67f4f4922f0f10729699281087455",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "d33d857743c06fd7b93505bd735c7cd5fb85a7319e87efb8b06fd74e141e9226",
+                "size": 7424
+              },
+              ".plt.got": {
+                "sha256": "37206590cc1ad4b7a1ad36f8d4bfcb5621f4aac622053ab7550e2e98cd6cc575",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "b117dacf960ea287710c40f9c2b231eeec7ffa632a2fd80c1192d2ce5a503711",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "b3273908d3f34b5bc1dad93890d5977e0bf305c5431b8ff91bc3789be9448d86",
+                "size": 11112
+              },
+              ".rodata": {
+                "sha256": "c121e7da15136417724a2fdd6a32cbb8b0015cdc9068b0a7974758b47f80189b",
+                "size": 10196
+              },
+              ".text": {
+                "sha256": "de30bb6145df93f699d37b30733ea79c2ba9deb94ff5f7269b7e6bcaaeb659f1",
+                "size": 57469
+              }
+            },
+            "kind": "elf",
+            "sha256": "2ff0d6805f03ad608e58fa611c55acde4b30be1af6128790b843bc916f72152a",
+            "size": 207760
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".dynstr",
+            ".dynsym",
+            ".eh_frame",
+            ".eh_frame_hdr",
+            ".fini_array",
+            ".gnu.hash",
+            ".gnu.version",
+            ".gnu.version_r",
+            ".got",
+            ".got.plt",
+            ".gresource.applet",
+            ".gresource.datetime_control",
+            ".gresource.nimf_control",
+            ".gresource.security_control",
+            ".gresource.updater_control",
+            ".gresource.user_control",
+            ".init_array",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".rodata",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+                "size": 752
+              },
+              ".dynstr": {
+                "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+                "size": 11864
+              },
+              ".dynsym": {
+                "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+                "size": 12000
+              },
+              ".eh_frame": {
+                "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+                "size": 13412
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+                "size": 2188
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+                "size": 1000
+              },
+              ".gnu.version_r": {
+                "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+                "size": 112
+              },
+              ".got.plt": {
+                "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+                "size": 3768
+              },
+              ".gresource.applet": {
+                "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+                "size": 37744
+              },
+              ".gresource.datetime_control": {
+                "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+                "size": 3080
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+                "size": 7080
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+                "size": 7504
+              },
+              ".plt.got": {
+                "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+                "size": 11232
+              },
+              ".rodata": {
+                "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+                "size": 10292
+              },
+              ".text": {
+                "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+                "size": 57917
+              }
+            },
+            "kind": "elf",
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+            "size": 211608
+          }
+        },
+        {
+          "absolute_size_delta": 336,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+                "size": 560
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+                "size": 304
+              },
+              ".init": {
+                "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+            "size": 14248
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".got",
+            ".got.plt",
+            ".init",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+                "size": 528
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+                "size": 40
+              },
+              ".got.plt": {
+                "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+                "size": 264
+              },
+              ".init": {
+                "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+            "size": 14584
+          }
+        }
+      ],
+      "elf_path_count": 2,
+      "exact_payload_equivalent": false,
+      "identical_path_count": 5,
+      "missing_path_count": 1,
+      "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+      "non_elf_payload_equivalent": false,
+      "path_set_identical": false,
+      "payload_path_count": 45,
+      "schema": 2,
+      "source": "gooroom-integration-applet",
+      "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "target_version": "0.3.1+grm3u1+han3u3"
+    },
+    {
+      "allocated_runtime_payload_equivalent": false,
+      "artifact_directory": "integration-applet-public-base-v2-0.3.4-grm3u1",
+      "candidate_commit_sha": "700b941206bec133317591fb99ba6d1d3917f9fc",
+      "candidate_deb_sha256": "5685dd0233ab87e525f92744bf9480ee0717d9b797c2218c0812551af23b0d0a",
+      "candidate_label": "0.3.4-grm3u1",
+      "comparison_rank": [
+        1,
+        37,
+        2,
+        37,
+        4184
+      ],
+      "different_allocated_section_count": 37,
+      "different_elf_count": 2,
+      "different_non_elf_count": 37,
+      "different_paths": [
+        "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+        "usr/share/icons/hicolor/scalable/status/cleanmode.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+        "usr/share/locale/en_GB/LC_MESSAGES/gooroom-integration-applet.mo",
+        "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+      ],
+      "elf_absolute_size_delta_sum": 4184,
+      "elf_differences": [
+        {
+          "absolute_size_delta": 3848,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "928f62960d573af3bf3e2bd4c22f0a7e55011959de75b80eb01a08c28c6a7d2b",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "d561c0eee12e6a55f445fc4e1cb3885d10aea7e3fea54d0458e46cb86e9f56ab",
+                "size": 784
+              },
+              ".dynstr": {
+                "sha256": "413f4a6b6eb579dd65a6b6cc9e48cf8d294f0a42e588992cec87aaf0bd48fd51",
+                "size": 11765
+              },
+              ".dynsym": {
+                "sha256": "0f1514fa1ce7b0215d49d96953e19a5779c0a7d454206169a9d7648a3fbf6f6e",
+                "size": 11880
+              },
+              ".eh_frame": {
+                "sha256": "5a651f2311c65d851f2d347b9100533551b52d1c8dba219fca0eeba3daec8899",
+                "size": 13332
+              },
+              ".eh_frame_hdr": {
+                "sha256": "20727cd358875dfc63848d63a866245d624f9e123fc27d0986ed0c19a7ab7212",
+                "size": 2172
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "50797921b0b97c2620a650d1df666e1b15e62425a7392731b5d79fb3871b481e",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "37e7faa48ee38b69998c77edfa146dcedb546b4583ddb892bd38db06dd4d3ad6",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "bb61d5866d451d4a0f11b24b93c057a23db57ae861968c055c09d6abf0c38e0f",
+                "size": 990
+              },
+              ".gnu.version_r": {
+                "sha256": "6b6f6fb23f8369a099acac0600dc27c7a3f20fb2e8e0763e57e9c761d3e680c6",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "38b20d2ad65f70bb195affbec6ca2bf71b89fbeadaa1902ec9494139747c723d",
+                "size": 3840
+              },
+              ".gresource.applet": {
+                "sha256": "9e5754188709b8d0531f79fe6a8fa43d74fa4e8f81888afdda975c0d39ae4ae6",
+                "size": 31560
+              },
+              ".gresource.datetime_control": {
+                "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+                "size": 2544
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+                "size": 6912
+              },
+              ".gresource.user_control": {
+                "sha256": "f52e8b4870efb30fc1d7e6cc45a047caca9c63ab3128586b410c49d4eb81ffe0",
+                "size": 2584
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "683b7d5cdf126ced793fd78c76c7b272f6a67f4f4922f0f10729699281087455",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "d33d857743c06fd7b93505bd735c7cd5fb85a7319e87efb8b06fd74e141e9226",
+                "size": 7424
+              },
+              ".plt.got": {
+                "sha256": "37206590cc1ad4b7a1ad36f8d4bfcb5621f4aac622053ab7550e2e98cd6cc575",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "b117dacf960ea287710c40f9c2b231eeec7ffa632a2fd80c1192d2ce5a503711",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "b3273908d3f34b5bc1dad93890d5977e0bf305c5431b8ff91bc3789be9448d86",
+                "size": 11112
+              },
+              ".rodata": {
+                "sha256": "c121e7da15136417724a2fdd6a32cbb8b0015cdc9068b0a7974758b47f80189b",
+                "size": 10196
+              },
+              ".text": {
+                "sha256": "de30bb6145df93f699d37b30733ea79c2ba9deb94ff5f7269b7e6bcaaeb659f1",
+                "size": 57469
+              }
+            },
+            "kind": "elf",
+            "sha256": "2ff0d6805f03ad608e58fa611c55acde4b30be1af6128790b843bc916f72152a",
+            "size": 207760
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".dynstr",
+            ".dynsym",
+            ".eh_frame",
+            ".eh_frame_hdr",
+            ".fini_array",
+            ".gnu.hash",
+            ".gnu.version",
+            ".gnu.version_r",
+            ".got",
+            ".got.plt",
+            ".gresource.applet",
+            ".gresource.datetime_control",
+            ".gresource.nimf_control",
+            ".gresource.security_control",
+            ".gresource.updater_control",
+            ".gresource.user_control",
+            ".init_array",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".rodata",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+                "size": 752
+              },
+              ".dynstr": {
+                "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+                "size": 11864
+              },
+              ".dynsym": {
+                "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+                "size": 12000
+              },
+              ".eh_frame": {
+                "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+                "size": 13412
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+                "size": 2188
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+                "size": 1000
+              },
+              ".gnu.version_r": {
+                "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+                "size": 112
+              },
+              ".got.plt": {
+                "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+                "size": 3768
+              },
+              ".gresource.applet": {
+                "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+                "size": 37744
+              },
+              ".gresource.datetime_control": {
+                "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+                "size": 3080
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+                "size": 7080
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+                "size": 7504
+              },
+              ".plt.got": {
+                "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+                "size": 11232
+              },
+              ".rodata": {
+                "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+                "size": 10292
+              },
+              ".text": {
+                "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+                "size": 57917
+              }
+            },
+            "kind": "elf",
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+            "size": 211608
+          }
+        },
+        {
+          "absolute_size_delta": 336,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+                "size": 560
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+                "size": 304
+              },
+              ".init": {
+                "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+            "size": 14248
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".got",
+            ".got.plt",
+            ".init",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+                "size": 528
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+                "size": 40
+              },
+              ".got.plt": {
+                "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+                "size": 264
+              },
+              ".init": {
+                "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+            "size": 14584
+          }
+        }
+      ],
+      "elf_path_count": 2,
+      "exact_payload_equivalent": false,
+      "identical_path_count": 5,
+      "missing_path_count": 1,
+      "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+      "non_elf_payload_equivalent": false,
+      "path_set_identical": false,
+      "payload_path_count": 45,
+      "schema": 2,
+      "source": "gooroom-integration-applet",
+      "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "target_version": "0.3.1+grm3u1+han3u3"
+    },
+    {
+      "allocated_runtime_payload_equivalent": false,
+      "artifact_directory": "integration-applet-public-base-v2-0.3.5-grm3u1",
+      "candidate_commit_sha": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+      "candidate_deb_sha256": "4f4b591c9a11c8cd5172f0be12ae768cfb6b58d7618875eed6ffbd5a3ac6a0e1",
+      "candidate_label": "0.3.5-grm3u1",
+      "comparison_rank": [
+        1,
+        37,
+        2,
+        37,
+        4184
+      ],
+      "different_allocated_section_count": 37,
+      "different_elf_count": 2,
+      "different_non_elf_count": 37,
+      "different_paths": [
+        "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-error-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-high-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-low-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-medium-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-muted-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/audio-volume-zero-symbolic.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-10.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-25.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-40.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-50.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-60.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-75.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-90.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-empty.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-error.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charged.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full-charging.svg",
+        "usr/share/icons/hicolor/scalable/status/battery-full.svg",
+        "usr/share/icons/hicolor/scalable/status/cleanmode.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-safety.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-unknown.svg",
+        "usr/share/icons/hicolor/scalable/status/security-status-vulnerable.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-apply.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-error2.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-exec.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-info.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base-unkown.svg",
+        "usr/share/icons/hicolor/scalable/status/updater-base.svg",
+        "usr/share/locale/en_GB/LC_MESSAGES/gooroom-integration-applet.mo",
+        "usr/share/locale/ko/LC_MESSAGES/gooroom-integration-applet.mo"
+      ],
+      "elf_absolute_size_delta_sum": 4184,
+      "elf_differences": [
+        {
+          "absolute_size_delta": 3848,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "928f62960d573af3bf3e2bd4c22f0a7e55011959de75b80eb01a08c28c6a7d2b",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "a487a41ede9cc7a4fa1f86ca7ee699eeae4e3536566b42b7556b5dda757c0b51",
+                "size": 784
+              },
+              ".dynstr": {
+                "sha256": "1ed27f4a52846c4a2aa39e8d3551973755534637bc5f8591fcb967bacc48691a",
+                "size": 11780
+              },
+              ".dynsym": {
+                "sha256": "ccdd906e8166b8aed1267a1c597a12bb6119c766c42f2f7a8e501c054d732257",
+                "size": 11904
+              },
+              ".eh_frame": {
+                "sha256": "223e7a073b21775a85f8451041f4bc3578b10904cc61ab9e3c005bb5dd7aa3e9",
+                "size": 13332
+              },
+              ".eh_frame_hdr": {
+                "sha256": "bd676cbe54a07b2e1ee67225422ed3ef9b179c2a5fabef21dc4cf20daab426cd",
+                "size": 2172
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "ab997dfbc3db000b26a22ea4d719db20574bcc61115f82e3c82a7efd6c617afe",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "6f0c0e0530c162fb97b2633febf144e9172ff7b8382c95e0854def48c4967746",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "293cec55ee0183ae9cfff960297604d95adf70f4575d4189bd83809b8e439d66",
+                "size": 992
+              },
+              ".gnu.version_r": {
+                "sha256": "a87f01e27a08b9da268b68b3af3d87d74daefa41da0535ef6673c9e972cab896",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "e4d440724aa9133967d9abec82d0ecb7e5418e01f6adda905f4d47ae058fb9e2",
+                "size": 3848
+              },
+              ".gresource.applet": {
+                "sha256": "9e5754188709b8d0531f79fe6a8fa43d74fa4e8f81888afdda975c0d39ae4ae6",
+                "size": 31560
+              },
+              ".gresource.datetime_control": {
+                "sha256": "183acba44b263a7f232320c22caea623de589a19f68fcad1d885d8e8c4f5fe65",
+                "size": 2544
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "0a106dbfe461211b6507c9e4bd292261d945d4a9eb86d27290d7edbeb07ae8b6",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "89980e127655e91637ae746c7afc1aeeb30567b8a7c53db8e81581e5551a7f0b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "a2300ed00f06de743a0a4f841d30996be57b4b4a4dc3ecb7b870d29da842dde7",
+                "size": 6912
+              },
+              ".gresource.user_control": {
+                "sha256": "f52e8b4870efb30fc1d7e6cc45a047caca9c63ab3128586b410c49d4eb81ffe0",
+                "size": 2584
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "4cb58034a2138b41f953fc3d966f961c75c8012e2892b340f1f901d966adf84f",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "5e20923b1a815ecc635508e9179f7217bc0a4b9b8d1e6cdcb4e9ccbabd53134f",
+                "size": 7440
+              },
+              ".plt.got": {
+                "sha256": "c76af9f8a9b1d7269d778c8f13081ffb4a121552e1570284e23f13bebc5664ac",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "9e197d0e580f1a7b74dd500ae22f5200ee78ebd7f182f1e403b1b271cd6502b2",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "3d3397b3b25bfe4fc42866866f5fc7c9f94bfb10a0fa297675cd2bf5fca580f9",
+                "size": 11136
+              },
+              ".rodata": {
+                "sha256": "cd4ac657dae65ccdcc6dd6ef64eafa8dd29e331a6c02cf20d0ea04555366d3cf",
+                "size": 10196
+              },
+              ".text": {
+                "sha256": "27daf44d96ab0e0e1f90cce26fec687472d553b885f92d171a283633059b6460",
+                "size": 57773
+              }
+            },
+            "kind": "elf",
+            "sha256": "21267d12f0e411d77421ae08f8a618d998dca95a202eef01b8da1c0ec9bc2fb0",
+            "size": 207760
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".dynstr",
+            ".dynsym",
+            ".eh_frame",
+            ".eh_frame_hdr",
+            ".fini_array",
+            ".gnu.hash",
+            ".gnu.version",
+            ".gnu.version_r",
+            ".got",
+            ".got.plt",
+            ".gresource.applet",
+            ".gresource.datetime_control",
+            ".gresource.nimf_control",
+            ".gresource.security_control",
+            ".gresource.updater_control",
+            ".gresource.user_control",
+            ".init_array",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".rodata",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "75fa3369a0070a6017922a20ccb47b50992be84964efe7350d21012c2aa1a6d7",
+                "size": 456
+              },
+              ".dynamic": {
+                "sha256": "fee87e47b848952b5a1a5b55475726faf2ba5e7caf11d338c16a63fc52649532",
+                "size": 752
+              },
+              ".dynstr": {
+                "sha256": "f781effbac09a88da7e7eda8074256da86412667aef0ee7299497af5b2b2730c",
+                "size": 11864
+              },
+              ".dynsym": {
+                "sha256": "0fe160455fce73528c068f793a47766b458833d0538b9d203cebab49110b1505",
+                "size": 12000
+              },
+              ".eh_frame": {
+                "sha256": "6f7b39b56ec8b2895b4f07732fcc71142706f532e2a588028abd5a069a778a8c",
+                "size": 13412
+              },
+              ".eh_frame_hdr": {
+                "sha256": "b30a2d147a32872ea4efe1b0ef35ff1a8b28cbda42e74acf30e8f94aa4009e5e",
+                "size": 2188
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "64f75c90798ddf2bb63da9376fb8279e9f3379e6d6a069825d21c96865ceb452",
+                "size": 64
+              },
+              ".gnu.hash": {
+                "sha256": "c9c67d73be25e613c92ba655c6ef37d2b65c6e794067a971a3ee8ee5b093bc68",
+                "size": 920
+              },
+              ".gnu.version": {
+                "sha256": "a3f3ec189f41b3beddc426092737ffd41c9e74ecde47f71b46b3e12bc1868d68",
+                "size": 1000
+              },
+              ".gnu.version_r": {
+                "sha256": "596f293fed90469b95e312e461cc71bbfb41051ce784b167dbe601c050e2df33",
+                "size": 160
+              },
+              ".got": {
+                "sha256": "b5fdab78d8947eacc864bfeecb4d2100780e5afe1cd8efafb124887913ac49fa",
+                "size": 112
+              },
+              ".got.plt": {
+                "sha256": "141057088e05cb114ff462a3170a30f201f94bf927fe494833bac140d8dd4cfd",
+                "size": 3768
+              },
+              ".gresource.applet": {
+                "sha256": "c9e95828e5c7aa3861563b5f80fd48d037a05d44fd0248ff682a28721b9b8c20",
+                "size": 37744
+              },
+              ".gresource.datetime_control": {
+                "sha256": "59bb12e089793e206fac3c6e17c60cfae1da5ad4349253c31e67297ee2181562",
+                "size": 3080
+              },
+              ".gresource.endsession_control": {
+                "sha256": "382bbbb5c0c8c5a13827c5006c24fa36fb71e01bc62dfaba6581083810dd421b",
+                "size": 10624
+              },
+              ".gresource.nimf_control": {
+                "sha256": "cf4bc8ac137b9d1d3e1f938ae62bde7ae7da32841484b0d26538260e61b9c191",
+                "size": 2856
+              },
+              ".gresource.security_control": {
+                "sha256": "a8753d6079f3d3e3fdac9b81ee6bec512a75589e12ec767872d69a7d597aa79b",
+                "size": 7488
+              },
+              ".gresource.updater_control": {
+                "sha256": "cdd7a03aad329ea33c18f9a55b20f921a30932df2cffcdcc50e5ca5a28a885e8",
+                "size": 7080
+              },
+              ".gresource.user_control": {
+                "sha256": "deb80b3fe9f5971a10e3f0fd7cff609f58b637fd1aac480965a95794cc9761c5",
+                "size": 1904
+              },
+              ".init": {
+                "sha256": "4a266b69e6f25ff6568d0436d97d5ecf53b4b430bf236eeef5d0057864a03d2c",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "a1423b593e7837bae320d1d9bae7f93ef1817f6d6e3e5456146694019fea2458",
+                "size": 64
+              },
+              ".plt": {
+                "sha256": "bd715ebac67bf319457da08d3bf3b5a6f0108facf11b274df39b23fe3033efee",
+                "size": 7504
+              },
+              ".plt.got": {
+                "sha256": "1eadf9be1bb4b53e178449c1e1522cc9d05d6e43bd651a3f5cbb93c1997df926",
+                "size": 48
+              },
+              ".rela.dyn": {
+                "sha256": "183ff2b1accd38b9e57deffe5a65ad4579e2f71126895606679cc722a38d2855",
+                "size": 912
+              },
+              ".rela.plt": {
+                "sha256": "6176cc39b04d98dd74e35c6c7b95ded967220ad5c5cd3de24a5c652928fb0558",
+                "size": 11232
+              },
+              ".rodata": {
+                "sha256": "451708fbad55427eb8dcb278df117766d1d6f85d22ffea933e36cb1b505184e0",
+                "size": 10292
+              },
+              ".text": {
+                "sha256": "3d1f594f2ba07c14ce1048e7b2cba581d44d1dffd7e4f71ad0c786bbe2781be3",
+                "size": 57917
+              }
+            },
+            "kind": "elf",
+            "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+            "size": 211608
+          }
+        },
+        {
+          "absolute_size_delta": 336,
+          "allocated_sections_equal": false,
+          "candidate": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/candidate/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "46386ff0eccd7a7871daa3122b418bbf8e0d0180eca74808a53b2c3ed970f50e",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "3b7e81f2bef8cf4da291779158bd3b19012bd2eac61b46c38ef853ea90a7b120",
+                "size": 560
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "f3f519487b74cbad09dfd53c9890d134e5350e62b561228dbf2e5b9c4a785cae",
+                "size": 304
+              },
+              ".init": {
+                "sha256": "b166b593de22acc319f25772ddb6fcb180fc0bd71ca66bbf186267bd07714054",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "3ab1b31e6b0e7789e2c8125897e40ab10e1649970de1d8fe8e6dcb2a1182e073",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "1ab165ed416906c4e33aa4cde9b73747ae1550057088f66f46b6063803cd8106",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "37b9500fe55988140ae069256e5e9d0bbbac05f6347c0c87fbd05780ba03ec05",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "2c628bed172a81e4ce9c6c9412aadf6fe23326c95970bb30bd7014677c3aaee8",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "9f6ee8b2a4ef609eb75ddc7e6f7bcf2df1661fbf53396482939398ad6737984d",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+            "size": 14248
+          },
+          "different_allocated_sections": [
+            ".bss",
+            ".data",
+            ".dynamic",
+            ".got",
+            ".got.plt",
+            ".init",
+            ".plt",
+            ".plt.got",
+            ".rela.dyn",
+            ".rela.plt",
+            ".text"
+          ],
+          "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+          "status": "elf-different",
+          "target": {
+            "allocated_sections": {
+              ".bss": {
+                "error": "objcopy: work/integration-applet-candidate/comparison/target/root/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so[.bss]: can't dump section - it has no contents: file format not recognized\n"
+              },
+              ".data": {
+                "sha256": "6c1d2539bf089665bd71e35b93b4933cc75cf0b05192f0323f683bb6e9dbfb3f",
+                "size": 8
+              },
+              ".data.rel.ro": {
+                "sha256": "d76b326b4b9f17c389d5589fa242f86bf9b8ef9c00d4b53b4e7f8796eba489cc",
+                "size": 88
+              },
+              ".dynamic": {
+                "sha256": "aca109a31ebf4cbe17987cf4f13bd1f059e8deb257a054496ee866bbeb94110d",
+                "size": 528
+              },
+              ".dynstr": {
+                "sha256": "6eb9bbbf5f01f874dc58c9454cfab1acb6cf7355602276821997a7c3e7276643",
+                "size": 931
+              },
+              ".dynsym": {
+                "sha256": "245b80114f8922cb419d98e065e9f8331c3df634d48cdce579790bcc7cbf29dc",
+                "size": 912
+              },
+              ".eh_frame": {
+                "sha256": "761c974600084c1fc4088e52be4b4189744be242299cf2ca576d11ea96b32a95",
+                "size": 864
+              },
+              ".eh_frame_hdr": {
+                "sha256": "048e227aa98536586775cd98c47d4b9fc42cb41d3b3f28c9d82838ae65c02cba",
+                "size": 164
+              },
+              ".fini": {
+                "sha256": "66e6f54550612182b4ad78f30b140dd08318b968db3878de2db65fef87dc04d7",
+                "size": 9
+              },
+              ".fini_array": {
+                "sha256": "de956e1063648efafbfda15ccfe31725844a1bf1b08e73c6d373dc0c53db19df",
+                "size": 8
+              },
+              ".gnu.hash": {
+                "sha256": "8e2168255ed1027a7e063313a5417efa5acb04b6c29298087503c696286537cf",
+                "size": 52
+              },
+              ".gnu.version": {
+                "sha256": "cb4c464ba067399cbde236b4830b1317a028131fe221e4c96941c1830dffa86e",
+                "size": 76
+              },
+              ".gnu.version_r": {
+                "sha256": "f414eabd52e1c157a4948c65d9bc73c822226ebf51a0fdcfbb6615d2aaa6a4b1",
+                "size": 48
+              },
+              ".got": {
+                "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb",
+                "size": 40
+              },
+              ".got.plt": {
+                "sha256": "83ba875cf0469e82ce89369949bb7c3cb40257b174f0b91de90189b04ffc7db7",
+                "size": 264
+              },
+              ".init": {
+                "sha256": "83f879af9f13fc97f0ab37437bb6ae09df5c4d6a848cdbcdb895ae4dc6f4c52e",
+                "size": 23
+              },
+              ".init_array": {
+                "sha256": "e948fac706c3095cd6d53d191999c2ca3bf504af18d66679683e1e0909c04d0c",
+                "size": 8
+              },
+              ".plt": {
+                "sha256": "0bf832c3a818bffc362cebe5942bdcc109fbd418d227509b15c12e36dcc48b11",
+                "size": 496
+              },
+              ".plt.got": {
+                "sha256": "2927c712fd737bc3b09513f82f7e5ffda1f4ae94bceb995172ea95ed08e67363",
+                "size": 8
+              },
+              ".rela.dyn": {
+                "sha256": "6e55504bc248d25199d6710098c915dc9e658948a03a44b601f50e3a16ecbb6e",
+                "size": 216
+              },
+              ".rela.plt": {
+                "sha256": "48e9b8e9c1db854fb3951e8d1c8fa1064d812d68279600b014729354b7edc994",
+                "size": 720
+              },
+              ".rodata": {
+                "sha256": "64729719ff028ad309194371e579cff9d62e686ff99ca0392a94a340458f5ca2",
+                "size": 910
+              },
+              ".text": {
+                "sha256": "93e6724227b8272c843f8790620f860893ff03fadeeac292b4b93537867f58ba",
+                "size": 2293
+              }
+            },
+            "kind": "elf",
+            "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+            "size": 14584
+          }
+        }
+      ],
+      "elf_path_count": 2,
+      "exact_payload_equivalent": false,
+      "identical_path_count": 5,
+      "missing_path_count": 1,
+      "nimf_authority_sha256": "7fad31bf96b64c625fc60de4957c889ffc1b4903c23b8a73c9edc16e55f5a71b",
+      "non_elf_payload_equivalent": false,
+      "path_set_identical": false,
+      "payload_path_count": 45,
+      "schema": 2,
+      "source": "gooroom-integration-applet",
+      "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+      "target_version": "0.3.1+grm3u1+han3u3"
+    }
+  ],
+  "schema": 2,
+  "selection_policy": "locked-nimf-then-lexicographic-missing-paths-nonelf-text-difference-allocated-section-count-elf-size-delta",
+  "source": "gooroom-integration-applet",
+  "target_version": "0.3.1+grm3u1+han3u3"
+}
