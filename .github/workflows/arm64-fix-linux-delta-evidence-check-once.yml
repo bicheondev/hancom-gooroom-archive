@@ -1,0 +1,70 @@
+name: ARM64 fix linux delta evidence check once
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-fix-linux-delta-evidence-check-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-fix-linux-delta-evidence-check-once
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Exclude generated config diff from source whitespace policy
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml')
+          text = path.read_text(encoding='utf-8')
+          old = "          git diff --cached --check\n"
+          new = (
+              "          git diff --cached --check -- . "
+              "':!arm64/locks/linux-5.10.179-grm3u1-delta-v1/latest/config.diff'\n"
+          )
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one staged whitespace check, found {count}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          grep -Fq \
+            "':!arm64/locks/linux-5.10.179-grm3u1-delta-v1/latest/config.diff'" \
+            .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+
+      - name: Commit evidence-policy correction and remove one-shot workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+          git rm .github/workflows/arm64-fix-linux-delta-evidence-check-once.yml
+          git diff --cached --check
+          git commit -m 'Allow generated kernel config diff evidence whitespace'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
