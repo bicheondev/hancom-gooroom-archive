@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 315,
-    "workflow_name_count": 315,
+    "workflow_count": 316,
+    "workflow_name_count": 316,
     "referenced_local_file_count": 365,
     "error_count": 0,
     "warning_count": 57,
@@ -5451,6 +5451,24 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-validate-continuation-v5-pipeline-v2.yml",
+      "path": ".github/workflows/arm64-validate-continuation-v5-pipeline-v2.yml",
+      "name": "ARM64 validate continuation v5 pipeline v2",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/integration_applet_inject_target_resources.py",
+        "arm64/scripts/integration_applet_vendor_reconstruct.py"
+      ]
+    },
+    {
       "filename": "arm64-validate-new-reconstruction-pipeline-v1.yml",
       "path": ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml",
       "name": "ARM64 validate new reconstruction pipeline v1",
@@ -6618,9 +6636,11 @@
       ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml"
     ],
     "arm64/scripts/integration_applet_inject_target_resources.py": [
+      ".github/workflows/arm64-validate-continuation-v5-pipeline-v2.yml",
       ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml"
     ],
     "arm64/scripts/integration_applet_vendor_reconstruct.py": [
+      ".github/workflows/arm64-validate-continuation-v5-pipeline-v2.yml",
       ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml"
     ],
     "arm64/scripts/inventory_iso.py": [
