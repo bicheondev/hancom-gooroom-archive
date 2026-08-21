@@ -1,11 +1,12 @@
 name: ARM64 build gooroom integration applet han3u3 v1
 
-on:
+'on':
+  workflow_run:
+    workflows:
+      - ARM64 build Nimf 2023.06.30 grm3u1 ARM64 v1
+    types:
+      - completed
   workflow_dispatch:
-  push:
-    branches: [arm64-port]
-    paths:
-      - '.github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml'
 
 permissions:
   actions: write
@@ -18,132 +19,245 @@ concurrency:
 env:
   SOURCE: gooroom-integration-applet
   VERSION: 0.3.1+grm3u1+han3u3
-  SOURCE_AUTHORITY: arm64/locks/gooroom-integration-applet-han3u3-source-recovery/latest/source-authority.json
+  SEMANTIC_AUTHORITY: arm64/locks/gooroom-integration-applet-han3u3-semantic-v5/latest/authority.json
+  NIMF_AUTHORITY: arm64/locks/nimf-2023.06.30-grm3u1-arm64-build-v1/latest/package-promotion-authority.json
+  NIMF_VERSION: 2023.06.30+grm3u1
   LOCK_DIR: arm64/locks/gooroom-integration-applet-han3u3-arm64-build/latest
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'arm64-port')
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
-      - name: Check out locked branch
+      - name: Check out current ARM64 authority branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: arm64-port
           fetch-depth: 0
 
-      - name: Install host and emulation tooling
+      - name: Install host and ARM64 emulation tooling
         shell: bash
         run: |
-          set -euxo pipefail
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            binfmt-support dpkg-dev file jq qemu-user-static unzip
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo apt-get -o Acquire::Retries=5 update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
+            binfmt-support ca-certificates curl docker.io dpkg-dev file git jq python3 qemu-user-static unzip xz-utils
           sudo update-binfmts --enable qemu-aarch64 || true
-          docker run --rm --privileged tonistiigi/binfmt:qemu-v8.1.5 \
-            --install arm64
-          mkdir -p work/download work/source work/build-output work/validation
+          docker run --rm --privileged tonistiigi/binfmt:qemu-v8.1.5 --install arm64
+          mkdir -p \
+            work/download/semantic work/download/nimf \
+            work/source work/nimf-deps work/build-output \
+            work/validation work/artifact
 
-      - name: Require exact recovered source authority
-        id: gate
+      - name: Require semantic source and exact Nimf ARM64 authorities
         shell: bash
         run: |
-          set -euxo pipefail
-          test -s "$SOURCE_AUTHORITY"
-          jq -e --arg source "$SOURCE" --arg version "$VERSION" '
-            .schema == 1 and
-            .source == $source and
-            .version == $version and
-            .exact_source_recovered == true and
-            .build_allowed == true and
-            .selected.commit != null and
-            .selected.tree != null and
-            .source_archive.sha256 != null and
-            .source_tree_manifest_sha256 != null and
-            .artifact.expired == false and
-            (.artifact.id | tostring | test("^[0-9]+$"))
-          ' "$SOURCE_AUTHORITY" >/dev/null
+          set -Eeuo pipefail
+          test -s "$SEMANTIC_AUTHORITY"
+          test -s "$NIMF_AUTHORITY"
+          jq -e '
+            .schema == 1
+            and .semantic_verification == true
+            and .arm64_build_allowed == true
+            and (.artifact_id | tostring | test("^[0-9]+$"))
+            and (.artifact_digest | type == "string" and length > 0)
+          ' "$SEMANTIC_AUTHORITY" >/dev/null
+          jq -e --arg version "$NIMF_VERSION" '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == $version
+            and .target_architecture == "arm64"
+            and .arm64_build_verified == true
+            and .build_dependency_layer_promotion_allowed == true
+            and .foreign_elf_count == 0
+            and .artifact.expired == false
+            and (.artifact.id | tostring | test("^[0-9]+$"))
+            and ([.required_packages[].package] | sort)
+                == (["libnimf1", "nimf", "nimf-dev"] | sort)
+            and all(.required_packages[];
+                .version == $version and .architecture == "arm64")
+          ' "$NIMF_AUTHORITY" >/dev/null
 
-      - name: Download locked recovered source bundle
+      - name: Download and verify selected semantic source bundle
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          set -euxo pipefail
-          artifact_id="$(jq -r '.artifact.id' "$SOURCE_AUTHORITY")"
-          expected_name="$(jq -r '.artifact.name' "$SOURCE_AUTHORITY")"
-          expected_digest="$(jq -r '.artifact.digest // empty' "$SOURCE_AUTHORITY")"
+          set -Eeuo pipefail
+          artifact_id="$(jq -r '.artifact_id' "$SEMANTIC_AUTHORITY")"
+          expected_digest="$(jq -r '.artifact_digest' "$SEMANTIC_AUTHORITY")"
           gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
-            > work/download/source-artifact-metadata.json
-          jq -e --arg id "$artifact_id" --arg name "$expected_name" --arg digest "$expected_digest" '
-            (.id | tostring) == $id and
-            .name == $name and
-            .expired == false and
-            ($digest == "" or (.digest // "") == $digest)
-          ' work/download/source-artifact-metadata.json >/dev/null
+            > work/download/semantic/artifact-metadata.json
+          jq -e --arg id "$artifact_id" '
+            (.id | tostring) == $id and .expired == false
+          ' work/download/semantic/artifact-metadata.json >/dev/null
+          expected="${expected_digest#sha256:}"
+          actual="$(jq -r '.digest // empty' work/download/semantic/artifact-metadata.json)"
+          actual="${actual#sha256:}"
+          test -n "$actual"
+          test "$actual" = "$expected"
           gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
-            > work/download/source-artifact.zip
-          unzip -q work/download/source-artifact.zip -d work/download/source-artifact
-          archive="$(find work/download/source-artifact -type f -name '*.tar.xz' -print -quit)"
-          test -n "$archive"
-          actual_sha="$(sha256sum "$archive" | cut -d' ' -f1)"
-          expected_sha="$(jq -r '.source_archive.sha256' "$SOURCE_AUTHORITY")"
-          test "$actual_sha" = "$expected_sha"
-          tar -xJf "$archive" -C work/source --strip-components=1
-          test -s work/source/debian/changelog
-          first="$(head -n1 work/source/debian/changelog)"
-          [[ "$first" == "$SOURCE ($VERSION)"* ]]
+            > work/download/semantic/artifact.zip
+          unzip -q work/download/semantic/artifact.zip \
+            -d work/download/semantic/artifact
+          source_archive="$(find work/download/semantic/artifact -type f -name 'reconstructed-source.tar.xz' -print -quit)"
+          source_lock="$(find work/download/semantic/artifact -type f -name 'source-lock.json' -print -quit)"
+          test -n "$source_archive"
+          test -n "$source_lock"
+          cp "$source_lock" work/validation/semantic-source-lock.json
+          jq -e --arg source "$SOURCE" --arg version "$VERSION" '
+            .schema == 1
+            and .source == $source
+            and .version == $version
+            and .base_commit_sha != null
+            and .reconstructed_tree_sha != null
+            and .source_archive_sha256 != null
+          ' work/validation/semantic-source-lock.json >/dev/null
+          test "$(sha256sum "$source_archive" | awk '{print $1}')" = \
+            "$(jq -r '.source_archive_sha256' work/validation/semantic-source-lock.json)"
+          tar -xJf "$source_archive" -C work/source
+          test "$(dpkg-parsechangelog -lwork/source/debian/changelog -SVersion)" = "$VERSION"
 
-      - name: Build native ARM64 binary packages in Debian 11
+      - name: Download and verify exact ARM64 Nimf build dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          set -euxo pipefail
-          source_date_epoch="$(date -u -d "$(jq -r '.selected.committer_date' "$SOURCE_AUTHORITY")" +%s)"
-          chmod -R a+rX work/source
+          set -Eeuo pipefail
+          artifact_id="$(jq -r '.artifact.id' "$NIMF_AUTHORITY")"
+          expected_digest="$(jq -r '.artifact.digest // empty' "$NIMF_AUTHORITY")"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+            > work/download/nimf/artifact-metadata.json
+          jq -e --arg id "$artifact_id" '
+            (.id | tostring) == $id and .expired == false
+          ' work/download/nimf/artifact-metadata.json >/dev/null
+          expected="${expected_digest#sha256:}"
+          actual="$(jq -r '.digest // empty' work/download/nimf/artifact-metadata.json)"
+          actual="${actual#sha256:}"
+          test -z "$expected" || test "$actual" = "$expected"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > work/download/nimf/artifact.zip
+          unzip -q work/download/nimf/artifact.zip -d work/download/nimf/artifact
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import os
+          import shutil
+          import subprocess
+          from pathlib import Path
+          authority_path = Path(os.environ['NIMF_AUTHORITY'])
+          authority = json.loads(authority_path.read_text(encoding='utf-8'))
+          artifact_root = Path('work/download/nimf/artifact')
+          output = Path('work/nimf-deps')
+          output.mkdir(parents=True, exist_ok=True)
+          required = {'libnimf1', 'nimf-dev'}
+          rows = []
+          for row in authority['packages']:
+              if row['package'] not in required:
+                  continue
+              matches = sorted(artifact_root.rglob(row['filename']))
+              if len(matches) != 1:
+                  raise SystemExit(f"expected exactly one {row['filename']}, found {len(matches)}")
+              source = matches[0]
+              payload = source.read_bytes()
+              if len(payload) != int(row['size']):
+                  raise SystemExit(f"size mismatch: {row['filename']}")
+              if hashlib.sha256(payload).hexdigest() != row['sha256']:
+                  raise SystemExit(f"sha256 mismatch: {row['filename']}")
+              package = subprocess.check_output(['dpkg-deb', '-f', str(source), 'Package'], text=True).strip()
+              version = subprocess.check_output(['dpkg-deb', '-f', str(source), 'Version'], text=True).strip()
+              architecture = subprocess.check_output(['dpkg-deb', '-f', str(source), 'Architecture'], text=True).strip()
+              if (package, version, architecture) != (row['package'], authority['source_version'], 'arm64'):
+                  raise SystemExit(f"metadata mismatch: {row['filename']}")
+              shutil.copy2(source, output / row['filename'])
+              rows.append(row)
+          if {row['package'] for row in rows} != required:
+              raise SystemExit('required Nimf dependency package set is incomplete')
+          lock = {
+              'schema': 1,
+              'source': 'nimf',
+              'version': authority['source_version'],
+              'architecture': 'arm64',
+              'authority_path': str(authority_path),
+              'authority_sha256': hashlib.sha256(authority_path.read_bytes()).hexdigest(),
+              'packages': sorted(rows, key=lambda row: row['package']),
+          }
+          Path('work/validation/nimf-dependency-lock.json').write_text(
+              json.dumps(lock, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          test "$(find work/nimf-deps -maxdepth 1 -type f -name '*.deb' | wc -l)" = 2
+
+      - name: Build native ARM64 Integration Applet in Debian 11
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source_date_epoch="$(date -u -d "$(dpkg-parsechangelog -lwork/source/debian/changelog -SDate)" +%s)"
+          test "$source_date_epoch" -gt 0
+          chmod -R a+rX work/source work/nimf-deps
           docker run --rm --platform linux/arm64 \
             -e DEBIAN_FRONTEND=noninteractive \
-            -e SOURCE="$SOURCE" \
-            -e VERSION="$VERSION" \
             -e SOURCE_DATE_EPOCH="$source_date_epoch" \
-            -e DEB_BUILD_OPTIONS='parallel=2' \
+            -e DEB_BUILD_OPTIONS='nocheck parallel=2' \
             -e DEB_BUILD_MAINT_OPTIONS='hardening=+all reproducible=+fixfilepath' \
             -v "$PWD/work/source:/input:ro" \
+            -v "$PWD/work/nimf-deps:/deps:ro" \
             -v "$PWD/work/build-output:/output" \
-            debian:bullseye \
-            bash -euxo pipefail -c '
+            arm64v8/debian:bullseye \
+            bash -Eeuxo pipefail -c '
               printf "%s\n" \
                 "deb http://deb.debian.org/debian bullseye main contrib non-free" \
                 "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" \
                 "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" \
                 > /etc/apt/sources.list
-              apt-get -o Acquire::Retries=5 update
-              apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
-                build-essential ca-certificates debhelper devscripts dpkg-dev equivs fakeroot git
+              printf "%s\n" \
+                "Acquire::Retries \"6\";" \
+                "Acquire::http::Timeout \"45\";" \
+                "Acquire::https::Timeout \"45\";" \
+                "Dpkg::Use-Pty \"0\";" \
+                > /etc/apt/apt.conf.d/99arm64-build
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential ca-certificates debhelper devscripts dpkg-dev equivs fakeroot git xz-utils
+              apt-get install -y /deps/libnimf1_*_arm64.deb /deps/nimf-dev_*_arm64.deb
+              test "$(dpkg-query -W -f="\${Version}" libnimf1)" = "2023.06.30+grm3u1"
+              test "$(dpkg-query -W -f="\${Version}" nimf-dev)" = "2023.06.30+grm3u1"
               mkdir -p /build/source
               cp -a /input/. /build/source/
               cd /build/source
               mk-build-deps --install --remove \
-                --tool "apt-get -o Acquire::Retries=5 -y --no-install-recommends" \
+                --tool "apt-get -o Acquire::Retries=6 -y --no-install-recommends" \
                 debian/control
+              test "$(dpkg-query -W -f="\${Version}" nimf-dev)" = "2023.06.30+grm3u1"
               dpkg-buildpackage -b -us -uc -j2
               cp -av /build/*.deb /build/*.buildinfo /build/*.changes /output/
             '
-          find work/build-output -maxdepth 1 -type f -printf '%f\t%s\n' | sort
+          find work/build-output -maxdepth 1 -type f -printf '%f\t%s\n' | LC_ALL=C sort
           test -n "$(find work/build-output -maxdepth 1 -type f -name '*.deb' -print -quit)"
 
       - name: Validate package metadata and reject every foreign ELF
         shell: bash
         run: |
-          set -euxo pipefail
+          set -Eeuo pipefail
           python3 - <<'PY'
+          from __future__ import annotations
           import hashlib
           import json
           import os
-          import re
-          import shutil
+          import struct
           import subprocess
           from pathlib import Path
-
           source = os.environ['SOURCE']
           version = os.environ['VERSION']
           output = Path('work/build-output')
@@ -151,192 +265,182 @@ jobs:
           extracted.mkdir(parents=True, exist_ok=True)
           rows = []
           errors = []
-
           def field(path: Path, key: str) -> str:
-              return subprocess.check_output(['dpkg-deb', '-f', str(path), key], text=True).strip()
-
+              process = subprocess.run(['dpkg-deb', '-f', str(path), key], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+              return process.stdout.strip() if process.returncode == 0 else ''
+          def elf_machine(path: Path) -> int | None:
+              header = path.read_bytes()[:20]
+              if len(header) < 20 or header[:4] != b'\x7fELF':
+                  return None
+              endian = '<' if header[5] == 1 else '>' if header[5] == 2 else None
+              if endian is None:
+                  return -1
+              return struct.unpack(endian + 'H', header[18:20])[0]
           for deb in sorted(output.glob('*.deb')):
               package = field(deb, 'Package')
               package_version = field(deb, 'Version')
               architecture = field(deb, 'Architecture')
               source_field = field(deb, 'Source')
+              source_name = source_field.split(' ', 1)[0] if source_field else source
               root = extracted / package
               subprocess.run(['dpkg-deb', '-x', str(deb), str(root)], check=True)
               elf_rows = []
               for path in sorted(p for p in root.rglob('*') if p.is_file()):
-                  head = path.read_bytes()[:4]
-                  if head != b'\x7fELF':
+                  machine = elf_machine(path)
+                  if machine is None:
                       continue
+                  relative = path.relative_to(root).as_posix()
                   description = subprocess.check_output(['file', '-b', str(path)], text=True).strip()
-                  rel = path.relative_to(root).as_posix()
-                  ok = ('ARM aarch64' in description or 'ARM64' in description)
-                  elf_rows.append({'path': rel, 'file': description, 'arm64': ok})
+                  ok = machine == 183
+                  elf_rows.append({'path': relative, 'machine': machine, 'file': description, 'arm64': ok})
                   if not ok:
-                      errors.append({'kind': 'foreign-elf', 'package': package, 'path': rel, 'file': description})
-              checks = {
-                  'version': package_version == version,
-                  'architecture': architecture in {'arm64', 'all'},
-                  'source': source_field.split(' ', 1)[0] == source,
-              }
+                      errors.append({'kind': 'foreign-elf', 'package': package, 'path': relative, 'machine': machine, 'file': description})
+              checks = {'version': package_version == version, 'architecture': architecture in {'arm64', 'all'}, 'source': source_name == source}
               if not all(checks.values()):
-                  errors.append({
-                      'kind': 'metadata-mismatch', 'filename': deb.name,
-                      'actual': {
-                          'package': package, 'version': package_version,
-                          'architecture': architecture, 'source': source_field,
-                      },
-                      'checks': checks,
-                  })
-              rows.append({
-                  'filename': deb.name,
-                  'package': package,
-                  'version': package_version,
-                  'architecture': architecture,
-                  'source': source_field,
-                  'size': deb.stat().st_size,
-                  'sha256': hashlib.sha256(deb.read_bytes()).hexdigest(),
-                  'checks': checks,
-                  'elfs': elf_rows,
-              })
-
-          principal = [r for r in rows if r['package'] == source and r['architecture'] == 'arm64']
+                  errors.append({'kind': 'metadata-mismatch', 'filename': deb.name, 'package': package, 'version': package_version, 'architecture': architecture, 'source': source_field, 'checks': checks})
+              rows.append({'filename': deb.name, 'package': package, 'version': package_version, 'architecture': architecture, 'source': source_field, 'size': deb.stat().st_size, 'sha256': hashlib.sha256(deb.read_bytes()).hexdigest(), 'checks': checks, 'elfs': elf_rows})
+          principal = [row for row in rows if row['package'] == source and row['architecture'] == 'arm64']
           if len(principal) != 1:
               errors.append({'kind': 'principal-package-count', 'count': len(principal)})
-          report = {
-              'schema': 1,
-              'source': source,
-              'version': version,
-              'target_architecture': 'arm64',
-              'package_count': len(rows),
-              'principal_package_count': len(principal),
-              'foreign_elf_count': sum(1 for e in errors if e['kind'] == 'foreign-elf'),
-              'errors': errors,
-              'packages': rows,
-              'verified': not errors and bool(rows),
-          }
-          Path('work/validation/build-verification.json').write_text(
-              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
-          )
+          report = {'schema': 1, 'source': source, 'version': version, 'target_architecture': 'arm64', 'package_count': len(rows), 'principal_package_count': len(principal), 'foreign_elf_count': sum(error['kind'] == 'foreign-elf' for error in errors), 'errors': errors, 'packages': rows, 'verified': bool(rows) and not errors}
+          Path('work/validation/build-verification.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
           if errors or not rows:
               raise SystemExit(json.dumps(report, indent=2, sort_keys=True))
           PY
-          jq -e '.verified == true and .foreign_elf_count == 0 and .principal_package_count == 1' \
-            work/validation/build-verification.json >/dev/null
+          jq -e '
+            .verified == true
+            and .foreign_elf_count == 0
+            and .principal_package_count == 1
+          ' work/validation/build-verification.json >/dev/null
           jq '.' work/validation/build-verification.json >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload verified ARM64 packages
+      - name: Assemble immutable Applet build artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/artifact/build-output work/artifact/validation
+          cp -a work/build-output/. work/artifact/build-output/
+          cp work/validation/build-verification.json work/artifact/validation/
+          cp work/validation/semantic-source-lock.json work/artifact/validation/
+          cp work/validation/nimf-dependency-lock.json work/artifact/validation/
+          find work/artifact -type f -printf '%P\t%s\n' | LC_ALL=C sort > work/artifact/FILE-INVENTORY.tsv
+          (
+            cd work/artifact
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload verified Integration Applet ARM64 build
+        id: upload
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: gooroom-integration-applet-han3u3-arm64-${{ github.run_id }}
-          path: |
-            work/build-output
-            work/validation/build-verification.json
+          path: work/artifact
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 30
           compression-level: 6
 
-      - name: Capture package artifact identity
+      - name: Capture exact Applet artifact identity
         env:
           GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
         shell: bash
         run: |
-          set -euxo pipefail
-          artifact_name="gooroom-integration-applet-han3u3-arm64-${GITHUB_RUN_ID}"
-          artifact=''
-          for attempt in $(seq 1 20); do
-            artifact="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
-              | jq -c --arg name "$artifact_name" \
-                '[.artifacts[] | select(.name == $name and .expired == false)] | last // empty')"
-            if [[ -n "$artifact" ]]; then
-              break
-            fi
-            sleep 3
-          done
-          test -n "$artifact"
-          printf '%s\n' "$artifact" > work/validation/artifact-metadata.json
+          set -Eeuo pipefail
+          test -n "$ARTIFACT_ID"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" > work/validation/artifact-metadata.json
+          jq -e --arg id "$ARTIFACT_ID" --arg name "gooroom-integration-applet-han3u3-arm64-${GITHUB_RUN_ID}" '
+            (.id | tostring) == $id and .name == $name and .expired == false
+          ' work/validation/artifact-metadata.json >/dev/null
+          expected="${ARTIFACT_DIGEST#sha256:}"
+          actual="$(jq -r '.digest // empty' work/validation/artifact-metadata.json)"
+          actual="${actual#sha256:}"
+          test -z "$expected" || test "$actual" = "$expected"
 
       - name: Seal native package promotion authority
         shell: bash
         run: |
-          set -euxo pipefail
+          set -Eeuo pipefail
           rm -rf "$LOCK_DIR"
           mkdir -p "$LOCK_DIR"
           cp work/validation/build-verification.json "$LOCK_DIR/"
           cp work/validation/artifact-metadata.json "$LOCK_DIR/"
-
+          cp work/validation/semantic-source-lock.json "$LOCK_DIR/"
+          cp work/validation/nimf-dependency-lock.json "$LOCK_DIR/"
           python3 - <<'PY'
+          from __future__ import annotations
           import hashlib
           import json
           import os
           from datetime import datetime, timezone
           from pathlib import Path
-
-          source_authority_path = Path(os.environ['SOURCE_AUTHORITY'])
-          source_authority = json.loads(source_authority_path.read_text(encoding='utf-8'))
-          verification = json.loads(Path('work/validation/build-verification.json').read_text(encoding='utf-8'))
-          artifact = json.loads(Path('work/validation/artifact-metadata.json').read_text(encoding='utf-8'))
+          semantic_authority_path = Path(os.environ['SEMANTIC_AUTHORITY'])
+          nimf_authority_path = Path(os.environ['NIMF_AUTHORITY'])
+          semantic_source_lock_path = Path('work/validation/semantic-source-lock.json')
+          nimf_dependency_lock_path = Path('work/validation/nimf-dependency-lock.json')
+          verification_path = Path('work/validation/build-verification.json')
+          artifact_path = Path('work/validation/artifact-metadata.json')
+          semantic_authority = json.loads(semantic_authority_path.read_text(encoding='utf-8'))
+          semantic_source_lock = json.loads(semantic_source_lock_path.read_text(encoding='utf-8'))
+          nimf_dependency_lock = json.loads(nimf_dependency_lock_path.read_text(encoding='utf-8'))
+          verification = json.loads(verification_path.read_text(encoding='utf-8'))
+          artifact = json.loads(artifact_path.read_text(encoding='utf-8'))
+          allowed = bool(semantic_authority['semantic_verification'] and semantic_authority['arm64_build_allowed'] and verification['verified'] and verification['foreign_elf_count'] == 0 and verification['principal_package_count'] == 1 and {row['package'] for row in nimf_dependency_lock['packages']} == {'libnimf1', 'nimf-dev'})
           authority = {
-              'schema': 1,
+              'schema': 2,
               'source': os.environ['SOURCE'],
               'source_version': os.environ['VERSION'],
               'target_architecture': 'arm64',
               'created_at': datetime.now(timezone.utc).isoformat(),
               'actions_run_id': os.environ['GITHUB_RUN_ID'],
               'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
-              'exact_source_authority_path': str(source_authority_path),
-              'exact_source_authority_sha256': hashlib.sha256(source_authority_path.read_bytes()).hexdigest(),
-              'source_commit': source_authority['selected']['commit'],
-              'source_tree': source_authority['selected']['tree'],
-              'source_tree_manifest_sha256': source_authority['source_tree_manifest_sha256'],
+              'semantic_authority_path': str(semantic_authority_path),
+              'semantic_authority_sha256': hashlib.sha256(semantic_authority_path.read_bytes()).hexdigest(),
+              'semantic_verification': semantic_authority['semantic_verification'],
+              'source_commit': semantic_source_lock['base_commit_sha'],
+              'reconstructed_source_tree': semantic_source_lock['reconstructed_tree_sha'],
+              'source_archive_sha256': semantic_source_lock['source_archive_sha256'],
+              'semantic_source_lock_sha256': hashlib.sha256(semantic_source_lock_path.read_bytes()).hexdigest(),
+              'nimf_authority_path': str(nimf_authority_path),
+              'nimf_authority_sha256': hashlib.sha256(nimf_authority_path.read_bytes()).hexdigest(),
+              'nimf_dependency_lock_sha256': hashlib.sha256(nimf_dependency_lock_path.read_bytes()).hexdigest(),
+              'nimf_dependencies': nimf_dependency_lock['packages'],
               'native_arm64_build_verified': verification['verified'],
               'foreign_elf_count': verification['foreign_elf_count'],
-              'package_layer_promotion_allowed': bool(
-                  verification['verified'] and
-                  verification['foreign_elf_count'] == 0 and
-                  verification['principal_package_count'] == 1
-              ),
+              'package_layer_promotion_allowed': allowed,
+              'iso_assembly_allowed': False,
               'package_count': verification['package_count'],
-              'packages': [
-                  {
-                      key: row[key]
-                      for key in ('filename', 'package', 'version', 'architecture', 'size', 'sha256')
-                  }
-                  for row in verification['packages']
-              ],
-              'artifact': {
-                  'id': str(artifact['id']),
-                  'name': artifact['name'],
-                  'digest': artifact.get('digest'),
-                  'size_in_bytes': artifact['size_in_bytes'],
-                  'expired': artifact['expired'],
-              },
-              'policy': 'exact-version-immutable-source-tree-plus-native-arm64-build-plus-zero-foreign-elf',
+              'packages': [{key: row[key] for key in ('filename', 'package', 'version', 'architecture', 'size', 'sha256')} for row in verification['packages']],
+              'artifact': {'id': str(artifact['id']), 'name': artifact['name'], 'digest': artifact.get('digest'), 'size_in_bytes': artifact['size_in_bytes'], 'expired': artifact['expired'], 'archive_download_url': artifact.get('archive_download_url')},
+              'policy': 'semantically-exact-hancom-source-plus-exact-arm64-nimf-plus-native-arm64-build-plus-zero-foreign-elf',
           }
-          Path(os.environ['LOCK_DIR'], 'package-promotion-authority.json').write_text(
-              json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8'
-          )
+          Path(os.environ['LOCK_DIR'], 'package-promotion-authority.json').write_text(json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8')
           PY
-
-          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
-            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$LOCK_DIR/FILE-INVENTORY.tsv"
           (
             cd "$LOCK_DIR"
-            find . -type f ! -name LOCKSUMS.sha256 -print0 \
-              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
             sha256sum --check --strict LOCKSUMS.sha256
           )
-          jq -e '.package_layer_promotion_allowed == true and .foreign_elf_count == 0' \
-            "$LOCK_DIR/package-promotion-authority.json" >/dev/null
+          jq -e '
+            .schema == 2
+            and .semantic_verification == true
+            and .native_arm64_build_verified == true
+            and .package_layer_promotion_allowed == true
+            and .foreign_elf_count == 0
+            and .artifact.expired == false
+          ' "$LOCK_DIR/package-promotion-authority.json" >/dev/null
 
-      - name: Commit compact build authority
+      - name: Commit compact Applet ARM64 authority
         shell: bash
         run: |
-          set -euxo pipefail
+          set -Eeuo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$LOCK_DIR"
-          git commit -m 'Lock integration applet han3u3 ARM64 build'
+          git commit -m 'Lock integration applet han3u3 native ARM64 build'
           for attempt in 1 2 3 4 5 6 7 8; do
             git pull --rebase origin arm64-port
             if git push origin HEAD:arm64-port; then
@@ -346,12 +450,23 @@ jobs:
           done
           exit 1
 
-      - name: Dispatch final package repository reconciliation
+      - name: Reconcile package repositories and global ARM64 state
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          set -euxo pipefail
-          gh workflow run arm64-merge-final-package-repository-v2.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref arm64-port
+          set -Eeuo pipefail
+          workflows=(
+            arm64-index-rebuild-results-v2.yml
+            arm64-recover-exact-package-pool.yml
+            arm64-summarize-recovered-package-blockers.yml
+            arm64-port-coverage-v2.yml
+            arm64-ci-state-snapshot.yml
+            arm64-merge-final-package-repository-v2.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            if gh workflow view "$workflow" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+              sleep 3
+            fi
+          done
