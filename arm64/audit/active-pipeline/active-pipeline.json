@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 301,
-    "workflow_name_count": 301,
-    "referenced_local_file_count": 357,
+    "workflow_count": 300,
+    "workflow_name_count": 300,
+    "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
     "passed": true
@@ -1988,7 +1988,9 @@
         "workflow_dispatch"
       ],
       "job_count": 1,
-      "uses": [],
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
       "referenced_local_files": []
     },
     {
@@ -2353,22 +2355,6 @@
       ],
       "referenced_local_files": [
         "arm64/scripts/prepare_composite_source_chroot.sh"
-      ]
-    },
-    {
-      "filename": "arm64-fix-integration-applet-v5-gtk-cast-once.yml",
-      "path": ".github/workflows/arm64-fix-integration-applet-v5-gtk-cast-once.yml",
-      "name": "ARM64 fix integration applet v5 GTK cast once",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/integration_applet_han3u3_semantic.py"
       ]
     },
     {
@@ -6368,9 +6354,6 @@
     ],
     "arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py": [
       ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml"
-    ],
-    "arm64/scripts/integration_applet_han3u3_semantic.py": [
-      ".github/workflows/arm64-fix-integration-applet-v5-gtk-cast-once.yml"
     ],
     "arm64/scripts/inventory_iso.py": [
       ".github/workflows/arm64-inventory.yml"
