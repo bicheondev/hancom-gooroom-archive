@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 311,
-    "workflow_name_count": 311,
-    "referenced_local_file_count": 356,
+    "workflow_count": 312,
+    "workflow_name_count": 312,
+    "referenced_local_file_count": 357,
     "error_count": 0,
-    "warning_count": 53,
+    "warning_count": 54,
     "passed": true
   },
   "workflows": [
@@ -5696,6 +5696,22 @@
       ]
     },
     {
+      "filename": "arm64-wire-integration-v5-native-continuation-once.yml",
+      "path": ".github/workflows/arm64-wire-integration-v5-native-continuation-once.yml",
+      "name": "ARM64 wire integration v5 native continuation once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/requests/integration-applet-history-v5-arm64-build.json"
+      ]
+    },
+    {
       "filename": "arm64-workflow-secret-audit.yml",
       "path": ".github/workflows/arm64-workflow-secret-audit.yml",
       "name": "ARM64 port - audit workflows for literal credentials",
@@ -6224,6 +6240,9 @@
       ".github/workflows/arm64-native-rebuild-backlog.yml",
       ".github/workflows/arm64-native-rebuild-batch-v2.yml",
       ".github/workflows/arm64-port-coverage.yml"
+    ],
+    "arm64/requests/integration-applet-history-v5-arm64-build.json": [
+      ".github/workflows/arm64-wire-integration-v5-native-continuation-once.yml"
     ],
     "arm64/scripts/apply_package_recovery_firmware_policy.py": [
       ".github/workflows/arm64-apply-package-recovery-firmware-policy.yml"
@@ -7455,6 +7474,11 @@
     {
       "path": ".github/workflows/arm64-wave2-v1-record.yml",
       "local_path": "arm64/locks/build-wave2-v1/workflow-run.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-wire-integration-v5-native-continuation-once.yml",
+      "local_path": "arm64/requests/integration-applet-history-v5-arm64-build.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     }
   ]
