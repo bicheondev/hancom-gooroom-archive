@@ -1,0 +1,478 @@
+name: ARM64 analyze linux 5.10.179 grm3u1 runtime sections v2
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-sections-v2.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-sections-v2
+  cancel-in-progress: true
+
+env:
+  VENDOR_PACKAGE: linux-image-5.10.0-23-amd64
+  BASE_VERSION: 5.10.179-1
+  TARGET_VERSION: 5.10.179-1+grm3u1
+  VENDOR_URL: https://update.hancomgooroom.com/gooroom/pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+  ABI: 5.10.0-23-amd64
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact binary and ELF analysis tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev jq python3 python3-pyelftools
+          python3 -m py_compile arm64/scripts/download_debian_snapshot_binary_v1.py
+          mkdir -p work/linux-sections-v2/{downloads,vendor,debian,output}
+
+      - name: Recover exact vendor and Debian AMD64 packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-sections-v2
+          curl --location --fail --silent --show-error \
+            --retry 8 --retry-delay 3 --retry-all-errors \
+            --output "$root/downloads/vendor.deb" "$VENDOR_URL"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Package)" = "$VENDOR_PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Version)" = "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Architecture)" = amd64
+          python3 arm64/scripts/download_debian_snapshot_binary_v1.py \
+            --package "$VENDOR_PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture amd64 \
+            --output "$root/downloads/debian.deb" \
+            --metadata-output "$root/output/debian-snapshot.json"
+          dpkg-deb -x "$root/downloads/vendor.deb" "$root/vendor"
+          dpkg-deb -x "$root/downloads/debian.deb" "$root/debian"
+          sha256sum "$root/downloads/vendor.deb" "$root/downloads/debian.deb" \
+            > "$root/output/input-debs.sha256"
+
+      - name: Compare every common module by runtime ELF sections
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import collections
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from typing import Any
+
+          from elftools.elf.elffile import ELFFile
+
+          root = Path('work/linux-sections-v2')
+          output = root / 'output'
+          abi = os.environ['ABI']
+          module_relative = Path('lib/modules') / abi
+          signature_marker = b'~Module signature appended~\n'
+          SHF_WRITE = 0x1
+          SHF_ALLOC = 0x2
+          SHF_EXECINSTR = 0x4
+          ignored_runtime_sections = {
+              '.note.gnu.build-id',
+              '.modinfo',
+              '.comment',
+              '.gnu_debuglink',
+          }
+
+          def sha256_bytes(payload: bytes) -> str:
+              return hashlib.sha256(payload).hexdigest()
+
+          def sha256_file(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def strip_signature(payload: bytes) -> tuple[bytes, dict[str, Any]]:
+              if not payload.endswith(signature_marker):
+                  return payload, {'present': False}
+              marker_offset = len(payload) - len(signature_marker)
+              structure_offset = marker_offset - 12
+              if structure_offset < 0:
+                  raise RuntimeError('incomplete module signature structure')
+              structure = payload[structure_offset:marker_offset]
+              signer_length = structure[3]
+              key_id_length = structure[4]
+              signature_length = int.from_bytes(structure[8:12], 'big')
+              trailer_length = (
+                  signer_length + key_id_length + signature_length
+                  + 12 + len(signature_marker)
+              )
+              unsigned_length = len(payload) - trailer_length
+              if unsigned_length < 0:
+                  raise RuntimeError('module signature trailer exceeds module size')
+              return payload[:unsigned_length], {
+                  'present': True,
+                  'algorithm': structure[0],
+                  'hash_algorithm': structure[1],
+                  'identifier_type': structure[2],
+                  'signer_length': signer_length,
+                  'key_id_length': key_id_length,
+                  'signature_length': signature_length,
+                  'trailer_length': trailer_length,
+              }
+
+          def section_record(section) -> dict[str, Any]:
+              header = section.header
+              section_type = str(header['sh_type'])
+              size = int(header['sh_size'])
+              if section_type == 'SHT_NOBITS':
+                  digest = None
+              else:
+                  digest = sha256_bytes(section.data())
+              return {
+                  'type': section_type,
+                  'flags': int(header['sh_flags']),
+                  'size': size,
+                  'sha256': digest,
+              }
+
+          def module_record(path: Path) -> dict[str, Any]:
+              payload = path.read_bytes()
+              unsigned, signature = strip_signature(payload)
+              with path.open('rb') as stream:
+                  elf = ELFFile(stream)
+                  sections = {}
+                  executable = {}
+                  writable = {}
+                  metadata = {}
+                  for section in elf.iter_sections():
+                      name = section.name
+                      flags = int(section.header['sh_flags'])
+                      record = section_record(section)
+                      if flags & SHF_ALLOC and name not in ignored_runtime_sections:
+                          sections[name] = record
+                          if flags & SHF_EXECINSTR:
+                              executable[name] = record
+                          if flags & SHF_WRITE:
+                              writable[name] = record
+                      elif name in ignored_runtime_sections or name in {'.BTF', '.BTF.ext'}:
+                          metadata[name] = record
+
+                  symbols = {}
+                  symbol_table = elf.get_section_by_name('.symtab')
+                  if symbol_table is not None:
+                      for symbol in symbol_table.iter_symbols():
+                          info = symbol['st_info']
+                          bind = str(info['bind'])
+                          symbol_type = str(info['type'])
+                          section_index = symbol['st_shndx']
+                          name = symbol.name
+                          if (
+                              not name
+                              or bind not in {'STB_GLOBAL', 'STB_WEAK'}
+                              or section_index in {'SHN_UNDEF', 'SHN_ABS'}
+                          ):
+                              continue
+                          symbols[name] = {
+                              'bind': bind,
+                              'type': symbol_type,
+                              'size': int(symbol['st_size']),
+                              'section': str(section_index),
+                          }
+
+                  modinfo = {}
+                  modinfo_section = elf.get_section_by_name('.modinfo')
+                  if modinfo_section is not None:
+                      for item in modinfo_section.data().split(b'\0'):
+                          if b'=' not in item:
+                              continue
+                          key, value = item.split(b'=', 1)
+                          key_text = key.decode('utf-8', errors='replace')
+                          value_text = value.decode('utf-8', errors='replace')
+                          modinfo.setdefault(key_text, []).append(value_text)
+
+              return {
+                  'raw_size': len(payload),
+                  'raw_sha256': sha256_bytes(payload),
+                  'unsigned_size': len(unsigned),
+                  'unsigned_sha256': sha256_bytes(unsigned),
+                  'signature': signature,
+                  'runtime_sections': sections,
+                  'executable_sections': executable,
+                  'writable_sections': writable,
+                  'metadata_sections': metadata,
+                  'global_symbols': symbols,
+                  'modinfo': modinfo,
+              }
+
+          def modules(base: Path) -> dict[str, Path]:
+              module_root = base / module_relative
+              return {
+                  path.relative_to(module_root).as_posix(): path
+                  for path in sorted(module_root.rglob('*.ko'))
+                  if path.is_file() and not path.is_symlink()
+              }
+
+          vendor_modules = modules(root / 'vendor')
+          debian_modules = modules(root / 'debian')
+          common = sorted(set(vendor_modules) & set(debian_modules))
+          vendor_only = sorted(set(vendor_modules) - set(debian_modules))
+          debian_only = sorted(set(debian_modules) - set(vendor_modules))
+
+          classifications = collections.Counter()
+          text_equal_count = 0
+          runtime_equal_count = 0
+          executable_equal_count = 0
+          writable_equal_count = 0
+          symbol_equal_count = 0
+          unsigned_equal_count = 0
+          vermagic_pairs = collections.Counter()
+          differing_runtime_section_names = collections.Counter()
+          records = []
+
+          for index, relative in enumerate(common, 1):
+              vendor = module_record(vendor_modules[relative])
+              debian = module_record(debian_modules[relative])
+              unsigned_equal = vendor['unsigned_sha256'] == debian['unsigned_sha256']
+              runtime_equal = vendor['runtime_sections'] == debian['runtime_sections']
+              executable_equal = vendor['executable_sections'] == debian['executable_sections']
+              writable_equal = vendor['writable_sections'] == debian['writable_sections']
+              symbol_equal = vendor['global_symbols'] == debian['global_symbols']
+              text_equal = (
+                  vendor['runtime_sections'].get('.text')
+                  == debian['runtime_sections'].get('.text')
+              )
+
+              unsigned_equal_count += unsigned_equal
+              runtime_equal_count += runtime_equal
+              executable_equal_count += executable_equal
+              writable_equal_count += writable_equal
+              symbol_equal_count += symbol_equal
+              text_equal_count += text_equal
+
+              vendor_vermagic = tuple(vendor['modinfo'].get('vermagic', []))
+              debian_vermagic = tuple(debian['modinfo'].get('vermagic', []))
+              vermagic_pairs[(vendor_vermagic, debian_vermagic)] += 1
+
+              if unsigned_equal:
+                  classification = 'unsigned-identical'
+              elif runtime_equal:
+                  classification = 'metadata-only'
+              elif executable_equal and symbol_equal:
+                  classification = 'runtime-data-different-code-equivalent'
+              elif text_equal and symbol_equal:
+                  classification = 'non-text-runtime-different'
+              else:
+                  classification = 'runtime-code-or-symbol-different'
+              classifications[classification] += 1
+
+              section_names = sorted(
+                  set(vendor['runtime_sections']) | set(debian['runtime_sections'])
+              )
+              different_sections = [
+                  name for name in section_names
+                  if vendor['runtime_sections'].get(name)
+                  != debian['runtime_sections'].get(name)
+              ]
+              differing_runtime_section_names.update(different_sections)
+
+              record = {
+                  'path': relative,
+                  'classification': classification,
+                  'unsigned_equal': unsigned_equal,
+                  'runtime_equal': runtime_equal,
+                  'executable_equal': executable_equal,
+                  'writable_equal': writable_equal,
+                  'symbol_equal': symbol_equal,
+                  'text_equal': text_equal,
+                  'different_runtime_sections': different_sections,
+                  'vendor': {
+                      'unsigned_size': vendor['unsigned_size'],
+                      'unsigned_sha256': vendor['unsigned_sha256'],
+                      'signature': vendor['signature'],
+                      'vermagic': list(vendor_vermagic),
+                      'srcversion': vendor['modinfo'].get('srcversion', []),
+                  },
+                  'debian': {
+                      'unsigned_size': debian['unsigned_size'],
+                      'unsigned_sha256': debian['unsigned_sha256'],
+                      'signature': debian['signature'],
+                      'vermagic': list(debian_vermagic),
+                      'srcversion': debian['modinfo'].get('srcversion', []),
+                  },
+              }
+              if classification != 'unsigned-identical':
+                  records.append(record)
+              if index % 250 == 0:
+                  print(f'compared {index}/{len(common)} modules', flush=True)
+
+          compact_vermagic_pairs = [
+              {
+                  'count': count,
+                  'vendor': list(vendor),
+                  'debian': list(debian),
+              }
+              for (vendor, debian), count in vermagic_pairs.most_common()
+          ]
+          summary = {
+              'schema': 2,
+              'source': 'linux',
+              'base_version': os.environ['BASE_VERSION'],
+              'vendor_version': os.environ['TARGET_VERSION'],
+              'analysis_policy': (
+                  'exact-amd64-module-signature-stripped-ELF-allocated-runtime-'
+                  'executable-writable-global-symbol-and-modinfo-comparison'
+              ),
+              'module_counts': {
+                  'vendor': len(vendor_modules),
+                  'debian': len(debian_modules),
+                  'common': len(common),
+                  'vendor_only': len(vendor_only),
+                  'debian_only': len(debian_only),
+              },
+              'vendor_only': vendor_only,
+              'debian_only': debian_only,
+              'classification_counts': dict(sorted(classifications.items())),
+              'unsigned_equal_count': unsigned_equal_count,
+              'runtime_sections_equal_count': runtime_equal_count,
+              'executable_sections_equal_count': executable_equal_count,
+              'writable_sections_equal_count': writable_equal_count,
+              'global_symbols_equal_count': symbol_equal_count,
+              'text_section_equal_count': text_equal_count,
+              'vermagic_pairs': compact_vermagic_pairs,
+              'different_runtime_section_name_counts': dict(
+                  differing_runtime_section_names.most_common()
+              ),
+              'source_equivalence_proven': False,
+              'arm64_build_allowed': False,
+              'package_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+              'next_action': (
+                  'recover exact source/config/toolchain and reproduce vendor AMD64 '
+                  'runtime sections before any ARM64 kernel promotion'
+              ),
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (output / 'module-section-delta.json').write_text(
+              json.dumps(records, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          with (output / 'module-classifications.tsv').open('w', encoding='utf-8') as stream:
+              stream.write(
+                  'path\tclassification\tunsigned_equal\truntime_equal\texecutable_equal\t'
+                  'writable_equal\tsymbol_equal\ttext_equal\tdifferent_runtime_sections\n'
+              )
+              for row in records:
+                  stream.write(
+                      f"{row['path']}\t{row['classification']}\t"
+                      f"{str(row['unsigned_equal']).lower()}\t"
+                      f"{str(row['runtime_equal']).lower()}\t"
+                      f"{str(row['executable_equal']).lower()}\t"
+                      f"{str(row['writable_equal']).lower()}\t"
+                      f"{str(row['symbol_equal']).lower()}\t"
+                      f"{str(row['text_equal']).lower()}\t"
+                      f"{','.join(row['different_runtime_sections'])}\n"
+                  )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+          jq -e '
+            .schema == 2
+            and .module_counts.common > 3000
+            and (.classification_counts | type) == "object"
+          ' work/linux-sections-v2/output/summary.json >/dev/null
+          (
+            cd work/linux-sections-v2/output
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' work/linux-sections-v2/output/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete runtime-section evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-grm3u1-sections-v2
+          path: work/linux-sections-v2/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed runtime-section authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/linux-5.10.179-grm3u1-sections-v2/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/linux-sections-v2/output/summary.json "$destination/"
+          cp work/linux-sections-v2/output/module-classifications.tsv "$destination/"
+          cp work/linux-sections-v2/output/debian-snapshot.json "$destination/"
+          cp work/linux-sections-v2/output/input-debs.sha256 "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                source_equivalence_proven: false,
+                arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true
+              }
+            ' > "$destination/authority.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Analyze linux 5.10.179 grm3u1 runtime sections v2'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
