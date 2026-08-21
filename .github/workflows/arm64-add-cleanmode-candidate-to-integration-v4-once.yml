@@ -43,14 +43,10 @@ jobs:
               text = text.replace(anchor, anchor + marker, 1)
               path.write_text(text, encoding='utf-8')
           PY
-          python3 - <<'PY'
-          import yaml
-          from pathlib import Path
-          path = Path('.github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml')
-          data = yaml.safe_load(path.read_text(encoding='utf-8'))
-          candidates = data['jobs']['reconstruct']['strategy']['matrix']['include']
-          assert any(row['commit'] == 'd170c900dab655bd5c6d8474064e445232d3f49c' for row in candidates)
-          PY
+          grep -Fq '          - label: cleanmode-public-commit' \
+            .github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml
+          grep -Fq '            commit: d170c900dab655bd5c6d8474064e445232d3f49c' \
+            .github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml
 
       - name: Commit matrix expansion and remove one-shot workflow
         shell: bash
