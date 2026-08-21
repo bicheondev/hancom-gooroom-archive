@@ -1,0 +1,608 @@
+name: ARM64 diagnose integration applet public bases v2
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-diagnose-integration-applet-public-bases-v2.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-public-bases-v2
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  REPOSITORY: gooroom/gooroom-integration-applet
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  TARGET_SHA256: 1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9
+  TARGET_SIZE: '62392'
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+
+jobs:
+  compare-candidate:
+    name: Compare locked public ${{ matrix.label }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: 0.3.1-grm3u1
+            commit: 0f7897ad068da63c6529c5725afdf569152ca4c7
+          - label: 0.3.2-grm3u1
+            commit: 888931318857682df5c13f94128462c1eb80570c
+          - label: 0.3.3-grm3u1
+            commit: bc1ffb09ce84b3d7f0428ecc9bbe46ef929074f5
+          - label: 0.3.4-grm3u1
+            commit: 700b941206bec133317591fb99ba6d1d3917f9fc
+          - label: 0.3.5-grm3u1
+            commit: 168ff81421ea1f5bae9e715c5ccdd559e015d44c
+
+    steps:
+      - name: Check out diagnostic authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install bounded historical-build tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          apt_options=(
+            -o Acquire::Retries=4
+            -o Acquire::http::Timeout=30
+            -o Acquire::https::Timeout=30
+            -o Acquire::ForceIPv4=true
+            -o Dpkg::Use-Pty=0
+          )
+          timeout 15m sudo apt-get "${apt_options[@]}" update
+          timeout 15m sudo DEBIAN_FRONTEND=noninteractive \
+            apt-get "${apt_options[@]}" install -y --no-install-recommends \
+              binutils ca-certificates curl debootstrap debian-archive-keyring \
+              diffutils dpkg-dev elfutils file git jq python3 tar xz-utils
+          mkdir -p work/integration-applet-candidate/{source-authority,downloads,deps,build,comparison,artifact}
+
+      - name: Verify and download exact locked Nimf build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+            and ([.packages[].package] | sort) == ["libnimf1", "nimf-dev"]
+          ' "$NIMF_AUTHORITY" >/dev/null
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            file="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            sha="$(jq -r '.sha256' <<<"$row")"
+            size="$(jq -r '.size' <<<"$row")"
+            package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "work/integration-applet-candidate/deps/$file"
+            test "$(stat -c '%s' "work/integration-applet-candidate/deps/$file")" = "$size"
+            test "$(sha256sum "work/integration-applet-candidate/deps/$file" | awk '{print $1}')" = "$sha"
+            test "$(dpkg-deb -f "work/integration-applet-candidate/deps/$file" Package)" = "$package"
+            test "$(dpkg-deb -f "work/integration-applet-candidate/deps/$file" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "work/integration-applet-candidate/deps/$file" Architecture)" = amd64
+          done
+
+      - name: Lock candidate tree with exact Hancom changelog identity
+        shell: bash
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+        run: |
+          set -Eeuo pipefail
+          root=work/integration-applet-candidate
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" "$root/source"
+          git -C "$root/source" fetch --depth=1 origin "$CANDIDATE_COMMIT"
+          git -C "$root/source" checkout --detach "$CANDIDATE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          candidate_tree="$(git -C "$root/source" rev-parse HEAD^{tree})"
+
+          prefix=arm64/locks/final-three-blockers-inspection-v1/gooroom-integration-applet/vendor-changelog-prefix
+          base_changelog=arm64/locks/final-three-blockers-inspection-v1/gooroom-integration-applet/base-changelog
+          test -s "$prefix"
+          test -s "$base_changelog"
+          cat "$prefix" "$base_changelog" > "$root/source/debian/changelog"
+          test "$(dpkg-parsechangelog -l"$root/source/debian/changelog" -SVersion)" = "$VERSION"
+
+          git -C "$root/source" add debian/changelog
+          reconstructed_tree="$(git -C "$root/source" write-tree)"
+          git -C "$root/source" archive --format=tar "$reconstructed_tree" \
+            > "$root/source-authority/reconstructed-source.tar"
+          jq -n \
+            --arg label "$CANDIDATE_LABEL" \
+            --arg commit "$CANDIDATE_COMMIT" \
+            --arg candidate_tree "$candidate_tree" \
+            --arg reconstructed_tree "$reconstructed_tree" \
+            --arg archive_sha256 "$(sha256sum "$root/source-authority/reconstructed-source.tar" | awk '{print $1}')" \
+            --arg nimf_authority_sha256 "$(sha256sum "$NIMF_AUTHORITY" | awk '{print $1}')" '
+              {
+                schema: 2,
+                source: "gooroom-integration-applet",
+                target_version: "0.3.1+grm3u1+han3u3",
+                repository_full_name: "gooroom/gooroom-integration-applet",
+                candidate_label: $label,
+                candidate_commit_sha: $commit,
+                candidate_tree_sha: $candidate_tree,
+                reconstructed_tree_sha: $reconstructed_tree,
+                source_archive_sha256: $archive_sha256,
+                nimf_authority_sha256: $nimf_authority_sha256,
+                changelog_policy: "exact-vendor-prefix-plus-exact-0.3.1-base-suffix",
+                build_dependency_policy: "locked-hancom-gooroom-nimf-2023.06.30-grm3u1"
+              }
+            ' > "$root/source-authority/source-lock.json"
+
+      - name: Download and verify exact target package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/integration-applet-candidate
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o "$root/downloads/target.deb"
+          test "$(stat -c '%s' "$root/downloads/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $root/downloads/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Architecture)" = amd64
+
+      - name: Build candidate in exact historical userspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$(pwd)/work/integration-applet-candidate"
+          rootfs="$root/build/rootfs"
+          mkdir -p "$root/build/debs"
+
+          timeout 30m sudo debootstrap \
+            --arch=amd64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$root/build/debootstrap.log"
+
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "6";' \
+            'Acquire::http::Timeout "45";' \
+            'Acquire::https::Timeout "45";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo cp /etc/resolv.conf "$rootfs/etc/resolv.conf"
+          sudo mkdir -p "$rootfs/build/source" "$rootfs/build/deps"
+          sudo tar -xf "$root/source-authority/reconstructed-source.tar" -C "$rootfs/build/source"
+          sudo cp "$root/deps"/*.deb "$rootfs/build/deps/"
+
+          timeout 90m sudo chroot "$rootfs" /bin/bash -Eeuxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export DEB_BUILD_MAINT_OPTIONS="hardening=+all reproducible=+fixfilepath"
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            apt-get install -y \
+              /build/deps/libnimf1_2023.06.30+grm3u1_amd64.deb \
+              /build/deps/nimf-dev_2023.06.30+grm3u1_amd64.deb
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -o Acquire::Retries=6 -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$root/build/build.log"
+
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$root/build/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$root/build"
+
+          for deb in "$root/build/debs"/*.deb; do
+            if [[ "$(dpkg-deb -f "$deb" Package)" == "$PACKAGE" ]]; then
+              cp "$deb" "$root/downloads/candidate.deb"
+            fi
+          done
+          test -f "$root/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$root/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/candidate.deb" Architecture)" = amd64
+          sudo rm -rf "$rootfs"
+
+      - name: Compare complete payload and allocated ELF sections
+        shell: bash
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+        run: |
+          set -Eeuo pipefail
+          root=work/integration-applet-candidate
+          for side in target candidate; do
+            mkdir -p "$root/comparison/$side/root"
+            dpkg-deb -x "$root/downloads/$side.deb" "$root/comparison/$side/root"
+            dpkg-deb -f "$root/downloads/$side.deb" > "$root/comparison/$side/control-fields.txt"
+          done
+
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          root = Path('work/integration-applet-candidate')
+          target_root = root / 'comparison/target/root'
+          candidate_root = root / 'comparison/candidate/root'
+
+          def sha(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(block)
+              return h.hexdigest()
+
+          def is_elf(path: Path) -> bool:
+              return path.is_file() and path.read_bytes()[:4] == b'\x7fELF'
+
+          def allocated_sections(path: Path) -> dict[str, dict[str, object]]:
+              text = subprocess.check_output(
+                  ['readelf', '-SW', str(path)], text=True,
+                  stderr=subprocess.STDOUT,
+              )
+              names = []
+              for line in text.splitlines():
+                  match = re.match(
+                      r'\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',
+                      line,
+                  )
+                  if not match:
+                      continue
+                  name, flags = match.groups()
+                  if 'A' in flags and name != '.note.gnu.build-id':
+                      names.append(name)
+              result = {}
+              with tempfile.TemporaryDirectory() as temporary:
+                  temporary_path = Path(temporary)
+                  for index, name in enumerate(names):
+                      output = temporary_path / str(index)
+                      process = subprocess.run(
+                          ['objcopy', '--dump-section', f'{name}={output}', str(path)],
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                      )
+                      if process.returncode == 0 and output.exists():
+                          result[name] = {
+                              'size': output.stat().st_size,
+                              'sha256': sha(output),
+                          }
+                      else:
+                          result[name] = {'error': process.stderr[-1000:]}
+              return result
+
+          def inventory(base: Path) -> dict[str, dict[str, object]]:
+              result = {}
+              for path in sorted(base.rglob('*')):
+                  relative = path.relative_to(base).as_posix()
+                  if path.is_symlink():
+                      result[relative] = {'kind': 'symlink', 'target': os.readlink(path)}
+                  elif path.is_file():
+                      row = {
+                          'kind': 'elf' if is_elf(path) else 'file',
+                          'size': path.stat().st_size,
+                          'sha256': sha(path),
+                      }
+                      if row['kind'] == 'elf':
+                          row['allocated_sections'] = allocated_sections(path)
+                      result[relative] = row
+              return result
+
+          target = inventory(target_root)
+          candidate = inventory(candidate_root)
+          rows = []
+          for path in sorted(set(target) | set(candidate)):
+              left = target.get(path)
+              right = candidate.get(path)
+              row = {'path': path, 'target': left, 'candidate': right}
+              if left is None:
+                  row['status'] = 'candidate-only'
+              elif right is None:
+                  row['status'] = 'target-only'
+              elif left == right:
+                  row['status'] = 'identical'
+              elif left.get('kind') == right.get('kind') == 'elf':
+                  left_sections = left['allocated_sections']
+                  right_sections = right['allocated_sections']
+                  different_sections = [
+                      name for name in sorted(set(left_sections) | set(right_sections))
+                      if left_sections.get(name) != right_sections.get(name)
+                  ]
+                  row['status'] = 'elf-different'
+                  row['different_allocated_sections'] = different_sections
+                  row['allocated_sections_equal'] = not different_sections
+                  row['absolute_size_delta'] = abs(int(left['size']) - int(right['size']))
+              else:
+                  row['status'] = 'different'
+              rows.append(row)
+
+          missing = [
+              row for row in rows
+              if row['status'] in {'candidate-only', 'target-only'}
+          ]
+          non_elf = [
+              row for row in rows
+              if row['status'] == 'different'
+          ]
+          elf = [
+              row for row in rows
+              if row['status'] == 'elf-different'
+          ]
+          different_section_count = sum(
+              len(row['different_allocated_sections']) for row in elf
+          )
+          summary = {
+              'schema': 2,
+              'source': os.environ['PACKAGE'],
+              'target_version': os.environ['VERSION'],
+              'candidate_label': os.environ['CANDIDATE_LABEL'],
+              'candidate_commit_sha': os.environ['CANDIDATE_COMMIT'],
+              'payload_path_count': len(rows),
+              'identical_path_count': sum(row['status'] == 'identical' for row in rows),
+              'missing_path_count': len(missing),
+              'different_non_elf_count': len(non_elf),
+              'elf_path_count': sum(
+                  1 for row in rows
+                  if (row.get('target') or {}).get('kind') == 'elf'
+                  or (row.get('candidate') or {}).get('kind') == 'elf'
+              ),
+              'different_elf_count': len(elf),
+              'different_allocated_section_count': different_section_count,
+              'elf_absolute_size_delta_sum': sum(
+                  int(row.get('absolute_size_delta', 0)) for row in elf
+              ),
+              'path_set_identical': not missing,
+              'non_elf_payload_equivalent': not missing and not non_elf,
+              'allocated_runtime_payload_equivalent': (
+                  bool(rows) and not missing and not non_elf
+                  and all(row.get('allocated_sections_equal') for row in elf)
+              ),
+              'exact_payload_equivalent': bool(rows) and all(
+                  row['status'] == 'identical' for row in rows
+              ),
+              'comparison_rank': [
+                  len(missing),
+                  len(non_elf),
+                  sum(
+                      1 for row in elf
+                      if '.text' in row.get('different_allocated_sections', [])
+                  ),
+                  different_section_count,
+                  sum(int(row.get('absolute_size_delta', 0)) for row in elf),
+              ],
+              'different_paths': [
+                  row['path'] for row in rows if row['status'] != 'identical'
+              ],
+              'elf_differences': elf,
+              'target_deb_sha256': sha(root / 'downloads/target.deb'),
+              'candidate_deb_sha256': sha(root / 'downloads/candidate.deb'),
+              'nimf_authority_sha256': sha(Path(os.environ['NIMF_AUTHORITY'])),
+          }
+          (root / 'comparison/payload-comparison.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (root / 'comparison/summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' "$root/comparison/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal candidate evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/integration-applet-candidate
+          artifact="$root/artifact"
+          mkdir -p "$artifact"
+          cp -a "$root/source-authority" "$artifact/" || true
+          cp -a "$root/comparison" "$artifact/" || true
+          cp "$root/downloads/target.deb" "$artifact/" || true
+          cp "$root/downloads/candidate.deb" "$artifact/" || true
+          cp "$root/build/build.log" "$artifact/" || true
+          cp "$root/build/debootstrap.log" "$artifact/" || true
+          find "$artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload candidate comparison
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-public-base-v2-${{ matrix.label }}
+          path: work/integration-applet-candidate/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Require complete comparison result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .schema == 2
+            and .source == "gooroom-integration-applet"
+            and .target_version == "0.3.1+grm3u1+han3u3"
+            and .payload_path_count > 0
+            and .elf_path_count == 2
+          ' work/integration-applet-candidate/comparison/summary.json >/dev/null
+
+  aggregate:
+    name: Select closest exact-build public source base
+    needs: compare-candidate
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out compact authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download all completed candidate comparisons
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: integration-applet-public-base-v2-*
+          path: work/candidates
+
+      - name: Rank candidates and seal aggregate evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/aggregate
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = []
+          for path in sorted(Path('work/candidates').glob('*/comparison/summary.json')):
+              row = json.loads(path.read_text(encoding='utf-8'))
+              row['artifact_directory'] = path.parents[1].name
+              rows.append(row)
+          if not rows:
+              raise SystemExit('no complete candidate summaries were downloaded')
+          rows.sort(key=lambda row: (row['comparison_rank'], row['candidate_label']))
+          result = {
+              'schema': 2,
+              'source': 'gooroom-integration-applet',
+              'target_version': '0.3.1+grm3u1+han3u3',
+              'candidate_count': len(rows),
+              'closest_candidate': rows[0],
+              'ranked_candidates': rows,
+              'exact_or_runtime_equivalent_candidate_count': sum(
+                  bool(row['exact_payload_equivalent'])
+                  or bool(row['allocated_runtime_payload_equivalent'])
+                  for row in rows
+              ),
+              'selection_policy': (
+                  'locked-nimf-then-lexicographic-missing-paths-nonelf-'
+                  'text-difference-allocated-section-count-elf-size-delta'
+              ),
+          }
+          Path('work/aggregate/summary.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          Path('work/aggregate/ranking.tsv').write_text(
+              'rank\tlabel\tcommit\tmissing\tnonelf\ttext_diff\tallocated_sections\telf_size_delta\texact\truntime\n'
+              + ''.join(
+                  f"{index}\t{row['candidate_label']}\t{row['candidate_commit_sha']}\t"
+                  f"{row['comparison_rank'][0]}\t{row['comparison_rank'][1]}\t"
+                  f"{row['comparison_rank'][2]}\t{row['comparison_rank'][3]}\t"
+                  f"{row['comparison_rank'][4]}\t{str(row['exact_payload_equivalent']).lower()}\t"
+                  f"{str(row['allocated_runtime_payload_equivalent']).lower()}\n"
+                  for index, row in enumerate(rows, 1)
+              ),
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/aggregate/summary.json >> "$GITHUB_STEP_SUMMARY"
+          find work/aggregate -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/aggregate/FILE-INVENTORY.tsv
+          (
+            cd work/aggregate
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload aggregate diagnosis
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-public-base-diagnosis-v2
+          path: work/aggregate
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact public-base authority
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/gooroom-integration-applet-public-base-diagnosis-v2/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/aggregate/summary.json "$destination/"
+          cp work/aggregate/ranking.tsv "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_name integration-applet-public-base-diagnosis-v2 \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_name: $artifact_name,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                exact_build_dependencies_locked: true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Diagnose integration applet public source bases v2'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
