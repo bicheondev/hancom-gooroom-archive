@@ -1,0 +1,78 @@
+name: ARM64 fix native build runner tooling once
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-fix-native-build-runner-tooling-once.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-fix-native-build-runner-tooling-once
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out current ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Remove conflicting Docker package installation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          files=(
+            .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+            .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml
+          )
+          for file in "${files[@]}"; do
+            test -f "$file"
+            grep -Fq 'curl docker.io dpkg-dev' "$file"
+            sed -i 's/curl docker\.io dpkg-dev/curl dpkg-dev/' "$file"
+            ! grep -Fq 'curl docker.io dpkg-dev' "$file"
+            grep -Fq 'curl dpkg-dev' "$file"
+          done
+
+      - name: Commit fix and dispatch Nimf retry
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml \
+            .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml
+          git rm .github/workflows/arm64-fix-native-build-runner-tooling-once.yml
+          git diff --cached --check
+          git commit -m 'Fix ARM64 native build runner Docker conflict'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              break
+            fi
+            git rebase --abort || true
+            test "$attempt" -lt 8
+            sleep $((attempt * 3))
+          done
+          workflow=arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/dispatches" \
+              -f ref=arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
