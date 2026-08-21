@@ -1,0 +1,153 @@
+name: ARM64 validate new reconstruction pipeline v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml'
+      - '.github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once-v2.yml'
+      - '.github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml'
+      - '.github/workflows/arm64-build-integration-applet-history-v5-arm64.yml'
+      - '.github/workflows/arm64-wire-integration-v5-native-continuation-once.yml'
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+      - 'arm64/scripts/integration_applet_inject_target_resources.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-validate-new-reconstruction-pipeline-v1
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install pinned workflow validation tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates golang-go jq python3 shellcheck
+          GOBIN="$PWD/work/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          mkdir -p work/validation
+          work/bin/actionlint -version > work/validation/actionlint-version.txt
+
+      - name: Validate workflow syntax, expressions, and embedded shell
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          files=(
+            .github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once-v2.yml
+            .github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml
+            .github/workflows/arm64-build-integration-applet-history-v5-arm64.yml
+            .github/workflows/arm64-wire-integration-v5-native-continuation-once.yml
+            .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml
+            .github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml
+          )
+          existing=()
+          for file in "${files[@]}"; do
+            [[ -f "$file" ]] && existing+=("$file")
+          done
+          test "${#existing[@]}" -ge 4
+          set +e
+          work/bin/actionlint -shellcheck shellcheck -format '{{json .}}' \
+            "${existing[@]}" > work/validation/actionlint.jsonl 2>&1
+          status=$?
+          set -e
+          printf '%s\n' "$status" > work/validation/actionlint-exit-status.txt
+          if [[ "$status" -ne 0 ]]; then
+            cat work/validation/actionlint.jsonl
+            exit "$status"
+          fi
+
+      - name: Compile reconstruction helpers and run command-line smoke tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile \
+            arm64/scripts/integration_applet_vendor_reconstruct.py \
+            arm64/scripts/integration_applet_inject_target_resources.py
+          python3 arm64/scripts/integration_applet_vendor_reconstruct.py --help \
+            > work/validation/reconstructor-help.txt
+          python3 arm64/scripts/integration_applet_inject_target_resources.py --help \
+            > work/validation/resource-injector-help.txt
+
+      - name: Seal validation evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -n \
+            --arg actionlint_version "$(cat work/validation/actionlint-version.txt)" \
+            --arg actionlint_status "$(cat work/validation/actionlint-exit-status.txt)" '
+              {
+                schema: 1,
+                status: "passed",
+                actionlint_version: $actionlint_version,
+                actionlint_exit_status: ($actionlint_status | tonumber),
+                python_helpers_compiled: true,
+                workflow_pipeline_execution_allowed: true,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false
+              }
+            ' > work/validation/summary.json
+          find work/validation -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/validation/FILE-INVENTORY.tsv
+          (
+            cd work/validation
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-new-reconstruction-pipeline-validation-v1
+          path: work/validation
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact validation authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/new-reconstruction-pipeline-validation-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/validation/summary.json "$destination/"
+          cp work/validation/actionlint-version.txt "$destination/"
+          cp work/validation/actionlint-exit-status.txt "$destination/"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Validate new ARM64 reconstruction pipeline v1'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
