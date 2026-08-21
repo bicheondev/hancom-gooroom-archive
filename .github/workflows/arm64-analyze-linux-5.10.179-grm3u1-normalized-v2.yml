@@ -1,0 +1,576 @@
+name: ARM64 analyze linux 5.10.179 grm3u1 normalized delta v2
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml'
+      - 'arm64/scripts/download_debian_snapshot_binary_v1.py'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-normalized-v2
+  cancel-in-progress: false
+
+env:
+  PACKAGE: linux-image-5.10.0-23-amd64
+  BASE_VERSION: 5.10.179-1
+  VENDOR_VERSION: 5.10.179-1+grm3u1
+  ABI: 5.10.0-23-amd64
+  VENDOR_URL: https://update.hancomgooroom.com/gooroom/pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+  SNAPSHOT_DOWNLOADER: arm64/scripts/download_debian_snapshot_binary_v1.py
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install exact package and ELF analysis tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file jq kmod python3 \
+            xz-utils zstd gzip bzip2
+          python3 -m py_compile "$SNAPSHOT_DOWNLOADER"
+          mkdir -p work/linux-normalized-v2/{downloads,vendor,debian,output,temporary}
+
+      - name: Recover exact vendor and Debian AMD64 packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-normalized-v2
+          curl --location --fail --show-error \
+            --retry 8 --retry-delay 3 --retry-all-errors \
+            --output "$root/downloads/vendor.deb" "$VENDOR_URL"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Version)" = "$VENDOR_VERSION"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Architecture)" = amd64
+
+          python3 "$SNAPSHOT_DOWNLOADER" \
+            --package "$PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture amd64 \
+            --output "$root/downloads/debian.deb" \
+            --metadata-output "$root/output/debian-snapshot.json"
+          test "$(dpkg-deb -f "$root/downloads/debian.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/debian.deb" Version)" = "$BASE_VERSION"
+          test "$(dpkg-deb -f "$root/downloads/debian.deb" Architecture)" = amd64
+
+          dpkg-deb -x "$root/downloads/vendor.deb" "$root/vendor"
+          dpkg-deb -x "$root/downloads/debian.deb" "$root/debian"
+          sha256sum "$root/downloads/vendor.deb" "$root/downloads/debian.deb" \
+            > "$root/output/input-debs.sha256"
+          dpkg-deb -f "$root/downloads/vendor.deb" > "$root/output/vendor-control-fields.txt"
+          dpkg-deb -f "$root/downloads/debian.deb" > "$root/output/debian-control-fields.txt"
+
+      - name: Compare exact Kconfig and signature-normalized module runtime payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import bz2
+          import concurrent.futures
+          import gzip
+          import hashlib
+          import json
+          import lzma
+          import os
+          import re
+          import shutil
+          import subprocess
+          import tempfile
+          from collections import Counter
+          from pathlib import Path
+          from typing import Any
+
+          root = Path('work/linux-normalized-v2')
+          vendor = root / 'vendor'
+          debian = root / 'debian'
+          output = root / 'output'
+          abi = '5.10.0-23-amd64'
+          module_relative = Path('lib/modules') / abi
+          config_relative = Path('boot') / f'config-{abi}'
+          signature_marker = b'~Module signature appended~\n'
+
+          def sha256_bytes(payload: bytes) -> str:
+              return hashlib.sha256(payload).hexdigest()
+
+          def sha256_file(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def parse_config(text: str) -> dict[str, str]:
+              values: dict[str, str] = {}
+              for line in text.splitlines():
+                  if line.startswith('CONFIG_') and '=' in line:
+                      key, value = line.split('=', 1)
+                      values[key] = value
+                  elif line.startswith('# CONFIG_') and line.endswith(' is not set'):
+                      values[line[2:-len(' is not set')]] = 'n'
+              return values
+
+          vendor_config_text = (vendor / config_relative).read_text(
+              encoding='utf-8', errors='replace'
+          )
+          debian_config_text = (debian / config_relative).read_text(
+              encoding='utf-8', errors='replace'
+          )
+          vendor_config = parse_config(vendor_config_text)
+          debian_config = parse_config(debian_config_text)
+          config_rows = []
+          transitions = Counter()
+          for symbol in sorted(set(vendor_config) | set(debian_config)):
+              vendor_value = vendor_config.get(symbol)
+              debian_value = debian_config.get(symbol)
+              if vendor_value == debian_value:
+                  continue
+              transition = f'{debian_value!s}->{vendor_value!s}'
+              transitions[transition] += 1
+              config_rows.append({
+                  'symbol': symbol,
+                  'debian': debian_value,
+                  'vendor': vendor_value,
+                  'transition': transition,
+              })
+          (output / 'vendor-config').write_text(vendor_config_text, encoding='utf-8')
+          (output / 'debian-config').write_text(debian_config_text, encoding='utf-8')
+          (output / 'config-diff.json').write_text(
+              json.dumps(
+                  {
+                      'schema': 2,
+                      'difference_count': len(config_rows),
+                      'transition_counts': dict(sorted(transitions.items())),
+                      'differences': config_rows,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + '\n',
+              encoding='utf-8',
+          )
+
+          def decompress_module(path: Path) -> bytes:
+              payload = path.read_bytes()
+              if path.suffix == '.xz':
+                  return lzma.decompress(payload)
+              if path.suffix == '.gz':
+                  return gzip.decompress(payload)
+              if path.suffix == '.bz2':
+                  return bz2.decompress(payload)
+              if path.suffix == '.zst':
+                  process = subprocess.run(
+                      ['zstd', '-q', '-d', '-c', str(path)],
+                      check=True,
+                      stdout=subprocess.PIPE,
+                  )
+                  return process.stdout
+              return payload
+
+          def normalized_module_name(path: Path, base: Path) -> str:
+              relative = path.relative_to(base).as_posix()
+              for suffix in ('.xz', '.gz', '.bz2', '.zst'):
+                  if relative.endswith(suffix):
+                      relative = relative[:-len(suffix)]
+                      break
+              return relative
+
+          def modules(base: Path) -> dict[str, Path]:
+              module_root = base / module_relative
+              result = {}
+              for path in sorted(module_root.rglob('*.ko*')):
+                  if not path.is_file() or path.is_symlink():
+                      continue
+                  name = normalized_module_name(path, module_root)
+                  if not name.endswith('.ko'):
+                      continue
+                  if name in result:
+                      raise RuntimeError(f'duplicate normalized module path: {name}')
+                  result[name] = path
+              return result
+
+          def strip_signature(payload: bytes) -> tuple[bytes, dict[str, Any]]:
+              if not payload.endswith(signature_marker):
+                  return payload, {'present': False}
+              marker_offset = len(payload) - len(signature_marker)
+              structure_offset = marker_offset - 12
+              if structure_offset < 0:
+                  raise RuntimeError('incomplete module signature structure')
+              structure = payload[structure_offset:marker_offset]
+              signer_length = structure[3]
+              key_id_length = structure[4]
+              signature_length = int.from_bytes(structure[8:12], 'big')
+              trailer_length = (
+                  signer_length + key_id_length + signature_length
+                  + 12 + len(signature_marker)
+              )
+              unsigned_length = len(payload) - trailer_length
+              if unsigned_length < 0:
+                  raise RuntimeError('module signature trailer exceeds payload')
+              return payload[:unsigned_length], {
+                  'present': True,
+                  'algorithm': structure[0],
+                  'hash_algorithm': structure[1],
+                  'identifier_type': structure[2],
+                  'signer_length': signer_length,
+                  'key_id_length': key_id_length,
+                  'signature_length': signature_length,
+                  'trailer_length': trailer_length,
+              }
+
+          def objcopy_without_build_id(payload: bytes) -> tuple[bytes, str | None]:
+              with tempfile.TemporaryDirectory() as temporary:
+                  temporary_path = Path(temporary)
+                  source = temporary_path / 'module.ko'
+                  destination = temporary_path / 'normalized.ko'
+                  source.write_bytes(payload)
+                  process = subprocess.run(
+                      [
+                          'objcopy',
+                          '--remove-section=.note.gnu.build-id',
+                          str(source),
+                          str(destination),
+                      ],
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                      text=True,
+                  )
+                  if process.returncode != 0 or not destination.exists():
+                      return payload, process.stderr[-1000:]
+                  return destination.read_bytes(), None
+
+          def allocated_sections(payload: bytes) -> dict[str, dict[str, Any]]:
+              with tempfile.TemporaryDirectory() as temporary:
+                  temporary_path = Path(temporary)
+                  source = temporary_path / 'module.ko'
+                  source.write_bytes(payload)
+                  process = subprocess.run(
+                      ['readelf', '-SW', str(source)],
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                      text=True,
+                  )
+                  if process.returncode != 0:
+                      return {'__readelf_error__': {'error': process.stderr[-1000:]}}
+                  sections = []
+                  pattern = re.compile(
+                      r'\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)'
+                  )
+                  for line in process.stdout.splitlines():
+                      match = pattern.match(line)
+                      if not match:
+                          continue
+                      name, flags = match.groups()
+                      if 'A' in flags and name != '.note.gnu.build-id':
+                          sections.append(name)
+                  result = {}
+                  for index, name in enumerate(sections):
+                      destination = temporary_path / f'section-{index}'
+                      dumped = subprocess.run(
+                          ['objcopy', '--dump-section', f'{name}={destination}', str(source)],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          text=True,
+                      )
+                      if dumped.returncode == 0 and destination.exists():
+                          data = destination.read_bytes()
+                          result[name] = {
+                              'size': len(data),
+                              'sha256': sha256_bytes(data),
+                          }
+                      elif name == '.bss':
+                          result[name] = {'kind': 'nobits'}
+                      else:
+                          result[name] = {'error': dumped.stderr[-1000:]}
+                  return result
+
+          vendor_modules = modules(vendor)
+          debian_modules = modules(debian)
+          common = sorted(set(vendor_modules) & set(debian_modules))
+          vendor_only = sorted(set(vendor_modules) - set(debian_modules))
+          debian_only = sorted(set(debian_modules) - set(vendor_modules))
+
+          def compare_one(relative: str) -> dict[str, Any]:
+              vendor_raw = decompress_module(vendor_modules[relative])
+              debian_raw = decompress_module(debian_modules[relative])
+              vendor_unsigned, vendor_signature = strip_signature(vendor_raw)
+              debian_unsigned, debian_signature = strip_signature(debian_raw)
+              if vendor_raw == debian_raw:
+                  classification = 'raw-identical'
+                  vendor_normalized = vendor_unsigned
+                  debian_normalized = debian_unsigned
+                  objcopy_errors = {'vendor': None, 'debian': None}
+              elif vendor_unsigned == debian_unsigned:
+                  classification = 'signature-only'
+                  vendor_normalized = vendor_unsigned
+                  debian_normalized = debian_unsigned
+                  objcopy_errors = {'vendor': None, 'debian': None}
+              else:
+                  vendor_normalized, vendor_error = objcopy_without_build_id(vendor_unsigned)
+                  debian_normalized, debian_error = objcopy_without_build_id(debian_unsigned)
+                  objcopy_errors = {'vendor': vendor_error, 'debian': debian_error}
+                  if vendor_normalized == debian_normalized:
+                      classification = 'signature-and-build-id-only'
+                  else:
+                      vendor_sections = allocated_sections(vendor_unsigned)
+                      debian_sections = allocated_sections(debian_unsigned)
+                      if vendor_sections == debian_sections:
+                          classification = 'nonallocated-or-layout-only'
+                      else:
+                          classification = 'allocated-runtime-different'
+              row = {
+                  'path': relative,
+                  'classification': classification,
+                  'vendor': {
+                      'raw_size': len(vendor_raw),
+                      'unsigned_size': len(vendor_unsigned),
+                      'unsigned_sha256': sha256_bytes(vendor_unsigned),
+                      'signature': vendor_signature,
+                  },
+                  'debian': {
+                      'raw_size': len(debian_raw),
+                      'unsigned_size': len(debian_unsigned),
+                      'unsigned_sha256': sha256_bytes(debian_unsigned),
+                      'signature': debian_signature,
+                  },
+                  'objcopy_errors': objcopy_errors,
+              }
+              if classification == 'allocated-runtime-different':
+                  row['vendor_allocated_sections'] = vendor_sections
+                  row['debian_allocated_sections'] = debian_sections
+                  row['different_allocated_sections'] = [
+                      name
+                      for name in sorted(set(vendor_sections) | set(debian_sections))
+                      if vendor_sections.get(name) != debian_sections.get(name)
+                  ]
+              return row
+
+          rows = []
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+              futures = {executor.submit(compare_one, relative): relative for relative in common}
+              for future in concurrent.futures.as_completed(futures):
+                  rows.append(future.result())
+          rows.sort(key=lambda row: row['path'])
+          classifications = Counter(row['classification'] for row in rows)
+          runtime_differences = [
+              row for row in rows
+              if row['classification'] == 'allocated-runtime-different'
+          ]
+          normalized_nonruntime = [
+              row for row in rows
+              if row['classification'] != 'allocated-runtime-different'
+          ]
+
+          metadata_rows = []
+          for name in (
+              'modules.builtin',
+              'modules.builtin.modinfo',
+              'modules.order',
+              'modules.builtin.alias.bin',
+          ):
+              records = {}
+              for side, base in (('vendor', vendor), ('debian', debian)):
+                  path = base / module_relative / name
+                  records[side] = (
+                      {'size': path.stat().st_size, 'sha256': sha256_file(path)}
+                      if path.is_file()
+                      else None
+                  )
+              metadata_rows.append({
+                  'path': (module_relative / name).as_posix(),
+                  **records,
+                  'identical': records['vendor'] == records['debian'],
+              })
+
+          module_document = {
+              'schema': 2,
+              'normalization_policy': (
+                  'decompress-then-strip-linux-module-signature-then-remove-build-id-'
+                  'then-compare-allocated-elf-sections'
+              ),
+              'vendor_module_count': len(vendor_modules),
+              'debian_module_count': len(debian_modules),
+              'common_module_count': len(common),
+              'vendor_only_count': len(vendor_only),
+              'debian_only_count': len(debian_only),
+              'vendor_only': vendor_only,
+              'debian_only': debian_only,
+              'classification_counts': dict(sorted(classifications.items())),
+              'allocated_runtime_difference_count': len(runtime_differences),
+              'allocated_runtime_difference_paths': [row['path'] for row in runtime_differences],
+              'allocated_runtime_difference_samples': runtime_differences[:200],
+              'nonruntime_equivalent_sample_count': len(normalized_nonruntime),
+              'nonruntime_equivalent_samples': normalized_nonruntime[:100],
+              'all_common_modules_runtime_equivalent': not runtime_differences,
+              'module_path_set_identical': not vendor_only and not debian_only,
+              'module_metadata_files': metadata_rows,
+          }
+          (output / 'module-normalized-delta.json').write_text(
+              json.dumps(module_document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (output / 'runtime-difference-paths.txt').write_text(
+              ''.join(f"{row['path']}\n" for row in runtime_differences),
+              encoding='utf-8',
+          )
+          (output / 'vendor-only-modules.txt').write_text(
+              ''.join(f'{path}\n' for path in vendor_only), encoding='utf-8'
+          )
+          (output / 'debian-only-modules.txt').write_text(
+              ''.join(f'{path}\n' for path in debian_only), encoding='utf-8'
+          )
+
+          summary = {
+              'schema': 2,
+              'source': 'linux',
+              'base_version': '5.10.179-1',
+              'vendor_version': '5.10.179-1+grm3u1',
+              'abi': abi,
+              'config_difference_count': len(config_rows),
+              'config_transition_counts': dict(sorted(transitions.items())),
+              'module_counts': {
+                  'vendor': len(vendor_modules),
+                  'debian': len(debian_modules),
+                  'common': len(common),
+                  'vendor_only': len(vendor_only),
+                  'debian_only': len(debian_only),
+                  'allocated_runtime_different': len(runtime_differences),
+              },
+              'module_classification_counts': dict(sorted(classifications.items())),
+              'module_path_set_identical': not vendor_only and not debian_only,
+              'all_common_modules_runtime_equivalent': not runtime_differences,
+              'debian_source_plus_vendor_config_is_candidate': (
+                  bool(config_rows)
+                  and not vendor_only
+                  and not debian_only
+                  and not runtime_differences
+              ),
+              'exact_vendor_source_recovered': False,
+              'source_equivalence_proven': False,
+              'native_arm64_build_allowed': False,
+              'package_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+              'next_action': (
+                  'rebuild Debian 5.10.179 source with exact vendor config and compare AMD64'
+                  if bool(config_rows) and not vendor_only and not debian_only and not runtime_differences
+                  else 'recover or reconstruct vendor source changes for runtime-different modules'
+              ),
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/linux-normalized-v2/output/summary.json >> "$GITHUB_STEP_SUMMARY"
+          jq -e '
+            .schema == 2
+            and .source == "linux"
+            and .base_version == "5.10.179-1"
+            and .vendor_version == "5.10.179-1+grm3u1"
+            and .config_difference_count >= 1
+            and .module_counts.common > 0
+          ' work/linux-normalized-v2/output/summary.json >/dev/null
+
+      - name: Seal complete normalized Linux evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          output=work/linux-normalized-v2/output
+          find "$output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete normalized Linux analysis
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-grm3u1-normalized-v2
+          path: work/linux-normalized-v2/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed normalized Linux authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/linux-normalized-v2/output
+          destination=arm64/locks/linux-5.10.179-grm3u1-normalized-v2/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/config-diff.json" "$destination/"
+          cp "$source/runtime-difference-paths.txt" "$destination/"
+          cp "$source/vendor-only-modules.txt" "$destination/"
+          cp "$source/debian-only-modules.txt" "$destination/"
+          cp "$source/debian-snapshot.json" "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                exact_vendor_source_recovered: false,
+                source_equivalence_proven: false,
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true
+              }
+            ' > "$destination/authority.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record linux 5.10.179 grm3u1 normalized delta v2'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
