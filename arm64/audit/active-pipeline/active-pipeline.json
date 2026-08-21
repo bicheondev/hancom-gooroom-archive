@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 306,
-    "workflow_name_count": 306,
+    "workflow_count": 307,
+    "workflow_name_count": 307,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -2947,6 +2947,20 @@
         "arm64/locks/minimal-boot-v2-attempt/minimal-boot-v2-attempt-summary.json",
         "arm64/locks/minimal-boot-v2-attempt/workflow-run.json"
       ]
+    },
+    {
+      "filename": "arm64-monitor-native-build-fix-v1.yml",
+      "path": ".github/workflows/arm64-monitor-native-build-fix-v1.yml",
+      "name": "ARM64 monitor native build runner fix v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-monitor-nimf-applet-build-chain-v1.yml",
