@@ -5,9 +5,9 @@
     "workflow_count": 317,
     "workflow_name_count": 317,
     "referenced_local_file_count": 365,
-    "error_count": 0,
+    "error_count": 1,
     "warning_count": 57,
-    "passed": true
+    "passed": false
   },
   "workflows": [
     {
@@ -7325,7 +7325,13 @@
       ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
-  "errors": [],
+  "errors": [
+    {
+      "path": ".github/workflows/arm64-fix-vendor-source-debug-v6-once.yml",
+      "reason": "yaml-parse-failed",
+      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 44, column 1:\n    '''\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 45, column 28:\n              new_version = '''            version_match = re.s ... \n                               ^"
+    }
+  ],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
