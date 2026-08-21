@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 310,
-    "workflow_name_count": 310,
+    "workflow_count": 311,
+    "workflow_name_count": 311,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -893,6 +893,22 @@
         "arm64/scripts/build_gooroom_resource_access_control_arm64_v1.sh",
         "arm64/scripts/verify_locked_arm64_build.sh"
       ]
+    },
+    {
+      "filename": "arm64-build-integration-applet-history-v5-arm64.yml",
+      "path": ".github/workflows/arm64-build-integration-applet-history-v5-arm64.yml",
+      "name": "ARM64 build verified integration applet history v5 source",
+      "events": [
+        "workflow_dispatch",
+        "workflow_run"
+      ],
+      "job_count": 2,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-build-libsecurity-extensions.yml",
