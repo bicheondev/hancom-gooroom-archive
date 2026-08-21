@@ -1,0 +1,32 @@
+name: ARM64 Dispatch Integration Applet Public Base Diagnosis v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - .github/workflows/arm64-dispatch-integration-applet-public-base-diagnosis-v1.yml
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: arm64-dispatch-integration-applet-public-base-diagnosis-v1
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch diagnosis against current arm64-port head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/arm64-diagnose-integration-applet-public-bases-v1.yml/dispatches" \
+            -f ref=arm64-port
