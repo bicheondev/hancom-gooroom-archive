@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 301,
     "workflow_name_count": 301,
-    "referenced_local_file_count": 356,
+    "referenced_local_file_count": 357,
     "error_count": 0,
     "warning_count": 53,
     "passed": true
@@ -2356,6 +2356,22 @@
       ]
     },
     {
+      "filename": "arm64-fix-integration-applet-v5-gtk-cast-once.yml",
+      "path": ".github/workflows/arm64-fix-integration-applet-v5-gtk-cast-once.yml",
+      "name": "ARM64 fix integration applet v5 GTK cast once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/integration_applet_han3u3_semantic.py"
+      ]
+    },
+    {
       "filename": "arm64-fix-integration-v3-shell-quoting.yml",
       "path": ".github/workflows/arm64-fix-integration-v3-shell-quoting.yml",
       "name": "ARM64 fix integration v3 shell quoting",
@@ -4059,20 +4075,6 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
         "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
-      ],
-      "referenced_local_files": []
-    },
-    {
-      "filename": "arm64-record-integration-applet-v5-runs-once.yml",
-      "path": ".github/workflows/arm64-record-integration-applet-v5-runs-once.yml",
-      "name": "ARM64 record integration applet v5 runs once",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
     },
@@ -6366,6 +6368,9 @@
     ],
     "arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py": [
       ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml"
+    ],
+    "arm64/scripts/integration_applet_han3u3_semantic.py": [
+      ".github/workflows/arm64-fix-integration-applet-v5-gtk-cast-once.yml"
     ],
     "arm64/scripts/inventory_iso.py": [
       ".github/workflows/arm64-inventory.yml"
