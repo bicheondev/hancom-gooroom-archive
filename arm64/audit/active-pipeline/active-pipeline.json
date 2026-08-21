@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 312,
-    "workflow_name_count": 312,
-    "referenced_local_file_count": 357,
+    "workflow_count": 313,
+    "workflow_name_count": 313,
+    "referenced_local_file_count": 359,
     "error_count": 0,
     "warning_count": 54,
     "passed": true
@@ -5413,6 +5413,24 @@
       "referenced_local_files": []
     },
     {
+      "filename": "arm64-validate-new-reconstruction-pipeline-v1.yml",
+      "path": ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml",
+      "name": "ARM64 validate new reconstruction pipeline v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/integration_applet_inject_target_resources.py",
+        "arm64/scripts/integration_applet_vendor_reconstruct.py"
+      ]
+    },
+    {
       "filename": "arm64-validate-source-candidates-against-amd64.yml",
       "path": ".github/workflows/arm64-validate-source-candidates-against-amd64.yml",
       "name": "ARM64 port - validate source candidates against exact AMD64 packages",
@@ -6541,6 +6559,12 @@
     ],
     "arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py": [
       ".github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml"
+    ],
+    "arm64/scripts/integration_applet_inject_target_resources.py": [
+      ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml"
+    ],
+    "arm64/scripts/integration_applet_vendor_reconstruct.py": [
+      ".github/workflows/arm64-validate-new-reconstruction-pipeline-v1.yml"
     ],
     "arm64/scripts/inventory_iso.py": [
       ".github/workflows/arm64-inventory.yml"
