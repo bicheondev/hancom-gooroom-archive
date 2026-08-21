@@ -134,7 +134,7 @@ def patch_popup_window(source: Path) -> dict[str, Any]:
 def patch_datetime(source: Path) -> dict[str, Any]:
     path = source / "modules/datetime/datetime-module.c"
     text = path.read_text(encoding="utf-8")
-    statement = "\tgtk_widget_set_can_focus (priv->control, FALSE);\n"
+    statement = "\tgtk_widget_set_can_focus (GTK_WIDGET (priv->control), FALSE);\n"
     if statement not in text:
         anchor = "\tgtk_button_set_relief (GTK_BUTTON (priv->control), GTK_RELIEF_NONE);\n"
         text = replace_once(
