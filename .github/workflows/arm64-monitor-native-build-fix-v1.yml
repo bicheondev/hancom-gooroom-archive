@@ -1,0 +1,63 @@
+name: ARM64 monitor native build runner fix v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-monitor-native-build-fix-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+      - name: Resolve fix workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflow=arm64-fix-native-build-runner-tooling-once.yml
+          mkdir -p work
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=arm64-port&per_page=10" > work/runs.json
+          run_id="$(jq -r '.workflow_runs[0].id // empty' work/runs.json)"
+          if [[ -z "$run_id" ]]; then
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/dispatches" -f ref=arm64-port
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              sleep 3
+              gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=arm64-port&per_page=10" > work/runs.json
+              run_id="$(jq -r '.workflow_runs[0].id // empty' work/runs.json)"
+              [[ -n "$run_id" ]] && break
+            done
+          fi
+          test -n "$run_id"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" > work/run.json
+          jq '{schema:1,run_id:(.id|tostring),status,conclusion,event,head_sha,created_at,updated_at,html_url}' work/run.json > work/status.json
+      - name: Commit fix run identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/status/native-build-runner-fix/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/status.json "$destination/run.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record native build runner fix run identity'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
