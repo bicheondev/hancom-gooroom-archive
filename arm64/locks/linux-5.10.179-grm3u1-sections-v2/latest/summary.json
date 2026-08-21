@@ -1,0 +1,86 @@
+{
+  "analysis_policy": "exact-amd64-module-signature-stripped-ELF-allocated-runtime-executable-writable-global-symbol-and-modinfo-comparison",
+  "arm64_build_allowed": false,
+  "base_version": "5.10.179-1",
+  "classification_counts": {
+    "runtime-code-or-symbol-different": 1446,
+    "runtime-data-different-code-equivalent": 2444
+  },
+  "debian_only": [
+    "kernel/crypto/aes_generic.ko",
+    "kernel/crypto/cbc.ko",
+    "kernel/drivers/char/tpm/tpm.ko",
+    "kernel/drivers/char/tpm/tpm_crb.ko",
+    "kernel/drivers/char/tpm/tpm_tis.ko",
+    "kernel/drivers/char/tpm/tpm_tis_core.ko",
+    "kernel/drivers/firmware/efi/efi-pstore.ko",
+    "kernel/lib/crypto/libaes.ko"
+  ],
+  "different_runtime_section_name_counts": {
+    ".altinstr_replacement": 2,
+    ".altinstructions": 2,
+    ".bss": 6,
+    ".data": 18,
+    ".data..read_mostly": 2,
+    ".data..ro_after_init": 3,
+    ".data.once": 1,
+    ".exit.text": 29,
+    ".fixup": 1,
+    ".init.text": 65,
+    ".noinstr.text": 1,
+    ".orc_unwind": 966,
+    ".orc_unwind_ip": 819,
+    ".parainstructions": 11,
+    ".ref.text": 1,
+    ".retpoline_sites": 28,
+    ".return_sites": 515,
+    ".rodata": 17,
+    ".rodata.cst8": 1,
+    ".rodata.str1.1": 210,
+    ".rodata.str1.8": 146,
+    ".smp_locks": 21,
+    ".static_call_sites": 16,
+    ".text": 1421,
+    ".text.unlikely": 725,
+    "__bug_table": 79,
+    "__dyndbg": 1309,
+    "__ex_table": 1,
+    "__jump_table": 1426,
+    "__mcount_loc": 74,
+    "__param": 1,
+    "__tracepoints": 88,
+    "__versions": 3890
+  },
+  "executable_sections_equal_count": 2444,
+  "global_symbols_equal_count": 2455,
+  "iso_assembly_allowed": false,
+  "module_counts": {
+    "common": 3890,
+    "debian": 3898,
+    "debian_only": 8,
+    "vendor": 3890,
+    "vendor_only": 0
+  },
+  "next_action": "recover exact source/config/toolchain and reproduce vendor AMD64 runtime sections before any ARM64 kernel promotion",
+  "package_promotion_allowed": false,
+  "runtime_sections_equal_count": 0,
+  "schema": 2,
+  "source": "linux",
+  "source_equivalence_proven": false,
+  "text_section_equal_count": 2469,
+  "unsigned_equal_count": 0,
+  "vendor_only": [],
+  "vendor_version": "5.10.179-1+grm3u1",
+  "vermagic_pairs": [
+    {
+      "count": 3890,
+      "debian": [
+        "5.10.0-23-amd64 SMP mod_unload modversions "
+      ],
+      "vendor": [
+        "5.10.0-23-amd64 SMP mod_unload modversions "
+      ]
+    }
+  ],
+  "writable_sections_equal_count": 2460
+}
