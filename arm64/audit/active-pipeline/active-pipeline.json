@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 297,
-    "workflow_name_count": 297,
+    "workflow_count": 298,
+    "workflow_name_count": 298,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -5162,6 +5162,21 @@
       "job_count": 1,
       "uses": [
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-trace-integration-applet-vendor-symbols-v1.yml",
+      "path": ".github/workflows/arm64-trace-integration-applet-vendor-symbols-v1.yml",
+      "name": "ARM64 trace integration applet vendor symbols v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
     },
