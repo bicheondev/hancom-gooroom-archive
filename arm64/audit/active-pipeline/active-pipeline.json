@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 313,
-    "workflow_name_count": 313,
-    "referenced_local_file_count": 359,
+    "workflow_count": 314,
+    "workflow_name_count": 314,
+    "referenced_local_file_count": 365,
     "error_count": 0,
-    "warning_count": 54,
+    "warning_count": 57,
     "passed": true
   },
   "workflows": [
@@ -1619,6 +1619,29 @@
       "referenced_local_files": [
         "arm64/status/continuation-orchestrator-v1/latest.json",
         "arm64/status/summary.json"
+      ]
+    },
+    {
+      "filename": "arm64-continuation-status-v5.yml",
+      "path": ".github/workflows/arm64-continuation-status-v5.yml",
+      "name": "ARM64 continuation status v5",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/latest/package-promotion-authority.json",
+        "arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/latest/summary.json",
+        "arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v4/latest/summary.json",
+        "arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/latest/compact.json",
+        "arm64/locks/linux-5.10.179-grm3u1-normalized-v2/latest/summary.json",
+        "arm64/locks/new-reconstruction-pipeline-validation-v1/latest/summary.json",
+        "arm64/requests/integration-applet-history-v5-arm64-build.json"
       ]
     },
     {
@@ -5938,6 +5961,18 @@
     "arm64/locks/gooroom-greeter-han3u2-reconstruction/latest/reconstruction-lock.json": [
       ".github/workflows/arm64-build-gooroom-greeter-han3u2.yml"
     ],
+    "arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/latest/package-promotion-authority.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
+    ],
+    "arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/latest/summary.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
+    ],
+    "arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v4/latest/summary.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
+    ],
+    "arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/latest/compact.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
+    ],
     "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/authority.json": [
       ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml"
     ],
@@ -5964,6 +5999,9 @@
     ],
     "arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json": [
       ".github/workflows/arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml"
+    ],
+    "arm64/locks/linux-5.10.179-grm3u1-normalized-v2/latest/summary.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
     ],
     "arm64/locks/linux-5.10.179-grm3u1-source/latest/artifact-lock.json": [
       ".github/workflows/arm64-build-linux-5.10.179-grm3u1-v1.yml"
@@ -6003,6 +6041,9 @@
     ],
     "arm64/locks/minimal-boot-v2-attempt/workflow-run.json": [
       ".github/workflows/arm64-minimal-boot-v2-record.yml"
+    ],
+    "arm64/locks/new-reconstruction-pipeline-validation-v1/latest/summary.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml"
     ],
     "arm64/locks/package-plan/debian-arm64-map-normalized.json": [
       ".github/workflows/arm64-materialize-debian-reference-repo-v2.yml",
@@ -6260,6 +6301,7 @@
       ".github/workflows/arm64-port-coverage.yml"
     ],
     "arm64/requests/integration-applet-history-v5-arm64-build.json": [
+      ".github/workflows/arm64-continuation-status-v5.yml",
       ".github/workflows/arm64-wire-integration-v5-native-continuation-once.yml"
     ],
     "arm64/scripts/apply_package_recovery_firmware_policy.py": [
@@ -7273,6 +7315,21 @@
     {
       "path": ".github/workflows/arm64-continuation-loop-v1.yml",
       "local_path": "arm64/status/stage0-iso-safety-gate-latest.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-continuation-status-v5.yml",
+      "local_path": "arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/latest/package-promotion-authority.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-continuation-status-v5.yml",
+      "local_path": "arm64/locks/new-reconstruction-pipeline-validation-v1/latest/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-continuation-status-v5.yml",
+      "local_path": "arm64/requests/integration-applet-history-v5-arm64-build.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
