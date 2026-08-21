@@ -1,0 +1,93 @@
+name: ARM64 fix vendor source debug v6 once
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-fix-vendor-source-debug-v6-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-fix-vendor-source-debug-v6-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Correct DSC field parsing and debug Build-ID set matching
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml')
+          text = path.read_text(encoding='utf-8')
+          old_version = '''            version = subprocess.check_output(
+                ['dpkg-parsechangelog', '-l', str(dsc), '-SVersion'],
+                text=True,
+            ).strip()
+            if version != '0.3.1+grm3u1+han3u3':
+                raise RuntimeError(f'unexpected source version: {version}')
+'''
+          new_version = '''            version_match = re.search(
+                r'^Version:\\s*(\\S+)\\s*$',
+                text,
+                flags=re.MULTILINE,
+            )
+            if not version_match:
+                raise RuntimeError('Version field was not found in vendor DSC')
+            version = version_match.group(1)
+            if version != '0.3.1+grm3u1+han3u3':
+                raise RuntimeError(f'unexpected source version: {version}')
+'''
+          if old_version in text:
+              text = text.replace(old_version, new_version, 1)
+          elif new_version not in text:
+              raise SystemExit('DSC version parser anchor not found')
+
+          old_match = "              'exact_matching_debug_payload_recovered': len(matching_files) == len(target_ids) and bool(target_ids),\n"
+          new_match = "              'exact_matching_debug_payload_recovered': ({row['build_id'] for row in matching_files} == target_ids and bool(target_ids)),\n"
+          if old_match in text:
+              text = text.replace(old_match, new_match, 1)
+          elif new_match not in text:
+              raise SystemExit('debug Build-ID matcher anchor not found')
+          path.write_text(text, encoding='utf-8')
+          PY
+          grep -F "Version field was not found in vendor DSC" \
+            .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
+          grep -F "{row['build_id'] for row in matching_files} == target_ids" \
+            .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
+          git diff --check -- .github/workflows
+
+      - name: Commit repair and remove one-shot workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
+          git rm .github/workflows/arm64-fix-vendor-source-debug-v6-once.yml
+          git diff --cached --check
+          git commit -m 'Fix integration applet vendor source and debug recovery v6'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
