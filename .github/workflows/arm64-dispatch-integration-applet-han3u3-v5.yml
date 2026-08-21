@@ -43,18 +43,25 @@ jobs:
           run_id=''
           run_url=''
           head_sha=''
+          status=''
+          conclusion=''
+          created_at=''
           for attempt in $(seq 1 30); do
-            row="$(gh api \
-              "repos/${GITHUB_REPOSITORY}/actions/workflows/$workflow/runs?branch=arm64-port&event=workflow_dispatch&per_page=20" \
-              --jq --arg dispatched_at "$dispatched_at" '
-                [.workflow_runs[]
-                 | select(.created_at >= $dispatched_at)]
-                | sort_by(.created_at)
-                | last
-                | if . == null then "" else [.id,.html_url,.head_sha,.status,.conclusion,.created_at] | @tsv end
-              ')"
-            if [[ -n "$row" ]]; then
-              IFS=$'\t' read -r run_id run_url head_sha status conclusion created_at <<<"$row"
+            response="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/$workflow/runs?branch=arm64-port&event=workflow_dispatch&per_page=20")"
+            candidate="$(jq -c --arg dispatched_at "$dispatched_at" '
+              [.workflow_runs[]
+               | select(.created_at >= $dispatched_at)]
+              | sort_by(.created_at)
+              | last // empty
+            ' <<<"$response")"
+            if [[ -n "$candidate" ]]; then
+              run_id="$(jq -r '.id' <<<"$candidate")"
+              run_url="$(jq -r '.html_url' <<<"$candidate")"
+              head_sha="$(jq -r '.head_sha' <<<"$candidate")"
+              status="$(jq -r '.status' <<<"$candidate")"
+              conclusion="$(jq -r '.conclusion // ""' <<<"$candidate")"
+              created_at="$(jq -r '.created_at' <<<"$candidate")"
               break
             fi
             sleep 2
