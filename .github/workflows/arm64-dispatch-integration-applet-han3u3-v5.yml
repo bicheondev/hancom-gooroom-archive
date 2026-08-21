@@ -1,0 +1,32 @@
+name: ARM64 dispatch integration applet han3u3 v5
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-dispatch-integration-applet-han3u3-v5.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: arm64-dispatch-integration-applet-han3u3-v5
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch v5 semantic reconstruction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/arm64-reconstruct-integration-applet-han3u3-v5.yml/dispatches" \
+            -f ref=arm64-port
