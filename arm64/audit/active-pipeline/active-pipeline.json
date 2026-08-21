@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 300,
-    "workflow_name_count": 300,
+    "workflow_count": 301,
+    "workflow_name_count": 301,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -2361,6 +2361,20 @@
       "filename": "arm64-fix-integration-v3-shell-quoting.yml",
       "path": ".github/workflows/arm64-fix-integration-v3-shell-quoting.yml",
       "name": "ARM64 fix integration v3 shell quoting",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-fix-linux-delta-evidence-check-once.yml",
+      "path": ".github/workflows/arm64-fix-linux-delta-evidence-check-once.yml",
+      "name": "ARM64 fix linux delta evidence check once",
       "events": [
         "push",
         "workflow_dispatch"
