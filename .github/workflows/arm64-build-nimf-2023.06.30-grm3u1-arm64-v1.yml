@@ -47,7 +47,7 @@ jobs:
             /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           sudo apt-get -o Acquire::Retries=5 update
           sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
-            binfmt-support ca-certificates curl docker.io dpkg-dev file git jq python3 qemu-user-static unzip xz-utils
+            binfmt-support ca-certificates curl dpkg-dev file git jq python3 qemu-user-static unzip xz-utils
           sudo update-binfmts --enable qemu-aarch64 || true
           docker run --rm --privileged tonistiigi/binfmt:qemu-v8.1.5 --install arm64
           mkdir -p work/source-authority work/build-output work/validation work/artifact
@@ -254,7 +254,7 @@ jobs:
                       'kind': 'required-package-count',
                       'package': package,
                       'count': count,
-                  })
+                })
 
           report = {
               'schema': 1,
