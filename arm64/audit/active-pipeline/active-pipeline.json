@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 296,
-    "workflow_name_count": 296,
+    "workflow_count": 297,
+    "workflow_name_count": 297,
     "referenced_local_file_count": 356,
     "error_count": 0,
     "warning_count": 53,
@@ -26,6 +26,20 @@
       "referenced_local_files": [
         "arm64/scripts/audit_active_arm64_pipeline.py"
       ]
+    },
+    {
+      "filename": "arm64-add-cleanmode-candidate-to-integration-v4-once.yml",
+      "path": ".github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once.yml",
+      "name": "ARM64 add cleanmode candidate to integration v4 once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml",
