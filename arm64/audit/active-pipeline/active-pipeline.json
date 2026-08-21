@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 314,
-    "workflow_name_count": 314,
+    "workflow_count": 315,
+    "workflow_name_count": 315,
     "referenced_local_file_count": 365,
     "error_count": 0,
     "warning_count": 57,
@@ -169,6 +169,21 @@
       "referenced_local_files": [
         "arm64/scripts/download_debian_snapshot_binary_v1.py"
       ]
+    },
+    {
+      "filename": "arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml",
+      "path": ".github/workflows/arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml",
+      "name": "ARM64 analyze linux 5.10.179 grm3u1 vmlinux v3",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-analyze-session-manager-elf-delta-v2.yml",
