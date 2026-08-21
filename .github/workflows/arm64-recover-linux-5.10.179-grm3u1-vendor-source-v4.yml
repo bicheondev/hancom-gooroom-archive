@@ -1,0 +1,354 @@
+name: ARM64 recover linux 5.10.179 grm3u1 vendor source v4
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-recover-linux-5.10.179-grm3u1-vendor-source-v4.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-vendor-source-v4
+  cancel-in-progress: false
+
+env:
+  SOURCE: linux
+  VERSION: 5.10.179-1+grm3u1
+  POOL_BASE: https://update.hancomgooroom.com/gooroom/pool/main/l/linux
+  VENDOR_BINARY_URL: https://update.hancomgooroom.com/gooroom/pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out source authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install Debian source package recovery tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates curl dpkg-dev file jq python3 xz-utils
+          mkdir -p work/linux-vendor-source-v4/{downloads,source,output}
+
+      - name: Verify exact vendor binary identity and inspect pool directory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vendor-source-v4
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$VENDOR_BINARY_URL" -o "$root/downloads/vendor.deb"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Package)" = linux-image-5.10.0-23-amd64
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Architecture)" = amd64
+          dpkg-deb -f "$root/downloads/vendor.deb" > "$root/output/vendor-control-fields.txt"
+          sha256sum "$root/downloads/vendor.deb" > "$root/output/vendor-binary.sha256"
+
+          set +e
+          curl --show-error --location --max-time 120 "$POOL_BASE/" \
+            -o "$root/output/pool-index.html"
+          printf '%s\n' "$?" > "$root/output/pool-index-curl-status.txt"
+          set -e
+
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import html.parser
+          import json
+          from pathlib import Path
+          from urllib.parse import unquote, urlparse
+
+          root = Path('work/linux-vendor-source-v4')
+
+          class Links(html.parser.HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.links = []
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != 'a':
+                      return
+                  href = dict(attrs).get('href')
+                  if not href:
+                      return
+                  parsed = urlparse(unquote(href))
+                  name = Path(parsed.path).name
+                  if name:
+                      self.links.append(name)
+
+          parser = Links()
+          index = root / 'output/pool-index.html'
+          if index.exists():
+              parser.feed(index.read_text(encoding='utf-8', errors='replace'))
+          links = sorted(set(parser.links))
+          (root / 'output/pool-index-links.json').write_text(
+              json.dumps(links, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Probe exact DSC and plausible source artifact names
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vendor-source-v4
+          cat > "$root/output/probe-candidates.txt" <<'EOF'
+          linux_5.10.179-1+grm3u1.dsc
+          linux_5.10.179.orig.tar.xz
+          linux_5.10.179.orig.tar.gz
+          linux_5.10.179-1+grm3u1.debian.tar.xz
+          linux_5.10.179-1+grm3u1.debian.tar.gz
+          linux_5.10.179-1+grm3u1.diff.gz
+          EOF
+          jq -r '.[]' "$root/output/pool-index-links.json" \
+            | grep -E '^linux_5\.10\.179.*(\.dsc|\.orig\.tar\.|\.debian\.tar\.|\.diff\.gz)$' \
+            >> "$root/output/probe-candidates.txt" || true
+          LC_ALL=C sort -u "$root/output/probe-candidates.txt" \
+            -o "$root/output/probe-candidates.txt"
+
+          : > "$root/output/probe-results.jsonl"
+          while IFS= read -r filename; do
+            [[ -n "$filename" ]] || continue
+            destination="$root/downloads/$filename"
+            url="$POOL_BASE/$filename"
+            set +e
+            curl --fail --show-error --location --max-time 300 \
+              --retry 4 --retry-delay 3 --retry-all-errors \
+              "$url" -o "$destination"
+            status=$?
+            set -e
+            if [[ "$status" -eq 0 ]]; then
+              jq -n \
+                --arg filename "$filename" \
+                --arg url "$url" \
+                --arg path "$destination" \
+                --arg sha256 "$(sha256sum "$destination" | awk '{print $1}')" \
+                --argjson size "$(stat -c '%s' "$destination")" '
+                  {filename:$filename,url:$url,path:$path,status:"downloaded",
+                   size:$size,sha256:$sha256}
+                ' >> "$root/output/probe-results.jsonl"
+            else
+              rm -f "$destination"
+              jq -n --arg filename "$filename" --arg url "$url" \
+                --argjson curl_status "$status" '
+                  {filename:$filename,url:$url,status:"unavailable",curl_status:$curl_status}
+                ' >> "$root/output/probe-results.jsonl"
+            fi
+          done < "$root/output/probe-candidates.txt"
+          jq -s '.' "$root/output/probe-results.jsonl" > "$root/output/probe-results.json"
+
+      - name: Verify DSC checksums and extract exact vendor source when available
+        id: source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vendor-source-v4
+          dsc="$(jq -r '.[] | select(.status == "downloaded" and (.filename | endswith(".dsc"))) | .path' \
+            "$root/output/probe-results.json" | head -1)"
+          recovered=false
+          if [[ -n "$dsc" ]]; then
+            cp "$dsc" "$root/source/vendor.dsc"
+            python3 - <<'PY'
+            from __future__ import annotations
+
+            import hashlib
+            import json
+            import re
+            from pathlib import Path
+
+            root = Path('work/linux-vendor-source-v4')
+            dsc = root / 'source/vendor.dsc'
+            text = dsc.read_text(encoding='utf-8', errors='replace')
+            source_match = re.search(r'^Source:\s*(\S+)\s*$', text, flags=re.MULTILINE)
+            version_match = re.search(r'^Version:\s*(\S+)\s*$', text, flags=re.MULTILINE)
+            if not source_match or source_match.group(1) != 'linux':
+                raise RuntimeError('vendor DSC Source field is not linux')
+            if not version_match or version_match.group(1) != '5.10.179-1+grm3u1':
+                raise RuntimeError('vendor DSC Version field is not exact')
+            checksums = {}
+            section = re.search(
+                r'^Checksums-Sha256:\s*\n((?:[ \t].*\n)+)',
+                text,
+                flags=re.MULTILINE,
+            )
+            if not section:
+                raise RuntimeError('vendor DSC has no Checksums-Sha256 section')
+            for line in section.group(1).splitlines():
+                parts = line.split()
+                if len(parts) == 3:
+                    checksums[parts[2]] = {
+                        'sha256': parts[0],
+                        'size': int(parts[1]),
+                    }
+            if not checksums:
+                raise RuntimeError('vendor DSC source file set is empty')
+            document = {
+                'schema': 1,
+                'source': source_match.group(1),
+                'version': version_match.group(1),
+                'dsc_sha256': hashlib.sha256(dsc.read_bytes()).hexdigest(),
+                'files': checksums,
+            }
+            (root / 'source/dsc-lock.json').write_text(
+                json.dumps(document, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
+            PY
+
+            jq -c '.files | to_entries[]' "$root/source/dsc-lock.json" | while IFS= read -r row; do
+              filename="$(jq -r '.key' <<<"$row")"
+              sha="$(jq -r '.value.sha256' <<<"$row")"
+              size="$(jq -r '.value.size' <<<"$row")"
+              existing="$root/downloads/$filename"
+              if [[ -f "$existing" ]]; then
+                cp "$existing" "$root/source/$filename"
+              else
+                curl --fail --show-error --location --max-time 1800 \
+                  --retry 8 --retry-delay 5 --retry-all-errors \
+                  "$POOL_BASE/$filename" -o "$root/source/$filename"
+              fi
+              test "$(stat -c '%s' "$root/source/$filename")" = "$size"
+              test "$(sha256sum "$root/source/$filename" | awk '{print $1}')" = "$sha"
+            done
+            (
+              cd "$root/source"
+              dpkg-source --no-check -x vendor.dsc extracted
+            )
+            test "$(dpkg-parsechangelog -l"$root/source/extracted/debian/changelog" -SSource)" = linux
+            test "$(dpkg-parsechangelog -l"$root/source/extracted/debian/changelog" -SVersion)" = "$VERSION"
+            find "$root/source/extracted" -type f -printf '%P\t%s\n' \
+              | LC_ALL=C sort > "$root/source/source-tree-inventory.tsv"
+            tar -C "$root/source/extracted" -cf "$root/source/exact-vendor-source.tar" .
+            xz -T0 -9e "$root/source/exact-vendor-source.tar"
+            sha256sum "$root/source/exact-vendor-source.tar.xz" \
+              > "$root/source/exact-vendor-source.tar.xz.sha256"
+            recovered=true
+          fi
+          printf 'recovered=%s\n' "$recovered" >> "$GITHUB_OUTPUT"
+
+      - name: Seal source recovery authority and native-build request
+        env:
+          SOURCE_RECOVERED: ${{ steps.source.outputs.recovered }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vendor-source-v4
+          jq -n \
+            --arg recovered "$SOURCE_RECOVERED" \
+            --arg pool_base "$POOL_BASE" \
+            --arg vendor_binary_sha256 "$(sha256sum "$root/downloads/vendor.deb" | awk '{print $1}')" '
+              {
+                schema: 1,
+                source: "linux",
+                version: "5.10.179-1+grm3u1",
+                pool_base: $pool_base,
+                vendor_binary_sha256: $vendor_binary_sha256,
+                exact_vendor_source_package_recovered: ($recovered == "true"),
+                amd64_rebuild_allowed: ($recovered == "true"),
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                next_action: (
+                  if $recovered == "true"
+                  then "rebuild exact vendor source for AMD64 and compare against vendor kernel"
+                  else "continue normalized binary delta and source reconstruction"
+                  end
+                )
+              }
+            ' > "$root/output/summary.json"
+          [[ ! -f "$root/source/dsc-lock.json" ]] || cp "$root/source/dsc-lock.json" "$root/output/"
+          find "$root/output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/output/FILE-INVENTORY.tsv"
+          (
+            cd "$root/output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' "$root/output/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete vendor source recovery evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-grm3u1-vendor-source-v4
+          path: |
+            work/linux-vendor-source-v4/output
+            work/linux-vendor-source-v4/source
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact source authority and rebuild request
+        env:
+          SOURCE_RECOVERED: ${{ steps.source.outputs.recovered }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/linux-vendor-source-v4/output
+          destination=arm64/locks/linux-5.10.179-grm3u1-vendor-source-v4/latest
+          request=arm64/requests/linux-5.10.179-grm3u1-amd64-rebuild.json
+          rm -rf "$destination"
+          mkdir -p "$destination" "$(dirname "$request")"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/probe-results.json" "$destination/"
+          cp "$source/pool-index-links.json" "$destination/"
+          [[ ! -f "$source/dsc-lock.json" ]] || cp "$source/dsc-lock.json" "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          if [[ "$SOURCE_RECOVERED" == true ]]; then
+            jq -n \
+              --arg source_run_id "$GITHUB_RUN_ID" \
+              --arg source_artifact_id "$ARTIFACT_ID" '
+                {schema:1,source:"linux",version:"5.10.179-1+grm3u1",
+                 source_run_id:$source_run_id,source_artifact_id:$source_artifact_id,
+                 requested_action:"exact-amd64-rebuild"}
+              ' > "$request"
+          else
+            rm -f "$request"
+          fi
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git add -A arm64/requests
+          git commit -m 'Recover linux 5.10.179 grm3u1 vendor source v4'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
