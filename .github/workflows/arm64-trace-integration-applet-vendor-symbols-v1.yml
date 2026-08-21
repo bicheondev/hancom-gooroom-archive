@@ -1,0 +1,258 @@
+name: ARM64 trace integration applet vendor symbols v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-trace-integration-applet-vendor-symbols-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-trace-integration-applet-vendor-symbols-v1
+  cancel-in-progress: false
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out ARM64 authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Clone complete public history
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --mirror \
+            https://github.com/gooroom/gooroom-integration-applet.git \
+            work/upstream.git
+          mkdir -p work/output
+
+      - name: Trace target-only strings across every public commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import subprocess
+          from pathlib import Path
+
+          repository = Path('work/upstream.git')
+          output = Path('work/output')
+          needles = [
+              '/tmp/.cleanmode',
+              'gtk_widget_get_settings',
+              'gtk_widget_override_background_color',
+              'g_object_get_property',
+              'g_strdup_value_contents',
+              'g_string_erase',
+              'g_value_unset',
+              'gtk-icon-theme-name',
+              'notify::gtk-icon-theme-name',
+              'icon-theme',
+              'style1.css',
+              'style2.css',
+              'style4',
+              'style5',
+          ]
+
+          def command(args, check=True):
+              return subprocess.run(
+                  ['git', f'--git-dir={repository}', *args],
+                  check=check,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+              )
+
+          commits = [
+              line.strip()
+              for line in command(['rev-list', '--all', '--reverse']).stdout.splitlines()
+              if line.strip()
+          ]
+          metadata = {}
+          for commit in commits:
+              fields = command([
+                  'show', '-s',
+                  '--format=%H%x00%P%x00%aI%x00%cI%x00%s',
+                  commit,
+              ]).stdout.rstrip('\n').split('\x00')
+              metadata[commit] = {
+                  'commit': fields[0],
+                  'parents': fields[1].split() if fields[1] else [],
+                  'author_date': fields[2],
+                  'committer_date': fields[3],
+                  'subject': fields[4],
+              }
+
+          rows = []
+          by_needle = {}
+          for needle in needles:
+              hits = []
+              for index, commit in enumerate(commits):
+                  process = command(
+                      ['grep', '-n', '-F', needle, commit, '--'],
+                      check=False,
+                  )
+                  if process.returncode not in (0, 1):
+                      raise RuntimeError(process.stderr)
+                  if process.returncode == 1:
+                      continue
+                  commit_hits = []
+                  for line in process.stdout.splitlines():
+                      _, remainder = line.split(':', 1)
+                      path, line_number, content = remainder.split(':', 2)
+                      commit_hits.append({
+                          'path': path,
+                          'line': int(line_number),
+                          'content': content[:500],
+                      })
+                  row = {
+                      **metadata[commit],
+                      'history_index': index,
+                      'needle': needle,
+                      'hits': commit_hits,
+                  }
+                  hits.append(row)
+                  rows.append(row)
+              by_needle[needle] = {
+                  'hit_commit_count': len(hits),
+                  'first': hits[0] if hits else None,
+                  'last': hits[-1] if hits else None,
+                  'commits': hits,
+              }
+
+          relevant_commits = sorted(
+              {row['commit'] for row in rows},
+              key=lambda commit: commits.index(commit),
+          )
+          relevant = []
+          for commit in relevant_commits:
+              present_needles = sorted(
+                  {row['needle'] for row in rows if row['commit'] == commit}
+              )
+              relevant.append({
+                  **metadata[commit],
+                  'history_index': commits.index(commit),
+                  'present_needles': present_needles,
+              })
+
+          summary = {
+              'schema': 1,
+              'repository': 'gooroom/gooroom-integration-applet',
+              'history_commit_count': len(commits),
+              'needle_count': len(needles),
+              'needles_with_hits': sum(
+                  value['hit_commit_count'] > 0 for value in by_needle.values()
+              ),
+              'relevant_commit_count': len(relevant),
+              'by_needle': by_needle,
+              'relevant_commits': relevant,
+              'source_authority_selected': False,
+              'arm64_build_allowed': False,
+              'package_layer_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          with (output / 'timeline.tsv').open('w', encoding='utf-8') as stream:
+              stream.write('index\tcommit\tauthor_date\tsubject\tneedles\n')
+              for row in relevant:
+                  stream.write(
+                      f"{row['history_index']}\t{row['commit']}\t{row['author_date']}\t"
+                      f"{row['subject'].replace(chr(9), ' ')}\t"
+                      f"{','.join(row['present_needles'])}\n"
+                  )
+          compact = {
+              needle: {
+                  'hit_commit_count': value['hit_commit_count'],
+                  'first_commit': value['first']['commit'] if value['first'] else None,
+                  'first_subject': value['first']['subject'] if value['first'] else None,
+                  'last_commit': value['last']['commit'] if value['last'] else None,
+                  'last_subject': value['last']['subject'] if value['last'] else None,
+              }
+              for needle, value in by_needle.items()
+          }
+          (output / 'compact.json').write_text(
+              json.dumps(compact, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/output/compact.json >> "$GITHUB_STEP_SUMMARY"
+          find work/output -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/output/FILE-INVENTORY.tsv
+          (
+            cd work/output
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete history trace
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-vendor-symbol-history-v1
+          path: work/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed history authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/output/compact.json "$destination/"
+          cp work/output/timeline.tsv "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                source_authority_selected: false,
+                fail_closed: true
+              }
+            ' > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Trace integration applet vendor symbols through public history'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
