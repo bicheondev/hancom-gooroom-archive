@@ -1,23 +1,23 @@
 {
   "candidate_commit_sha": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
-  "candidate_deb_sha256": "cb37ea8782293638b10d562f4302805ac06501abb095abcb48c41155540050c8",
+  "candidate_deb_sha256": "f4f9aa881be254eedca1edc281ab7528c13077c79c82d8bc469627a68e1f811b",
   "candidate_label": "hancom-hybrid-old-user",
   "comparison_rank": [
     0,
-    52,
+    82,
     27,
     0,
     584
   ],
   "different_allocated_section_count": 27,
-  "different_dynamic_function_count": 52,
+  "different_dynamic_function_count": 82,
   "different_resource_count": 0,
   "main_elf": {
     "candidate_dynamic_function_count": 94,
     "candidate_only_string_count": 9,
     "candidate_only_strings": [
-      "1746262843d9d89d0b11048bf983f51012e15f.debug",
-      "F&(C",
+      "659773f544236454b1c92844d26ac6bc74f17f.debug",
+      "D#dT",
       "Lc-+x",
       "Lc--v",
       "Lc-/w",
@@ -26,7 +26,7 @@
       "Lc-Wv",
       "Lc-Yw"
     ],
-    "candidate_path": "/tmp/tmpmcr2adfw/candidate/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+    "candidate_path": "/tmp/tmpjpzhmp_j/candidate/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
     "candidate_resources": {
       "/kr/gooroom/IntegrationApplet/modules/datetime/datetime-control-menu.ui": {
         "sha256": "a8bc32b18f69ac60b036dd7d86182172b8134f41cf604850a9ac7e35df7b75a2",
@@ -77,7 +77,7 @@
         "size": 4504
       }
     },
-    "candidate_sha256": "064b2bc73036ed0563a15d0a88768f18a0c1693fd1e80e36464ac44f62dd6514",
+    "candidate_sha256": "da156a9dcf19edb011dce2f6cfa6c6a0a9acb9d9cc03f8e40ea333a2902f5b4e",
     "candidate_size": 211856,
     "different_allocated_section_count": 16,
     "different_allocated_sections": [
@@ -98,10 +98,10 @@
       ".rodata",
       ".text"
     ],
-    "different_dynamic_function_count": 50,
+    "different_dynamic_function_count": 80,
     "different_dynamic_functions": [
       {
-        "candidate_disassembly_sha256": "8910a606fb63fee1ddb7e37fb4a51faf0b27ea9488e70f730f3a33c238d61659",
+        "candidate_disassembly_sha256": "b840d3ba99e099008d9b520f89bc1e18b962a42d66e0c39c94e139a9c2c4c9c0",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "applet_get_resource",
@@ -111,9 +111,9 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "d034e280ce42ce921349a0dbf74928d1e2d2d9d99a06a91eaef8b9c6476442a4",
+        "candidate_disassembly_sha256": "b4231eb1c0d89deb244a857a1ad0b3a4e82525aaf147942b817492f6abe15fef",
         "candidate_present": true,
-        "candidate_size": 530,
+        "candidate_size": 546,
         "name": "build_control_ui",
         "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "716164e1d8e2124d275fa3464d64a8e930de25d94a2dc3f07e45075160c96f80",
@@ -121,7 +121,7 @@
         "target_size": 546
       },
       {
-        "candidate_disassembly_sha256": "3ad01db0b77ed5440e6304127aa1c6f41cd89c7c2fe49aa01f8fb8002bd5c404",
+        "candidate_disassembly_sha256": "719a287bb6c14f88dd062dea629c16aa3bc1f891ecec0b8a3bf94b6c2d3de31c",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "datetime_control_get_resource",
@@ -131,7 +131,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "5bc3f340e7082b3191dab59d1334735f6eff4f1916f286f4f0f5c6ccad2b5f03",
+        "candidate_disassembly_sha256": "59e2734e31d55761f13900d30d7aa2236fdf17a90de310afd7163e3ba08f4d6c",
+        "candidate_present": true,
+        "candidate_size": 85,
+        "name": "datetime_module_control_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "ae0a6c5f27e5d541c85b784ac1cd8a2baa5db8a8180d5476c4181f52284e473d",
+        "target_present": true,
+        "target_size": 85
+      },
+      {
+        "candidate_disassembly_sha256": "12cb49a1a3784383d3e32a3d0f448f1bd6e835e93196feafe051908cc0d75a33",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "datetime_module_control_menu_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "08722ac04bcbb33e9ea75881d8855e56baeddbfe41670fa18c4580f571b79c0b",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "7551091d6b3a9b9de720c6aa16e70de7298a590ae13f1fcfae783f990b8b091b",
         "candidate_present": true,
         "candidate_size": 417,
         "name": "datetime_module_control_menu_new",
@@ -139,6 +159,16 @@
         "target_disassembly_sha256": "b9f40d4c8093e2ba40e02a64ba43dcd1683b306cb06e57a0e47de7962ad456ae",
         "target_present": true,
         "target_size": 417
+      },
+      {
+        "candidate_disassembly_sha256": "5f220236f1964f35b4bbfe1569ce44512f9aee909c38944bd114ec5e972d650b",
+        "candidate_present": true,
+        "candidate_size": 86,
+        "name": "datetime_module_control_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "29643eac9dfca65d0719ad6dd41d181bce6b692dac073cb9ed578040ac65f801",
+        "target_present": true,
+        "target_size": 86
       },
       {
         "candidate_disassembly_sha256": "40401ff6f251943aa5fa742eaf74f171720c7ee2e8a094d4aa1272e657c1ec28",
@@ -151,7 +181,17 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "4e1bd6aeece9d10c9281babfb01fa52595668ed296d06e03875de3927a87413d",
+        "candidate_disassembly_sha256": "adb9804c8a0c980978651e4aa830d420b1993a37e192cdbb52805d9317bac109",
+        "candidate_present": true,
+        "candidate_size": 102,
+        "name": "datetime_module_tray_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "4f7637b39d08582ece9fc3ab75cd3be015812a6581f470fec72229380ded0b76",
+        "target_present": true,
+        "target_size": 102
+      },
+      {
+        "candidate_disassembly_sha256": "7d36d019f0a206a817ebaecf4c7d063eb4b39ca19a9dd4dabc00624386335eb3",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "endsession_control_get_resource",
@@ -161,7 +201,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "c24091d8f801998c58e2d511709b572eca2d252f586bc1f134916b089abea51e",
+        "candidate_disassembly_sha256": "aef2bd30fc7c5777a349fe83fcb77843661e6a869a66e12c3cf13945126f2f9a",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "endsession_module_control_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "b7039da9fb3d1427fda761c5cabbc10ffb0a0c91d4e83ff4c09b3085d5561faf",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "7af7293b4ad7de1a5bc3dc184bb78bbef8fb4cb7b6b5699cf00f2f94356fea75",
+        "candidate_present": true,
+        "candidate_size": 752,
+        "name": "endsession_module_control_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "60317adc434f99ff31cc2bf18eb64221b5527f616931a20878d5ec43d0c3cdd2",
+        "target_present": true,
+        "target_size": 752
+      },
+      {
+        "candidate_disassembly_sha256": "3b710b6ccea14ba1c7e992281576e002b7a761e2e8a3f393af453fb1acbae3db",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "endsession_module_get_type",
@@ -191,7 +251,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "12146da0f9381d78da4729a6bcf571d17012a48ac20e107473893916b5bc98af",
+        "candidate_disassembly_sha256": "7a0a69a51b8b2acd897ba80c4b2101c00f8649c3105f6d7d671339e27a5e74e7",
         "candidate_present": true,
         "candidate_size": 135,
         "name": "gp_module_load",
@@ -201,7 +261,7 @@
         "target_size": 135
       },
       {
-        "candidate_disassembly_sha256": "734aff1b1fb5611c9eb49a5763719a9d09baef69c1d503afd91591b9ce9f9102",
+        "candidate_disassembly_sha256": "67076c40058d69608730ca5cd2020d3c18cf7eff8eaecb80a7c396797fb9bcb5",
         "candidate_present": true,
         "candidate_size": 340,
         "name": "is_admin_group",
@@ -211,7 +271,7 @@
         "target_size": 340
       },
       {
-        "candidate_disassembly_sha256": "e2f86845c6d17626ce9bfd19dccff4a881b4421f7d378fc8613ed9f2ef8daf2c",
+        "candidate_disassembly_sha256": "20294f688dde74d2a4a88c625b94b3b6f65756562f0d302bf1f2e3f204a0953f",
         "candidate_present": true,
         "candidate_size": 175,
         "name": "is_local_user",
@@ -221,7 +281,7 @@
         "target_size": 175
       },
       {
-        "candidate_disassembly_sha256": "b66e2dac01380ca34ad928d09e0cf1d6eda8089f4463c1b152f8229929aa2f08",
+        "candidate_disassembly_sha256": "95a0f63708e4add72472bc55af6b57542b9e7dcdbca07fa22caff2329f68769a",
         "candidate_present": true,
         "candidate_size": 213,
         "name": "is_standalone_mode",
@@ -231,7 +291,7 @@
         "target_size": 213
       },
       {
-        "candidate_disassembly_sha256": "ae6000a6e6da955866415a654f909f829c95d00c7a77bde5a51a31eb0cc1b682",
+        "candidate_disassembly_sha256": "b5a0411ca4f23c1b290150f8e090bb487d359a59e02799d6d660b8b0df04141b",
         "candidate_present": true,
         "candidate_size": 583,
         "name": "is_systemd_service_active",
@@ -241,7 +301,7 @@
         "target_size": 583
       },
       {
-        "candidate_disassembly_sha256": "8cd5071cc8588a75dfbe382858a023e584ed0902957e8287517878881da13b5a",
+        "candidate_disassembly_sha256": "c55d75d48672747946dbbeab12996058a903416825f39a3ae21c8071d01aa16e",
         "candidate_present": true,
         "candidate_size": 227,
         "name": "is_systemd_service_available",
@@ -251,7 +311,7 @@
         "target_size": 227
       },
       {
-        "candidate_disassembly_sha256": "68cb2ebcaa10ec8e7c8bb98b61f5a3405ab3dc7b1492f3c3025cd8d4e84fae77",
+        "candidate_disassembly_sha256": "36f1ca29bea0f03e7077e41fbe8bd77afce3b236af3fbcaf5f8561e391961823",
         "candidate_present": true,
         "candidate_size": 2476,
         "name": "launch_desktop_id",
@@ -261,7 +321,7 @@
         "target_size": 2476
       },
       {
-        "candidate_disassembly_sha256": "7b8c613245e8d31d665c4c2d8bd95c473f992ca6aa87c92b9f7652796cb62847",
+        "candidate_disassembly_sha256": "e7caa6ed8a72e6ba0fff8c123edb70bdf2c3f13fca19554c7e4f040a10dac6bd",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "nimf_control_get_resource",
@@ -271,7 +331,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "16cbd1e396a536ac7e39fc265f20655bf6d074f4d39ebda62230bc3c5dfc0ae2",
+        "candidate_disassembly_sha256": "41ac1f7a6604c075f7a4b5e318e8890d04a43993cbe5257eec5f7fdc6d7fcd79",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "nimf_module_control_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "d402923bd3cf70049f2c12a6115e20305f29f07bd5e163da7d95c795a422656b",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "2555d71fa73494d4de4bbee8ac5be99168b0f6c5c7328456dfcd34aec47872ff",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "nimf_module_control_menu_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "b182d4160d6f6ea53677b2fb0d6c1f325ab40cff97ca136920977b529b5f5dca",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "849e6514ef5d17902518c266d0f6fa69b78d0cfecf9c144f4843f4d35bdabcec",
         "candidate_present": true,
         "candidate_size": 918,
         "name": "nimf_module_control_menu_new",
@@ -281,7 +361,7 @@
         "target_size": 918
       },
       {
-        "candidate_disassembly_sha256": "d699ea61c4ce3c1b6e696282f9958a0f625c0fe82051226531b037d04267d57d",
+        "candidate_disassembly_sha256": "13e63e097aed0c412868e4e779b4bae1c7f7fcab8a208d3030939e96e631942c",
         "candidate_present": true,
         "candidate_size": 810,
         "name": "nimf_module_control_new",
@@ -291,7 +371,7 @@
         "target_size": 810
       },
       {
-        "candidate_disassembly_sha256": "c386b2b54617f1b256665b52ae40c949f6cc5655eee98ff454e308ec9a08c4f9",
+        "candidate_disassembly_sha256": "407a6bbbaadb5b685cf489609a47f4e26e5189476ff6cb882b4fe1e0891aa629",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "nimf_module_get_type",
@@ -301,7 +381,17 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "c6bbc6ffe9d4cec43e6ffe7c23d7870540172367d581062ef4af7c88679f835b",
+        "candidate_disassembly_sha256": "09d69c6f24f280fee23b81a9b0169eaf0144721cb00cc7c57c218e8c70fa209b",
+        "candidate_present": true,
+        "candidate_size": 142,
+        "name": "nimf_module_tray_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "76497dbf241a9da31d77edb4e6daf62db172dda6263d0cbe11d4206f225b54fe",
+        "target_present": true,
+        "target_size": 142
+      },
+      {
+        "candidate_disassembly_sha256": "1d1f4a6353e2230823608312b34828f23f1bfcf978ae022500f7263229f4e27c",
         "candidate_present": true,
         "candidate_size": 519,
         "name": "panel_g_utf8_strstrcase",
@@ -321,7 +411,97 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "6a9b17f7b846a12cb975f3a0d8badcf066c9b687888fea42343ea3e10477e9a8",
+        "candidate_disassembly_sha256": "b788f9b0cbacd2d03ca1f93f1989e5f74d953ed58e3cb503bfdd48cadf6faa51",
+        "candidate_present": true,
+        "candidate_size": 80,
+        "name": "popup_window_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "fd87c5a65a7b47cb4b11fe1cb59217673a82a56c0bdf8325cc015e670c15b28f",
+        "target_present": true,
+        "target_size": 80
+      },
+      {
+        "candidate_disassembly_sha256": "2a6c9d1e9c490ac6f845a4a3531066b2c5da2ebd2e2d09d0beec2ea60f600bd8",
+        "candidate_present": true,
+        "candidate_size": 69,
+        "name": "popup_window_set_workarea",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "9b8ddf41d8a30b13e02e08ae9147a2cb89ff1db1792e6dab0922e95bab8a07e7",
+        "target_present": true,
+        "target_size": 69
+      },
+      {
+        "candidate_disassembly_sha256": "7a378f567ba42350648b9d794dcc328b84c94bc2dcb633df41b1d16814b5b0bf",
+        "candidate_present": true,
+        "candidate_size": 265,
+        "name": "popup_window_setup_datetime",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "4c1788b16b4f2045950b39043e646eea3603327fb4a9cb2becf94e44efc20bc6",
+        "target_present": true,
+        "target_size": 265
+      },
+      {
+        "candidate_disassembly_sha256": "ad06a73a3b3e08639fdcb5b974203f4ab35aa9f474b81ea2d35b080db47a1a22",
+        "candidate_present": true,
+        "candidate_size": 228,
+        "name": "popup_window_setup_nimf",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "014e6431b3f0b06eec1eea8b5d6afdd7c24f1dc28b59940b56c7e0fb96a6dd38",
+        "target_present": true,
+        "target_size": 228
+      },
+      {
+        "candidate_disassembly_sha256": "89e80aa8899ff5a9d4f822c4b74aeaf833672d419c6c7da9f369d14be71e265b",
+        "candidate_present": true,
+        "candidate_size": 259,
+        "name": "popup_window_setup_power",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "7d3ca350e992ae4ce79ab2b3f51c54379aca1599bdbff7ccaaef816c558971e0",
+        "target_present": true,
+        "target_size": 259
+      },
+      {
+        "candidate_disassembly_sha256": "02cd374a3c5d24b0df1c6db49036b9478795be4f5077cb6ce5f8b7bf434bea91",
+        "candidate_present": true,
+        "candidate_size": 265,
+        "name": "popup_window_setup_security",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "aaa460d277a43d401632fdde8088a5d9df1327100f8dc01055240a42d48bb512",
+        "target_present": true,
+        "target_size": 265
+      },
+      {
+        "candidate_disassembly_sha256": "0ef7a742cb2cc39e85751f849b99501d11071ec1233c0f7111d028c970ad8853",
+        "candidate_present": true,
+        "candidate_size": 182,
+        "name": "popup_window_setup_sound",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "1c6091626a257958fdeeb313a080d66561061bb037643f03f0578c23cd72010c",
+        "target_present": true,
+        "target_size": 182
+      },
+      {
+        "candidate_disassembly_sha256": "1f4c58c1eecf01c58ff45ab99e86a258d7875ca0af3c82904e7a3e679ec49d35",
+        "candidate_present": true,
+        "candidate_size": 265,
+        "name": "popup_window_setup_updater",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "958d8264cad35bbf2d57bb24601c9231c9f356b3094109ca353a5f8b38e63cff",
+        "target_present": true,
+        "target_size": 265
+      },
+      {
+        "candidate_disassembly_sha256": "afe5a93042ab8ad84bfb05d207fb4f98f7d8bc194419950714996796e6e7b11d",
+        "candidate_present": true,
+        "candidate_size": 318,
+        "name": "popup_window_setup_user",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "5bd35038ff8e081555ced83acbb0119a115d6ffb93b83b91aaa1c63f548c2184",
+        "target_present": true,
+        "target_size": 318
+      },
+      {
+        "candidate_disassembly_sha256": "9279477a20758ce6267e5d4754863022179f2451add9a4806d91baf227d8fdad",
         "candidate_present": true,
         "candidate_size": 101,
         "name": "power_module_battery_control_destroy",
@@ -331,7 +511,7 @@
         "target_size": 101
       },
       {
-        "candidate_disassembly_sha256": "c64678d5fad3c5621ab03b76c60479aa6f5963e31739632e84a0806b15c6254e",
+        "candidate_disassembly_sha256": "4d8aecff461739ccf3095f5331d63b052025b0354c664f72d0162d3ea9be6324",
         "candidate_present": true,
         "candidate_size": 590,
         "name": "power_module_battery_control_new",
@@ -341,7 +521,7 @@
         "target_size": 590
       },
       {
-        "candidate_disassembly_sha256": "73e61a9bec7b17f6021eba388898b4f432ccc1dd17545accadebe2afc89cccc5",
+        "candidate_disassembly_sha256": "0022965c8315ea68e61c8b38b00e490cabcbb7e71536a2edfe6a5d62e948ba67",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "power_module_brightness_control_destroy",
@@ -351,7 +531,7 @@
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "3d419ecbc5031dd510a8b722ff6749bea485c6ed7a59e484dcfb5fd34b4c727d",
+        "candidate_disassembly_sha256": "122b8659c48856ce9e01b6b91cfc43d7fe3eca61bd7b911d9627eba99da96f6a",
         "candidate_present": true,
         "candidate_size": 432,
         "name": "power_module_brightness_control_new",
@@ -371,7 +551,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "7f3a501fe8404e40fd98b5da9ca14490266b78ac0cdee0f6780110acc4d0040d",
+        "candidate_disassembly_sha256": "32a0d18950c16126149eb5d16113373029fb45d9c2c7ca8c74e309d896180449",
         "candidate_present": true,
         "candidate_size": 153,
         "name": "power_module_tray_new",
@@ -381,7 +561,7 @@
         "target_size": 153
       },
       {
-        "candidate_disassembly_sha256": "b73433b2ab850b4d07860792f659dab80b3da7794d94cff71ad3f999f41e25e3",
+        "candidate_disassembly_sha256": "0671afd712661db352a4758ff86e581be0d31f241475de49b58eb5fee638ca15",
         "candidate_present": true,
         "candidate_size": 215,
         "name": "pulseaudio_debug_real",
@@ -391,7 +571,7 @@
         "target_size": 215
       },
       {
-        "candidate_disassembly_sha256": "3c93125b677bb3e62c85004fb98fed3e6be8489d681beec755fef45152ae3536",
+        "candidate_disassembly_sha256": "df393678290df803971d5418972d71150231066442727661d07810d792656817",
         "candidate_present": true,
         "candidate_size": 73,
         "name": "pulseaudio_volume_get_connected",
@@ -401,7 +581,7 @@
         "target_size": 73
       },
       {
-        "candidate_disassembly_sha256": "ce5134418109c111045ca258a05d455b0b93632064a0242ed2dc62b6228e965b",
+        "candidate_disassembly_sha256": "149111d3d7379c28f9b338becf3bc3ae1f092df62fb6680630875d517a4a76e1",
         "candidate_present": true,
         "candidate_size": 73,
         "name": "pulseaudio_volume_get_muted",
@@ -421,7 +601,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "509abbdaeb84d7b5f8edfafb088178ce8602c4a3b24a51b341efaf15946b0b41",
+        "candidate_disassembly_sha256": "fc28e5814c42ac1e193199a645784e52bd741a2f86aa063ded5d038e1d7d479e",
         "candidate_present": true,
         "candidate_size": 83,
         "name": "pulseaudio_volume_get_volume",
@@ -431,7 +611,7 @@
         "target_size": 83
       },
       {
-        "candidate_disassembly_sha256": "e397237dfedbc4137a9990b186220667f059d3a5c9fdbaa602087e72bf6ddff7",
+        "candidate_disassembly_sha256": "5275cb337536b14deaa299ee2cab6c4c60446dca82400df38bc4b79a869526b2",
         "candidate_present": true,
         "candidate_size": 185,
         "name": "pulseaudio_volume_set_muted",
@@ -441,7 +621,7 @@
         "target_size": 185
       },
       {
-        "candidate_disassembly_sha256": "f79f43fb2fde5efc3be604d13c01566015ffc8df511ae8ae412205a2041ec281",
+        "candidate_disassembly_sha256": "9aa06cf49ded04aaf6b849b1056f1d3d453df07146e73e0f75042a16516bb6fb",
         "candidate_present": true,
         "candidate_size": 276,
         "name": "pulseaudio_volume_set_volume",
@@ -451,7 +631,7 @@
         "target_size": 276
       },
       {
-        "candidate_disassembly_sha256": "0549d1eafe413c95e3c5600df8bc4db5ad7e6d7b3c00adbbed5d6b5d6bdfc271",
+        "candidate_disassembly_sha256": "c5fc0a6216e7d27d7caff94384f6572e02095d79f20ffde106b307b72b61ad37",
         "candidate_present": true,
         "candidate_size": 86,
         "name": "pulseaudio_volume_toggle_muted",
@@ -461,7 +641,17 @@
         "target_size": 86
       },
       {
-        "candidate_disassembly_sha256": "45fa80be57cd26b7cc618b08809c2eac6e4196026cf47022707e72a69824b9da",
+        "candidate_disassembly_sha256": "a0afbf2d095019deca356f867aef1c245f05b61e09d61813e3ba67e24063643a",
+        "candidate_present": true,
+        "candidate_size": 448,
+        "name": "run_security_log_parser_async",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "b16e4af259eac6345cd079d82daac295909dacb7836fbe2f2a5da416904fd5ab",
+        "target_present": true,
+        "target_size": 448
+      },
+      {
+        "candidate_disassembly_sha256": "bce4504994af4fb57d1061c79ab1345366cf180f5cb10581b941aa40c125b67b",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "security_control_get_resource",
@@ -471,7 +661,47 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "14cfdcf83e8f93389d6714981a00f6a4bd96387d622a6c164491f0bccbc9a695",
+        "candidate_disassembly_sha256": "b16bbe856322be2fbbae498169516181ebf12315aa7b32f02c0571f9f955669c",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "security_module_control_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "cacf01637bf8f6ee114c379bdef92e96743ea0c4901a9404475f37af0ecb2292",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "309c4be391d35f9bc4e854803b3c0ddee48cc76d689f99a6d6f4ae5ec587a902",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "security_module_control_menu_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "6b507b053da39e04e51a6cb84b0cf3781484de8fee6d3ca8521f1bc358c139c8",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "d3ae28ac3e02cd7cbca19b0449bbbb87a3c409d8db3380fa4a0f48664c89898a",
+        "candidate_present": true,
+        "candidate_size": 433,
+        "name": "security_module_control_menu_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "78d6c8b8c54a8b642b8e31a176b755e7c41ebc77a7b72642566675f00e1d8865",
+        "target_present": true,
+        "target_size": 433
+      },
+      {
+        "candidate_disassembly_sha256": "cd2d30d80116a69b0e1be411af36e60e96af3f5af7ff84d4102ba2ddf3963328",
+        "candidate_present": true,
+        "candidate_size": 361,
+        "name": "security_module_control_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "f789d8fda3948c4b6369b30bac4356aea6bc809753704aa71430fddaea57e51d",
+        "target_present": true,
+        "target_size": 361
+      },
+      {
+        "candidate_disassembly_sha256": "2823011c9f2ac59a8705f85131d47e3c179de6e6c9191dcbf99bd2e36f938f92",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "security_module_get_type",
@@ -481,7 +711,37 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "308e21c8e1804827dad9fe843251d996f1a34fff5123bc1cbd008a509c79060c",
+        "candidate_disassembly_sha256": "4c5538016bcd94119b6b535ab35ad166f46975fa00bd0e77a95aef5b8f2372fc",
+        "candidate_present": true,
+        "candidate_size": 156,
+        "name": "security_module_tray_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "189ede092ace14c0e500be3f0d6c70b28443496c08f59bd450c31417af6240cb",
+        "target_present": true,
+        "target_size": 156
+      },
+      {
+        "candidate_disassembly_sha256": "306465f498debc6288fc5f506f68ef9a481b7c6fe953ca268e55eea676f8ca3b",
+        "candidate_present": true,
+        "candidate_size": 89,
+        "name": "send_taking_measure_signal_to_self",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "19f789a3512cbe821bf7e9d07d99e7746b0bc7bfcbde09a49b65d0b27f33def4",
+        "target_present": true,
+        "target_size": 89
+      },
+      {
+        "candidate_disassembly_sha256": "86d85456dd3d7d95aed829a630d73360cea016f55a3a9c0b32bd333c9f48547c",
+        "candidate_present": true,
+        "candidate_size": 199,
+        "name": "send_taking_measures_signal_to_agent",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "1b9dd13bece242394ea0589f76cfed60240b3930b9989b80ed881db0b6bd8096",
+        "target_present": true,
+        "target_size": 199
+      },
+      {
+        "candidate_disassembly_sha256": "9ce603a3b7f26d238355a49f3c6897c6de7852b2945b00c36e38f1b26e71bda3",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "sound_module_control_destroy",
@@ -491,7 +751,7 @@
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "3df265951cb11a5a5d595b4a2f9ac8c86f40409da9969c1a97d5baddc408359f",
+        "candidate_disassembly_sha256": "306a3825fc9765fb1facbbc41068760c1ce6a4ad2b9df0fa10e3e78bb7f9ff62",
         "candidate_present": true,
         "candidate_size": 664,
         "name": "sound_module_control_new",
@@ -511,7 +771,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "2cef3c02397c4ee8c01639b7f96bf01ff19fca3dad7c769923339bfc53a75776",
+        "candidate_disassembly_sha256": "7a13424a314d1461faebf323cec2a3026698088852f0a83a9c5fcab03cc53c1b",
         "candidate_present": true,
         "candidate_size": 156,
         "name": "sound_module_tray_new",
@@ -521,7 +781,7 @@
         "target_size": 156
       },
       {
-        "candidate_disassembly_sha256": "d6e3df689ac949930a68b053bf2cb57d0d8650c6f3838bb1e580d465712d1407",
+        "candidate_disassembly_sha256": "26c90c6520b6d5e5ae072400d1f38b11c37d442f16ccaa4f6d89e7566d69aef8",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "updater_control_get_resource",
@@ -531,7 +791,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "ebd68462494dd89470328b765d8a2ba584dd6bd8735232ab2ba7a040244e473e",
+        "candidate_disassembly_sha256": "a63472497f23d155322535b77cd0b73d2dd6c5b69789da20c51ee15188e70205",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "updater_module_control_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "0fc1b5db13ea14b4af2741210da5756838051459ba1e18971c54af2052685836",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "85ffdf897bea20c1cda82c2f522fb05c298f36fa58cf9c9eecf350ae42a3ab6b",
+        "candidate_present": true,
+        "candidate_size": 61,
+        "name": "updater_module_control_menu_destroy",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "a1b8d5957686bbbe1764f2b7bee4cc5fcb4547a12ef504f1c16374e6ccc9b9ea",
+        "target_present": true,
+        "target_size": 61
+      },
+      {
+        "candidate_disassembly_sha256": "5e8d4a99aac54c78f3d2a262571c47e73d2ce8c49684b01758aac46900c36e36",
         "candidate_present": true,
         "candidate_size": 721,
         "name": "updater_module_control_menu_new",
@@ -541,7 +821,17 @@
         "target_size": 721
       },
       {
-        "candidate_disassembly_sha256": "b7925616d72545cee7e1420ba56d1e5d07a5b0a2d87da6f68a2067b4f51a8910",
+        "candidate_disassembly_sha256": "085da922f42d53f9e4996650b70a4c8d53dbc55886c9957d1e5fb4c3461e77c6",
+        "candidate_present": true,
+        "candidate_size": 401,
+        "name": "updater_module_control_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "5c0d6a15e92d649dff15de5c171e14858482e5e479cc29619f94a9cf0f297743",
+        "target_present": true,
+        "target_size": 401
+      },
+      {
+        "candidate_disassembly_sha256": "b72774a1263e8b972ef6f2878aeca99c214b1cb4b5ace523dc807f8dfa1370c7",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "updater_module_get_type",
@@ -551,7 +841,17 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "a1c5b6df9042dbbbd7a5ef64d853d0f24e932446cc62c574ad9e6a77f90ccee7",
+        "candidate_disassembly_sha256": "dac160686fc3937def7f568a427dc09f3700187c53ede9419ca85481ee48c462",
+        "candidate_present": true,
+        "candidate_size": 142,
+        "name": "updater_module_tray_new",
+        "normalized_disassembly_equal": false,
+        "target_disassembly_sha256": "b1f90230112e3c30aef58a1235c42f5aada74ae2a2895502697ecad723494d56",
+        "target_present": true,
+        "target_size": 142
+      },
+      {
+        "candidate_disassembly_sha256": "cb6fed31a2c11368abfcd1e0adc32aa9b5610aa0853dd65bbbccb8da1a19fa51",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "user_control_get_resource",
@@ -561,7 +861,7 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "73382938c63aca2e8352ede4d2b65201e1d91079c619a76c52dbaafa35694213",
+        "candidate_disassembly_sha256": "68ba3231e951db3b67919cd1f62ec502e5b6d1ade703312ab1c8319ae2f6ccb1",
         "candidate_present": true,
         "candidate_size": 85,
         "name": "user_module_control_destroy",
@@ -571,7 +871,7 @@
         "target_size": 85
       },
       {
-        "candidate_disassembly_sha256": "43f7027112e423eafb9a4a84d00e4686d165cd5322582c03173d94d9d580ad94",
+        "candidate_disassembly_sha256": "236caee6e3d5705bc46df916a0c7e6b9e88c886965a886e03d8445b6696fd2e1",
         "candidate_present": true,
         "candidate_size": 345,
         "name": "user_module_control_new",
@@ -591,7 +891,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "b4586ea3c079eba1e7a614a58c25ba8b06d2e91922d13661257ab68fcf84277b",
+        "candidate_disassembly_sha256": "9587a121e64b750f18db18bfbd58454e46478c2670df3f51750e713a9dac325a",
         "candidate_present": true,
         "candidate_size": 241,
         "name": "user_module_tray_new",
@@ -615,7 +915,7 @@
         "target_size": 81
       },
       {
-        "candidate_disassembly_sha256": "8910a606fb63fee1ddb7e37fb4a51faf0b27ea9488e70f730f3a33c238d61659",
+        "candidate_disassembly_sha256": "b840d3ba99e099008d9b520f89bc1e18b962a42d66e0c39c94e139a9c2c4c9c0",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "applet_get_resource",
@@ -635,9 +935,9 @@
         "target_size": 70
       },
       {
-        "candidate_disassembly_sha256": "d034e280ce42ce921349a0dbf74928d1e2d2d9d99a06a91eaef8b9c6476442a4",
+        "candidate_disassembly_sha256": "b4231eb1c0d89deb244a857a1ad0b3a4e82525aaf147942b817492f6abe15fef",
         "candidate_present": true,
-        "candidate_size": 530,
+        "candidate_size": 546,
         "name": "build_control_ui",
         "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "716164e1d8e2124d275fa3464d64a8e930de25d94a2dc3f07e45075160c96f80",
@@ -645,7 +945,7 @@
         "target_size": 546
       },
       {
-        "candidate_disassembly_sha256": "3ad01db0b77ed5440e6304127aa1c6f41cd89c7c2fe49aa01f8fb8002bd5c404",
+        "candidate_disassembly_sha256": "719a287bb6c14f88dd062dea629c16aa3bc1f891ecec0b8a3bf94b6c2d3de31c",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "datetime_control_get_resource",
@@ -655,27 +955,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "ae0a6c5f27e5d541c85b784ac1cd8a2baa5db8a8180d5476c4181f52284e473d",
+        "candidate_disassembly_sha256": "59e2734e31d55761f13900d30d7aa2236fdf17a90de310afd7163e3ba08f4d6c",
         "candidate_present": true,
         "candidate_size": 85,
         "name": "datetime_module_control_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "ae0a6c5f27e5d541c85b784ac1cd8a2baa5db8a8180d5476c4181f52284e473d",
         "target_present": true,
         "target_size": 85
       },
       {
-        "candidate_disassembly_sha256": "08722ac04bcbb33e9ea75881d8855e56baeddbfe41670fa18c4580f571b79c0b",
+        "candidate_disassembly_sha256": "12cb49a1a3784383d3e32a3d0f448f1bd6e835e93196feafe051908cc0d75a33",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "datetime_module_control_menu_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "08722ac04bcbb33e9ea75881d8855e56baeddbfe41670fa18c4580f571b79c0b",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "5bc3f340e7082b3191dab59d1334735f6eff4f1916f286f4f0f5c6ccad2b5f03",
+        "candidate_disassembly_sha256": "7551091d6b3a9b9de720c6aa16e70de7298a590ae13f1fcfae783f990b8b091b",
         "candidate_present": true,
         "candidate_size": 417,
         "name": "datetime_module_control_menu_new",
@@ -685,11 +985,11 @@
         "target_size": 417
       },
       {
-        "candidate_disassembly_sha256": "29643eac9dfca65d0719ad6dd41d181bce6b692dac073cb9ed578040ac65f801",
+        "candidate_disassembly_sha256": "5f220236f1964f35b4bbfe1569ce44512f9aee909c38944bd114ec5e972d650b",
         "candidate_present": true,
         "candidate_size": 86,
         "name": "datetime_module_control_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "29643eac9dfca65d0719ad6dd41d181bce6b692dac073cb9ed578040ac65f801",
         "target_present": true,
         "target_size": 86
@@ -715,17 +1015,17 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "4f7637b39d08582ece9fc3ab75cd3be015812a6581f470fec72229380ded0b76",
+        "candidate_disassembly_sha256": "adb9804c8a0c980978651e4aa830d420b1993a37e192cdbb52805d9317bac109",
         "candidate_present": true,
         "candidate_size": 102,
         "name": "datetime_module_tray_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "4f7637b39d08582ece9fc3ab75cd3be015812a6581f470fec72229380ded0b76",
         "target_present": true,
         "target_size": 102
       },
       {
-        "candidate_disassembly_sha256": "4e1bd6aeece9d10c9281babfb01fa52595668ed296d06e03875de3927a87413d",
+        "candidate_disassembly_sha256": "7d36d019f0a206a817ebaecf4c7d063eb4b39ca19a9dd4dabc00624386335eb3",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "endsession_control_get_resource",
@@ -735,27 +1035,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "b7039da9fb3d1427fda761c5cabbc10ffb0a0c91d4e83ff4c09b3085d5561faf",
+        "candidate_disassembly_sha256": "aef2bd30fc7c5777a349fe83fcb77843661e6a869a66e12c3cf13945126f2f9a",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "endsession_module_control_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "b7039da9fb3d1427fda761c5cabbc10ffb0a0c91d4e83ff4c09b3085d5561faf",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "60317adc434f99ff31cc2bf18eb64221b5527f616931a20878d5ec43d0c3cdd2",
+        "candidate_disassembly_sha256": "7af7293b4ad7de1a5bc3dc184bb78bbef8fb4cb7b6b5699cf00f2f94356fea75",
         "candidate_present": true,
         "candidate_size": 752,
         "name": "endsession_module_control_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "60317adc434f99ff31cc2bf18eb64221b5527f616931a20878d5ec43d0c3cdd2",
         "target_present": true,
         "target_size": 752
       },
       {
-        "candidate_disassembly_sha256": "c24091d8f801998c58e2d511709b572eca2d252f586bc1f134916b089abea51e",
+        "candidate_disassembly_sha256": "3b710b6ccea14ba1c7e992281576e002b7a761e2e8a3f393af453fb1acbae3db",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "endsession_module_get_type",
@@ -805,7 +1105,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "12146da0f9381d78da4729a6bcf571d17012a48ac20e107473893916b5bc98af",
+        "candidate_disassembly_sha256": "7a0a69a51b8b2acd897ba80c4b2101c00f8649c3105f6d7d671339e27a5e74e7",
         "candidate_present": true,
         "candidate_size": 135,
         "name": "gp_module_load",
@@ -815,7 +1115,7 @@
         "target_size": 135
       },
       {
-        "candidate_disassembly_sha256": "734aff1b1fb5611c9eb49a5763719a9d09baef69c1d503afd91591b9ce9f9102",
+        "candidate_disassembly_sha256": "67076c40058d69608730ca5cd2020d3c18cf7eff8eaecb80a7c396797fb9bcb5",
         "candidate_present": true,
         "candidate_size": 340,
         "name": "is_admin_group",
@@ -825,7 +1125,7 @@
         "target_size": 340
       },
       {
-        "candidate_disassembly_sha256": "e2f86845c6d17626ce9bfd19dccff4a881b4421f7d378fc8613ed9f2ef8daf2c",
+        "candidate_disassembly_sha256": "20294f688dde74d2a4a88c625b94b3b6f65756562f0d302bf1f2e3f204a0953f",
         "candidate_present": true,
         "candidate_size": 175,
         "name": "is_local_user",
@@ -835,7 +1135,7 @@
         "target_size": 175
       },
       {
-        "candidate_disassembly_sha256": "b66e2dac01380ca34ad928d09e0cf1d6eda8089f4463c1b152f8229929aa2f08",
+        "candidate_disassembly_sha256": "95a0f63708e4add72472bc55af6b57542b9e7dcdbca07fa22caff2329f68769a",
         "candidate_present": true,
         "candidate_size": 213,
         "name": "is_standalone_mode",
@@ -845,7 +1145,7 @@
         "target_size": 213
       },
       {
-        "candidate_disassembly_sha256": "ae6000a6e6da955866415a654f909f829c95d00c7a77bde5a51a31eb0cc1b682",
+        "candidate_disassembly_sha256": "b5a0411ca4f23c1b290150f8e090bb487d359a59e02799d6d660b8b0df04141b",
         "candidate_present": true,
         "candidate_size": 583,
         "name": "is_systemd_service_active",
@@ -855,7 +1155,7 @@
         "target_size": 583
       },
       {
-        "candidate_disassembly_sha256": "8cd5071cc8588a75dfbe382858a023e584ed0902957e8287517878881da13b5a",
+        "candidate_disassembly_sha256": "c55d75d48672747946dbbeab12996058a903416825f39a3ae21c8071d01aa16e",
         "candidate_present": true,
         "candidate_size": 227,
         "name": "is_systemd_service_available",
@@ -865,7 +1165,7 @@
         "target_size": 227
       },
       {
-        "candidate_disassembly_sha256": "68cb2ebcaa10ec8e7c8bb98b61f5a3405ab3dc7b1492f3c3025cd8d4e84fae77",
+        "candidate_disassembly_sha256": "36f1ca29bea0f03e7077e41fbe8bd77afce3b236af3fbcaf5f8561e391961823",
         "candidate_present": true,
         "candidate_size": 2476,
         "name": "launch_desktop_id",
@@ -875,7 +1175,7 @@
         "target_size": 2476
       },
       {
-        "candidate_disassembly_sha256": "7b8c613245e8d31d665c4c2d8bd95c473f992ca6aa87c92b9f7652796cb62847",
+        "candidate_disassembly_sha256": "e7caa6ed8a72e6ba0fff8c123edb70bdf2c3f13fca19554c7e4f040a10dac6bd",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "nimf_control_get_resource",
@@ -885,27 +1185,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "d402923bd3cf70049f2c12a6115e20305f29f07bd5e163da7d95c795a422656b",
+        "candidate_disassembly_sha256": "41ac1f7a6604c075f7a4b5e318e8890d04a43993cbe5257eec5f7fdc6d7fcd79",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "nimf_module_control_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "d402923bd3cf70049f2c12a6115e20305f29f07bd5e163da7d95c795a422656b",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "b182d4160d6f6ea53677b2fb0d6c1f325ab40cff97ca136920977b529b5f5dca",
+        "candidate_disassembly_sha256": "2555d71fa73494d4de4bbee8ac5be99168b0f6c5c7328456dfcd34aec47872ff",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "nimf_module_control_menu_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "b182d4160d6f6ea53677b2fb0d6c1f325ab40cff97ca136920977b529b5f5dca",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "16cbd1e396a536ac7e39fc265f20655bf6d074f4d39ebda62230bc3c5dfc0ae2",
+        "candidate_disassembly_sha256": "849e6514ef5d17902518c266d0f6fa69b78d0cfecf9c144f4843f4d35bdabcec",
         "candidate_present": true,
         "candidate_size": 918,
         "name": "nimf_module_control_menu_new",
@@ -915,7 +1215,7 @@
         "target_size": 918
       },
       {
-        "candidate_disassembly_sha256": "d699ea61c4ce3c1b6e696282f9958a0f625c0fe82051226531b037d04267d57d",
+        "candidate_disassembly_sha256": "13e63e097aed0c412868e4e779b4bae1c7f7fcab8a208d3030939e96e631942c",
         "candidate_present": true,
         "candidate_size": 810,
         "name": "nimf_module_control_new",
@@ -925,7 +1225,7 @@
         "target_size": 810
       },
       {
-        "candidate_disassembly_sha256": "c386b2b54617f1b256665b52ae40c949f6cc5655eee98ff454e308ec9a08c4f9",
+        "candidate_disassembly_sha256": "407a6bbbaadb5b685cf489609a47f4e26e5189476ff6cb882b4fe1e0891aa629",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "nimf_module_get_type",
@@ -945,17 +1245,17 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "76497dbf241a9da31d77edb4e6daf62db172dda6263d0cbe11d4206f225b54fe",
+        "candidate_disassembly_sha256": "09d69c6f24f280fee23b81a9b0169eaf0144721cb00cc7c57c218e8c70fa209b",
         "candidate_present": true,
         "candidate_size": 142,
         "name": "nimf_module_tray_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "76497dbf241a9da31d77edb4e6daf62db172dda6263d0cbe11d4206f225b54fe",
         "target_present": true,
         "target_size": 142
       },
       {
-        "candidate_disassembly_sha256": "c6bbc6ffe9d4cec43e6ffe7c23d7870540172367d581062ef4af7c88679f835b",
+        "candidate_disassembly_sha256": "1d1f4a6353e2230823608312b34828f23f1bfcf978ae022500f7263229f4e27c",
         "candidate_present": true,
         "candidate_size": 519,
         "name": "panel_g_utf8_strstrcase",
@@ -975,31 +1275,31 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "fd87c5a65a7b47cb4b11fe1cb59217673a82a56c0bdf8325cc015e670c15b28f",
+        "candidate_disassembly_sha256": "b788f9b0cbacd2d03ca1f93f1989e5f74d953ed58e3cb503bfdd48cadf6faa51",
         "candidate_present": true,
         "candidate_size": 80,
         "name": "popup_window_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "fd87c5a65a7b47cb4b11fe1cb59217673a82a56c0bdf8325cc015e670c15b28f",
         "target_present": true,
         "target_size": 80
       },
       {
-        "candidate_disassembly_sha256": "9b8ddf41d8a30b13e02e08ae9147a2cb89ff1db1792e6dab0922e95bab8a07e7",
+        "candidate_disassembly_sha256": "2a6c9d1e9c490ac6f845a4a3531066b2c5da2ebd2e2d09d0beec2ea60f600bd8",
         "candidate_present": true,
         "candidate_size": 69,
         "name": "popup_window_set_workarea",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "9b8ddf41d8a30b13e02e08ae9147a2cb89ff1db1792e6dab0922e95bab8a07e7",
         "target_present": true,
         "target_size": 69
       },
       {
-        "candidate_disassembly_sha256": "4c1788b16b4f2045950b39043e646eea3603327fb4a9cb2becf94e44efc20bc6",
+        "candidate_disassembly_sha256": "7a378f567ba42350648b9d794dcc328b84c94bc2dcb633df41b1d16814b5b0bf",
         "candidate_present": true,
         "candidate_size": 265,
         "name": "popup_window_setup_datetime",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "4c1788b16b4f2045950b39043e646eea3603327fb4a9cb2becf94e44efc20bc6",
         "target_present": true,
         "target_size": 265
@@ -1015,67 +1315,67 @@
         "target_size": 102
       },
       {
-        "candidate_disassembly_sha256": "014e6431b3f0b06eec1eea8b5d6afdd7c24f1dc28b59940b56c7e0fb96a6dd38",
+        "candidate_disassembly_sha256": "ad06a73a3b3e08639fdcb5b974203f4ab35aa9f474b81ea2d35b080db47a1a22",
         "candidate_present": true,
         "candidate_size": 228,
         "name": "popup_window_setup_nimf",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "014e6431b3f0b06eec1eea8b5d6afdd7c24f1dc28b59940b56c7e0fb96a6dd38",
         "target_present": true,
         "target_size": 228
       },
       {
-        "candidate_disassembly_sha256": "7d3ca350e992ae4ce79ab2b3f51c54379aca1599bdbff7ccaaef816c558971e0",
+        "candidate_disassembly_sha256": "89e80aa8899ff5a9d4f822c4b74aeaf833672d419c6c7da9f369d14be71e265b",
         "candidate_present": true,
         "candidate_size": 259,
         "name": "popup_window_setup_power",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "7d3ca350e992ae4ce79ab2b3f51c54379aca1599bdbff7ccaaef816c558971e0",
         "target_present": true,
         "target_size": 259
       },
       {
-        "candidate_disassembly_sha256": "aaa460d277a43d401632fdde8088a5d9df1327100f8dc01055240a42d48bb512",
+        "candidate_disassembly_sha256": "02cd374a3c5d24b0df1c6db49036b9478795be4f5077cb6ce5f8b7bf434bea91",
         "candidate_present": true,
         "candidate_size": 265,
         "name": "popup_window_setup_security",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "aaa460d277a43d401632fdde8088a5d9df1327100f8dc01055240a42d48bb512",
         "target_present": true,
         "target_size": 265
       },
       {
-        "candidate_disassembly_sha256": "1c6091626a257958fdeeb313a080d66561061bb037643f03f0578c23cd72010c",
+        "candidate_disassembly_sha256": "0ef7a742cb2cc39e85751f849b99501d11071ec1233c0f7111d028c970ad8853",
         "candidate_present": true,
         "candidate_size": 182,
         "name": "popup_window_setup_sound",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "1c6091626a257958fdeeb313a080d66561061bb037643f03f0578c23cd72010c",
         "target_present": true,
         "target_size": 182
       },
       {
-        "candidate_disassembly_sha256": "958d8264cad35bbf2d57bb24601c9231c9f356b3094109ca353a5f8b38e63cff",
+        "candidate_disassembly_sha256": "1f4c58c1eecf01c58ff45ab99e86a258d7875ca0af3c82904e7a3e679ec49d35",
         "candidate_present": true,
         "candidate_size": 265,
         "name": "popup_window_setup_updater",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "958d8264cad35bbf2d57bb24601c9231c9f356b3094109ca353a5f8b38e63cff",
         "target_present": true,
         "target_size": 265
       },
       {
-        "candidate_disassembly_sha256": "5bd35038ff8e081555ced83acbb0119a115d6ffb93b83b91aaa1c63f548c2184",
+        "candidate_disassembly_sha256": "afe5a93042ab8ad84bfb05d207fb4f98f7d8bc194419950714996796e6e7b11d",
         "candidate_present": true,
         "candidate_size": 318,
         "name": "popup_window_setup_user",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "5bd35038ff8e081555ced83acbb0119a115d6ffb93b83b91aaa1c63f548c2184",
         "target_present": true,
         "target_size": 318
       },
       {
-        "candidate_disassembly_sha256": "6a9b17f7b846a12cb975f3a0d8badcf066c9b687888fea42343ea3e10477e9a8",
+        "candidate_disassembly_sha256": "9279477a20758ce6267e5d4754863022179f2451add9a4806d91baf227d8fdad",
         "candidate_present": true,
         "candidate_size": 101,
         "name": "power_module_battery_control_destroy",
@@ -1085,7 +1385,7 @@
         "target_size": 101
       },
       {
-        "candidate_disassembly_sha256": "c64678d5fad3c5621ab03b76c60479aa6f5963e31739632e84a0806b15c6254e",
+        "candidate_disassembly_sha256": "4d8aecff461739ccf3095f5331d63b052025b0354c664f72d0162d3ea9be6324",
         "candidate_present": true,
         "candidate_size": 590,
         "name": "power_module_battery_control_new",
@@ -1095,7 +1395,7 @@
         "target_size": 590
       },
       {
-        "candidate_disassembly_sha256": "73e61a9bec7b17f6021eba388898b4f432ccc1dd17545accadebe2afc89cccc5",
+        "candidate_disassembly_sha256": "0022965c8315ea68e61c8b38b00e490cabcbb7e71536a2edfe6a5d62e948ba67",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "power_module_brightness_control_destroy",
@@ -1105,7 +1405,7 @@
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "3d419ecbc5031dd510a8b722ff6749bea485c6ed7a59e484dcfb5fd34b4c727d",
+        "candidate_disassembly_sha256": "122b8659c48856ce9e01b6b91cfc43d7fe3eca61bd7b911d9627eba99da96f6a",
         "candidate_present": true,
         "candidate_size": 432,
         "name": "power_module_brightness_control_new",
@@ -1135,7 +1435,7 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "7f3a501fe8404e40fd98b5da9ca14490266b78ac0cdee0f6780110acc4d0040d",
+        "candidate_disassembly_sha256": "32a0d18950c16126149eb5d16113373029fb45d9c2c7ca8c74e309d896180449",
         "candidate_present": true,
         "candidate_size": 153,
         "name": "power_module_tray_new",
@@ -1145,7 +1445,7 @@
         "target_size": 153
       },
       {
-        "candidate_disassembly_sha256": "b73433b2ab850b4d07860792f659dab80b3da7794d94cff71ad3f999f41e25e3",
+        "candidate_disassembly_sha256": "0671afd712661db352a4758ff86e581be0d31f241475de49b58eb5fee638ca15",
         "candidate_present": true,
         "candidate_size": 215,
         "name": "pulseaudio_debug_real",
@@ -1155,7 +1455,7 @@
         "target_size": 215
       },
       {
-        "candidate_disassembly_sha256": "3c93125b677bb3e62c85004fb98fed3e6be8489d681beec755fef45152ae3536",
+        "candidate_disassembly_sha256": "df393678290df803971d5418972d71150231066442727661d07810d792656817",
         "candidate_present": true,
         "candidate_size": 73,
         "name": "pulseaudio_volume_get_connected",
@@ -1165,7 +1465,7 @@
         "target_size": 73
       },
       {
-        "candidate_disassembly_sha256": "ce5134418109c111045ca258a05d455b0b93632064a0242ed2dc62b6228e965b",
+        "candidate_disassembly_sha256": "149111d3d7379c28f9b338becf3bc3ae1f092df62fb6680630875d517a4a76e1",
         "candidate_present": true,
         "candidate_size": 73,
         "name": "pulseaudio_volume_get_muted",
@@ -1185,7 +1485,7 @@
         "target_size": 96
       },
       {
-        "candidate_disassembly_sha256": "509abbdaeb84d7b5f8edfafb088178ce8602c4a3b24a51b341efaf15946b0b41",
+        "candidate_disassembly_sha256": "fc28e5814c42ac1e193199a645784e52bd741a2f86aa063ded5d038e1d7d479e",
         "candidate_present": true,
         "candidate_size": 83,
         "name": "pulseaudio_volume_get_volume",
@@ -1205,7 +1505,7 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "e397237dfedbc4137a9990b186220667f059d3a5c9fdbaa602087e72bf6ddff7",
+        "candidate_disassembly_sha256": "5275cb337536b14deaa299ee2cab6c4c60446dca82400df38bc4b79a869526b2",
         "candidate_present": true,
         "candidate_size": 185,
         "name": "pulseaudio_volume_set_muted",
@@ -1215,7 +1515,7 @@
         "target_size": 185
       },
       {
-        "candidate_disassembly_sha256": "f79f43fb2fde5efc3be604d13c01566015ffc8df511ae8ae412205a2041ec281",
+        "candidate_disassembly_sha256": "9aa06cf49ded04aaf6b849b1056f1d3d453df07146e73e0f75042a16516bb6fb",
         "candidate_present": true,
         "candidate_size": 276,
         "name": "pulseaudio_volume_set_volume",
@@ -1225,7 +1525,7 @@
         "target_size": 276
       },
       {
-        "candidate_disassembly_sha256": "0549d1eafe413c95e3c5600df8bc4db5ad7e6d7b3c00adbbed5d6b5d6bdfc271",
+        "candidate_disassembly_sha256": "c5fc0a6216e7d27d7caff94384f6572e02095d79f20ffde106b307b72b61ad37",
         "candidate_present": true,
         "candidate_size": 86,
         "name": "pulseaudio_volume_toggle_muted",
@@ -1235,17 +1535,17 @@
         "target_size": 86
       },
       {
-        "candidate_disassembly_sha256": "b16e4af259eac6345cd079d82daac295909dacb7836fbe2f2a5da416904fd5ab",
+        "candidate_disassembly_sha256": "a0afbf2d095019deca356f867aef1c245f05b61e09d61813e3ba67e24063643a",
         "candidate_present": true,
         "candidate_size": 448,
         "name": "run_security_log_parser_async",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "b16e4af259eac6345cd079d82daac295909dacb7836fbe2f2a5da416904fd5ab",
         "target_present": true,
         "target_size": 448
       },
       {
-        "candidate_disassembly_sha256": "45fa80be57cd26b7cc618b08809c2eac6e4196026cf47022707e72a69824b9da",
+        "candidate_disassembly_sha256": "bce4504994af4fb57d1061c79ab1345366cf180f5cb10581b941aa40c125b67b",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "security_control_get_resource",
@@ -1255,41 +1555,41 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "cacf01637bf8f6ee114c379bdef92e96743ea0c4901a9404475f37af0ecb2292",
+        "candidate_disassembly_sha256": "b16bbe856322be2fbbae498169516181ebf12315aa7b32f02c0571f9f955669c",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "security_module_control_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "cacf01637bf8f6ee114c379bdef92e96743ea0c4901a9404475f37af0ecb2292",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "6b507b053da39e04e51a6cb84b0cf3781484de8fee6d3ca8521f1bc358c139c8",
+        "candidate_disassembly_sha256": "309c4be391d35f9bc4e854803b3c0ddee48cc76d689f99a6d6f4ae5ec587a902",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "security_module_control_menu_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "6b507b053da39e04e51a6cb84b0cf3781484de8fee6d3ca8521f1bc358c139c8",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "78d6c8b8c54a8b642b8e31a176b755e7c41ebc77a7b72642566675f00e1d8865",
+        "candidate_disassembly_sha256": "d3ae28ac3e02cd7cbca19b0449bbbb87a3c409d8db3380fa4a0f48664c89898a",
         "candidate_present": true,
         "candidate_size": 433,
         "name": "security_module_control_menu_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "78d6c8b8c54a8b642b8e31a176b755e7c41ebc77a7b72642566675f00e1d8865",
         "target_present": true,
         "target_size": 433
       },
       {
-        "candidate_disassembly_sha256": "f789d8fda3948c4b6369b30bac4356aea6bc809753704aa71430fddaea57e51d",
+        "candidate_disassembly_sha256": "cd2d30d80116a69b0e1be411af36e60e96af3f5af7ff84d4102ba2ddf3963328",
         "candidate_present": true,
         "candidate_size": 361,
         "name": "security_module_control_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "f789d8fda3948c4b6369b30bac4356aea6bc809753704aa71430fddaea57e51d",
         "target_present": true,
         "target_size": 361
@@ -1305,7 +1605,7 @@
         "target_size": 34
       },
       {
-        "candidate_disassembly_sha256": "14cfdcf83e8f93389d6714981a00f6a4bd96387d622a6c164491f0bccbc9a695",
+        "candidate_disassembly_sha256": "2823011c9f2ac59a8705f85131d47e3c179de6e6c9191dcbf99bd2e36f938f92",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "security_module_get_type",
@@ -1325,37 +1625,37 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "189ede092ace14c0e500be3f0d6c70b28443496c08f59bd450c31417af6240cb",
+        "candidate_disassembly_sha256": "4c5538016bcd94119b6b535ab35ad166f46975fa00bd0e77a95aef5b8f2372fc",
         "candidate_present": true,
         "candidate_size": 156,
         "name": "security_module_tray_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "189ede092ace14c0e500be3f0d6c70b28443496c08f59bd450c31417af6240cb",
         "target_present": true,
         "target_size": 156
       },
       {
-        "candidate_disassembly_sha256": "19f789a3512cbe821bf7e9d07d99e7746b0bc7bfcbde09a49b65d0b27f33def4",
+        "candidate_disassembly_sha256": "306465f498debc6288fc5f506f68ef9a481b7c6fe953ca268e55eea676f8ca3b",
         "candidate_present": true,
         "candidate_size": 89,
         "name": "send_taking_measure_signal_to_self",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "19f789a3512cbe821bf7e9d07d99e7746b0bc7bfcbde09a49b65d0b27f33def4",
         "target_present": true,
         "target_size": 89
       },
       {
-        "candidate_disassembly_sha256": "1b9dd13bece242394ea0589f76cfed60240b3930b9989b80ed881db0b6bd8096",
+        "candidate_disassembly_sha256": "86d85456dd3d7d95aed829a630d73360cea016f55a3a9c0b32bd333c9f48547c",
         "candidate_present": true,
         "candidate_size": 199,
         "name": "send_taking_measures_signal_to_agent",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "1b9dd13bece242394ea0589f76cfed60240b3930b9989b80ed881db0b6bd8096",
         "target_present": true,
         "target_size": 199
       },
       {
-        "candidate_disassembly_sha256": "308e21c8e1804827dad9fe843251d996f1a34fff5123bc1cbd008a509c79060c",
+        "candidate_disassembly_sha256": "9ce603a3b7f26d238355a49f3c6897c6de7852b2945b00c36e38f1b26e71bda3",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "sound_module_control_destroy",
@@ -1365,7 +1665,7 @@
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "3df265951cb11a5a5d595b4a2f9ac8c86f40409da9969c1a97d5baddc408359f",
+        "candidate_disassembly_sha256": "306a3825fc9765fb1facbbc41068760c1ce6a4ad2b9df0fa10e3e78bb7f9ff62",
         "candidate_present": true,
         "candidate_size": 664,
         "name": "sound_module_control_new",
@@ -1395,7 +1695,7 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "2cef3c02397c4ee8c01639b7f96bf01ff19fca3dad7c769923339bfc53a75776",
+        "candidate_disassembly_sha256": "7a13424a314d1461faebf323cec2a3026698088852f0a83a9c5fcab03cc53c1b",
         "candidate_present": true,
         "candidate_size": 156,
         "name": "sound_module_tray_new",
@@ -1405,7 +1705,7 @@
         "target_size": 156
       },
       {
-        "candidate_disassembly_sha256": "d6e3df689ac949930a68b053bf2cb57d0d8650c6f3838bb1e580d465712d1407",
+        "candidate_disassembly_sha256": "26c90c6520b6d5e5ae072400d1f38b11c37d442f16ccaa4f6d89e7566d69aef8",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "updater_control_get_resource",
@@ -1415,27 +1715,27 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "0fc1b5db13ea14b4af2741210da5756838051459ba1e18971c54af2052685836",
+        "candidate_disassembly_sha256": "a63472497f23d155322535b77cd0b73d2dd6c5b69789da20c51ee15188e70205",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "updater_module_control_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "0fc1b5db13ea14b4af2741210da5756838051459ba1e18971c54af2052685836",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "a1b8d5957686bbbe1764f2b7bee4cc5fcb4547a12ef504f1c16374e6ccc9b9ea",
+        "candidate_disassembly_sha256": "85ffdf897bea20c1cda82c2f522fb05c298f36fa58cf9c9eecf350ae42a3ab6b",
         "candidate_present": true,
         "candidate_size": 61,
         "name": "updater_module_control_menu_destroy",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "a1b8d5957686bbbe1764f2b7bee4cc5fcb4547a12ef504f1c16374e6ccc9b9ea",
         "target_present": true,
         "target_size": 61
       },
       {
-        "candidate_disassembly_sha256": "ebd68462494dd89470328b765d8a2ba584dd6bd8735232ab2ba7a040244e473e",
+        "candidate_disassembly_sha256": "5e8d4a99aac54c78f3d2a262571c47e73d2ce8c49684b01758aac46900c36e36",
         "candidate_present": true,
         "candidate_size": 721,
         "name": "updater_module_control_menu_new",
@@ -1445,17 +1745,17 @@
         "target_size": 721
       },
       {
-        "candidate_disassembly_sha256": "5c0d6a15e92d649dff15de5c171e14858482e5e479cc29619f94a9cf0f297743",
+        "candidate_disassembly_sha256": "085da922f42d53f9e4996650b70a4c8d53dbc55886c9957d1e5fb4c3461e77c6",
         "candidate_present": true,
         "candidate_size": 401,
         "name": "updater_module_control_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "5c0d6a15e92d649dff15de5c171e14858482e5e479cc29619f94a9cf0f297743",
         "target_present": true,
         "target_size": 401
       },
       {
-        "candidate_disassembly_sha256": "b7925616d72545cee7e1420ba56d1e5d07a5b0a2d87da6f68a2067b4f51a8910",
+        "candidate_disassembly_sha256": "b72774a1263e8b972ef6f2878aeca99c214b1cb4b5ace523dc807f8dfa1370c7",
         "candidate_present": true,
         "candidate_size": 96,
         "name": "updater_module_get_type",
@@ -1475,17 +1775,17 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "b1f90230112e3c30aef58a1235c42f5aada74ae2a2895502697ecad723494d56",
+        "candidate_disassembly_sha256": "dac160686fc3937def7f568a427dc09f3700187c53ede9419ca85481ee48c462",
         "candidate_present": true,
         "candidate_size": 142,
         "name": "updater_module_tray_new",
-        "normalized_disassembly_equal": true,
+        "normalized_disassembly_equal": false,
         "target_disassembly_sha256": "b1f90230112e3c30aef58a1235c42f5aada74ae2a2895502697ecad723494d56",
         "target_present": true,
         "target_size": 142
       },
       {
-        "candidate_disassembly_sha256": "a1c5b6df9042dbbbd7a5ef64d853d0f24e932446cc62c574ad9e6a77f90ccee7",
+        "candidate_disassembly_sha256": "cb6fed31a2c11368abfcd1e0adc32aa9b5610aa0853dd65bbbccb8da1a19fa51",
         "candidate_present": true,
         "candidate_size": 12,
         "name": "user_control_get_resource",
@@ -1495,7 +1795,7 @@
         "target_size": 12
       },
       {
-        "candidate_disassembly_sha256": "73382938c63aca2e8352ede4d2b65201e1d91079c619a76c52dbaafa35694213",
+        "candidate_disassembly_sha256": "68ba3231e951db3b67919cd1f62ec502e5b6d1ade703312ab1c8319ae2f6ccb1",
         "candidate_present": true,
         "candidate_size": 85,
         "name": "user_module_control_destroy",
@@ -1505,7 +1805,7 @@
         "target_size": 85
       },
       {
-        "candidate_disassembly_sha256": "43f7027112e423eafb9a4a84d00e4686d165cd5322582c03173d94d9d580ad94",
+        "candidate_disassembly_sha256": "236caee6e3d5705bc46df916a0c7e6b9e88c886965a886e03d8445b6696fd2e1",
         "candidate_present": true,
         "candidate_size": 345,
         "name": "user_module_control_new",
@@ -1535,7 +1835,7 @@
         "target_size": 25
       },
       {
-        "candidate_disassembly_sha256": "b4586ea3c079eba1e7a614a58c25ba8b06d2e91922d13661257ab68fcf84277b",
+        "candidate_disassembly_sha256": "9587a121e64b750f18db18bfbd58454e46478c2670df3f51750e713a9dac325a",
         "candidate_present": true,
         "candidate_size": 241,
         "name": "user_module_tray_new",
@@ -1560,7 +1860,7 @@
       "Lc-lt",
       "Lc-mv"
     ],
-    "target_path": "/tmp/tmpmcr2adfw/target/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+    "target_path": "/tmp/tmpjpzhmp_j/target/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
     "target_resources": {
       "/kr/gooroom/IntegrationApplet/modules/datetime/datetime-control-menu.ui": {
         "sha256": "a8bc32b18f69ac60b036dd7d86182172b8134f41cf604850a9ac7e35df7b75a2",
@@ -1620,7 +1920,7 @@
     "candidate_only_strings": [
       "c80420b94b57e1b6511c41ed4d1acfe909beed.debug"
     ],
-    "candidate_path": "/tmp/tmpmcr2adfw/candidate/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+    "candidate_path": "/tmp/tmpjpzhmp_j/candidate/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
     "candidate_resources": {},
     "candidate_sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
     "candidate_size": 14248,
@@ -1712,7 +2012,7 @@
       "1ae7a6ca4b680c7cccf266635179cd75eaedc4.debug",
       "fcQy"
     ],
-    "target_path": "/tmp/tmpmcr2adfw/target/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+    "target_path": "/tmp/tmpjpzhmp_j/target/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
     "target_resources": {},
     "target_sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
     "target_size": 14584
