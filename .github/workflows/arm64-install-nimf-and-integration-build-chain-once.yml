@@ -1,0 +1,87 @@
+name: ARM64 install Nimf and Integration build chain once
+
+'on':
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-install-nimf-and-integration-build-chain-once.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-install-nimf-and-integration-build-chain-once
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact native ARM64 build workflows
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gzip -dc arm64/bootstrap/arm64-build-gooroom-integration-applet-han3u3-v1.yml.gz \
+            > .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml
+          gzip -dc arm64/bootstrap/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml.gz \
+            > .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+          test "$(sha256sum .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml | awk '{print $1}')" = \
+            cbb04308614f9033aef50119af4dec760e3bb135f374debe2637a69e2364d60c
+          test "$(sha256sum .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml | awk '{print $1}')" = \
+            6072f9de48ea55661b6c21ed2a7de75ea520a2028f648b12a369690f0348ffa9
+          grep -Fq 'gooroom-integration-applet-han3u3-semantic-v5' \
+            .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml
+          grep -Fq '583ad8b183db06a84c6b85a80fe132583566909d' \
+            .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+
+      - name: Commit the exact build chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            .github/workflows/arm64-build-gooroom-integration-applet-han3u3-v1.yml \
+            .github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+          git rm \
+            .github/workflows/arm64-install-nimf-and-integration-build-chain-once.yml \
+            arm64/bootstrap/arm64-build-gooroom-integration-applet-han3u3-v1.yml.gz \
+            arm64/bootstrap/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml.gz
+          git diff --cached --check
+          git commit -m 'Build exact Nimf and Integration Applet for ARM64'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch exact Nimf ARM64 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflow=arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/dispatches" \
+              -f ref=arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
