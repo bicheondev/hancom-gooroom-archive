@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 323,
-    "workflow_name_count": 323,
-    "referenced_local_file_count": 370,
+    "workflow_count": 324,
+    "workflow_name_count": 324,
+    "referenced_local_file_count": 371,
     "error_count": 0,
-    "warning_count": 58,
+    "warning_count": 59,
     "passed": true
   },
   "workflows": [
@@ -3807,6 +3807,21 @@
       ]
     },
     {
+      "filename": "arm64-promote-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-promote-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 promote integration applet han3u3 v1",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json"
+      ]
+    },
+    {
       "filename": "arm64-promote-qtbase-grm3u1-runtime.yml",
       "path": ".github/workflows/arm64-promote-qtbase-grm3u1-runtime.yml",
       "name": "ARM64 port - promote verified QtBase grm3u1 runtime",
@@ -6119,6 +6134,9 @@
     "arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v4/latest/summary.json": [
       ".github/workflows/arm64-continuation-status-v5.yml"
     ],
+    "arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json": [
+      ".github/workflows/arm64-promote-integration-applet-han3u3-v1.yml"
+    ],
     "arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/latest/compact.json": [
       ".github/workflows/arm64-continuation-status-v5.yml"
     ],
@@ -7647,6 +7665,11 @@
     {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-promote-integration-applet-han3u3-v1.yml",
+      "local_path": "arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
