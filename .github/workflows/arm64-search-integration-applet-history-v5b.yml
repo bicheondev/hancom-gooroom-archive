@@ -1,0 +1,576 @@
+name: ARM64 search integration applet history v5b
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-search-integration-applet-history-v5b.yml'
+      - 'arm64/scripts/discover_integration_applet_history_candidates_v5b.py'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-history-v5b
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  PUBLIC_REPOSITORY: https://github.com/gooroom/gooroom-integration-applet.git
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  TARGET_SHA256: 1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9
+  TARGET_SIZE: '62392'
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+  ANALYZER: arm64/scripts/integration_applet_vendor_reconstruct.py
+  DISCOVERER: arm64/scripts/discover_integration_applet_history_candidates_v5b.py
+  BULLSEYE_DIGEST: sha256:99cdf7792e25416bd801861ccd8e2fb27fb527b25e8d9a8704ebc3ead2015675
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.candidates.outputs.matrix }}
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install bounded discovery tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git jq python3
+          python3 -m py_compile "$DISCOVERER" "$ANALYZER"
+
+      - name: Discover source snapshots carrying relevant history
+        id: candidates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf work/history-v5b
+          mkdir -p work/history-v5b
+          git clone --mirror "$PUBLIC_REPOSITORY" work/history-v5b/public.git
+          matrix="$(
+            python3 "$DISCOVERER" \
+              --repository work/history-v5b/public.git \
+              --output work/history-v5b/discovery.json \
+              --limit 12 \
+              | tail -1
+          )"
+          jq -e '
+            (.include | type) == "array"
+            and (.include | length) >= 3
+            and (.include | length) <= 12
+            and all(.include[];
+              (.commit | test("^[0-9a-f]{40}$"))
+              and (.tree | test("^[0-9a-f]{40}$"))
+              and (.label | test("^[a-z0-9-]+$"))
+            )
+          ' <<<"$matrix" >/dev/null
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+          jq '.' work/history-v5b/discovery.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload discovery authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-v5b-discovery
+          path: work/history-v5b/discovery.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  probe:
+    needs: discover
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    name: Probe ${{ matrix.label }}
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install reconstruction and comparison tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gettext git jq \
+            libglib2.0-bin python3 tar xz-utils
+          docker version
+          python3 -m py_compile "$ANALYZER"
+
+      - name: Lock target binary and historical Nimf dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/history-v5b-${{ matrix.label }}
+          rm -rf "$root"
+          mkdir -p "$root"/{downloads,deps,target-root,source-authority,build,comparison,artifact}
+
+          curl --fail --show-error --location --retry 8 --retry-delay 2 \
+            --retry-all-errors "$TARGET_URL" -o "$root/downloads/target.deb"
+          test "$(stat -c '%s' "$root/downloads/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $root/downloads/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Architecture)" = amd64
+          dpkg-deb -x "$root/downloads/target.deb" "$root/target-root"
+
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+            and ([.packages[].package] | sort) == ["libnimf1", "nimf-dev"]
+          ' "$NIMF_AUTHORITY" >/dev/null
+
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            filename="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            expected_sha="$(jq -r '.sha256' <<<"$row")"
+            expected_size="$(jq -r '.size' <<<"$row")"
+            expected_package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "$root/deps/$filename"
+            test "$(stat -c '%s' "$root/deps/$filename")" = "$expected_size"
+            test "$(sha256sum "$root/deps/$filename" | awk '{print $1}')" = "$expected_sha"
+            test "$(dpkg-deb -f "$root/deps/$filename" Package)" = "$expected_package"
+            test "$(dpkg-deb -f "$root/deps/$filename" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "$root/deps/$filename" Architecture)" = amd64
+          done
+
+      - name: Reconstruct vendor-visible inputs on the selected public snapshot
+        env:
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+          CANDIDATE_TREE: ${{ matrix.tree }}
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          DISCOVERY_SCORE: ${{ matrix.discovery_score }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/history-v5b-$CANDIDATE_LABEL
+          git clone --filter=blob:none --no-checkout "$PUBLIC_REPOSITORY" "$root/source"
+          git -C "$root/source" fetch --depth=1 origin "$CANDIDATE_COMMIT"
+          git -C "$root/source" checkout --detach "$CANDIDATE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD^{tree})" = "$CANDIDATE_TREE"
+
+          python3 "$ANALYZER" reconstruct \
+            --source "$root/source" \
+            --target-root "$root/target-root" \
+            --output "$root/source-authority/reconstruction-report.json" \
+            --version "$VERSION"
+          test "$(dpkg-parsechangelog -l"$root/source/debian/changelog" -SVersion)" = "$VERSION"
+
+          git -C "$root/source" add -A
+          reconstructed_tree="$(git -C "$root/source" write-tree)"
+          git -C "$root/source" diff --cached --binary --full-index \
+            > "$root/source-authority/reconstruction.patch"
+          test -s "$root/source-authority/reconstruction.patch"
+          git -C "$root/source" archive --format=tar "$reconstructed_tree" \
+            > "$root/source-authority/reconstructed-source.tar"
+          xz -9e "$root/source-authority/reconstructed-source.tar"
+
+          jq -n \
+            --arg source "$PACKAGE" \
+            --arg version "$VERSION" \
+            --arg repository "gooroom/gooroom-integration-applet" \
+            --arg label "$CANDIDATE_LABEL" \
+            --arg commit "$CANDIDATE_COMMIT" \
+            --arg base_tree "$CANDIDATE_TREE" \
+            --arg reconstructed_tree "$reconstructed_tree" \
+            --arg discovery_score "$DISCOVERY_SCORE" \
+            --arg patch_sha256 "$(sha256sum "$root/source-authority/reconstruction.patch" | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum "$root/source-authority/reconstructed-source.tar.xz" | awk '{print $1}')" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --arg nimf_authority_sha256 "$(sha256sum "$NIMF_AUTHORITY" | awk '{print $1}')" '
+              {
+                schema: 1,
+                source: $source,
+                version: $version,
+                repository: $repository,
+                candidate_label: $label,
+                candidate_commit_sha: $commit,
+                base_tree_sha: $base_tree,
+                reconstructed_tree_sha: $reconstructed_tree,
+                discovery_score: ($discovery_score | tonumber),
+                reconstruction_policy:
+                  "public-history-snapshot-plus-exact-target-changelog-gresources-icons-and-catalogs",
+                reconstruction_patch_sha256: $patch_sha256,
+                source_archive_sha256: $archive_sha256,
+                target_deb_sha256: $target_sha256,
+                nimf_authority_sha256: $nimf_authority_sha256
+              }
+            ' > "$root/source-authority/source-lock.json"
+
+      - name: Build candidate in the locked Bullseye plus Nimf environment
+        id: build
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$(pwd)/work/history-v5b-$CANDIDATE_LABEL"
+          image="hancom-gooroom/integration-applet-history-v5b:$CANDIDATE_LABEL"
+          context="$root/build/image"
+          mkdir -p "$context/deps" "$root/build/debs"
+          cp "$root/deps"/*.deb "$context/deps/"
+
+          cat > "$context/Dockerfile" <<EOF
+          FROM debian:bullseye@$BULLSEYE_DIGEST
+          COPY deps/ /tmp/nimf-deps/
+          RUN set -Eeux; \\
+              apt-get update; \\
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \\
+                /tmp/nimf-deps/libnimf1_2023.06.30+grm3u1_amd64.deb \\
+                /tmp/nimf-deps/nimf-dev_2023.06.30+grm3u1_amd64.deb; \\
+              test "\$(dpkg-query -W -f='\${Version}' libnimf1)" = '2023.06.30+grm3u1'; \\
+              test "\$(dpkg-query -W -f='\${Version}' nimf-dev)" = '2023.06.30+grm3u1'; \\
+              rm -rf /var/lib/apt/lists/* /tmp/nimf-deps
+          EOF
+          docker build --pull=false --tag "$image" "$context"
+          image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+
+          source_date_epoch="$(
+            date -u -d "$(dpkg-parsechangelog -l"$root/source/debian/changelog" -SDate)" +%s
+          )"
+          set +e
+          docker run --rm \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e DEB_BUILD_OPTIONS=nocheck \
+            -e DEB_BUILD_MAINT_OPTIONS='hardening=+all reproducible=+fixfilepath' \
+            -e SOURCE_DATE_EPOCH="$source_date_epoch" \
+            -e LC_ALL=C.UTF-8 \
+            -v "$root/source:/build/source" \
+            -v "$root/build/debs:/build/output" \
+            "$image" bash -Eeuxo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential devscripts dpkg-dev equivs git libglib2.0-dev-bin
+              cd /build/source
+              mk-build-deps --install --remove \
+                --tool "apt-get -o Acquire::Retries=6 -y --no-install-recommends" \
+                debian/control
+              dpkg-buildpackage -us -uc -b -j2
+              find /build -maxdepth 1 -type f -name "*.deb" -exec cp -v {} /build/output/ \;
+            ' > "$root/build/build.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$root/build/build.exit"
+          printf 'exit_code=%s\n' "$rc" >> "$GITHUB_OUTPUT"
+          printf 'image_id=%s\n' "$image_id" >> "$GITHUB_OUTPUT"
+
+          if [[ "$rc" -eq 0 ]]; then
+            candidate=
+            for deb in "$root/build/debs"/*.deb; do
+              if [[ "$(dpkg-deb -f "$deb" Package)" == "$PACKAGE" ]]; then
+                candidate="$deb"
+              fi
+            done
+            test -n "$candidate"
+            test "$(dpkg-deb -f "$candidate" Version)" = "$VERSION"
+            test "$(dpkg-deb -f "$candidate" Architecture)" = amd64
+            cp "$candidate" "$root/downloads/candidate.deb"
+          fi
+
+      - name: Compare package, resources, functions, and allocated sections
+        if: always()
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+          BUILD_EXIT: ${{ steps.build.outputs.exit_code }}
+          BUILD_IMAGE_ID: ${{ steps.build.outputs.image_id }}
+          DISCOVERY_SCORE: ${{ matrix.discovery_score }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/history-v5b-$CANDIDATE_LABEL
+          comparison_complete=false
+          if [[ "$BUILD_EXIT" == 0 && -f "$root/downloads/candidate.deb" ]]; then
+            python3 "$ANALYZER" compare \
+              --target-deb "$root/downloads/target.deb" \
+              --candidate-deb "$root/downloads/candidate.deb" \
+              --output "$root/comparison" \
+              --version "$VERSION" \
+              --candidate-label "$CANDIDATE_LABEL" \
+              --candidate-commit "$CANDIDATE_COMMIT"
+            comparison_complete=true
+          fi
+
+          candidate_sha=
+          if [[ -f "$root/downloads/candidate.deb" ]]; then
+            candidate_sha="$(sha256sum "$root/downloads/candidate.deb" | awk '{print $1}')"
+          fi
+          jq -n \
+            --arg label "$CANDIDATE_LABEL" \
+            --arg commit "$CANDIDATE_COMMIT" \
+            --arg discovery_score "$DISCOVERY_SCORE" \
+            --arg build_exit "${BUILD_EXIT:-255}" \
+            --arg build_image_id "$BUILD_IMAGE_ID" \
+            --arg comparison_complete "$comparison_complete" \
+            --arg candidate_deb_sha256 "$candidate_sha" '
+              {
+                schema: 1,
+                candidate_label: $label,
+                candidate_commit_sha: $commit,
+                discovery_score: ($discovery_score | tonumber),
+                build_exit: ($build_exit | tonumber),
+                build_succeeded: ($build_exit == "0"),
+                build_image_id: $build_image_id,
+                candidate_deb_sha256: $candidate_deb_sha256,
+                comparison_complete: ($comparison_complete == "true"),
+                fail_closed: true
+              }
+            ' > "$root/artifact/probe-summary.json"
+          cp -a "$root/source-authority" "$root/artifact/" || true
+          cp -a "$root/comparison" "$root/artifact/" || true
+          cp "$root/build/build.exit" "$root/artifact/" || true
+          cp "$root/build/build.log" "$root/artifact/" || true
+          [[ ! -f "$root/downloads/candidate.deb" ]] \
+            || cp "$root/downloads/candidate.deb" "$root/artifact/"
+          jq '.' "$root/artifact/probe-summary.json" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f "$root/comparison/summary.json" ]]; then
+            jq '{
+              candidate_label,
+              comparison_rank,
+              different_resource_count,
+              different_dynamic_function_count,
+              different_allocated_section_count,
+              non_elf_difference_count,
+              main_different_functions: .main_elf.different_dynamic_function_count,
+              nimf_different_functions: .nimf_elf.different_dynamic_function_count
+            }' "$root/comparison/summary.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          find "$root/artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$root/artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-v5b-${{ matrix.label }}
+          path: work/history-v5b-${{ matrix.label }}/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+  aggregate:
+    needs:
+      - discover
+      - probe
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out current authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download discovery and candidate evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: integration-applet-history-v5b-*
+          path: work/history-v5b-candidates
+
+      - name: Rank complete comparisons without relaxing runtime gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/history-v5b-aggregate
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import shutil
+          from pathlib import Path
+
+          root = Path('work/history-v5b-candidates')
+          output = Path('work/history-v5b-aggregate')
+          candidates = []
+          failed = []
+
+          for probe_path in sorted(root.glob('*/probe-summary.json')):
+              artifact = probe_path.parent
+              probe = json.loads(probe_path.read_text(encoding='utf-8'))
+              comparison_path = artifact / 'comparison/summary.json'
+              if not probe.get('comparison_complete') or not comparison_path.exists():
+                  failed.append(probe)
+                  continue
+              comparison = json.loads(comparison_path.read_text(encoding='utf-8'))
+              rank = comparison.get('comparison_rank')
+              if not isinstance(rank, list) or not rank:
+                  failed.append({**probe, 'reason': 'missing-comparison-rank'})
+                  continue
+              candidates.append((tuple(rank), comparison.get('candidate_label', ''), probe, comparison, artifact))
+
+          candidates.sort(key=lambda row: (row[0], row[1]))
+          ranked = []
+          for rank, _, probe, comparison, _ in candidates:
+              ranked.append({
+                  'candidate_label': comparison.get('candidate_label'),
+                  'candidate_commit_sha': comparison.get('candidate_commit_sha'),
+                  'discovery_score': probe.get('discovery_score'),
+                  'comparison_rank': list(rank),
+                  'different_resource_count': comparison.get('different_resource_count'),
+                  'different_dynamic_function_count': comparison.get('different_dynamic_function_count'),
+                  'different_allocated_section_count': comparison.get('different_allocated_section_count'),
+                  'non_elf_difference_count': comparison.get('non_elf_difference_count'),
+                  'main_different_functions': (comparison.get('main_elf') or {}).get('different_dynamic_function_count'),
+                  'nimf_different_functions': (comparison.get('nimf_elf') or {}).get('different_dynamic_function_count'),
+                  'target_only_strings': {
+                      'main': (comparison.get('main_elf') or {}).get('target_only_strings', []),
+                      'nimf': (comparison.get('nimf_elf') or {}).get('target_only_strings', []),
+                  },
+              })
+
+          if candidates:
+              _, _, _, closest, closest_artifact = candidates[0]
+              closest_row = ranked[0]
+              semantic = (
+                  closest.get('different_resource_count') == 0
+                  and closest.get('different_dynamic_function_count') == 0
+                  and closest.get('non_elf_difference_count') == 0
+              )
+              allocated_exact = semantic and closest.get('different_allocated_section_count') == 0
+              copies = (
+                  ('comparison/summary.json', 'closest-comparison.json'),
+                  ('comparison/different-functions.tsv', 'different-functions.tsv'),
+                  ('source-authority/reconstruction-report.json', 'reconstruction-report.json'),
+                  ('source-authority/source-lock.json', 'source-lock.json'),
+                  ('source-authority/reconstruction.patch', 'closest-reconstruction.patch'),
+              )
+              for source_name, destination_name in copies:
+                  source = closest_artifact / source_name
+                  if source.exists():
+                      shutil.copy2(source, output / destination_name)
+          else:
+              closest_row = None
+              semantic = False
+              allocated_exact = False
+
+          document = {
+              'schema': 1,
+              'source': 'gooroom-integration-applet',
+              'version': '0.3.1+grm3u1+han3u3',
+              'selection_policy': 'bounded-public-history-plus-exact-vendor-visible-inputs',
+              'completed_candidate_count': len(candidates),
+              'failed_candidate_count': len(failed),
+              'closest_candidate': closest_row,
+              'ranked_candidates': ranked,
+              'failed_candidates': failed,
+              'source_reconstruction_semantically_verified': semantic,
+              'allocated_runtime_sections_exact': allocated_exact,
+              'native_arm64_candidate_build_allowed': semantic,
+              'package_layer_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+              'fail_closed': True,
+              'next_action': (
+                  'build and verify the semantically recovered source natively for ARM64'
+                  if semantic
+                  else 'use the closest history snapshot and exact DWARF evidence to patch remaining functions'
+              ),
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/history-v5b-aggregate/summary.json >> "$GITHUB_STEP_SUMMARY"
+          find work/history-v5b-aggregate -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/history-v5b-aggregate/FILE-INVENTORY.tsv
+          (
+            cd work/history-v5b-aggregate
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload compact history-search authority
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-search-v5b
+          path: work/history-v5b-aggregate
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit fail-closed history-search authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/history-v5b-aggregate
+          destination=arm64/locks/gooroom-integration-applet-history-search-v5b/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source"/* "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                triggering_head_sha: $head_sha,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m 'Search integration applet public history v5b'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
