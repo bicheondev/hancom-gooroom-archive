@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   reconstruct:
+    if: github.ref == 'refs/heads/arm64-port'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -49,9 +50,9 @@ jobs:
           source_blob=ac8fcc44b878f07ec5175b76bfe10caa318bf939
           source_gzip_sha=072ee8eea14141fd08695c5bff06fb2488f4c478a2c70542c07ee3ff28e3cd63
           source_payload_sha=f49d6da54042f93c65ef14b5fbfc904b0ea208d068f73cc7ccbb134b03c34415
-          expected_blob=d7c3987d602bad65df6ad269615f3fe1ae8525ce
-          expected_gzip_sha=56da121948044c5d47a87609352b7c37064bf78c8cefc1135a20284f267f5bb9
-          expected_payload_sha=f694264b2df512cc63a9678b08b2b5293b501d487baee02833d9f807c996d881
+          expected_blob=09e0dc34728ff7cfba2ce5eb5457faad04362b88
+          expected_gzip_sha=6d01070a694b48f8bc59d993195c02d035e11a2daea19c70141e93283b42e5ec
+          expected_payload_sha=480131e885cc48e2245fdc3424f60ecbb3ac42d61e2d65fecbd260b416f18202
 
           test -f "$source"
           test -f "$patcher"
@@ -90,6 +91,12 @@ jobs:
           grep -F 'notify::gtk-icon-theme-name' \
             "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" >/dev/null
           grep -F 'remove public clean-mode user-module extension absent from vendor DWARF' \
+            "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" >/dev/null
+          grep -F 'remove duplicate popup CSS provider setup absent from vendor DWARF' \
+            "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" >/dev/null
+          grep -F 'disable focus on the datetime control button' \
+            "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" >/dev/null
+          grep -F 'gtk_widget_set_can_focus (GTK_WIDGET (priv->control), FALSE);' \
             "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" >/dev/null
           chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh"
           gzip -n -9 -c "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v2.sh" > "$target"
@@ -251,7 +258,10 @@ jobs:
           fi
           tail -n 240 "$workspace/output/orchestrator.log" \
             > "$workspace/output/orchestrator-tail.log"
-          find "$workspace/output" -type f -printf '%P\t%s\n' \
+          find "$workspace/output" -type f \
+            ! -name FILE-INVENTORY.final.tsv \
+            ! -name LOCKSUMS.final.sha256 \
+            -printf '%P\t%s\n' \
             | LC_ALL=C sort > "$workspace/output/FILE-INVENTORY.final.tsv"
           (
             cd "$workspace/output"
@@ -274,7 +284,7 @@ jobs:
           compression-level: 9
 
       - name: Commit compact fail-closed v2 reconstruction authority
-        if: always()
+        if: always() && steps.reconstruct.outcome == 'success' && steps.upload.outcome == 'success'
         env:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
@@ -290,6 +300,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          test "$GITHUB_REF" = 'refs/heads/arm64-port'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           source=work/integration-applet-reconstruction-v2/output
           target=arm64/scripts/reconstruct_integration_applet_han3u3_v2.sh.gz
           destination=arm64/locks/gooroom-integration-applet-reconstruction-v2/latest
@@ -307,7 +319,6 @@ jobs:
             overlay-name-status.tsv \
             candidate-status.txt \
             build.exit \
-            build.log \
             orchestrator.exit \
             orchestrator-tail.log \
             payload-comparison.json \
@@ -358,7 +369,10 @@ jobs:
                 fail_closed: true
               }
             ' > "$destination/artifact-lock.json"
-          find "$destination" -type f -printf '%P\t%s\n' \
+          find "$destination" -type f \
+            ! -name FILE-INVENTORY.tsv \
+            ! -name LOCKSUMS.sha256 \
+            -printf '%P\t%s\n' \
             | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
           (
             cd "$destination"
@@ -375,8 +389,10 @@ jobs:
           git diff --cached --check
           git commit -m 'Reconstruct integration applet han3u3 source v2'
           for attempt in 1 2 3 4 5 6 7 8; do
-            git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then
+            if git fetch --no-tags origin arm64-port \
+              && git rebase origin/arm64-port \
+              && git push origin HEAD:arm64-port
+            then
               exit 0
             fi
             git rebase --abort || true
