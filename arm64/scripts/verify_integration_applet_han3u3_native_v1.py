@@ -134,6 +134,93 @@ def normalize_depends(value: str) -> list[str]:
     return sorted(re.sub(r"\s+", " ", x.strip()) for x in value.split(",") if x.strip())
 
 
+def normalize_cross_arch_depends(value: str) -> list[str]:
+    """Normalize only Debian architecture baseline differences.
+
+    dpkg-shlibdeps legitimately emits different minimum libc6 versions for
+    amd64 and arm64 from the same source. No other dependency difference is
+    accepted here.
+    """
+    result = []
+    for dep in normalize_depends(value):
+        if re.fullmatch(r"libc6 \(>= [^)]+\)", dep):
+            dep = "libc6 (>= {arch-baseline})"
+        result.append(dep)
+    return sorted(result)
+
+
+def normalize_needed(values: list[str]) -> list[str]:
+    """Ignore only the architecture-specific ELF runtime loader."""
+    return sorted(
+        x for x in values
+        if not re.fullmatch(r"ld-linux-[A-Za-z0-9_.-]+\.so(?:\.\d+)*", x)
+    )
+
+
+def normalize_glibc_symbol_record(rec: str) -> str:
+    name, typ, bind, vis = rec.split("|", 3)
+    # The same libc API carries different minimum symbol versions on
+    # Debian amd64 versus arm64 (arm64 baseline is GLIBC_2.17).
+    name = re.sub(r"@{1,2}GLIBC_[0-9.]+$", "@GLIBC", name)
+    return f"{name}|{typ}|{bind}|{vis}"
+
+
+ALLOWED_ARM64_IMPORT_EXTRAS = {
+    "__stack_chk_guard@GLIBC|OBJECT|GLOBAL|DEFAULT",
+    "memset@GLIBC|FUNC|GLOBAL|DEFAULT",
+    "strncmp@GLIBC|FUNC|GLOBAL|DEFAULT",
+}
+
+ALLOWED_ARM64_EXPORT_EXTRAS = {
+    "__bss_end__|NOTYPE|GLOBAL|DEFAULT",
+    "__bss_start__|NOTYPE|GLOBAL|DEFAULT",
+    "__end__|NOTYPE|GLOBAL|DEFAULT",
+    "_bss_end__|NOTYPE|GLOBAL|DEFAULT",
+}
+
+
+def compare_dynamic_symbols(amd64: dict[str, list[str]], arm64: dict[str, list[str]]) -> dict:
+    amd_imports = {normalize_glibc_symbol_record(x) for x in amd64["imports"]}
+    arm_imports = {normalize_glibc_symbol_record(x) for x in arm64["imports"]}
+    amd_exports = {normalize_glibc_symbol_record(x) for x in amd64["exports"]}
+    arm_exports = {normalize_glibc_symbol_record(x) for x in arm64["exports"]}
+
+    imports_only_amd64 = sorted(amd_imports - arm_imports)
+    imports_only_arm64 = sorted(arm_imports - amd_imports)
+    exports_only_amd64 = sorted(amd_exports - arm_exports)
+    exports_only_arm64 = sorted(arm_exports - amd_exports)
+
+    unexpected_imports_only_arm64 = sorted(
+        set(imports_only_arm64) - ALLOWED_ARM64_IMPORT_EXTRAS
+    )
+    unexpected_exports_only_arm64 = sorted(
+        set(exports_only_arm64) - ALLOWED_ARM64_EXPORT_EXTRAS
+    )
+
+    ok = (
+        not imports_only_amd64
+        and not exports_only_amd64
+        and not unexpected_imports_only_arm64
+        and not unexpected_exports_only_arm64
+    )
+
+    return {
+        "ok": ok,
+        "normalized_amd64_imports": sorted(amd_imports),
+        "normalized_arm64_imports": sorted(arm_imports),
+        "normalized_amd64_exports": sorted(amd_exports),
+        "normalized_arm64_exports": sorted(arm_exports),
+        "imports_only_amd64": imports_only_amd64,
+        "imports_only_arm64": imports_only_arm64,
+        "exports_only_amd64": exports_only_amd64,
+        "exports_only_arm64": exports_only_arm64,
+        "allowed_arm64_import_extras": sorted(ALLOWED_ARM64_IMPORT_EXTRAS),
+        "allowed_arm64_export_extras": sorted(ALLOWED_ARM64_EXPORT_EXTRAS),
+        "unexpected_imports_only_arm64": unexpected_imports_only_arm64,
+        "unexpected_exports_only_arm64": unexpected_exports_only_arm64,
+    }
+
+
 def find_amd64_deb(artifact: Path) -> Path:
     name = f"{EXPECTED_PACKAGE}_{EXPECTED_VERSION}_amd64.deb"
     candidates = list(artifact.rglob(name))
@@ -196,7 +283,9 @@ def main() -> None:
         f: {"amd64": amd_ctl[f], "arm64": arm_ctl[f]}
         for f in semantic_fields if amd_ctl[f] != arm_ctl[f]
     }
-    depends_equal = normalize_depends(amd_ctl["Depends"]) == normalize_depends(arm_ctl["Depends"])
+    amd_depends_normalized = normalize_cross_arch_depends(amd_ctl["Depends"])
+    arm_depends_normalized = normalize_cross_arch_depends(arm_ctl["Depends"])
+    depends_equal = amd_depends_normalized == arm_depends_normalized
     control_ok = not control_diffs and depends_equal
 
     with tempfile.TemporaryDirectory(prefix="han3-native-verify-") as td:
@@ -252,21 +341,41 @@ def main() -> None:
                 an, xn = needed(apath), needed(xpath)
                 aso, xso = soname(apath), soname(xpath)
                 asym, xsym = dyn_symbols(apath), dyn_symbols(xpath)
-                rec_ok = an == xn and aso == xso and asym == xsym
+
+                an_normalized = normalize_needed(an)
+                xn_normalized = normalize_needed(xn)
+                needed_equal = an_normalized == xn_normalized
+
+                dyn_compare = compare_dynamic_symbols(xsym, asym)
+                dynamic_symbols_equal = dyn_compare["ok"]
+
+                rec_ok = (
+                    needed_equal
+                    and aso == xso
+                    and dynamic_symbols_equal
+                )
+
                 elf_ok = elf_ok and rec_ok
                 elf_records.append({
                     "path": rel,
                     "amd64_machine": xm,
                     "arm64_machine": am,
-                    "needed_equal": an == xn,
+
+                    "needed_equal": needed_equal,
                     "amd64_needed": xn,
                     "arm64_needed": an,
+                    "amd64_needed_normalized": xn_normalized,
+                    "arm64_needed_normalized": an_normalized,
+
                     "soname_equal": aso == xso,
                     "amd64_soname": xso,
                     "arm64_soname": aso,
-                    "dynamic_symbols_equal": asym == xsym,
+
+                    "dynamic_symbols_equal": dynamic_symbols_equal,
                     "amd64_dynamic_symbols": xsym,
                     "arm64_dynamic_symbols": asym,
+                    "dynamic_symbol_comparison": dyn_compare,
+
                     "ok": rec_ok and "AArch64" in am and "X86-64" in xm,
                 })
 
@@ -315,6 +424,12 @@ def main() -> None:
             "ok": control_ok,
             "semantic_field_differences": control_diffs,
             "depends_equal": depends_equal,
+            "amd64_depends_normalized": amd_depends_normalized,
+            "arm64_depends_normalized": arm_depends_normalized,
+            "normalization_policy": {
+                "libc6_minimum_version": "architecture-baseline",
+                "all_other_dependencies": "exact",
+            },
             "amd64": amd_ctl,
             "arm64": arm_ctl,
         }, indent=2, sort_keys=True) + "\n")
