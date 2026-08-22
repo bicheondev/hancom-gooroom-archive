@@ -1,0 +1,99 @@
+name: ARM64 analyze integration applet vendor reconstruction v5
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v5.yml'
+      - 'arm64/scripts/integration_applet_han3u3_patch_v5.py'
+      - 'arm64/scripts/run_integration_applet_vendor_reconstruction_v5.sh'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-vendor-reconstruction-v5
+  cancel-in-progress: false
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct and compare the han3u3 vendor source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          arm64/scripts/run_integration_applet_vendor_reconstruction_v5.sh
+          jq '.' work/integration-applet-v5/aggregate/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete v5 reconstruction evidence
+        if: always()
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-vendor-reconstruction-v5
+          path: work/integration-applet-v5/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit fail-closed v5 reconstruction authority
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/integration-applet-v5/aggregate
+          destination=arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v5/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          if [[ -d "$source" ]]; then cp -a "$source"/. "$destination"/; fi
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_attempt: $run_attempt,
+                actions_run_url: $run_url,
+                triggering_head_sha: $head_sha,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Analyze integration applet vendor reconstruction v5'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
