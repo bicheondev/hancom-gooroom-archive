@@ -1,6 +1,6 @@
 schema=1
 branch=arm64-port
-target_workflow=ARM64 probe Hancom APT exact source v1
-probe=5
-head=6077c5e490b96944a066be2f2a673afac907b52e
-purpose=record-integration-applet-apt-source-probe-v1-run
+target_workflow=ARM64 reconstruct integration applet han3u3 v1
+probe=6
+head=f58e63f3059d8bc90ba4c203a1a79605653dc3d7
+purpose=record-integration-applet-han3u3-reconstruction-v1-run
