@@ -2,6 +2,11 @@ name: ARM64 promote integration applet han3u3 v1
 
 'on':
   workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-promote-integration-applet-han3u3-v1.yml'
 
 permissions:
   contents: write
