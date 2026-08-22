@@ -42,8 +42,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py \
-            --workspace work/vendor-recovery-v7 \
-            | tee work/vendor-recovery-v7/output/console-summary.json
+            --workspace work/vendor-recovery-v7
           jq '.' work/vendor-recovery-v7/output/summary.json >> "$GITHUB_STEP_SUMMARY"
           (
             cd work/vendor-recovery-v7/output
@@ -59,69 +58,9 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 30
-          compression-level: 9
+         ÛÛ\™\ÜÚ[Û‹[]™[ˆB‚ˆH˜[YNˆÛÛ[Z]ÛÛ\XÝ˜Z[XÛÜÙYÈ™XÛÝ™\žH]]Üš]Bˆ[Ž‚ˆT•QPÕÒQˆ	ÞÈÝ\Ë\ØY›Ý]]Ë˜\Y˜XÝZY_BˆT•QPÕÑQÑTÕˆ	ÞÈÝ\Ë\ØY›Ý]]Ë˜\Y˜XÝYYÙ\Ý_BˆÚ[ˆ˜\Úˆ[ŽˆˆÙ]QY][È\Y˜Z[ˆÛÝ\˜ÙO]ÛÜšËÝ™[™Ü‹\™XÛÝ™\žK]ËÛÝ]]ˆ\Ý[˜][ÛX\›MÛØÚÜËÙÛÛÜ›ÛÛKZ[YÜ˜][Û‹X\]]™[™Ü‹\ÛÝ\˜ÙKYXYË]ËÛ]\Ýˆ›H\™ˆ‰\Ý[˜][Ûˆ‚ˆZÙ\ˆ\‰\Ý[˜][Ûˆ‚ˆÜ‰ÛÝ\˜ÙKÜÝ[[X\žKšœÛÛˆˆ‰\Ý[˜][Û‹È‚ˆÜ‰ÛÝ\˜ÙKÙXYË\™XÛÝ™\žKšœÛÛˆˆ‰\Ý[˜][Û‹È‚ˆÜ‰ÛÝ\˜ÙKÜ›Ø™K\™\Ý[ËšœÛÛˆˆ‰\Ý[˜][Û‹È‚ˆÜ‰ÛÝ\˜ÙKÜÛÛZ[™^[[šÜËšœÛÛˆˆ‰\Ý[˜][Û‹È‚ˆÜ‰ÛÝ\˜ÙKÝ\™Ù]XÛÛ›ÛYšY[Ëˆ‰\Ý[˜][Û‹È‚ˆÖÈHYˆ‰ÛÝ\˜ÙKÙØË[ØÚËšœÛÛˆˆWHÜ‰ÛÝ\˜ÙKÙØË[ØÚËšœÛÛˆˆ‰\Ý[˜][Û‹È‚ˆÖÈHYˆ‰ÛÝ\˜ÙKÜÛÝ\˜ÙK]™YKZ[™[ÜžKÝˆˆWHˆÜ‰ÛÝ\˜ÙKÜÛÝ\˜ÙK]™YKZ[™[ÜžKÝˆˆ‰\Ý[˜][Û‹È‚‚ˆœH[ˆˆKX\™È[—ÚY‰ÒUP—Ô•S—ÒQˆˆKX\™È[—Ø][\‰ÒUP—Ô•S—ÐUSTˆˆKX\™È[—Ý\›šÎ‹ËÙÚ]X‹˜ÛÛKÉÒUP—Ô‘TÔÒUÔ–KØXÝ[ÛœËÜ[œËÉÒUP—Ô•S—ÒQˆˆKX\™ÈXYÜÚH‰ÒUP—ÔÒHˆˆKX\™È\Y˜XÝÚY‰T•QPÕÒQˆˆKX\™È\Y˜XÝÙYÙ\Ý‰T•QPÕÑQÑTÕˆ	ÂˆÂˆØÚ[XNˆ‹ˆXÝ[Ûœ×Ü[—ÚYˆ	[—ÚYˆXÝ[Ûœ×Ü[—Ø][\ˆ	[—Ø][\ˆXÝ[Ûœ×Ü[—Ý\›ˆ	[—Ý\›ˆšYÙÙ\š[™×ÚXYÜÚNˆ	XYÜÚKˆ\Y˜XÝÚYˆ	\Y˜XÝÚYˆ\Y˜XÝÙYÙ\Ýˆ	\Y˜XÝÙYÙ\Ýˆ˜Z[ØÛÜÙYˆYBˆBˆ	Èˆ‰\Ý[˜][Û‹Ø\Y˜XÝ[ØÚËšœÛÛˆ‚‚ˆš[™‰\Ý[˜][Ûˆˆ]\Hˆ\š[ˆ	ÉT	\×‰Èˆ×ÐSPÈÛÜˆ‰\Ý[˜][Û‹Ñ’SKRS•‘S•Ô–KÝˆ‚ˆ
+ˆÙ‰\Ý[˜][Ûˆ‚ˆš[™ˆ]\HˆH[˜[YHÐÒÔÕSTËœÚLMˆ\š[ˆ×ÐSPÈÛÜ^ˆ\™ÜÈLÚLMœÝ[HˆÐÒÔÕSTËœÚLM‚ˆÚLMœÝ[HKXÚXÚÈK\ÝšXÝÐÒÔÕSTËœÚLM‚ˆ
+B‚ˆÚ]ÛÛ™šYÈ\Ù\‹›˜[YH	ÙÚ]X‹XXÝ[ÛœÖØ›ÝIÂˆÚ]ÛÛ™šYÈ\Ù\‹™[XZ[	ÍNNŽŠÙÚ]X‹XXÝ[ÛœÖØ›ÝP\Ù\œË››Ü™\K™Ú]X‹˜ÛÛIÂˆÚ]Y‰\Ý[˜][Ûˆ‚ˆYˆÚ]Y™ˆKXØXÚYK\]ZY]È[‚ˆ^]ˆšBˆÚ]ÛÛ[Z][H	Ô™XÛÝ™\ˆ[YÜ˜][Ûˆ\]™[™ÜˆÛÝ\˜ÙH[™XYÈ]šY[˜ÙHÉÂˆ›Üˆ][\[ˆHˆÈHˆÈÈÂˆÚ][K\™X˜\ÙHÜšYÚ[ˆ\›M\ÜˆYˆÚ]\ÚÜšYÚ[ˆPQ˜\›M\ÜÈ[‚ˆ^]ˆšBˆÚ]™X˜\ÙHKXX›ÜYBˆÛY\	
 
-      - name: Commit compact fail-closed v7 recovery authority
-        env:
-          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
-          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          source=work/vendor-recovery-v7/output
-          destination=arm64/locks/gooroom-integration-applet-vendor-source-debug-v7/latest
-          rm -rf "$destination"
-          mkdir -p "$destination"
-          cp "$source/summary.json" "$destination/"
-          cp "$source/debug-recovery.json" "$destination/"
-          cp "$source/probe-results.json" "$destination/"
-          cp "$source/pool-index-links.json" "$destination/"
-          cp "$source/target-control-fields.txt" "$destination/"
-          [[ ! -f "$source/dsc-lock.json" ]] || cp "$source/dsc-lock.json" "$destination/"
-          [[ ! -f "$source/source-tree-inventory.tsv" ]] \
-            || cp "$source/source-tree-inventory.tsv" "$destination/"
-
-          jq -n \
-            --arg run_id "$GITHUB_RUN_ID" \
-            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
-            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --arg head_sha "$GITHUB_SHA" \
-            --arg artifact_id "$ARTIFACT_ID" \
-            --arg artifact_digest "$ARTIFACT_DIGEST" '
-              {
-                schema: 2,
-                actions_run_id: $run_id,
-                actions_run_attempt: $run_attempt,
-                actions_run_url: $run_url,
-                triggering_head_sha: $head_sha,
-                artifact_id: $artifact_id,
-                artifact_digest: $artifact_digest,
-                fail_closed: true
-              }
-            ' > "$destination/artifact-lock.json"
-
-          find "$destination" -type f -printf '%P\t%s\n' \
-            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
-          (
-            cd "$destination"
-            find . -type f ! -name LOCKSUMS.sha256 -print0 \
-              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
-            sha256sum --check --strict LOCKSUMS.sha256
-          )
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$destination"
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'Recover integration applet vendor source and debug evidence v7'
-          for attempt in 1 2 3 4 5 6 7 8; do
-            git pull --rebase origin arm64-port
-            if git push origin HEAD:arm64-port; then
-              exit 0
-            fi
-            git rebase --abort || true
-            sleep $((attempt * 3))
-          done
-          exit 1
+][\
+ˆÊJBˆÛ™Bˆ^]B
