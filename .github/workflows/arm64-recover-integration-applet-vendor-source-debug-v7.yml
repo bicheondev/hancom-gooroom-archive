@@ -1,0 +1,127 @@
+name: ARM64 recover integration applet vendor source and debug v7
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-recover-integration-applet-vendor-source-debug-v7.yml'
+      - 'arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-vendor-source-debug-v7
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the triggering ARM64 commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install exact-source and debug inspection tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file jq python3 tar xz-utils
+          python3 -m py_compile \
+            arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py
+
+      - name: Recover and seal exact vendor evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py \
+            --workspace work/vendor-recovery-v7 \
+            | tee work/vendor-recovery-v7/output/console-summary.json
+          jq '.' work/vendor-recovery-v7/output/summary.json >> "$GITHUB_STEP_SUMMARY"
+          (
+            cd work/vendor-recovery-v7/output
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete v7 recovery evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-vendor-source-debug-v7
+          path: work/vendor-recovery-v7
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed v7 recovery authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/vendor-recovery-v7/output
+          destination=arm64/locks/gooroom-integration-applet-vendor-source-debug-v7/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/debug-recovery.json" "$destination/"
+          cp "$source/probe-results.json" "$destination/"
+          cp "$source/pool-index-links.json" "$destination/"
+          cp "$source/target-control-fields.txt" "$destination/"
+          [[ ! -f "$source/dsc-lock.json" ]] || cp "$source/dsc-lock.json" "$destination/"
+          [[ ! -f "$source/source-tree-inventory.tsv" ]] \
+            || cp "$source/source-tree-inventory.tsv" "$destination/"
+
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_attempt: $run_attempt,
+                actions_run_url: $run_url,
+                triggering_head_sha: $head_sha,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Recover integration applet vendor source and debug evidence v7'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
