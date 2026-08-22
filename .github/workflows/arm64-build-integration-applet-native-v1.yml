@@ -1,0 +1,302 @@
+name: ARM64 build integration applet native candidate v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-build-integration-applet-native-v1.yml'
+      - 'arm64/scripts/build_integration_applet_native_arm64_v1.sh'
+      - 'arm64/scripts/verify_integration_applet_arm64_candidate_v1.py'
+      - 'arm64/locks/gooroom-integration-applet-hybrid-search-v6/latest/summary.json'
+      - 'arm64/locks/gooroom-integration-applet-hybrid-search-v6/latest/hybrid-lock.json'
+      - 'arm64/locks/gooroom-integration-applet-hybrid-search-v6/latest/closest-reconstruction.patch'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-native-arm64-v1
+  cancel-in-progress: false
+
+env:
+  HYBRID_DIR: arm64/locks/gooroom-integration-applet-hybrid-search-v6/latest
+  NATIVE_DIR: arm64/locks/gooroom-integration-applet-native-arm64-v1/latest
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      allowed: ${{ steps.evaluate.outputs.allowed }}
+      reason: ${{ steps.evaluate.outputs.reason }}
+    steps:
+      - name: Check out triggering ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Evaluate the semantic-source gate
+        id: evaluate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          allowed=false
+          reason='hybrid authority is absent or has not semantically verified the source'
+          if [[ -f "$HYBRID_DIR/summary.json" \
+             && -f "$HYBRID_DIR/hybrid-lock.json" \
+             && -f "$HYBRID_DIR/closest-reconstruction.patch" ]]; then
+            if jq -e '
+              .schema == 1
+              and .source == "gooroom-integration-applet"
+              and .version == "0.3.1+grm3u1+han3u3"
+              and .source_reconstruction_semantically_verified == true
+              and .native_arm64_candidate_build_allowed == true
+              and .package_layer_promotion_allowed == false
+              and .iso_assembly_allowed == false
+              and .fail_closed == true
+            ' "$HYBRID_DIR/summary.json" >/dev/null; then
+              allowed=true
+              reason='semantic source gate passed; native ARM64 candidate build is permitted'
+            else
+              reason="$(jq -r '.next_action // "hybrid source is not semantically verified"' \
+                "$HYBRID_DIR/summary.json" | tr '\n' ' ')"
+            fi
+          fi
+          printf 'allowed=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+          printf 'reason=%s\n' "$reason" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Native ARM64 integration-applet gate'
+            echo
+            echo "- allowed: \`$allowed\`"
+            echo "- reason: $reason"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  blocked:
+    needs: gate
+    if: needs.gate.outputs.allowed != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Commit explicit fail-closed native-build block
+        env:
+          BLOCK_REASON: ${{ needs.gate.outputs.reason }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination="$NATIVE_DIR"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          hybrid_summary_sha=
+          if [[ -f "$HYBRID_DIR/summary.json" ]]; then
+            hybrid_summary_sha="$(sha256sum "$HYBRID_DIR/summary.json" | awk '{print $1}')"
+          fi
+          jq -n \
+            --arg source 'gooroom-integration-applet' \
+            --arg version '0.3.1+grm3u1+han3u3' \
+            --arg reason "$BLOCK_REASON" \
+            --arg hybrid_summary_sha256 "$hybrid_summary_sha" \
+            --arg triggering_sha "$GITHUB_SHA" '
+              {
+                schema:1,source:$source,version:$version,
+                status:"blocked-before-native-build",reason:$reason,
+                triggering_sha:$triggering_sha,
+                hybrid_summary_sha256:$hybrid_summary_sha256,
+                native_arm64_build_succeeded:false,
+                native_arm64_candidate_verified:false,
+                package_layer_promotion_allowed:false,
+                iso_assembly_allowed:false,fail_closed:true,
+                next_action:"complete semantic source reconstruction before native ARM64 build"
+              }
+            ' > "$destination/summary.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m 'Record blocked integration applet native ARM64 gate v1'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.allowed == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 300
+    steps:
+      - name: Check out semantically verified source authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install native ARM64 build and verification tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(dpkg --print-architecture)" = arm64
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gettext git jq \
+            libglib2.0-bin python3 tar xz-utils
+          docker version
+          python3 -m py_compile \
+            arm64/scripts/verify_integration_applet_arm64_candidate_v1.py
+          bash -n arm64/scripts/build_integration_applet_native_arm64_v1.sh
+
+      - name: Build and verify the native ARM64 candidate
+        id: native
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workspace=work/integration-applet-native-arm64-v1
+          log="$RUNNER_TEMP/integration-applet-native-arm64-v1.log"
+          set +e
+          bash arm64/scripts/build_integration_applet_native_arm64_v1.sh "$workspace" \
+            > "$log" 2>&1
+          rc=$?
+          set -e
+          mkdir -p "$workspace/artifact" "$workspace/output"
+          cp "$log" "$workspace/artifact/orchestrator.log"
+          tail -n 300 "$log" > "$workspace/artifact/orchestrator-tail.log"
+          printf '%s\n' "$rc" > "$workspace/artifact/orchestrator.exit"
+          printf 'exit_code=%s\n' "$rc" >> "$GITHUB_OUTPUT"
+          if [[ ! -f "$workspace/output/summary.json" ]]; then
+            jq -n --argjson exit_code "$rc" '
+              {
+                schema:1,source:"gooroom-integration-applet",
+                version:"0.3.1+grm3u1+han3u3",
+                status:"native-runner-failed-before-summary",exit_code:$exit_code,
+                native_arm64_build_succeeded:false,
+                native_arm64_candidate_verified:false,
+                package_layer_promotion_allowed:false,
+                iso_assembly_allowed:false,fail_closed:true,
+                next_action:"inspect the complete native-build artifact"
+              }
+            ' > "$workspace/output/summary.json"
+          fi
+          cp "$workspace/output/summary.json" "$workspace/artifact/summary.json"
+          find "$workspace/artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$workspace/artifact/FILE-INVENTORY.final.tsv"
+          (
+            cd "$workspace/artifact"
+            find . -type f ! -name LOCKSUMS.final.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.final.sha256
+            sha256sum --check --strict LOCKSUMS.final.sha256
+          )
+          jq '.' "$workspace/output/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete native ARM64 build evidence
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-native-arm64-v1
+          path: work/integration-applet-native-arm64-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact native ARM64 candidate authority
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          NATIVE_EXIT: ${{ steps.native.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/integration-applet-native-arm64-v1/artifact
+          destination="$NATIVE_DIR"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          for name in \
+            summary.json \
+            cross-architecture-verification.json \
+            non-elf-differences.json \
+            elf-comparison.json \
+            hybrid-lock.json \
+            closest-reconstruction.patch \
+            nimf-source-repository.txt \
+            base-image-id.txt \
+            orchestrator.exit \
+            orchestrator-tail.log
+          do
+            [[ ! -f "$source/$name" ]] || cp "$source/$name" "$destination/"
+          done
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg native_exit "${NATIVE_EXIT:-255}" '
+              {
+                schema:1,actions_run_id:$run_id,
+                actions_run_attempt:$run_attempt,actions_run_url:$run_url,
+                triggering_head_sha:$head_sha,artifact_id:$artifact_id,
+                artifact_digest:$artifact_digest,
+                native_exit_code:($native_exit|tonumber),fail_closed:true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m 'Build integration applet native ARM64 candidate v1'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Preserve native build failure as a failed run
+        if: always()
+        env:
+          NATIVE_EXIT: ${{ steps.native.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${NATIVE_EXIT:-255}" = 0
