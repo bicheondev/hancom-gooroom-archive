@@ -36,14 +36,96 @@ jobs:
             binutils ca-certificates curl dpkg-dev file gettext git jq libglib2.0-bin \
             python3 xz-utils
           docker version
-          test "$(sha256sum arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz | awk '{print $1}')" = \
-            072ee8eea14141fd08695c5bff06fb2488f4c478a2c70542c07ee3ff28e3cd63
-          gzip -dc arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz \
-            > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
-          test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = \
-            f49d6da54042f93c65ef14b5fbfc904b0ea208d068f73cc7ccbb134b03c34415
+
+      - name: Restore and validate the locked reconstruction payload
+        id: payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          target=arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz
+          base_commit=92d01be140b79ced26e66f83df029b999f9aa2bb
+          corrupt_blob=56e73838ed5191eb7c15e6cd7d23f49528f160a1
+          corrupt_sha=e9eed734e4c8f6f217ea312a9666111203dfd1c1aa573000cc9c3b1909f33095
+          fixed_blob=ac8fcc44b878f07ec5175b76bfe10caa318bf939
+          fixed_gzip_sha=072ee8eea14141fd08695c5bff06fb2488f4c478a2c70542c07ee3ff28e3cd63
+          fixed_payload_sha=f49d6da54042f93c65ef14b5fbfc904b0ea208d068f73cc7ccbb134b03c34415
+          base_gzip_sha=6da98a98a7d5629a6c93aea2e2d1e7b417b06e03f8c5dcc3d2687f1d0210b7af
+          base_payload_sha=f3b8a90b05a725de54449cee27fe4c1b6a18bf3a92324dd288379e2c93ab4d92
+
+          test -f "$target"
+          current_blob="$(git hash-object "$target")"
+          current_sha="$(sha256sum "$target" | awk '{print $1}')"
+          repaired=false
+
+          if [[ "$current_blob:$current_sha" == "$fixed_blob:$fixed_gzip_sha" ]]; then
+            printf 'Reconstruction payload is already complete.\n'
+          elif [[ "$current_blob:$current_sha" == "$corrupt_blob:$corrupt_sha" ]]; then
+            temporary="$(mktemp -d)"
+            trap 'rm -rf "$temporary"' EXIT
+
+            if ! git cat-file -e "$base_commit:$target" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$base_commit"
+            fi
+            git cat-file -e "$base_commit:$target"
+            git show "$base_commit:$target" > "$temporary/base.sh.gz"
+            test "$(sha256sum "$temporary/base.sh.gz" | awk '{print $1}')" = "$base_gzip_sha"
+            gzip -t "$temporary/base.sh.gz"
+            gzip -dc "$temporary/base.sh.gz" > "$temporary/recovered.sh"
+            test "$(sha256sum "$temporary/recovered.sh" | awk '{print $1}')" = "$base_payload_sha"
+
+            python3 - "$temporary/recovered.sh" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+          indices = [
+              index
+              for index, line in enumerate(lines)
+              if 'docker exec "$RESOURCE_CONTAINER" bash -lc' in line
+              and 'libxml2-utils' in line
+          ]
+          if len(indices) != 1:
+              raise SystemExit(
+                  f'expected one resource-container install line, found {len(indices)}'
+              )
+          lines[indices[0]] = (
+              "docker exec \"$RESOURCE_CONTAINER\" bash -lc "
+              "'set -Eeuo pipefail; apt-get update; apt-get install -y "
+              "--no-install-recommends libglib2.0-dev-bin libxml2-utils; "
+              "command -v glib-compile-resources; "
+              "glib-compile-resources --version' \\\n"
+          )
+          path.write_text(''.join(lines), encoding='utf-8')
+          PY
+
+            test "$(sha256sum "$temporary/recovered.sh" | awk '{print $1}')" = "$fixed_payload_sha"
+            bash -n "$temporary/recovered.sh"
+            grep -F 'libglib2.0-dev-bin' "$temporary/recovered.sh" >/dev/null
+            grep -F 'command -v glib-compile-resources' "$temporary/recovered.sh" >/dev/null
+            gzip -n -9 -c "$temporary/recovered.sh" > "$temporary/recovered.sh.gz"
+            test "$(sha256sum "$temporary/recovered.sh.gz" | awk '{print $1}')" = "$fixed_gzip_sha"
+            test "$(git hash-object "$temporary/recovered.sh.gz")" = "$fixed_blob"
+            install -m 0644 "$temporary/recovered.sh.gz" "$target"
+            repaired=true
+          else
+            printf 'Unknown reconstruction payload state.\n' >&2
+            printf '  blob:   %s\n' "$current_blob" >&2
+            printf '  sha256: %s\n' "$current_sha" >&2
+            exit 1
+          fi
+
+          gzip -t "$target"
+          gzip -dc "$target" > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          test "$(sha256sum "$target" | awk '{print $1}')" = "$fixed_gzip_sha"
+          test "$(git hash-object "$target")" = "$fixed_blob"
+          test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = "$fixed_payload_sha"
           bash -n "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
           chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          printf 'repaired=%s\n' "$repaired" >> "$GITHUB_OUTPUT"
+          printf 'gzip_sha256=%s\n' "$fixed_gzip_sha" >> "$GITHUB_OUTPUT"
+          printf 'payload_sha256=%s\n' "$fixed_payload_sha" >> "$GITHUB_OUTPUT"
+          printf 'git_blob_sha1=%s\n' "$fixed_blob" >> "$GITHUB_OUTPUT"
 
       - name: Reconstruct vendor overlay and attempt bullseye AMD64 equivalence
         id: reconstruct
@@ -110,12 +192,20 @@ jobs:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
           RECONSTRUCTION_EXIT: ${{ steps.reconstruct.outputs.exit_code }}
+          PAYLOAD_REPAIRED: ${{ steps.payload.outputs.repaired }}
+          PAYLOAD_GZIP_SHA256: ${{ steps.payload.outputs.gzip_sha256 }}
+          PAYLOAD_SHA256: ${{ steps.payload.outputs.payload_sha256 }}
+          PAYLOAD_GIT_BLOB: ${{ steps.payload.outputs.git_blob_sha1 }}
         shell: bash
         run: |
           set -Eeuo pipefail
           source=work/integration-applet-reconstruction-v1/output
-          destination=arm64/locks/goorom-integration-applet-reconstruction-v1/latest
-          rm -rf "$destination"
+          target=arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz
+          destination=arm64/locks/gooroom-integration-applet-reconstruction-v1/latest
+          stale=arm64/locks/goorom-integration-applet-reconstruction-v1
+
+          git rm -r --ignore-unmatch "$stale" || true
+          rm -rf "$stale" "$destination"
           mkdir -p "$destination"
           for name in \
             summary.json \
@@ -143,9 +233,13 @@ jobs:
             --arg head_sha "$GITHUB_SHA" \
             --arg artifact_id "$ARTIFACT_ID" \
             --arg artifact_digest "$ARTIFACT_DIGEST" \
-            --arg reconstruction_exit "$RECONSTRUCTION_EXIT" '
+            --arg reconstruction_exit "$RECONSTRUCTION_EXIT" \
+            --arg payload_repaired "$PAYLOAD_REPAIRED" \
+            --arg payload_gzip_sha256 "$PAYLOAD_GZIP_SHA256" \
+            --arg payload_sha256 "$PAYLOAD_SHA256" \
+            --arg payload_git_blob "$PAYLOAD_GIT_BLOB" '
               {
-                schema: 1,
+                schema: 2,
                 actions_run_id: $run_id,
                 actions_run_attempt: $run_attempt,
                 actions_run_url: $run_url,
@@ -153,6 +247,10 @@ jobs:
                 artifact_id: $artifact_id,
                 artifact_digest: $artifact_digest,
                 reconstruction_exit_code: $reconstruction_exit,
+                reconstruction_payload_repaired: ($payload_repaired == "true"),
+                reconstruction_payload_gzip_sha256: $payload_gzip_sha256,
+                reconstruction_payload_sha256: $payload_sha256,
+                reconstruction_payload_git_blob_sha1: $payload_git_blob,
                 fail_closed: true
               }
             ' > "$destination/artifact-lock.json"
@@ -166,10 +264,11 @@ jobs:
           )
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$destination"
+          git add "$destination" "$target"
           if git diff --cached --quiet; then
             exit 0
           fi
+          git diff --cached --check
           git commit -m 'Record integration applet han3u3 reconstruction v1'
           for attempt in 1 2 3 4 5 6 7 8; do
             git pull --rebase origin arm64-port
