@@ -127,6 +127,67 @@ jobs:
           printf 'payload_sha256=%s\n' "$fixed_payload_sha" >> "$GITHUB_OUTPUT"
           printf 'git_blob_sha1=%s\n' "$fixed_blob" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare the vendor-locked Bullseye Nimf dependency image
+        id: nimf_image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          authority=arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+          base_digest=sha256:99cdf7792e25416bd801861ccd8e2fb27fb527b25e8d9a8704ebc3ead2015675
+          root="$RUNNER_TEMP/bullseye-nimf-image"
+          rm -rf "$root"
+          mkdir -p "$root/deps"
+
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+            and ([.packages[].package] | sort) == ["libnimf1", "nimf-dev"]
+          ' "$authority" >/dev/null
+
+          jq -c '.packages[]' "$authority" | while IFS= read -r row; do
+            filename="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            expected_sha="$(jq -r '.sha256' <<<"$row")"
+            expected_size="$(jq -r '.size' <<<"$row")"
+            expected_package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "$root/deps/$filename"
+            test "$(stat -c '%s' "$root/deps/$filename")" = "$expected_size"
+            test "$(sha256sum "$root/deps/$filename" | awk '{print $1}')" = "$expected_sha"
+            test "$(dpkg-deb -f "$root/deps/$filename" Package)" = "$expected_package"
+            test "$(dpkg-deb -f "$root/deps/$filename" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "$root/deps/$filename" Architecture)" = amd64
+          done
+
+          cat > "$root/Dockerfile" <<'EOF'
+          FROM debian:bullseye@__BASE_DIGEST__
+          COPY deps/ /tmp/nimf-deps/
+          RUN set -Eeux; \
+              apt-get update; \
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                /tmp/nimf-deps/libnimf1_2023.06.30+grm3u1_amd64.deb \
+                /tmp/nimf-deps/nimf-dev_2023.06.30+grm3u1_amd64.deb; \
+              test "$(dpkg-query -W -f='${Version}' libnimf1)" = '2023.06.30+grm3u1'; \
+              test "$(dpkg-query -W -f='${Version}' nimf-dev)" = '2023.06.30+grm3u1'; \
+              rm -rf /var/lib/apt/lists/* /tmp/nimf-deps
+          EOF
+          sed -i "s|__BASE_DIGEST__|$base_digest|" "$root/Dockerfile"
+
+          docker build --pull=false --tag debian:bullseye "$root"
+          image_id="$(docker image inspect --format '{{.Id}}' debian:bullseye)"
+          docker run --rm debian:bullseye bash -Eeuo pipefail -c '
+            test "$(dpkg-query -W -f="\${Version}" libnimf1)" = "2023.06.30+grm3u1"
+            test "$(dpkg-query -W -f="\${Version}" nimf-dev)" = "2023.06.30+grm3u1"
+          '
+          printf 'image_id=%s\n' "$image_id" >> "$GITHUB_OUTPUT"
+          printf 'base_digest=%s\n' "$base_digest" >> "$GITHUB_OUTPUT"
+          printf 'authority_sha256=%s\n' "$(sha256sum "$authority" | awk '{print $1}')" \
+            >> "$GITHUB_OUTPUT"
+
       - name: Reconstruct vendor overlay and attempt bullseye AMD64 equivalence
         id: reconstruct
         shell: bash
@@ -196,6 +257,9 @@ jobs:
           PAYLOAD_GZIP_SHA256: ${{ steps.payload.outputs.gzip_sha256 }}
           PAYLOAD_SHA256: ${{ steps.payload.outputs.payload_sha256 }}
           PAYLOAD_GIT_BLOB: ${{ steps.payload.outputs.git_blob_sha1 }}
+          NIMF_IMAGE_ID: ${{ steps.nimf_image.outputs.image_id }}
+          NIMF_BASE_DIGEST: ${{ steps.nimf_image.outputs.base_digest }}
+          NIMF_AUTHORITY_SHA256: ${{ steps.nimf_image.outputs.authority_sha256 }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -237,7 +301,10 @@ jobs:
             --arg payload_repaired "$PAYLOAD_REPAIRED" \
             --arg payload_gzip_sha256 "$PAYLOAD_GZIP_SHA256" \
             --arg payload_sha256 "$PAYLOAD_SHA256" \
-            --arg payload_git_blob "$PAYLOAD_GIT_BLOB" '
+            --arg payload_git_blob "$PAYLOAD_GIT_BLOB" \
+            --arg nimf_image_id "$NIMF_IMAGE_ID" \
+            --arg nimf_base_digest "$NIMF_BASE_DIGEST" \
+            --arg nimf_authority_sha256 "$NIMF_AUTHORITY_SHA256" '
               {
                 schema: 2,
                 actions_run_id: $run_id,
@@ -251,6 +318,9 @@ jobs:
                 reconstruction_payload_gzip_sha256: $payload_gzip_sha256,
                 reconstruction_payload_sha256: $payload_sha256,
                 reconstruction_payload_git_blob_sha1: $payload_git_blob,
+                nimf_dependency_image_id: $nimf_image_id,
+                nimf_dependency_base_digest: $nimf_base_digest,
+                nimf_dependency_authority_sha256: $nimf_authority_sha256,
                 fail_closed: true
               }
             ' > "$destination/artifact-lock.json"
