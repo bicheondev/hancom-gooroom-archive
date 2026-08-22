@@ -1,15 +1,64 @@
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 62392  100 62392    0     0   498k      0 --:--:-- --:--:-- --:--:--  499k
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 62392  100 62392    0     0   339k      0 --:--:-- --:--:-- --:--:--  340k
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  189k  100  189k    0     0  5320k      0 --:--:-- --:--:-- --:--:-- 5427k
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0  189k    0   965    0     0    698      0  0:04:38  0:00:01  0:04:37   698100  189k  100  189k    0     0   100k      0  0:00:01  0:00:01 --:--:--  100k
 Unable to find image 'debian:bullseye' locally
 bullseye: Pulling from library/debian
 accfb92e6c6a: Pulling fs layer
-accfb92e6c6a: Verifying Checksum
 accfb92e6c6a: Download complete
 accfb92e6c6a: Pull complete
 Digest: sha256:99cdf7792e25416bd801861ccd8e2fb27fb527b25e8d9a8704ebc3ead2015675
 Status: Downloaded newer image for debian:bullseye
-no compiled standalone GResource matched the target ELF section prefix plus zero padding
+{
+  "amd64_normalized_equivalence_verified": false,
+  "build_error": "Debian bullseye build failed",
+  "build_exit": 100,
+  "build_succeeded": false,
+  "candidate_source_reconstructed": true,
+  "exact_vendor_source_recovered": false,
+  "fail_closed": true,
+  "iso_assembly_allowed": false,
+  "native_arm64_build_allowed": false,
+  "native_arm64_candidate_build_allowed": false,
+  "next_action": "repair candidate build inputs or dependency environment",
+  "package_promotion_allowed": false,
+  "public_commit": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "schema": 2,
+  "version": "0.3.1+grm3u1+han3u3"
+}
+./FILE-INVENTORY.tsv: OK
+./build.exit: OK
+./build.log: OK
+./bullseye-gresource-tooling.log: OK
+./candidate-status.txt: OK
+./elf-section-comparison.json: OK
+./gooroom-integration-applet_0.3.1+grm3u1+han3u3.candidate-source.tar.xz: OK
+./locale-roundtrip.tsv: OK
+./main-gresource-attempts.json: OK
+./main-gresource-reconstruction.json: OK
+./module-gresource-reconstruction.json: OK
+./overlay-name-status.tsv: OK
+./payload-comparison.json: OK
+./public-168ff-to-han3u3-candidate.patch: OK
+./summary.json: OK
+./target-control-fields.txt: OK
+./vendor-changelog.txt: OK
+{
+  "amd64_normalized_equivalence_verified": false,
+  "build_error": "Debian bullseye build failed",
+  "build_exit": 100,
+  "build_succeeded": false,
+  "candidate_source_reconstructed": true,
+  "exact_vendor_source_recovered": false,
+  "fail_closed": true,
+  "iso_assembly_allowed": false,
+  "native_arm64_build_allowed": false,
+  "native_arm64_candidate_build_allowed": false,
+  "next_action": "repair candidate build inputs or dependency environment",
+  "package_promotion_allowed": false,
+  "public_commit": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "schema": 2,
+  "version": "0.3.1+grm3u1+han3u3"
+}
