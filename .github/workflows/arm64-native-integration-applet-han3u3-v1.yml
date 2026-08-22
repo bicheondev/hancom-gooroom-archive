@@ -291,6 +291,7 @@ jobs:
 
       - name: Upload native ARM64 candidate and complete evidence
         id: upload
+        if: always() && steps.native_build.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: gooroom-integration-applet-han3u3-native-arm64-v1
@@ -304,6 +305,7 @@ jobs:
           compression-level: 9
 
       - name: Commit compact native candidate authority
+        if: steps.verify.outcome == 'success' && steps.upload.outcome == 'success'
         env:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
