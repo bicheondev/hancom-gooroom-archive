@@ -37,11 +37,11 @@ jobs:
             python3 xz-utils
           docker version
           test "$(sha256sum arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz | awk '{print $1}')" = \
-            9f644bd491af5c533e9e250942efd57896bfd76327e6a27fb70d19d00c7dc9ea
+            6da98a98a7d5629a6c93aea2e2d1e7b417b06e03f8c5dcc3d2687f1d0210b7af
           gzip -dc arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz \
             > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
           test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = \
-            6416a4175e3299369dee7d12b261d9eebacebe9c477df8c773ecda2fd332dfcf
+            f3b8a90b05a725de54449cee27fe4c1b6a18bf3a92324dd288379e2c93ab4d92
           bash -n "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
           chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
 
@@ -50,14 +50,17 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p work/integration-applet-reconstruction-v1/output
+          workspace=work/integration-applet-reconstruction-v1
+          temporary_log="$RUNNER_TEMP/integration-applet-reconstruction-v1.log"
+          rm -f "$temporary_log"
           set +e
           "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" \
-            work/integration-applet-reconstruction-v1 \
-            > work/integration-applet-reconstruction-v1/output/orchestrator.log 2>&1
+            "$workspace" > "$temporary_log" 2>&1
           rc=$?
           set -e
-          printf '%s\n' "$rc" > work/integration-applet-reconstruction-v1/output/orchestrator.exit
+          mkdir -p "$workspace/output"
+          cp "$temporary_log" "$workspace/output/orchestrator.log"
+          printf '%s\n' "$rc" > "$workspace/output/orchestrator.exit"
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           if [[ ! -f work/integration-applet-reconstruction-v1/output/summary.json ]]; then
             jq -n --argjson exit_code "$rc" '
@@ -118,6 +121,7 @@ jobs:
             summary.json \
             vendor-changelog.txt \
             main-gresource-reconstruction.json \
+            main-gresource-attempts.json \
             module-gresource-reconstruction.json \
             locale-roundtrip.tsv \
             overlay-name-status.tsv \
