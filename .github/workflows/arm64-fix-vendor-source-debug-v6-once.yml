@@ -35,24 +35,29 @@ jobs:
 
           path = Path('.github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml')
           text = path.read_text(encoding='utf-8')
-          old_version = '''            version = subprocess.check_output(
-                ['dpkg-parsechangelog', '-l', str(dsc), '-SVersion'],
-                text=True,
-            ).strip()
-            if version != '0.3.1+grm3u1+han3u3':
-                raise RuntimeError(f'unexpected source version: {version}')
-          '''
-          new_version = '''            version_match = re.search(
-                r'^Version:\s*(\S+)\s*$',
-                text,
-                flags=re.MULTILINE,
-            )
-            if not version_match:
-                raise RuntimeError('Version field was not found in vendor DSC')
-            version = version_match.group(1)
-            if version != '0.3.1+grm3u1+han3u3':
-                raise RuntimeError(f'unexpected source version: {version}')
-          '''
+
+          old_version = '\n'.join([
+              '            version = subprocess.check_output(',
+              "                ['dpkg-parsechangelog', '-l', str(dsc), '-SVersion'],",
+              '                text=True,',
+              '            ).strip()',
+              "            if version != '0.3.1+grm3u1+han3u3':",
+              "                raise RuntimeError(f'unexpected source version: {version}')",
+              '',
+          ])
+          new_version = '\n'.join([
+              '            version_match = re.search(',
+              "                r'^Version:\\s*(\\S+)\\s*$',",
+              '                text,',
+              '                flags=re.MULTILINE,',
+              '            )',
+              '            if not version_match:',
+              "                raise RuntimeError('Version field was not found in vendor DSC')",
+              '            version = version_match.group(1)',
+              "            if version != '0.3.1+grm3u1+han3u3':",
+              "                raise RuntimeError(f'unexpected source version: {version}')",
+              '',
+          ])
           if old_version in text:
               text = text.replace(old_version, new_version, 1)
           elif new_version not in text:
@@ -64,11 +69,15 @@ jobs:
               text = text.replace(old_match, new_match, 1)
           elif new_match not in text:
               raise SystemExit('debug Build-ID matcher anchor not found')
+
           path.write_text(text, encoding='utf-8')
           PY
+
           grep -F "Version field was not found in vendor DSC" \
             .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
           grep -F "{row['build_id'] for row in matching_files} == target_ids" \
+            .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
+          ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0), aliases: true)' \
             .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
           git diff --check -- .github/workflows
 
