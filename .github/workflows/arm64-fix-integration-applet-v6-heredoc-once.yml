@@ -69,20 +69,26 @@ jobs:
               line[2:] if line.startswith('  ') else line
               for line in lines
           )
-          text = text[:start] + fixed + text[delimiter_end:]
-
-          fixed_start = (
+          expected_prefix = (
               "          python3 - <<'PY'\n"
               '          from __future__ import annotations\n'
           )
-          fixed_end = (
-              '          PY\n\n'
-              "            jq -c '.files | to_entries[]'"
+          expected_suffix = '          PY\n'
+          expected_following = (
+              "\n            jq -c '.files | to_entries[]'"
           )
-          if text.count(fixed_start) != 1 or text.count(fixed_end) != 1:
-              raise SystemExit('deindented source heredoc did not match the expected result')
-          if start_marker in text or end_marker in text:
-              raise SystemExit('indented source heredoc markers remain after repair')
+          if not fixed.startswith(expected_prefix):
+              raise SystemExit('repaired source heredoc has an unexpected prefix')
+          if not fixed.endswith(expected_suffix):
+              raise SystemExit('repaired source heredoc has an unexpected closing delimiter')
+
+          text = text[:start] + fixed + text[delimiter_end:]
+          if text[start:start + len(fixed)] != fixed:
+              raise SystemExit('repaired source heredoc was not written at the original location')
+          if not text[start + len(fixed):].startswith(expected_following):
+              raise SystemExit('source-package loop no longer follows the repaired heredoc')
+          if segment in text:
+              raise SystemExit('original indented source heredoc remains after repair')
 
           path.write_text(text, encoding='utf-8')
           PY
