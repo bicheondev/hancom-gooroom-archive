@@ -1,6 +1,6 @@
 schema=1
 branch=arm64-port
 target_workflow=ARM64 recover integration applet vendor source and debug v6
-probe=2
-head=483305f92f563c6c397d18181ccf38c38d8e7625
-purpose=record-heredoc-repair-and-recovery-runs
+probe=3
+head=9dfe76ebd0a2bf2e73503395620e154c22d6a38f
+purpose=record-location-aware-heredoc-repair-run
