@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 318,
-    "workflow_name_count": 318,
+    "workflow_count": 319,
+    "workflow_name_count": 319,
     "referenced_local_file_count": 366,
     "error_count": 0,
     "warning_count": 58,
@@ -2471,6 +2471,20 @@
       "referenced_local_files": [
         "arm64/scripts/prepare_composite_source_chroot.sh"
       ]
+    },
+    {
+      "filename": "arm64-fix-integration-applet-v6-heredoc-once.yml",
+      "path": ".github/workflows/arm64-fix-integration-applet-v6-heredoc-once.yml",
+      "name": "ARM64 fix integration applet v6 heredoc once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-fix-integration-v3-shell-quoting.yml",
