@@ -37,11 +37,11 @@ jobs:
             python3 xz-utils
           docker version
           test "$(sha256sum arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz | awk '{print $1}')" = \
-            6da98a98a7d5629a6c93aea2e2d1e7b417b06e03f8c5dcc3d2687f1d0210b7af
+            072ee8eea14141fd08695c5bff06fb2488f4c478a2c70542c07ee3ff28e3cd63
           gzip -dc arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz \
             > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
           test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = \
-            f3b8a90b05a725de54449cee27fe4c1b6a18bf3a92324dd288379e2c93ab4d92
+            f49d6da54042f93c65ef14b5fbfc904b0ea208d068f73cc7ccbb134b03c34415
           bash -n "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
           chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
 
@@ -114,7 +114,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           source=work/integration-applet-reconstruction-v1/output
-          destination=arm64/locks/gooroom-integration-applet-reconstruction-v1/latest
+          destination=arm64/locks/goorom-integration-applet-reconstruction-v1/latest
           rm -rf "$destination"
           mkdir -p "$destination"
           for name in \
