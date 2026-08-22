@@ -4,7 +4,7 @@
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
     "workflow_count": 319,
     "workflow_name_count": 319,
-    "referenced_local_file_count": 366,
+    "referenced_local_file_count": 367,
     "error_count": 0,
     "warning_count": 58,
     "passed": true
@@ -2473,20 +2473,6 @@
       ]
     },
     {
-      "filename": "arm64-fix-integration-applet-v6-heredoc-once.yml",
-      "path": ".github/workflows/arm64-fix-integration-applet-v6-heredoc-once.yml",
-      "name": "ARM64 fix integration applet v6 heredoc once",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": []
-    },
-    {
       "filename": "arm64-fix-integration-v3-shell-quoting.yml",
       "path": ".github/workflows/arm64-fix-integration-v3-shell-quoting.yml",
       "name": "ARM64 fix integration v3 shell quoting",
@@ -4481,6 +4467,23 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-recover-integration-applet-vendor-source-debug-v7.yml",
+      "path": ".github/workflows/arm64-recover-integration-applet-vendor-source-debug-v7.yml",
+      "name": "ARM64 recover integration applet vendor source and debug v7",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py"
+      ]
     },
     {
       "filename": "arm64-recover-linux-5.10.179-grm3u1-source-v1.yml",
@@ -6893,6 +6896,9 @@
     ],
     "arm64/scripts/recover_from_signed_sources_index_v2.py": [
       ".github/workflows/arm64-recover-from-signed-sources-index-v2.yml"
+    ],
+    "arm64/scripts/recover_integration_applet_vendor_source_debug_v7.py": [
+      ".github/workflows/arm64-recover-integration-applet-vendor-source-debug-v7.yml"
     ],
     "arm64/scripts/recover_locked_apt_source_indices.py": [
       ".github/workflows/arm64-recover-reference-source-indices.yml"
