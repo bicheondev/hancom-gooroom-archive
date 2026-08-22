@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 319,
-    "workflow_name_count": 319,
+    "workflow_count": 320,
+    "workflow_name_count": 320,
     "referenced_local_file_count": 367,
     "error_count": 0,
     "warning_count": 58,
@@ -3574,6 +3574,21 @@
         "arm64/status/post-recovery-gate-v1/latest.json",
         "arm64/status/session-manager-source-recovery-v2/latest.json"
       ]
+    },
+    {
+      "filename": "arm64-probe-hancom-apt-source-v1.yml",
+      "path": ".github/workflows/arm64-probe-hancom-apt-source-v1.yml",
+      "name": "ARM64 probe Hancom APT exact source v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-probe-libsecurity-xsm-arm64-v2.yml",
