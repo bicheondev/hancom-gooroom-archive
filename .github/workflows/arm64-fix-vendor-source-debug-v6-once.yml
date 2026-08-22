@@ -41,9 +41,9 @@ jobs:
             ).strip()
             if version != '0.3.1+grm3u1+han3u3':
                 raise RuntimeError(f'unexpected source version: {version}')
-'''
+          '''
           new_version = '''            version_match = re.search(
-                r'^Version:\\s*(\\S+)\\s*$',
+                r'^Version:\s*(\S+)\s*$',
                 text,
                 flags=re.MULTILINE,
             )
@@ -52,7 +52,7 @@ jobs:
             version = version_match.group(1)
             if version != '0.3.1+grm3u1+han3u3':
                 raise RuntimeError(f'unexpected source version: {version}')
-'''
+          '''
           if old_version in text:
               text = text.replace(old_version, new_version, 1)
           elif new_version not in text:
