@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 323,
-    "workflow_name_count": 323,
+    "workflow_count": 322,
+    "workflow_name_count": 322,
     "referenced_local_file_count": 369,
     "error_count": 0,
     "warning_count": 58,
@@ -4773,22 +4773,6 @@
       "referenced_local_files": []
     },
     {
-      "filename": "arm64-repair-integration-applet-han3u3-v2-source-delta.yml",
-      "path": ".github/workflows/arm64-repair-integration-applet-han3u3-v2-source-delta.yml",
-      "name": "ARM64 repair integration applet han3u3 v2 source delta",
-      "events": [
-        "push",
-        "workflow_dispatch"
-      ],
-      "job_count": 1,
-      "uses": [
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-      ],
-      "referenced_local_files": [
-        "arm64/scripts/patch_integration_applet_han3u3_source.py"
-      ]
-    },
-    {
       "filename": "arm64-repair-session-manager-reconstruction-v2.yml",
       "path": ".github/workflows/arm64-repair-session-manager-reconstruction-v2.yml",
       "name": "ARM64 repair session manager reconstruction v2",
@@ -6823,8 +6807,7 @@
       ".github/workflows/arm64-build-wave5-browser.yml"
     ],
     "arm64/scripts/patch_integration_applet_han3u3_source.py": [
-      ".github/workflows/arm64-reconstruct-integration-applet-han3u3-v2.yml",
-      ".github/workflows/arm64-repair-integration-applet-han3u3-v2-source-delta.yml"
+      ".github/workflows/arm64-reconstruct-integration-applet-han3u3-v2.yml"
     ],
     "arm64/scripts/prepare_composite_source_chroot.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
