@@ -1,0 +1,178 @@
+name: ARM64 reconstruct integration applet han3u3 v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-reconstruct-integration-applet-han3u3-v1.yml'
+      - 'arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reconstruct-integration-applet-han3u3-v1
+  cancel-in-progress: false
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out the triggering ARM64 commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install reconstruction and inspection tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gettext git jq libglib2.0-bin \
+            python3 xz-utils
+          docker version
+          test "$(sha256sum arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz | awk '{print $1}')" = \
+            9f644bd491af5c533e9e250942efd57896bfd76327e6a27fb70d19d00c7dc9ea
+          gzip -dc arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz \
+            > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = \
+            6416a4175e3299369dee7d12b261d9eebacebe9c477df8c773ecda2fd332dfcf
+          bash -n "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+
+      - name: Reconstruct vendor overlay and attempt bullseye AMD64 equivalence
+        id: reconstruct
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/integration-applet-reconstruction-v1/output
+          set +e
+          "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" \
+            work/integration-applet-reconstruction-v1 \
+            > work/integration-applet-reconstruction-v1/output/orchestrator.log 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > work/integration-applet-reconstruction-v1/output/orchestrator.exit
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          if [[ ! -f work/integration-applet-reconstruction-v1/output/summary.json ]]; then
+            jq -n --argjson exit_code "$rc" '
+              {
+                schema: 1,
+                status: "reconstruction-failed-before-summary",
+                orchestrator_exit_code: $exit_code,
+                exact_vendor_source_recovered: false,
+                candidate_source_reconstructed: false,
+                amd64_normalized_equivalence_verified: false,
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true,
+                next_action: "inspect reconstruction artifact and repair the failed stage"
+              }
+            ' > work/integration-applet-reconstruction-v1/output/summary.json
+          fi
+          tail -n 200 work/integration-applet-reconstruction-v1/output/orchestrator.log \
+            > work/integration-applet-reconstruction-v1/output/orchestrator-tail.log
+          find work/integration-applet-reconstruction-v1/output -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/integration-applet-reconstruction-v1/output/FILE-INVENTORY.final.tsv
+          (
+            cd work/integration-applet-reconstruction-v1/output
+            find . -type f ! -name LOCKSUMS.final.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.final.sha256
+            sha256sum --check --strict LOCKSUMS.final.sha256
+          )
+          jq '.' work/integration-applet-reconstruction-v1/output/summary.json \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete reconstruction and build evidence
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-han3u3-reconstruction-v1
+          path: work/integration-applet-reconstruction-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed reconstruction authority
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          RECONSTRUCTION_EXIT: ${{ steps.reconstruct.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/integration-applet-reconstruction-v1/output
+          destination=arm64/locks/gooroom-integration-applet-reconstruction-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          for name in \
+            summary.json \
+            vendor-changelog.txt \
+            main-gresource-reconstruction.json \
+            module-gresource-reconstruction.json \
+            locale-roundtrip.tsv \
+            overlay-name-status.tsv \
+            candidate-status.txt \
+            build.exit \
+            orchestrator.exit \
+            orchestrator-tail.log \
+            payload-comparison.json \
+            elf-section-comparison.json \
+            target-control.normalized.txt \
+            built-control.normalized.txt
+          do
+            [[ ! -f "$source/$name" ]] || cp "$source/$name" "$destination/"
+          done
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg reconstruction_exit "$RECONSTRUCTION_EXIT" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_attempt: $run_attempt,
+                actions_run_url: $run_url,
+                triggering_head_sha: $head_sha,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                reconstruction_exit_code: $reconstruction_exit,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record integration applet han3u3 reconstruction v1'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
