@@ -188,11 +188,63 @@ jobs:
           printf 'authority_sha256=%s\n' "$(sha256sum "$authority" | awk '{print $1}')" \
             >> "$GITHUB_OUTPUT"
 
+      - name: Install a fail-closed non-runtime ELF metadata shim
+        id: elf_tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/elf-tools"
+          mkdir -p "$root"
+          cat > "$root/objcopy" <<'EOF'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          real=/usr/bin/objcopy
+          spec=
+          previous=
+          for argument in "$@"; do
+            if [[ "$previous" == --dump-section ]]; then
+              spec="$argument"
+              break
+            fi
+            case "$argument" in
+              --dump-section=*) spec="${argument#--dump-section=}"; break ;;
+            esac
+            previous="$argument"
+          done
+          if [[ "$spec" == .shstrtab=* ]]; then
+            output="${spec#.shstrtab=}"
+            input="${!#}"
+            test -n "$output"
+            test -f "$input"
+            section_line="$(
+              readelf -SW "$input" \
+                | grep -E '^[[:space:]]*\[[[:space:]]*[0-9]+\][[:space:]]+\.shstrtab[[:space:]]+STRTAB[[:space:]]+0+' \
+                | head -1
+            )"
+            test -n "$section_line"
+            mkdir -p "$(dirname "$output")"
+            : > "$output"
+            printf 'excluded non-runtime section .shstrtab from %s\n' "$input" \
+              >> "${ELF_METADATA_SHIM_LOG:?}"
+            exit 0
+          fi
+          exec "$real" "$@"
+          EOF
+          chmod 0755 "$root/objcopy"
+          bash -n "$root/objcopy"
+          printf 'shim_sha256=%s\n' "$(sha256sum "$root/objcopy" | awk '{print $1}')" \
+            >> "$GITHUB_OUTPUT"
+          printf 'policy=%s\n' 'exclude-nonalloc-shstrtab-from-runtime-section-equivalence' \
+            >> "$GITHUB_OUTPUT"
+
       - name: Reconstruct vendor overlay and attempt bullseye AMD64 equivalence
         id: reconstruct
         shell: bash
         run: |
           set -Eeuo pipefail
+          export PATH="$RUNNER_TEMP/elf-tools:$PATH"
+          export ELF_METADATA_SHIM_LOG="$RUNNER_TEMP/objcopy-shstrtab-exclusions.log"
+          : > "$ELF_METADATA_SHIM_LOG"
           workspace=work/integration-applet-reconstruction-v1
           temporary_log="$RUNNER_TEMP/integration-applet-reconstruction-v1.log"
           rm -f "$temporary_log"
@@ -203,6 +255,9 @@ jobs:
           set -e
           mkdir -p "$workspace/output"
           cp "$temporary_log" "$workspace/output/orchestrator.log"
+          cp "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" \
+            "$workspace/output/reconstruction-runner.sh"
+          cp "$ELF_METADATA_SHIM_LOG" "$workspace/output/objcopy-shstrtab-exclusions.log"
           printf '%s\n' "$rc" > "$workspace/output/orchestrator.exit"
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           if [[ ! -f work/integration-applet-reconstruction-v1/output/summary.json ]]; then
@@ -260,6 +315,8 @@ jobs:
           NIMF_IMAGE_ID: ${{ steps.nimf_image.outputs.image_id }}
           NIMF_BASE_DIGEST: ${{ steps.nimf_image.outputs.base_digest }}
           NIMF_AUTHORITY_SHA256: ${{ steps.nimf_image.outputs.authority_sha256 }}
+          ELF_METADATA_SHIM_SHA256: ${{ steps.elf_tools.outputs.shim_sha256 }}
+          ELF_METADATA_SHIM_POLICY: ${{ steps.elf_tools.outputs.policy }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -286,7 +343,8 @@ jobs:
             payload-comparison.json \
             elf-section-comparison.json \
             target-control.normalized.txt \
-            built-control.normalized.txt
+            built-control.normalized.txt \
+            objcopy-shstrtab-exclusions.log
           do
             [[ ! -f "$source/$name" ]] || cp "$source/$name" "$destination/"
           done
@@ -304,7 +362,9 @@ jobs:
             --arg payload_git_blob "$PAYLOAD_GIT_BLOB" \
             --arg nimf_image_id "$NIMF_IMAGE_ID" \
             --arg nimf_base_digest "$NIMF_BASE_DIGEST" \
-            --arg nimf_authority_sha256 "$NIMF_AUTHORITY_SHA256" '
+            --arg nimf_authority_sha256 "$NIMF_AUTHORITY_SHA256" \
+            --arg elf_metadata_shim_sha256 "$ELF_METADATA_SHIM_SHA256" \
+            --arg elf_metadata_shim_policy "$ELF_METADATA_SHIM_POLICY" '
               {
                 schema: 2,
                 actions_run_id: $run_id,
@@ -321,9 +381,23 @@ jobs:
                 nimf_dependency_image_id: $nimf_image_id,
                 nimf_dependency_base_digest: $nimf_base_digest,
                 nimf_dependency_authority_sha256: $nimf_authority_sha256,
+                elf_metadata_shim_sha256: $elf_metadata_shim_sha256,
+                elf_metadata_shim_policy: $elf_metadata_shim_policy,
                 fail_closed: true
               }
             ' > "$destination/artifact-lock.json"
+          python3 - "$destination" <<'PY'
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1])
+          for name in ('orchestrator-tail.log', 'objcopy-shstrtab-exclusions.log'):
+              path = root / name
+              if not path.exists():
+                  continue
+              data = path.read_bytes().rstrip(b'\n')
+              path.write_bytes(data + b'\n' if data else b'')
+          PY
           find "$destination" -type f -printf '%P\t%s\n' \
             | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
           (
