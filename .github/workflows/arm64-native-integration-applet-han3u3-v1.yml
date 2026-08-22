@@ -77,7 +77,7 @@ jobs:
           jq -e \
             --arg run "$AUTHORITY_RUN_ID" \
             --arg trigger "$AUTHORITY_TRIGGER_SHA" \
-            --arg digest "$AUTHORITY_ARTIFACT_DIGEST" '
+            --arg digest "${AUTHORITY_ARTIFACT_DIGEST#sha256:}" '
               .actions_run_id == $run
               and .triggering_head_sha == $trigger
               and .artifact_digest == $digest
