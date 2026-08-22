@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "source": "gooroom-integration-applet",
+  "version": "0.3.1+grm3u1+han3u3",
+  "required_upstream_gate": "gooroom-integration-applet-hybrid-search-v6 semantic source verification",
+  "native_build_architecture": "arm64",
+  "required_candidate_checks": [
+    "exact normalized non-ELF payload",
+    "identical normalized ELF path set",
+    "all candidate ELF files are AArch64 ELF64",
+    "exact embedded GResources",
+    "identical defined dynamic symbol sets",
+    "identical DT_NEEDED library sets"
+  ],
+  "package_layer_promotion_allowed": false,
+  "iso_assembly_allowed": false,
+  "fail_closed": true
+}
