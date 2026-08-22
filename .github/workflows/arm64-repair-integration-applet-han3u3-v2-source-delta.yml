@@ -195,3 +195,5 @@ jobs:
           printf 'Dispatched reconstruction run: `%s`\n' "$run_id" >> "$GITHUB_STEP_SUMMARY"
           printf 'Reconstruction URL: https://github.com/%s/actions/runs/%s\n' \
             "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
+
+# retrigger after workflow registration
