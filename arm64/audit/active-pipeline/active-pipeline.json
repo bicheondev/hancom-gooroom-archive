@@ -2,12 +2,12 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 318,
-    "workflow_name_count": 318,
+    "workflow_count": 319,
+    "workflow_name_count": 319,
     "referenced_local_file_count": 366,
-    "error_count": 1,
+    "error_count": 0,
     "warning_count": 58,
-    "passed": false
+    "passed": true
   },
   "workflows": [
     {
@@ -2504,6 +2504,20 @@
       "filename": "arm64-fix-native-build-runner-tooling-once.yml",
       "path": ".github/workflows/arm64-fix-native-build-runner-tooling-once.yml",
       "name": "ARM64 fix native build runner tooling once",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-fix-vendor-source-debug-v6-once.yml",
+      "path": ".github/workflows/arm64-fix-vendor-source-debug-v6-once.yml",
+      "name": "ARM64 fix vendor source debug v6 once",
       "events": [
         "push",
         "workflow_dispatch"
@@ -7345,13 +7359,7 @@
       ".github/workflows/arm64-archaeology-software-heritage-system-sources.yml"
     ]
   },
-  "errors": [
-    {
-      "path": ".github/workflows/arm64-fix-vendor-source-debug-v6-once.yml",
-      "reason": "yaml-parse-failed",
-      "error": "ScannerError: while scanning a simple key\n  in \"<unicode string>\", line 44, column 1:\n    '''\n    ^\ncould not find expected ':'\n  in \"<unicode string>\", line 45, column 28:\n              new_version = '''            version_match = re.s ... \n                               ^"
-    }
-  ],
+  "errors": [],
   "warnings": [
     {
       "path": ".github/workflows/arm64-build-final-live-iso-v2.yml",
