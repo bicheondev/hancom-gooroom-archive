@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 322,
-    "workflow_name_count": 322,
-    "referenced_local_file_count": 369,
+    "workflow_count": 323,
+    "workflow_name_count": 323,
+    "referenced_local_file_count": 370,
     "error_count": 0,
     "warning_count": 58,
     "passed": true
@@ -3072,6 +3072,23 @@
         "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
       ],
       "referenced_local_files": []
+    },
+    {
+      "filename": "arm64-native-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-native-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 native integration applet han3u3 candidate v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_integration_applet_han3u3_native_v1.py"
+      ]
     },
     {
       "filename": "arm64-native-rebuild-backlog.yml",
@@ -7304,6 +7321,9 @@
     ],
     "arm64/scripts/verify_gooroom_guide_han3u1_amd64.py": [
       ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
+    ],
+    "arm64/scripts/verify_integration_applet_han3u3_native_v1.py": [
+      ".github/workflows/arm64-native-integration-applet-han3u3-v1.yml"
     ],
     "arm64/scripts/verify_locked_arm64_build.sh": [
       ".github/workflows/arm64-build-gnome-control-center.yml",
