@@ -2,8 +2,8 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 320,
-    "workflow_name_count": 320,
+    "workflow_count": 321,
+    "workflow_name_count": 321,
     "referenced_local_file_count": 367,
     "error_count": 0,
     "warning_count": 58,
@@ -4245,6 +4245,21 @@
         "arm64/locks/vendor-binaries/vendor-binary-lock.json",
         "arm64/scripts/reconstruct_qtbase_grm3u1.py"
       ]
+    },
+    {
+      "filename": "arm64-reconstruct-integration-applet-han3u3-v1.yml",
+      "path": ".github/workflows/arm64-reconstruct-integration-applet-han3u3-v1.yml",
+      "name": "ARM64 reconstruct integration applet han3u3 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": []
     },
     {
       "filename": "arm64-reconstruct-integration-applet-han3u3-v5.yml",
