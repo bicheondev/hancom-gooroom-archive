@@ -1,4 +1,4 @@
-name: ARM64 bootstrap integration applet vendor source debug v6 repair
+name: ARM64 recover integration applet vendor source and debug v6
 
 'on':
   workflow_dispatch:
@@ -7,111 +7,472 @@ name: ARM64 bootstrap integration applet vendor source debug v6 repair
       - arm64-port
     paths:
       - '.github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml'
-      - 'arm64/triggers/integration-applet-vendor-source-debug-v6-bootstrap'
 
 permissions:
+  actions: write
   contents: write
 
 concurrency:
-  group: arm64-bootstrap-integration-applet-vendor-source-debug-v6-repair
-  cancel-in-progress: true
+  group: hancom-gooroom-33-integration-applet-vendor-source-debug-v6
+  cancel-in-progress: false
 
 env:
-  SOURCE_COMMIT: f1f3376268c9dd96aa73265fd3737c1fdad10d2c
-  TARGET: .github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml
-  ONE_SHOT: .github/workflows/arm64-fix-vendor-source-debug-v6-once.yml
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  POOL_BASE: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  TARGET_SHA256: 1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9
 
 jobs:
-  repair:
+  recover:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
-      - name: Check out active ARM64 branch
+      - name: Check out recovery authority destination
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: arm64-port
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Restore, patch, and validate the recovery workflow
+      - name: Install source and debug package inspection tooling
         shell: bash
         run: |
           set -Eeuo pipefail
-          git cat-file -e "${SOURCE_COMMIT}:${TARGET}"
-          git show "${SOURCE_COMMIT}:${TARGET}" > "$TARGET"
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file jq python3 xz-utils
+          mkdir -p work/vendor-recovery-v6/{downloads,target,source,debug,output}
+
+      - name: Download and lock the exact target binary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/vendor-recovery-v6
+          curl --fail --show-error --location --retry 8 --retry-delay 2 \
+            --retry-all-errors "$TARGET_URL" -o "$root/downloads/target.deb"
+          echo "$TARGET_SHA256  $root/downloads/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/downloads/target.deb" Architecture)" = amd64
+          dpkg-deb -x "$root/downloads/target.deb" "$root/target"
+          dpkg-deb -f "$root/downloads/target.deb" > "$root/output/target-control-fields.txt"
+
+      - name: Probe pool listing, exact native source, and debug package names
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/vendor-recovery-v6
+          set +e
+          curl --show-error --location --max-time 60 \
+            "$POOL_BASE/" -o "$root/output/pool-index.html"
+          printf '%s\n' "$?" > "$root/output/pool-index-curl-status.txt"
+          set -e
 
           python3 - <<'PY'
-          import os
+          from __future__ import annotations
+
+          import html.parser
+          import json
           from pathlib import Path
+          from urllib.parse import unquote
 
-          path = Path(os.environ['TARGET'])
-          text = path.read_text(encoding='utf-8')
+          root = Path('work/vendor-recovery-v6')
+          index = root / 'output/pool-index.html'
 
-          old_version = '\n'.join([
-              '            version = subprocess.check_output(',
-              "                ['dpkg-parsechangelog', '-l', str(dsc), '-SVersion'],",
-              '                text=True,',
-              '            ).strip()',
-              "            if version != '0.3.1+grm3u1+han3u3':",
-              "                raise RuntimeError(f'unexpected source version: {version}')",
-              '',
-          ])
-          new_version = '\n'.join([
-              '            version_match = re.search(',
-              "                r'^Version:\\s*(\\S+)\\s*$',",
-              '                text,',
-              '                flags=re.MULTILINE,',
-              '            )',
-              '            if not version_match:',
-              "                raise RuntimeError('Version field was not found in vendor DSC')",
-              '            version = version_match.group(1)',
-              "            if version != '0.3.1+grm3u1+han3u3':",
-              "                raise RuntimeError(f'unexpected source version: {version}')",
-              '',
-          ])
-          if old_version not in text:
-              raise SystemExit('DSC version parser anchor not found in locked source workflow')
-          text = text.replace(old_version, new_version, 1)
+          class Links(html.parser.HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.links = []
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != 'a':
+                      return
+                  values = dict(attrs)
+                  if values.get('href'):
+                      self.links.append(unquote(values['href']))
 
-          old_match = "              'exact_matching_debug_payload_recovered': len(matching_files) == len(target_ids) and bool(target_ids),\n"
-          new_match = "              'exact_matching_debug_payload_recovered': ({row['build_id'] for row in matching_files} == target_ids and bool(target_ids)),\n"
-          if old_match not in text:
-              raise SystemExit('debug Build-ID matcher anchor not found in locked source workflow')
-          text = text.replace(old_match, new_match, 1)
-
-          workflow_path = "      - '.github/workflows/arm64-recover-integration-applet-vendor-source-debug-v6.yml'\n"
-          recovery_trigger = "      - 'arm64/triggers/integration-applet-vendor-source-debug-v6'\n"
-          if recovery_trigger not in text:
-              if workflow_path not in text:
-                  raise SystemExit('push path anchor not found in locked source workflow')
-              text = text.replace(workflow_path, workflow_path + recovery_trigger, 1)
-
-          path.write_text(text, encoding='utf-8')
+          parser = Links()
+          if index.exists():
+              parser.feed(index.read_text(encoding='utf-8', errors='replace'))
+          links = sorted(set(parser.links))
+          (root / 'output/pool-index-links.json').write_text(
+              json.dumps(links, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
           PY
 
-          grep -F "Version field was not found in vendor DSC" "$TARGET"
-          grep -F "{row['build_id'] for row in matching_files} == target_ids" "$TARGET"
-          grep -F "arm64/triggers/integration-applet-vendor-source-debug-v6" "$TARGET"
-          ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0), aliases: true)' "$TARGET"
-          git diff --check -- "$TARGET"
+          cat > "$root/output/probe-candidates.txt" <<'EOF'
+          gooroom-integration-applet_0.3.1+grm3u1+han3u3.dsc
+          gooroom-integration-applet_0.3.1+grm3u1+han3u3.tar.xz
+          gooroom-integration-applet_0.3.1+grm3u1+han3u3.tar.gz
+          gooroom-integration-applet_0.3.1+grm3u1+han3u3.tar.bz2
+          gooroom-integration-applet-dbgsym_0.3.1+grm3u1+han3u3_amd64.deb
+          gooroom-integration-applet-dbgsym_0.3.1+grm3u1+han3u3_amd64.ddeb
+          gooroom-integration-applet-dbg_0.3.1+grm3u1+han3u3_amd64.deb
+          EOF
+          jq -r '.[]' "$root/output/pool-index-links.json" \
+            | grep -E '(0\.3\.1\+grm3u1\+han3u3|dbgsym|[-_]dbg|\.dsc$|\.tar\.(xz|gz|bz2)$)' \
+            >> "$root/output/probe-candidates.txt" || true
+          LC_ALL=C sort -u "$root/output/probe-candidates.txt" \
+            -o "$root/output/probe-candidates.txt"
 
-      - name: Commit the restored repair and retire the one-shot
+          : > "$root/output/probe-results.jsonl"
+          while IFS= read -r candidate; do
+            candidate="${candidate#./}"
+            [[ -n "$candidate" ]] || continue
+            [[ "$candidate" != ../* ]] || continue
+            safe="$(printf '%s' "$candidate" | tr '/ ' '__')"
+            destination="$root/downloads/$safe"
+            url="$POOL_BASE/$candidate"
+            set +e
+            curl --fail --show-error --location --max-time 120 \
+              --retry 3 --retry-delay 2 --retry-all-errors \
+              "$url" -o "$destination"
+            status=$?
+            set -e
+            if [[ "$status" -eq 0 ]]; then
+              size="$(stat -c '%s' "$destination")"
+              sha="$(sha256sum "$destination" | awk '{print $1}')"
+              jq -n --arg name "$candidate" --arg url "$url" \
+                --arg path "$destination" --arg sha "$sha" --argjson size "$size" \
+                '{name:$name,url:$url,status:"downloaded",path:$path,size:$size,sha256:$sha}' \
+                >> "$root/output/probe-results.jsonl"
+            else
+              rm -f "$destination"
+              jq -n --arg name "$candidate" --arg url "$url" --argjson curl_status "$status" \
+                '{name:$name,url:$url,status:"unavailable",curl_status:$curl_status}' \
+                >> "$root/output/probe-results.jsonl"
+            fi
+          done < "$root/output/probe-candidates.txt"
+          jq -s '.' "$root/output/probe-results.jsonl" > "$root/output/probe-results.json"
+
+      - name: Recover and verify exact source package when present
+        id: source
         shell: bash
         run: |
           set -Eeuo pipefail
+          root=work/vendor-recovery-v6
+          dsc="$(jq -r '.[] | select(.status == "downloaded" and (.name | endswith(".dsc"))) | .path' \
+            "$root/output/probe-results.json" | head -1)"
+          recovered=false
+          if [[ -n "$dsc" ]]; then
+            cp "$dsc" "$root/source/vendor.dsc"
+            python3 - <<'PY'
+            from __future__ import annotations
+
+            import hashlib
+            import json
+            import re
+            from pathlib import Path
+
+            root = Path('work/vendor-recovery-v6')
+            dsc = root / 'source/vendor.dsc'
+            text = dsc.read_text(encoding='utf-8', errors='replace')
+            version_match = re.search(
+                r'^Version:\s*(\S+)\s*$',
+                text,
+                flags=re.MULTILINE,
+            )
+            if not version_match:
+                raise RuntimeError('Version field was not found in vendor DSC')
+            version = version_match.group(1)
+            if version != '0.3.1+grm3u1+han3u3':
+                raise RuntimeError(f'unexpected source version: {version}')
+
+            checksums = {}
+            section = re.search(
+                r'^Checksums-Sha256:\s*\n((?:[ \t].*\n)+)',
+                text,
+                flags=re.MULTILINE,
+            )
+            if section:
+                for line in section.group(1).splitlines():
+                    parts = line.split()
+                    if len(parts) == 3:
+                        checksums[parts[2]] = {
+                            'sha256': parts[0],
+                            'size': int(parts[1]),
+                        }
+            document = {
+                'schema': 1,
+                'source': 'gooroom-integration-applet',
+                'version': version,
+                'dsc_sha256': hashlib.sha256(dsc.read_bytes()).hexdigest(),
+                'files': checksums,
+            }
+            (root / 'source/dsc-lock.json').write_text(
+                json.dumps(document, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
+            PY
+
+            jq -c '.files | to_entries[]' "$root/source/dsc-lock.json" | while IFS= read -r row; do
+              filename="$(jq -r '.key' <<<"$row")"
+              sha="$(jq -r '.value.sha256' <<<"$row")"
+              size="$(jq -r '.value.size' <<<"$row")"
+              existing="$(jq -r --arg name "$filename" \
+                '.[] | select(.status == "downloaded" and .name == $name) | .path' \
+                "$root/output/probe-results.json" | head -1)"
+              if [[ -n "$existing" ]]; then
+                cp "$existing" "$root/source/$filename"
+              else
+                curl --fail --show-error --location --retry 8 --retry-delay 2 \
+                  --retry-all-errors "$POOL_BASE/$filename" -o "$root/source/$filename"
+              fi
+              test "$(stat -c '%s' "$root/source/$filename")" = "$size"
+              test "$(sha256sum "$root/source/$filename" | awk '{print $1}')" = "$sha"
+            done
+            (
+              cd "$root/source"
+              dpkg-source --no-check -x vendor.dsc extracted
+            )
+            test "$(dpkg-parsechangelog -l"$root/source/extracted/debian/changelog" -SVersion)" = "$VERSION"
+            find "$root/source/extracted" -type f -printf '%P\t%s\n' \
+              | LC_ALL=C sort > "$root/source/source-tree-inventory.tsv"
+            tar -C "$root/source/extracted" -cf "$root/source/exact-vendor-source.tar" .
+            xz -9e "$root/source/exact-vendor-source.tar"
+            recovered=true
+          fi
+          printf 'recovered=%s\n' "$recovered" >> "$GITHUB_OUTPUT"
+
+      - name: Recover exact matching debug payload when present
+        id: debug
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/vendor-recovery-v6
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work/vendor-recovery-v6')
+          target_root = root / 'target'
+          result_rows = []
+
+          def build_id(path: Path):
+              process = subprocess.run(
+                  ['readelf', '-n', str(path)],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+              )
+              match = re.search(r'Build ID:\s*([0-9a-fA-F]+)', process.stdout)
+              return match.group(1).lower() if match else None
+
+          targets = []
+          for name in ('libgooroom-integration-applet.so', 'libnimf-gooroom.so'):
+              matches = sorted(target_root.rglob(name))
+              if len(matches) != 1:
+                  raise RuntimeError(f'expected one target {name}, found {len(matches)}')
+              targets.append({
+                  'name': name,
+                  'path': matches[0],
+                  'build_id': build_id(matches[0]),
+              })
+          target_ids = {row['build_id'] for row in targets if row['build_id']}
+
+          probe = json.loads((root / 'output/probe-results.json').read_text(encoding='utf-8'))
+          debug_candidates = [
+              Path(row['path'])
+              for row in probe
+              if row['status'] == 'downloaded'
+              and row['name'].endswith(('.deb', '.ddeb'))
+              and ('dbgsym' in row['name'] or '-dbg_' in row['name'])
+          ]
+          matching_files = []
+          for index, package_path in enumerate(debug_candidates):
+              package = subprocess.check_output(
+                  ['dpkg-deb', '-f', str(package_path), 'Package'], text=True
+              ).strip()
+              version = subprocess.check_output(
+                  ['dpkg-deb', '-f', str(package_path), 'Version'], text=True
+              ).strip()
+              architecture = subprocess.check_output(
+                  ['dpkg-deb', '-f', str(package_path), 'Architecture'], text=True
+              ).strip()
+              extraction = root / 'debug' / f'package-{index}'
+              extraction.mkdir(parents=True, exist_ok=True)
+              subprocess.run(['dpkg-deb', '-x', str(package_path), str(extraction)], check=True)
+              files = []
+              for path in sorted(extraction.rglob('*')):
+                  if not path.is_file() or path.is_symlink():
+                      continue
+                  with path.open('rb') as stream:
+                      if stream.read(4) != b'\x7fELF':
+                          continue
+                  identifier = build_id(path)
+                  row = {
+                      'path': path.relative_to(extraction).as_posix(),
+                      'size': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                      'build_id': identifier,
+                      'matches_target_build_id': identifier in target_ids,
+                  }
+                  files.append(row)
+                  if row['matches_target_build_id']:
+                      matching_files.append({
+                          **row,
+                          'package': package,
+                          'package_filename': package_path.name,
+                      })
+                      destination = root / 'debug/matching' / path.name
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(path, destination)
+                      subprocess.run(
+                          ['readelf', '--debug-dump=decodedline', str(path)],
+                          stdout=(root / 'debug/matching' / f'{path.name}.decodedline.txt').open('w'),
+                          stderr=subprocess.STDOUT,
+                          text=True,
+                          check=False,
+                      )
+              result_rows.append({
+                  'filename': package_path.name,
+                  'package': package,
+                  'version': version,
+                  'architecture': architecture,
+                  'files': files,
+              })
+
+          document = {
+              'schema': 1,
+              'target_elfs': [
+                  {
+                      'name': row['name'],
+                      'path': row['path'].relative_to(target_root).as_posix(),
+                      'build_id': row['build_id'],
+                  }
+                  for row in targets
+              ],
+              'debug_package_count': len(debug_candidates),
+              'debug_packages': result_rows,
+              'matching_debug_file_count': len(matching_files),
+              'matching_debug_files': matching_files,
+              'exact_matching_debug_payload_recovered': ({row['build_id'] for row in matching_files} == target_ids and bool(target_ids)),
+          }
+          (root / 'debug/debug-recovery.json').write_text(
+              json.dumps(document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          matched="$(jq -r '.exact_matching_debug_payload_recovered' "$root/debug/debug-recovery.json")"
+          printf 'matched=%s\n' "$matched" >> "$GITHUB_OUTPUT"
+
+      - name: Seal fail-closed source and debug recovery authority
+        shell: bash
+        env:
+          SOURCE_RECOVERED: ${{ steps.source.outputs.recovered }}
+          DEBUG_RECOVERED: ${{ steps.debug.outputs.matched }}
+        run: |
+          set -Eeuo pipefail
+          root=work/vendor-recovery-v6
+          jq -n \
+            --arg source_recovered "$SOURCE_RECOVERED" \
+            --arg debug_recovered "$DEBUG_RECOVERED" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --arg pool_base "$POOL_BASE" '
+              {
+                schema: 1,
+                source: "gooroom-integration-applet",
+                version: "0.3.1+grm3u1+han3u3",
+                target_deb_sha256: $target_sha256,
+                pool_base: $pool_base,
+                exact_vendor_source_package_recovered: ($source_recovered == "true"),
+                exact_matching_debug_payload_recovered: ($debug_recovered == "true"),
+                amd64_rebuild_allowed: ($source_recovered == "true"),
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                next_action: (
+                  if $source_recovered == "true"
+                  then "rebuild exact vendor source for AMD64 and verify against target"
+                  elif $debug_recovered == "true"
+                  then "use exact DWARF and line-table evidence to complete source reconstruction"
+                  else "continue public-history and binary-guided source reconstruction"
+                  end
+                )
+              }
+            ' > "$root/output/summary.json"
+          cp "$root/debug/debug-recovery.json" "$root/output/"
+          if [[ -f "$root/source/dsc-lock.json" ]]; then
+            cp "$root/source/dsc-lock.json" "$root/output/"
+            cp "$root/source/source-tree-inventory.tsv" "$root/output/"
+          fi
+          find "$root/output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$root/output/FILE-INVENTORY.tsv"
+          (
+            cd "$root/output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' "$root/output/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete source and debug recovery evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-vendor-source-debug-v6
+          path: |
+            work/vendor-recovery-v6/output
+            work/vendor-recovery-v6/source
+            work/vendor-recovery-v6/debug
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed recovery authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/vendor-recovery-v6/output
+          destination=arm64/locks/gooroom-integration-applet-vendor-source-debug-v6/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/debug-recovery.json" "$destination/"
+          cp "$source/probe-results.json" "$destination/"
+          cp "$source/pool-index-links.json" "$destination/"
+          [[ ! -f "$source/dsc-lock.json" ]] || cp "$source/dsc-lock.json" "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$TARGET"
-          if [[ -e "$ONE_SHOT" ]]; then
-            git rm "$ONE_SHOT"
-          fi
-          git diff --cached --check
-          git commit -m 'Repair integration applet vendor source and debug recovery v6'
+          git add "$destination"
+          git commit -m 'Recover integration applet vendor source and debug evidence v6'
           for attempt in 1 2 3 4 5 6 7 8; do
             git pull --rebase origin arm64-port
             if git push origin HEAD:arm64-port; then
               exit 0
             fi
-            git rebase --abort || true
-            sleep $((attempt * 2))
+            sleep $((attempt * 3))
           done
           exit 1
