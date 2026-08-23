@@ -5,7 +5,7 @@
     "normalized_map_complete": true,
     "reference_package_count": 1279,
     "expected_route_count": 1270,
-    "selected_route_count": 1268,
+    "selected_route_count": 1269,
     "excluded_reference_package_count": 9,
     "mapping_status_counts": {
       "arch-replace": 5,
@@ -15,9 +15,9 @@
     },
     "input_debian_deb_count": 1147,
     "input_custom_deb_count": 176,
-    "input_promoted_deb_count": 1,
+    "input_promoted_deb_count": 2,
     "output_unique_deb_count": 0,
-    "blocker_count": 2,
+    "blocker_count": 1,
     "repository_file_count": 0,
     "final_repository_ready": false
   },
@@ -5870,6 +5870,31 @@
         "architecture": "all",
         "source": "gooroom-security-utils",
         "source_version": "0.3.7+grm3u1"
+      }
+    },
+    {
+      "reference_package": "gooroom-session-manager",
+      "reference_version": "0.3.9+grm3u1+han3u2",
+      "reference_architecture": "amd64",
+      "source": "gooroom-session-manager",
+      "source_version": "0.3.9+grm3u1+han3u2",
+      "mapping_status": "rebuild-arm64",
+      "target_package": "gooroom-session-manager",
+      "target_version": "0.3.9+grm3u1+han3u2",
+      "target_architecture": "arm64",
+      "require_source_identity": true,
+      "custom_candidate": true,
+      "deb": {
+        "origin": "promoted-exact",
+        "path": "arm64/promoted/gooroom-session-manager/0.3.9+grm3u1+han3u2/arm64/gooroom-session-manager_0.3.9+grm3u1+han3u2_arm64.deb",
+        "filename": "gooroom-session-manager_0.3.9+grm3u1+han3u2_arm64.deb",
+        "size": 19548,
+        "sha256": "8ccae7adf67f278900d5c284adfb49a19e99004e5af2d8f67400587160f8e0a6",
+        "package": "gooroom-session-manager",
+        "version": "0.3.9+grm3u1+han3u2",
+        "architecture": "arm64",
+        "source": "gooroom-session-manager",
+        "source_version": "0.3.9+grm3u1+han3u2"
       }
     },
     {
@@ -31798,20 +31823,6 @@
     }
   ],
   "blockers": [
-    {
-      "reference_package": "gooroom-session-manager",
-      "reference_version": "0.3.9+grm3u1+han3u2",
-      "reference_architecture": "amd64",
-      "source": "gooroom-session-manager",
-      "source_version": "0.3.9+grm3u1+han3u2",
-      "mapping_status": "rebuild-arm64",
-      "target_package": "gooroom-session-manager",
-      "target_version": "0.3.9+grm3u1+han3u2",
-      "target_architecture": "arm64",
-      "require_source_identity": true,
-      "custom_candidate": true,
-      "reason": "target-deb-not-found"
-    },
     {
       "reference_package": "linux-image-5.10.0-23-amd64",
       "reference_version": "5.10.179-1+grm3u1",
