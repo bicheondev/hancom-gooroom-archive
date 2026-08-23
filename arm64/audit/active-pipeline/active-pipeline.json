@@ -6,7 +6,7 @@
     "workflow_name_count": 326,
     "referenced_local_file_count": 373,
     "error_count": 0,
-    "warning_count": 58,
+    "warning_count": 57,
     "passed": true
   },
   "workflows": [
@@ -2891,6 +2891,7 @@
         "arm64/locks/debian-reference-repository-v2/summary.json",
         "arm64/locks/final-package-repository-v2/artifact-lock.json",
         "arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json",
+        "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json",
         "arm64/locks/package-plan/debian-arm64-map-normalized.json",
         "arm64/locks/reference/amd64-reference.json",
         "arm64/scripts/merge_final_package_repositories_v2.py"
@@ -6183,6 +6184,7 @@
       ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml"
     ],
     "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json": [
+      ".github/workflows/arm64-merge-final-package-repository-v2.yml",
       ".github/workflows/arm64-promote-session-manager-han3u2-v1.yml"
     ],
     "arm64/locks/installed-system/release-lock.json": [
@@ -7707,11 +7709,6 @@
     {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
-      "reason": "runtime-prerequisite-not-yet-generated"
-    },
-    {
-      "path": ".github/workflows/arm64-promote-session-manager-han3u2-v1.yml",
-      "local_path": "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
