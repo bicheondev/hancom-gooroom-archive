@@ -1,18 +1,16 @@
 {
   "summary": {
     "schema": 1,
-    "generated_at": "2026-08-21T14:15:03Z",
+    "generated_at": "2026-08-23T05:07:26Z",
     "branch": "arm64-port",
-    "head_sha": "da3eafea48aa8604106fd33c89792f8a0621ff9c",
+    "head_sha": "18edf5c0da77e96e67940d013386c56ec8409494",
     "active_arm64_workflow_count": 100,
     "latest_run_status_counts": {
-      "completed": 3,
-      "in_progress": 1,
-      "no-run": 96
+      "in_progress": 3,
+      "no-run": 97
     },
     "latest_run_conclusion_counts": {
-      "none": 97,
-      "success": 3
+      "none": 100
     },
     "acquisition_ready": false,
     "rootfs_ready": false,
@@ -42,9 +40,16 @@
       "latest_run": null
     },
     {
-      "workflow_id": 336277581,
-      "name": ".github/workflows/arm64-deep-diff-final-app-blockers-v1.yml",
-      "path": ".github/workflows/arm64-deep-diff-final-app-blockers-v1.yml",
+      "workflow_id": 339827015,
+      "name": "ARM64 Actions run probe",
+      "path": ".github/workflows/arm64-actions-run-probe.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339529877,
+      "name": "ARM64 add cleanmode candidate to integration v4 once",
+      "path": ".github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once.yml",
       "state": "active",
       "latest_run": null
     },
@@ -70,11 +75,50 @@
       "latest_run": null
     },
     {
+      "workflow_id": 339522036,
+      "name": "ARM64 analyze integration applet vendor reconstruction v4",
+      "path": ".github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339627543,
+      "name": "ARM64 analyze linux 5.10.179 grm3u1 normalized delta v2",
+      "path": ".github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339574608,
+      "name": "ARM64 analyze linux 5.10.179 grm3u1 runtime sections v2",
+      "path": ".github/workflows/arm64-analyze-linux-5.10.179-grm3u1-sections-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339633634,
+      "name": "ARM64 analyze linux 5.10.179 grm3u1 vmlinux v3",
+      "path": ".github/workflows/arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 337517261,
       "name": "ARM64 analyze session manager ELF delta v2",
       "path": ".github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml",
       "state": "active",
-      "latest_run": null
+      "latest_run": {
+        "id": 32619558289,
+        "run_number": 5,
+        "event": "push",
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "18edf5c0da77e96e67940d013386c56ec8409494",
+        "created_at": "2026-08-23T05:07:14Z",
+        "updated_at": "2026-08-23T05:07:17Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32619558289",
+        "display_title": "ci(arm64): canonicalize session-manager runtime semantics"
+      }
     },
     {
       "workflow_id": 335416139,
@@ -123,23 +167,19 @@
       "name": "ARM64 branch-native post-recovery trigger v1",
       "path": ".github/workflows/arm64-branch-native-post-recovery-trigger-v1.yml",
       "state": "active",
-      "latest_run": {
-        "id": 32340966003,
-        "run_number": 1,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "af3fcc9b41aca2653b307e9ac3ec72cde78f61ed",
-        "created_at": "2026-08-20T06:45:54Z",
-        "updated_at": "2026-08-20T06:46:08Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32340966003",
-        "display_title": "ci(arm64): add branch-native integration retrigger fallback"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 337515865,
       "name": "ARM64 bridge verified qtbase runtime subset",
       "path": ".github/workflows/arm64-bridge-qtbase-runtime-subset-v1.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339606013,
+      "name": "ARM64 build Nimf 2023.06.30 grm3u1 ARM64 v1",
+      "path": ".github/workflows/arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml",
       "state": "active",
       "latest_run": null
     },
@@ -155,18 +195,7 @@
       "name": "ARM64 build session manager han3u2 after ABI v3",
       "path": ".github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml",
       "state": "active",
-      "latest_run": {
-        "id": 32412082337,
-        "run_number": 2,
-        "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "372b551881c969ddf0566115873cdcfc8bb13908",
-        "created_at": "2026-08-20T20:04:14Z",
-        "updated_at": "2026-08-20T20:15:13Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32412082337",
-        "display_title": "ci(arm64): rerun session-manager after verifier fix"
-      }
+      "latest_run": null
     },
     {
       "workflow_id": 337521472,
@@ -218,6 +247,13 @@
       "latest_run": null
     },
     {
+      "workflow_id": 339632652,
+      "name": "ARM64 continuation status v5",
+      "path": ".github/workflows/arm64-continuation-status-v5.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
       "workflow_id": 335436899,
       "name": "ARM64 continue after gnome-flashback gate",
       "path": ".github/workflows/arm64-continue-after-gnome-flashback.yml",
@@ -225,23 +261,9 @@
       "latest_run": null
     },
     {
-      "workflow_id": 335422148,
-      "name": "ARM64 debug - gnome-flashback dynamic string link order",
-      "path": ".github/workflows/arm64-debug-gnome-flashback-link-order.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 335393763,
       "name": "ARM64 debug - gnome-flashback han3u4 ELF differential",
       "path": ".github/workflows/arm64-debug-gnome-flashback-han3u4.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 335594114,
-      "name": "ARM64 diagnose gnome-flashback han3u4 semantic verification v1",
-      "path": ".github/workflows/arm64-diagnose-gnome-flashback-arm64-semantic-v1.yml",
       "state": "active",
       "latest_run": null
     },
@@ -342,16 +364,16 @@
       "path": ".github/workflows/arm64-active-pipeline-audit.yml",
       "state": "active",
       "latest_run": {
-        "id": 32412179675,
-        "run_number": 736,
+        "id": 32619558241,
+        "run_number": 806,
         "event": "push",
-        "status": "completed",
-        "conclusion": "success",
-        "head_sha": "633a3587e1da0899ae75b510e34c577d15a85f4f",
-        "created_at": "2026-08-20T20:05:17Z",
-        "updated_at": "2026-08-20T20:05:35Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32412179675",
-        "display_title": "ci(arm64): locate verifier-fixed session-manager build"
+        "status": "in_progress",
+        "conclusion": null,
+        "head_sha": "18edf5c0da77e96e67940d013386c56ec8409494",
+        "created_at": "2026-08-23T05:07:14Z",
+        "updated_at": "2026-08-23T05:07:18Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32619558241",
+        "display_title": "ci(arm64): canonicalize session-manager runtime semantics"
       }
     },
     {
@@ -600,34 +622,6 @@
       "latest_run": null
     },
     {
-      "workflow_id": 336279033,
-      "name": "ARM64 port - deep diff final application blockers v2",
-      "path": ".github/workflows/arm64-deep-diff-final-app-blockers-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 336643547,
-      "name": "ARM64 port - diagnose final app deep diff v1",
-      "path": ".github/workflows/arm64-diagnose-final-app-deep-diff-v1.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 336648493,
-      "name": "ARM64 port - diagnose final blocker runs v1",
-      "path": ".github/workflows/arm64-diagnose-final-blocker-runs-v1.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328565754,
-      "name": "ARM64 port - exact dependency retry controller v3",
-      "path": ".github/workflows/arm64-dependency-retry-controller-v3.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 333225820,
       "name": "ARM64 port - install exact gooroom-guide reconstruction fix v2",
       "path": ".github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml",
@@ -698,20 +692,6 @@
       "latest_run": null
     },
     {
-      "workflow_id": 328531794,
-      "name": "ARM64 port - retry dependency failures on verified package-cache changes",
-      "path": ".github/workflows/arm64-dependency-retry.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
-      "workflow_id": 328532506,
-      "name": "ARM64 port - retry dependency failures on verified package-cache changes v2",
-      "path": ".github/workflows/arm64-dependency-retry-v2.yml",
-      "state": "active",
-      "latest_run": null
-    },
-    {
       "workflow_id": 328525435,
       "name": "ARM64 port - reverify baseline native rebuilds",
       "path": ".github/workflows/arm64-baseline-rebuild-evidence.yml",
@@ -745,22 +725,29 @@
       "path": ".github/workflows/arm64-ci-state-snapshot.yml",
       "state": "active",
       "latest_run": {
-        "id": 32491105531,
-        "run_number": 31,
+        "id": 32619558319,
+        "run_number": 32,
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "da3eafea48aa8604106fd33c89792f8a0621ff9c",
-        "created_at": "2026-08-21T14:14:54Z",
-        "updated_at": "2026-08-21T14:14:58Z",
-        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32491105531",
-        "display_title": "fix(arm64): restore integration applet base changelog evidence"
+        "head_sha": "18edf5c0da77e96e67940d013386c56ec8409494",
+        "created_at": "2026-08-23T05:07:14Z",
+        "updated_at": "2026-08-23T05:07:18Z",
+        "html_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/32619558319",
+        "display_title": "ci(arm64): canonicalize session-manager runtime semantics"
       }
     },
     {
       "workflow_id": 329702598,
       "name": "ARM64 port - verified Gooroom greeter han3u2 ARM64 build v2",
       "path": ".github/workflows/arm64-build-gooroom-greeter-han3u2-v2.yml",
+      "state": "active",
+      "latest_run": null
+    },
+    {
+      "workflow_id": 339624357,
+      "name": "ARM64 repair cleanmode candidate expansion once v2",
+      "path": ".github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once-v2.yml",
       "state": "active",
       "latest_run": null
     }
