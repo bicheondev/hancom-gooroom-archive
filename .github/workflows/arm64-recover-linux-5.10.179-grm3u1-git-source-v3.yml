@@ -1,0 +1,608 @@
+name: ARM64 recover exact Gooroom Linux 5.10.179 source from public Git v3
+
+'on':
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-recover-linux-5.10.179-grm3u1-git-source-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-git-source-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: linux
+  SOURCE_VERSION: '5.10.179-1+grm3u1'
+
+  PACKAGING_REPOSITORY: https://github.com/gooroom/linux.git
+  PACKAGING_BRANCH: gooroom-3.0
+  PACKAGING_COMMIT: '7330612f20b52c479c453b9af5d434c0092b8284'
+  PACKAGING_TREE: '48635dd180d75e1063796b58d9ae5af646a282f9'
+  DEBIAN_TREE: 'b9b835c6e517f13d268a5f011654a39d7d88f553'
+
+  MERGE_PARENT_COMMIT: '72713a30d66f71d4c5dda93a079387658759ddaa'
+  DEBIAN_TAG_COMMIT: '069f6b7ab53a7a5b991c09ef83c1e96b3d53ab5f'
+
+  DSC_FILENAME: linux_5.10.179-1.dsc
+  DSC_SNAPSHOT_SHA1: '5c42356f07f28e559267c8aff8b860897a54cc99'
+  DSC_SHA256: '9d20731cb830b436682307108e5d6f2778ca033480cb4cc7a45f7630f933bf8d'
+  DSC_SIZE: '197238'
+
+  ORIG_FILENAME: linux_5.10.179.orig.tar.xz
+  ORIG_SNAPSHOT_SHA1: 'e97d037e3be0352cf271466c0a2fde584c45ae5d'
+  ORIG_SHA256: '254d0375733a423efd8b364b9c33c88034dec85a76e2cba1093c54a667a74dbd'
+  ORIG_SIZE: '121881852'
+
+  ARTIFACT_NAME: linux-5.10.179-1-grm3u1-git-source-v3
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out triggering authority commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install exact source recovery tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            --no-install-recommends \
+            ca-certificates curl dpkg-dev git jq tar xz-utils zstd
+
+      - name: Recover and verify exact Gooroom packaging commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          root=work/linux-5.10.179-grm3u1-git-source-v3
+          rm -rf "$root"
+          mkdir -p \
+            "$root/packaging-repository" \
+            "$root/packaging-export" \
+            "$root/downloads" \
+            "$root/source-unpack" \
+            "$root/artifact/evidence"
+
+          git -C "$root/packaging-repository" init
+          git -C "$root/packaging-repository" remote add \
+            origin "$PACKAGING_REPOSITORY"
+
+          if ! git -C "$root/packaging-repository" fetch \
+            --no-tags \
+            --filter=blob:none \
+            --depth=3 \
+            origin "$PACKAGING_COMMIT"
+          then
+            git -C "$root/packaging-repository" fetch \
+              --no-tags \
+              --filter=blob:none \
+              --depth=4 \
+              origin "refs/heads/$PACKAGING_BRANCH"
+          fi
+
+          git -C "$root/packaging-repository" cat-file \
+            -e "$PACKAGING_COMMIT^{commit}"
+
+          test "$(
+            git -C "$root/packaging-repository" \
+              rev-parse "$PACKAGING_COMMIT^{tree}"
+          )" = "$PACKAGING_TREE"
+
+          test "$(
+            git -C "$root/packaging-repository" \
+              rev-parse "$PACKAGING_COMMIT:debian"
+          )" = "$DEBIAN_TREE"
+
+          test "$(
+            git -C "$root/packaging-repository" \
+              rev-parse "$PACKAGING_COMMIT^"
+          )" = "$MERGE_PARENT_COMMIT"
+
+          test "$(
+            git -C "$root/packaging-repository" \
+              rev-parse "$MERGE_PARENT_COMMIT^2"
+          )" = "$DEBIAN_TAG_COMMIT"
+
+          test "$(
+            git -C "$root/packaging-repository" \
+              rev-parse "$MERGE_PARENT_COMMIT^{tree}"
+          )" = "$PACKAGING_TREE"
+
+          git -C "$root/packaging-repository" \
+            diff --exit-code \
+            "$MERGE_PARENT_COMMIT" \
+            "$PACKAGING_COMMIT" \
+            > "$root/artifact/evidence/rebuild-commit.diff"
+
+          test ! -s "$root/artifact/evidence/rebuild-commit.diff"
+
+          git -C "$root/packaging-repository" \
+            show -s --format='%H%n%T%n%P%n%B' "$PACKAGING_COMMIT" \
+            > "$root/artifact/evidence/packaging-commit.txt"
+
+          git -C "$root/packaging-repository" \
+            show -s --format='%H%n%T%n%P%n%B' "$MERGE_PARENT_COMMIT" \
+            > "$root/artifact/evidence/merge-parent-commit.txt"
+
+          test "$(
+            sed -n '4p' "$root/artifact/evidence/packaging-commit.txt"
+          )" = "Rebuild in 5.10.179-1+grm3u1"
+
+          grep -F \
+            "Merge tag 'debian/5.10.179-1' into gooroom-3.0" \
+            "$root/artifact/evidence/merge-parent-commit.txt"
+
+          git -C "$root/packaging-repository" archive \
+            "$PACKAGING_COMMIT" debian \
+            | tar -xf - -C "$root/packaging-export"
+
+          test -f "$root/packaging-export/debian/changelog"
+
+      - name: Download checksum-pinned Debian source components
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          root=work/linux-5.10.179-grm3u1-git-source-v3
+
+          download_snapshot_file() {
+            local snapshot_sha1="$1"
+            local output_file="$2"
+            local expected_sha256="$3"
+            local expected_size="$4"
+            local selected_url_file="$5"
+            local selected_url=""
+
+            rm -f "$output_file"
+
+            for host in \
+              snapshot.debian.org \
+              snapshot-fastly.debian.org \
+              snapshot-cloudflare.debian.org
+            do
+              candidate_url="https://$host/file/$snapshot_sha1"
+              temporary_file="$output_file.partial"
+              rm -f "$temporary_file"
+
+              if curl \
+                --fail \
+                --show-error \
+                --location \
+                --connect-timeout 30 \
+                --max-time 3600 \
+                --retry 8 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                "$candidate_url" \
+                -o "$temporary_file"
+              then
+                if [ "$(
+                  sha256sum "$temporary_file" | awk '{print $1}'
+                )" = "$expected_sha256" ] \
+                  && [ "$(stat -c '%s' "$temporary_file")" = "$expected_size" ]
+                then
+                  mv "$temporary_file" "$output_file"
+                  selected_url="$candidate_url"
+                  break
+                fi
+              fi
+            done
+
+            rm -f "$output_file.partial"
+            test -f "$output_file"
+            test -n "$selected_url"
+
+            test "$(
+              sha256sum "$output_file" | awk '{print $1}'
+            )" = "$expected_sha256"
+
+            test "$(stat -c '%s' "$output_file")" = "$expected_size"
+
+            printf '%s\n' "$selected_url" > "$selected_url_file"
+          }
+
+          download_snapshot_file \
+            "$DSC_SNAPSHOT_SHA1" \
+            "$root/downloads/$DSC_FILENAME" \
+            "$DSC_SHA256" \
+            "$DSC_SIZE" \
+            "$root/artifact/evidence/dsc-selected-url.txt"
+
+          download_snapshot_file \
+            "$ORIG_SNAPSHOT_SHA1" \
+            "$root/downloads/$ORIG_FILENAME" \
+            "$ORIG_SHA256" \
+            "$ORIG_SIZE" \
+            "$root/artifact/evidence/orig-selected-url.txt"
+
+          python3 - \
+            "$root/downloads/$DSC_FILENAME" \
+            "$root/artifact/evidence/debian-dsc-components.json" \
+            "$ORIG_FILENAME" \
+            "$ORIG_SHA256" \
+            "$ORIG_SIZE" <<'PY'
+          from __future__ import annotations
+
+          import json
+          import sys
+          from pathlib import Path
+
+          dsc_path = Path(sys.argv[1])
+          output_path = Path(sys.argv[2])
+          expected_name = sys.argv[3]
+          expected_sha256 = sys.argv[4]
+          expected_size = int(sys.argv[5])
+
+          rows: list[dict[str, object]] = []
+          in_sha256 = False
+
+          for line in dsc_path.read_text(
+              encoding="utf-8",
+              errors="strict",
+          ).splitlines():
+              if line == "Checksums-Sha256:":
+                  in_sha256 = True
+                  continue
+
+              if in_sha256 and line and not line.startswith(" "):
+                  break
+
+              if in_sha256 and line.startswith(" "):
+                  parts = line.split()
+                  if len(parts) == 3:
+                      rows.append(
+                          {
+                              "sha256": parts[0],
+                              "size": int(parts[1]),
+                              "filename": parts[2],
+                          }
+                      )
+
+          matches = [
+              row
+              for row in rows
+              if row["filename"] == expected_name
+          ]
+
+          if matches != [
+              {
+                  "sha256": expected_sha256,
+                  "size": expected_size,
+                  "filename": expected_name,
+              }
+          ]:
+              raise SystemExit(
+                  "Debian DSC does not bind the expected orig archive"
+              )
+
+          output_path.write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Assemble exact full source tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          root=work/linux-5.10.179-grm3u1-git-source-v3
+
+          tar -xJf "$root/downloads/$ORIG_FILENAME" \
+            -C "$root/source-unpack"
+
+          mapfile -t source_roots < <(
+            find "$root/source-unpack" \
+              -mindepth 1 \
+              -maxdepth 1 \
+              -type d \
+              -print \
+              | LC_ALL=C sort
+          )
+
+          test "${#source_roots[@]}" -eq 1
+
+          source_tree="${source_roots[0]}"
+
+          test -f "$source_tree/Makefile"
+          test ! -e "$source_tree/debian"
+
+          cp -a "$root/packaging-export/debian" "$source_tree/"
+
+          test "$(
+            dpkg-parsechangelog \
+              -l"$source_tree/debian/changelog" \
+              -SSource
+          )" = "$SOURCE_NAME"
+
+          test "$(
+            dpkg-parsechangelog \
+              -l"$source_tree/debian/changelog" \
+              -SVersion
+          )" = "$SOURCE_VERSION"
+
+          head -5 "$source_tree/debian/changelog" \
+            > "$root/artifact/evidence/changelog-head.txt"
+
+          grep -Fx \
+            "linux (5.10.179-1+grm3u1) gooroom-3.0; urgency=medium" \
+            "$root/artifact/evidence/changelog-head.txt"
+
+          (
+            cd "$source_tree"
+
+            find . -type f -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum
+          ) > "$root/artifact/evidence/source-files.sha256"
+
+          (
+            cd "$source_tree"
+
+            find . -type l -printf '%P\t%l\n' \
+              | LC_ALL=C sort
+          ) > "$root/artifact/evidence/source-symlinks.tsv"
+
+          source_file_count="$(
+            wc -l < "$root/artifact/evidence/source-files.sha256"
+          )"
+
+          source_manifest_sha256="$(
+            sha256sum \
+              "$root/artifact/evidence/source-files.sha256" \
+              | awk '{print $1}'
+          )"
+
+          source_tree_bytes="$(du -sb "$source_tree" | awk '{print $1}')"
+
+          tar \
+            --sort=name \
+            --mtime='UTC 2023-05-21 02:47:46' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            -C "$source_tree" \
+            -cf - . \
+            | zstd \
+                --threads=0 \
+                -10 \
+                --no-progress \
+                -o "$root/artifact/source-tree.tar.zst"
+
+          source_tree_archive_sha256="$(
+            sha256sum "$root/artifact/source-tree.tar.zst" \
+              | awk '{print $1}'
+          )"
+
+          source_tree_archive_size="$(
+            stat -c '%s' "$root/artifact/source-tree.tar.zst"
+          )"
+
+          jq -n \
+            --arg source "$SOURCE_NAME" \
+            --arg version "$SOURCE_VERSION" \
+            --arg recovery_method \
+              "public-gooroom-git-exact-packaging-commit-plus-checksum-pinned-debian-orig" \
+            --arg packaging_repository "$PACKAGING_REPOSITORY" \
+            --arg packaging_branch "$PACKAGING_BRANCH" \
+            --arg packaging_commit "$PACKAGING_COMMIT" \
+            --arg packaging_tree "$PACKAGING_TREE" \
+            --arg debian_tree "$DEBIAN_TREE" \
+            --arg merge_parent_commit "$MERGE_PARENT_COMMIT" \
+            --arg debian_tag_commit "$DEBIAN_TAG_COMMIT" \
+            --arg dsc_filename "$DSC_FILENAME" \
+            --arg dsc_snapshot_sha1 "$DSC_SNAPSHOT_SHA1" \
+            --arg dsc_sha256 "$DSC_SHA256" \
+            --argjson dsc_size "$DSC_SIZE" \
+            --arg orig_filename "$ORIG_FILENAME" \
+            --arg orig_snapshot_sha1 "$ORIG_SNAPSHOT_SHA1" \
+            --arg orig_sha256 "$ORIG_SHA256" \
+            --argjson orig_size "$ORIG_SIZE" \
+            --argjson source_file_count "$source_file_count" \
+            --argjson source_tree_bytes "$source_tree_bytes" \
+            --arg source_manifest_sha256 "$source_manifest_sha256" \
+            --arg source_tree_archive_sha256 "$source_tree_archive_sha256" \
+            --argjson source_tree_archive_size "$source_tree_archive_size" '
+              {
+                schema: 3,
+                status: "exact-source-recovered",
+                source: $source,
+                version: $version,
+                recovery_method: $recovery_method,
+
+                packaging_repository: $packaging_repository,
+                packaging_branch: $packaging_branch,
+                packaging_commit: $packaging_commit,
+                packaging_tree: $packaging_tree,
+                debian_tree: $debian_tree,
+                merge_parent_commit: $merge_parent_commit,
+                debian_tag_commit: $debian_tag_commit,
+
+                debian_dsc: {
+                  filename: $dsc_filename,
+                  snapshot_sha1: $dsc_snapshot_sha1,
+                  sha256: $dsc_sha256,
+                  size: $dsc_size
+                },
+
+                original_source_archive: {
+                  filename: $orig_filename,
+                  snapshot_sha1: $orig_snapshot_sha1,
+                  sha256: $orig_sha256,
+                  size: $orig_size
+                },
+
+                source_file_count: $source_file_count,
+                source_tree_bytes: $source_tree_bytes,
+                source_manifest_sha256: $source_manifest_sha256,
+                source_tree_archive_sha256:
+                  $source_tree_archive_sha256,
+                source_tree_archive_size:
+                  $source_tree_archive_size,
+
+                exact_packaging_commit_recovered: true,
+                exact_packaging_tree_verified: true,
+                original_source_archive_recovered: true,
+                changelog_version_verified: true,
+
+                arm64_build_allowed: true,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true
+              }
+            ' > "$root/artifact/authority.json"
+
+          (
+            cd "$root/artifact"
+
+            find . \
+              -type f \
+              ! -name source-tree.tar.zst \
+              ! -name LOCKSUMS.sha256 \
+              -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum \
+              > LOCKSUMS.sha256
+
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          jq . "$root/artifact/authority.json" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact recovered source artifact
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: work/linux-5.10.179-grm3u1-git-source-v3/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact exact source authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          source_root=work/linux-5.10.179-grm3u1-git-source-v3/artifact
+          destination=arm64/locks/linux-5.10.179-grm3u1-source/latest
+
+          rm -rf "$destination"
+          mkdir -p "$destination"
+
+          cp "$source_root/authority.json" "$destination/"
+          cp "$source_root/evidence/packaging-commit.txt" "$destination/"
+          cp "$source_root/evidence/merge-parent-commit.txt" "$destination/"
+          cp "$source_root/evidence/rebuild-commit.diff" "$destination/"
+          cp "$source_root/evidence/changelog-head.txt" "$destination/"
+          cp "$source_root/evidence/debian-dsc-components.json" "$destination/"
+          cp "$source_root/evidence/dsc-selected-url.txt" "$destination/"
+          cp "$source_root/evidence/orig-selected-url.txt" "$destination/"
+
+          printf '%s  source-tree.tar.zst\n' \
+            "$(jq -r '.source_tree_archive_sha256' "$source_root/authority.json")" \
+            > "$destination/source-tree-archive.sha256"
+
+          jq -n \
+            --arg actions_run_id "${{ github.run_id }}" \
+            --arg actions_run_url \
+              "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_name "$ARTIFACT_NAME" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg triggering_head_sha "$GITHUB_SHA" \
+            --arg packaging_commit "$PACKAGING_COMMIT" \
+            --arg packaging_tree "$PACKAGING_TREE" \
+            --arg debian_tree "$DEBIAN_TREE" '
+              {
+                schema: 3,
+                actions_run_id: $actions_run_id,
+                actions_run_url: $actions_run_url,
+                artifact_id: $artifact_id,
+                artifact_name: $artifact_name,
+                artifact_digest: $artifact_digest,
+                triggering_head_sha: $triggering_head_sha,
+                packaging_commit: $packaging_commit,
+                packaging_tree: $packaging_tree,
+                debian_tree: $debian_tree,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+
+          (
+            cd "$destination"
+
+            find . \
+              -type f \
+              ! -name LOCKSUMS.sha256 \
+              -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum \
+              > LOCKSUMS.sha256
+
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          jq -e \
+            --arg commit "$PACKAGING_COMMIT" \
+            --arg tree "$PACKAGING_TREE" \
+            --arg debian_tree "$DEBIAN_TREE" '
+              .status == "exact-source-recovered"
+              and .source == "linux"
+              and .version == "5.10.179-1+grm3u1"
+              and .packaging_commit == $commit
+              and .packaging_tree == $tree
+              and .debian_tree == $debian_tree
+              and .original_source_archive_recovered == true
+              and .arm64_build_allowed == true
+              and .package_promotion_allowed == false
+              and .iso_assembly_allowed == false
+              and .fail_closed == true
+            ' "$destination/authority.json" >/dev/null
+
+          git config user.name 'github-actions[bot]'
+          git config user.email \
+            '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git add "$destination"
+          git diff --cached --check
+
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+
+          git commit -m \
+            "Recover exact Gooroom Linux 5.10.179 source from public Git"
+
+          pushed=false
+
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin arm64-port \
+              && git push origin HEAD:arm64-port
+            then
+              pushed=true
+              break
+            fi
+
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+
+          test "$pushed" = true

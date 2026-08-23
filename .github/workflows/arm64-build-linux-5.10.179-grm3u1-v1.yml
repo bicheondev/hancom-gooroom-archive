@@ -113,6 +113,14 @@ jobs:
           test "$(jq -r '.status' "$root/source-artifact/authority.json")" = exact-source-recovered
           test "$(jq -r '.source' "$root/source-artifact/authority.json")" = "$SOURCE_NAME"
           test "$(jq -r '.version' "$root/source-artifact/authority.json")" = "$SOURCE_VERSION"
+          archive="$root/source-artifact/source-tree.tar.zst"
+          if [ -f "$archive" ]; then
+            expected_archive_sha="$(jq -r '.source_tree_archive_sha256 // empty' "$root/source-artifact/authority.json")"
+            test -n "$expected_archive_sha"
+            test "$(sha256sum "$archive" | awk '{print $1}')" = "$expected_archive_sha"
+            mkdir -p "$root/source-artifact/extracted-source"
+            tar --use-compress-program=unzstd -xf "$archive" -C "$root/source-artifact/extracted-source"
+          fi
           source_tree="$(find "$root/source-artifact" -type f -path '*/debian/changelog' -printf '%h\n' \
             | sed 's#/debian$##' | head -1)"
           test -n "$source_tree"
