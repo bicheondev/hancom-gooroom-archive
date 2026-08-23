@@ -5,7 +5,7 @@
     "normalized_map_complete": true,
     "reference_package_count": 1279,
     "expected_route_count": 1270,
-    "selected_route_count": 1267,
+    "selected_route_count": 1268,
     "excluded_reference_package_count": 9,
     "mapping_status_counts": {
       "arch-replace": 5,
@@ -15,9 +15,9 @@
     },
     "input_debian_deb_count": 1147,
     "input_custom_deb_count": 176,
-    "input_promoted_deb_count": 0,
+    "input_promoted_deb_count": 1,
     "output_unique_deb_count": 0,
-    "blocker_count": 3,
+    "blocker_count": 2,
     "repository_file_count": 0,
     "final_repository_ready": false
   },
@@ -5695,6 +5695,31 @@
         "architecture": "all",
         "source": "gooroom-info",
         "source_version": "3.3.0+grm3u1"
+      }
+    },
+    {
+      "reference_package": "gooroom-integration-applet",
+      "reference_version": "0.3.1+grm3u1+han3u3",
+      "reference_architecture": "amd64",
+      "source": "gooroom-integration-applet",
+      "source_version": "0.3.1+grm3u1+han3u3",
+      "mapping_status": "rebuild-arm64",
+      "target_package": "gooroom-integration-applet",
+      "target_version": "0.3.1+grm3u1+han3u3",
+      "target_architecture": "arm64",
+      "require_source_identity": true,
+      "custom_candidate": true,
+      "deb": {
+        "origin": "promoted-exact",
+        "path": "arm64/promoted/gooroom-integration-applet/0.3.1+grm3u1+han3u3/arm64/gooroom-integration-applet_0.3.1+grm3u1+han3u3_arm64.deb",
+        "filename": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_arm64.deb",
+        "size": 58472,
+        "sha256": "5b1040be9c6a99273747ac7ca711da918b62cca52fcde4802a1949480e21ba39",
+        "package": "gooroom-integration-applet",
+        "version": "0.3.1+grm3u1+han3u3",
+        "architecture": "arm64",
+        "source": "gooroom-integration-applet",
+        "source_version": "0.3.1+grm3u1+han3u3"
       }
     },
     {
@@ -31773,20 +31798,6 @@
     }
   ],
   "blockers": [
-    {
-      "reference_package": "gooroom-integration-applet",
-      "reference_version": "0.3.1+grm3u1+han3u3",
-      "reference_architecture": "amd64",
-      "source": "gooroom-integration-applet",
-      "source_version": "0.3.1+grm3u1+han3u3",
-      "mapping_status": "rebuild-arm64",
-      "target_package": "gooroom-integration-applet",
-      "target_version": "0.3.1+grm3u1+han3u3",
-      "target_architecture": "arm64",
-      "require_source_identity": true,
-      "custom_candidate": true,
-      "reason": "target-deb-not-found"
-    },
     {
       "reference_package": "gooroom-session-manager",
       "reference_version": "0.3.9+grm3u1+han3u2",
