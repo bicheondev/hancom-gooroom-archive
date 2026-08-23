@@ -2,11 +2,11 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 325,
-    "workflow_name_count": 325,
-    "referenced_local_file_count": 372,
+    "workflow_count": 326,
+    "workflow_name_count": 326,
+    "referenced_local_file_count": 373,
     "error_count": 0,
-    "warning_count": 57,
+    "warning_count": 58,
     "passed": true
   },
   "workflows": [
@@ -3902,6 +3902,22 @@
       ]
     },
     {
+      "filename": "arm64-promote-session-manager-han3u2-v1.yml",
+      "path": ".github/workflows/arm64-promote-session-manager-han3u2-v1.yml",
+      "name": "ARM64 promote session manager han3u2 v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+      ],
+      "referenced_local_files": [
+        "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json"
+      ]
+    },
+    {
       "filename": "arm64-publish-final-iso-preview-v1.yml",
       "path": ".github/workflows/arm64-publish-final-iso-preview-v1.yml",
       "name": "ARM64 publish verified final ISO preview v1",
@@ -6166,6 +6182,9 @@
     "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json": [
       ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml"
     ],
+    "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json": [
+      ".github/workflows/arm64-promote-session-manager-han3u2-v1.yml"
+    ],
     "arm64/locks/installed-system/release-lock.json": [
       ".github/workflows/arm64-installed-system-boot.yml",
       ".github/workflows/arm64-port-coverage-v2.yml",
@@ -7688,6 +7707,11 @@
     {
       "path": ".github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml",
       "local_path": "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json",
+      "reason": "runtime-prerequisite-not-yet-generated"
+    },
+    {
+      "path": ".github/workflows/arm64-promote-session-manager-han3u2-v1.yml",
+      "local_path": "arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json",
       "reason": "runtime-prerequisite-not-yet-generated"
     },
     {
