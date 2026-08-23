@@ -2,9 +2,9 @@
   "summary": {
     "schema": 3,
     "policy": "single-v2-path-no-moving-actions-no-maintenance-workflows-with-required-compatible-core-builder",
-    "workflow_count": 324,
-    "workflow_name_count": 324,
-    "referenced_local_file_count": 371,
+    "workflow_count": 325,
+    "workflow_name_count": 325,
+    "referenced_local_file_count": 372,
     "error_count": 0,
     "warning_count": 57,
     "passed": true
@@ -3175,6 +3175,23 @@
         "arm64/scripts/select_native_rebuild_batch_v3.py",
         "arm64/scripts/select_next_native_rebuild_wave_v3.py",
         "arm64/scripts/verify_arm64_rebuild_v3.py"
+      ]
+    },
+    {
+      "filename": "arm64-native-session-manager-han3u2-v1.yml",
+      "path": ".github/workflows/arm64-native-session-manager-han3u2-v1.yml",
+      "name": "ARM64 native session manager han3u2 candidate v1",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "job_count": 1,
+      "uses": [
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "referenced_local_files": [
+        "arm64/scripts/verify_session_manager_han3u2_native_v1.py"
       ]
     },
     {
@@ -7371,6 +7388,9 @@
     "arm64/scripts/verify_recovered_source_archive_arm64.py": [
       ".github/workflows/arm64-build-reconstructed-qtbase-grm3u1.yml",
       ".github/workflows/arm64-build-recovered-reference-sources.yml"
+    ],
+    "arm64/scripts/verify_session_manager_han3u2_native_v1.py": [
+      ".github/workflows/arm64-native-session-manager-han3u2-v1.yml"
     ],
     "arm64/scripts/verify_user_source_rescue_bundle.py": [
       ".github/workflows/arm64-import-user-source-rescue.yml"
