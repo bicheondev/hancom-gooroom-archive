@@ -160,11 +160,19 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends \
               build-essential ca-certificates devscripts dpkg-dev equivs \
-              fakeroot git kernel-wedge=2.104 locales
+              fakeroot git kernel-wedge=2.104 libelf-dev=0.183-1 locales
 
             command -v kernel-wedge
-            dpkg-query -W kernel-wedge
+            dpkg-query -W kernel-wedge libelf-dev
+
             test "$(dpkg-query -W -f="\${Version}" kernel-wedge)" = "2.104"
+            test "$(dpkg-query -W -f="\${Version}" libelf-dev)" = "0.183-1"
+
+            multiarch="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+            test "$multiarch" = "aarch64-linux-gnu"
+
+            test -s /usr/include/libelf.h
+            test -e "/usr/lib/$multiarch/libelf.so"
 
             sed -i "s/^# *C.UTF-8 UTF-8/C.UTF-8 UTF-8/" /etc/locale.gen 2>/dev/null || true
             locale-gen C.UTF-8 || true
