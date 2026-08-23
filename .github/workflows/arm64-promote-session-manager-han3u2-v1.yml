@@ -1,0 +1,350 @@
+name: ARM64 promote session manager han3u2 v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-promote-session-manager-han3u2-v1.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-promote-session-manager-han3u2-v1
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/arm64-port'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    env:
+      PACKAGE: gooroom-session-manager
+      VERSION: '0.3.9+grm3u1+han3u2'
+      ARCH: arm64
+
+      NATIVE_RUN_ID: '32621830461'
+      NATIVE_ARTIFACT_ID: '9488587540'
+      NATIVE_ARTIFACT_NAME: gooroom-session-manager-han3u2-native-arm64-v1
+      NATIVE_ARTIFACT_DIGEST: 'sha256:22bb65d1177d3815b774fd7dd2779b19c79e8524bff3af871c9ef868129eaa95'
+      NATIVE_TRIGGER_SHA: '591a623e2cdb7209ee40d3ef711a27cb28113b48'
+
+      NATIVE_SUMMARY_SHA256: '576e7a0f11e90d3fb5c3839658e4e0440a7592c0dee8adc943983d200138579e'
+      ARM64_DEB_SHA256: '8ccae7adf67f278900d5c284adfb49a19e99004e5af2d8f67400587160f8e0a6'
+
+    steps:
+      - name: Check out promotion request commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install verification tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            --no-install-recommends \
+            ca-certificates dpkg-dev git jq
+          gh --version
+
+      - name: Verify compact native candidate authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          lock=arm64/locks/gooroom-session-manager-native-arm64-v1/latest
+          test -d "$lock"
+
+          (
+            cd "$lock"
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          test "$(sha256sum "$lock/summary.json" | awk '{print $1}')" \
+            = "$NATIVE_SUMMARY_SHA256"
+
+          jq -e \
+            --arg run "$NATIVE_RUN_ID" \
+            --arg artifact "$NATIVE_ARTIFACT_ID" \
+            --arg digest "${NATIVE_ARTIFACT_DIGEST#sha256:}" \
+            --arg trigger "$NATIVE_TRIGGER_SHA" '
+              .actions_run_id == $run
+              and .artifact_id == $artifact
+              and .artifact_digest == $digest
+              and .triggering_head_sha == $trigger
+              and .native_arm64_candidate_verified == true
+              and .package_promotion_allowed == true
+              and .package_promoted == false
+              and .iso_assembly_allowed == false
+              and .fail_closed == true
+            ' "$lock/artifact-lock.json" >/dev/null
+
+          jq -e \
+            --arg package "$PACKAGE" \
+            --arg version "$VERSION" \
+            --arg arch "$ARCH" \
+            --arg sha "$ARM64_DEB_SHA256" '
+              .status == "ok"
+              and .package == $package
+              and .version == $version
+              and .architecture == $arch
+              and .arm64_deb_sha256 == $sha
+              and .entry_count == 25
+              and .authority_entry_count == 25
+              and .file_count == 10
+              and .authority_file_count == 10
+              and .elf_count == 4
+              and .authority_elf_count == 4
+              and .x86_elf_count == 0
+              and .path_inventory_equal == true
+              and .non_elf_payload_equal_after_multiarch_normalization == true
+              and .elf_semantics_equal == true
+              and .source_reconstruction_semantically_verified == true
+              and .control_semantics_equal == true
+              and .native_arm64_candidate_verified == true
+              and .package_promotion_allowed == true
+              and .package_promoted == false
+              and .iso_assembly_allowed == false
+              and .fail_closed == true
+            ' "$lock/summary.json" >/dev/null
+
+      - name: Resolve exact native ARM64 artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          metadata="$RUNNER_TEMP/native-artifact.json"
+
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$NATIVE_ARTIFACT_ID" \
+            > "$metadata"
+
+          jq -e \
+            --argjson id "$NATIVE_ARTIFACT_ID" \
+            --arg name "$NATIVE_ARTIFACT_NAME" \
+            --arg digest "$NATIVE_ARTIFACT_DIGEST" \
+            --arg run "$NATIVE_RUN_ID" \
+            --arg head "$NATIVE_TRIGGER_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and (.workflow_run.id | tostring) == $run
+              and .workflow_run.head_sha == $head
+            ' "$metadata" >/dev/null
+
+          rm -rf work/promotion
+          mkdir -p work/promotion/artifact
+
+          gh run download "$NATIVE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$NATIVE_ARTIFACT_NAME" \
+            --dir work/promotion/artifact
+
+      - name: Verify downloaded candidate again
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          test -d work/promotion/artifact/build
+          test -d work/promotion/artifact/verification
+
+          (
+            cd work/promotion/artifact/verification
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          test "$(
+            sha256sum work/promotion/artifact/verification/summary.json |
+            awk '{print $1}'
+          )" = "$NATIVE_SUMMARY_SHA256"
+
+          jq -e \
+            --arg sha "$ARM64_DEB_SHA256" '
+              .status == "ok"
+              and .arm64_deb_sha256 == $sha
+              and .native_arm64_candidate_verified == true
+              and .package_promotion_allowed == true
+              and .package_promoted == false
+              and .iso_assembly_allowed == false
+              and .fail_closed == true
+            ' work/promotion/artifact/verification/summary.json >/dev/null
+
+          deb="$(
+            find work/promotion/artifact/build \
+              -maxdepth 1 \
+              -type f \
+              -name "${PACKAGE}_${VERSION}_${ARCH}.deb" \
+              -print -quit
+          )"
+
+          test -n "$deb"
+
+          test "$(sha256sum "$deb" | awk '{print $1}')" \
+            = "$ARM64_DEB_SHA256"
+
+          test "$(dpkg-deb -f "$deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "$ARCH"
+
+          printf 'deb=%s\n' "$deb" >> "$GITHUB_ENV"
+
+      - name: Promote exact package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          package_dir="arm64/promoted/$PACKAGE/$VERSION/$ARCH"
+          authority_dir="arm64/locks/gooroom-session-manager-promotion-v1/latest"
+
+          rm -rf "$package_dir"
+          mkdir -p "$package_dir"
+
+          promoted_deb="$package_dir/${PACKAGE}_${VERSION}_${ARCH}.deb"
+          install -m 0644 "$deb" "$promoted_deb"
+
+          test "$(sha256sum "$promoted_deb" | awk '{print $1}')" \
+            = "$ARM64_DEB_SHA256"
+
+          test "$(dpkg-deb -f "$promoted_deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$promoted_deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$promoted_deb" Architecture)" = "$ARCH"
+
+          rm -rf "$authority_dir"
+          mkdir -p "$authority_dir"
+
+          printf '%s  %s\n' \
+            "$ARM64_DEB_SHA256" \
+            "${PACKAGE}_${VERSION}_${ARCH}.deb" \
+            > "$authority_dir/package-sha256.txt"
+
+          jq -n \
+            --arg package "$PACKAGE" \
+            --arg version "$VERSION" \
+            --arg arch "$ARCH" \
+            --arg deb "${PACKAGE}_${VERSION}_${ARCH}.deb" \
+            --arg sha "$ARM64_DEB_SHA256" \
+            --arg repo_path "$promoted_deb" \
+            --arg native_run "$NATIVE_RUN_ID" \
+            --arg native_artifact "$NATIVE_ARTIFACT_ID" \
+            --arg native_digest "$NATIVE_ARTIFACT_DIGEST" \
+            --arg native_trigger "$NATIVE_TRIGGER_SHA" \
+            --arg native_summary "$NATIVE_SUMMARY_SHA256" \
+            --arg promotion_trigger "$GITHUB_SHA" '
+            {
+              schema: 1,
+              status: "ok",
+              package: $package,
+              version: $version,
+              architecture: $arch,
+              promoted_deb: $deb,
+              promoted_deb_sha256: $sha,
+              promoted_repository_path: $repo_path,
+
+              source_native_authority: {
+                actions_run_id: $native_run,
+                artifact_id: $native_artifact,
+                artifact_digest: $native_digest,
+                triggering_head_sha: $native_trigger,
+                summary_sha256: $native_summary
+              },
+
+              promotion_trigger_sha: $promotion_trigger,
+
+              native_arm64_candidate_verified: true,
+              package_promotion_allowed: true,
+              package_promoted: true,
+
+              iso_assembly_allowed: false,
+              finalizer_required: true,
+              fail_closed: true,
+
+              next_action:
+                "consume this promoted package in the ARM64 rootfs/finalizer; ISO assembly remains blocked"
+            }
+          ' > "$authority_dir/summary.json"
+
+          jq -n \
+            --arg run "$NATIVE_RUN_ID" \
+            --arg id "$NATIVE_ARTIFACT_ID" \
+            --arg name "$NATIVE_ARTIFACT_NAME" \
+            --arg digest "$NATIVE_ARTIFACT_DIGEST" \
+            --arg head "$NATIVE_TRIGGER_SHA" \
+            --arg deb_sha "$ARM64_DEB_SHA256" '
+            {
+              schema: 1,
+              source_actions_run_id: $run,
+              source_artifact_id: $id,
+              source_artifact_name: $name,
+              source_artifact_digest: $digest,
+              source_head_sha: $head,
+              promoted_deb_sha256: $deb_sha
+            }
+          ' > "$authority_dir/source-artifact-lock.json"
+
+          (
+            cd "$authority_dir"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > LOCKSUMS.sha256
+
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          jq -e \
+            --arg sha "$ARM64_DEB_SHA256" '
+              .status == "ok"
+              and .promoted_deb_sha256 == $sha
+              and .native_arm64_candidate_verified == true
+              and .package_promotion_allowed == true
+              and .package_promoted == true
+              and .iso_assembly_allowed == false
+              and .finalizer_required == true
+              and .fail_closed == true
+            ' "$authority_dir/summary.json" >/dev/null
+
+      - name: Commit promoted package authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git add \
+            "arm64/promoted/$PACKAGE/$VERSION/$ARCH" \
+            arm64/locks/gooroom-session-manager-promotion-v1/latest
+
+          git diff --cached --check
+
+          test -n "$(git diff --cached --name-only)"
+
+          git commit -m "Promote native ARM64 session manager han3u2"
+
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git fetch --no-tags origin arm64-port \
+              && git rebase origin/arm64-port \
+              && git push origin HEAD:arm64-port
+            then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Promotion result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat arm64/locks/gooroom-session-manager-promotion-v1/latest/summary.json \
+            >> "$GITHUB_STEP_SUMMARY"
