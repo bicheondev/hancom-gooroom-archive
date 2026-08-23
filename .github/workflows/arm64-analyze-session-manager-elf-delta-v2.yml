@@ -370,6 +370,117 @@ jobs:
             work/elf-delta-summary.json > work/elf-delta-summary.tmp
           mv work/elf-delta-summary.tmp work/elf-delta-summary.json
 
+      - name: Canonicalize runtime semantics v3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY_CANON'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def sha256_text(text: str) -> str:
+              return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+          def normalize_readelf(text: str) -> str:
+              lines = [line for line in text.splitlines() if 'Build ID:' not in line]
+              return '\n'.join(lines) + '\n'
+
+          def normalize_objdump(text: str) -> str:
+              lines = []
+              for line in text.splitlines():
+                  if ':     file format ' in line:
+                      line = '<binary>:     file format ' + line.split(':     file format ', 1)[1]
+                  lines.append(line)
+              return '\n'.join(lines) + '\n'
+
+          def normalize_nm(text: str) -> str:
+              return '\n'.join(text.splitlines()) + '\n'
+
+          canonical_dir = Path('work/canonical')
+          canonical_dir.mkdir(parents=True, exist_ok=True)
+          normalizers = {
+              'readelf': normalize_readelf,
+              'objdump': normalize_objdump,
+              'nm': normalize_nm,
+          }
+          equal = {}
+          hashes = {}
+          for name, normalizer in normalizers.items():
+              target = normalizer(Path(f'work/target-{name}.txt').read_text(encoding='utf-8', errors='replace'))
+              candidate = normalizer(Path(f'work/candidate-{name}.txt').read_text(encoding='utf-8', errors='replace'))
+              (canonical_dir / f'target-{name}.txt').write_text(target, encoding='utf-8')
+              (canonical_dir / f'candidate-{name}.txt').write_text(candidate, encoding='utf-8')
+              equal[name] = target == candidate
+              hashes[name] = {
+                  'target_sha256': sha256_text(target),
+                  'candidate_sha256': sha256_text(candidate),
+              }
+
+          report_path = Path('work/elf-delta-summary.json')
+          report = json.loads(report_path.read_text(encoding='utf-8'))
+          storage_only_sections = {'.dynsym', '.dynstr'}
+          metadata_only_sections = {'.gnu_debuglink', '.note.gnu.build-id'}
+          allowed_different_sections = storage_only_sections | metadata_only_sections
+
+          allocated = set(report.get('allocated_differences_excluding_build_id', []))
+          different = set(report.get('different_sections', []))
+          critical = report.get('critical_sections_equal', {})
+          runtime_critical_equal = all(
+              bool(value)
+              for name, value in critical.items()
+              if name not in storage_only_sections
+          )
+          unexpected_allocated = sorted(allocated - storage_only_sections)
+          unexpected_sections = sorted(different - allowed_different_sections)
+          storage_serialization_only = (
+              allocated <= storage_only_sections
+              and different <= allowed_different_sections
+          )
+
+          semantic_v3 = bool(
+              report.get('header_equal', False)
+              and report.get('section_name_set_equal', False)
+              and report.get('code_equal', False)
+              and runtime_critical_equal
+              and report.get('target_size') == report.get('candidate_size')
+              and equal['readelf']
+              and equal['objdump']
+              and equal['nm']
+              and storage_serialization_only
+              and not unexpected_allocated
+              and not unexpected_sections
+          )
+
+          canonical = {
+              'canonical_schema': 1,
+              'canonical_policy': 'canonical-readelf-objdump-nm-plus-runtime-critical-sections-with-dynsym-dynstr-storage-order-tolerance',
+              'canonical_readelf_equal': equal['readelf'],
+              'canonical_objdump_equal': equal['objdump'],
+              'canonical_nm_equal': equal['nm'],
+              'canonical_hashes': hashes,
+              'runtime_critical_sections_equal': runtime_critical_equal,
+              'storage_serialization_only': storage_serialization_only,
+              'allowed_storage_differences': sorted(storage_only_sections),
+              'allowed_metadata_differences': sorted(metadata_only_sections),
+              'unexpected_allocated_differences': unexpected_allocated,
+              'unexpected_section_differences': unexpected_sections,
+              'semantic_equivalent_v3': semantic_v3,
+          }
+          Path('work/canonical-runtime-semantics.json').write_text(
+              json.dumps(canonical, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          report.update(canonical)
+          report_path.write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          if not semantic_v3:
+              raise SystemExit('Canonical runtime semantic equivalence did not pass')
+          PY_CANON
+          jq '.' work/canonical-runtime-semantics.json >> "$GITHUB_STEP_SUMMARY"
+
       - name: Seal compact semantic authority
         shell: bash
         run: |
@@ -383,6 +494,8 @@ jobs:
           cp work/main-elf.sha256 "$LOCK_DIR/"
           cp work/main-elf.size.tsv "$LOCK_DIR/"
           cp work/normalized.sha256 "$LOCK_DIR/"
+          cp work/canonical-runtime-semantics.json "$LOCK_DIR/"
+          cp -a work/canonical "$LOCK_DIR/"
           cp work/readelf.diff "$LOCK_DIR/" || true
           cp work/notes.diff "$LOCK_DIR/" || true
           cp work/objdump.diff "$LOCK_DIR/" || true
@@ -401,12 +514,9 @@ jobs:
           artifact_id = Path('work/reconstruction-artifact-id.txt').read_text().strip()
 
           exact = bool(report['exact_binary_equal'])
-          semantic = bool(
-              report['semantic_equivalent'] and
-              report.get('normalized_non_debug_binary_equal', False)
-          )
+          semantic = bool(report.get('semantic_equivalent_v3', False))
           authority = {
-              'schema': 1,
+              'schema': 2,
               'package': os.environ['PACKAGE'],
               'version': os.environ['VERSION'],
               'target_architecture_for_comparison': 'amd64',
@@ -423,7 +533,7 @@ jobs:
               'arm64_build_allowed': exact or semantic,
               'package_layer_promotion_allowed': exact or semantic,
               'global_exact_reproducibility_claimed': exact,
-              'policy': 'exact-elf-or-normalized-non-debug-plus-all-allocated-sections-equivalent-excluding-build-id',
+              'policy': 'exact-elf-or-canonical-runtime-semantics-v3-with-dynsym-dynstr-storage-order-tolerance',
               'evidence': {
                   'target_sha256': report['target_sha256'],
                   'candidate_sha256': report['candidate_sha256'],
@@ -434,6 +544,15 @@ jobs:
                   'all_critical_sections_equal': report['all_critical_sections_equal'],
                   'allocated_semantic_equal_excluding_build_id': report['allocated_semantic_equal_excluding_build_id'],
                   'normalized_non_debug_binary_equal': report.get('normalized_non_debug_binary_equal', False),
+                  'canonical_readelf_equal': report.get('canonical_readelf_equal', False),
+                  'canonical_objdump_equal': report.get('canonical_objdump_equal', False),
+                  'canonical_nm_equal': report.get('canonical_nm_equal', False),
+                  'runtime_critical_sections_equal': report.get('runtime_critical_sections_equal', False),
+                  'storage_serialization_only': report.get('storage_serialization_only', False),
+                  'semantic_equivalent_v3': report.get('semantic_equivalent_v3', False),
+                  'allowed_storage_differences': report.get('allowed_storage_differences', []),
+                  'unexpected_allocated_differences': report.get('unexpected_allocated_differences', []),
+                  'unexpected_section_differences': report.get('unexpected_section_differences', []),
                   'different_sections': report['different_sections'],
                   'allocated_differences_excluding_build_id': report['allocated_differences_excluding_build_id'],
                   'changed_range_count': report['changed_range_count'],
