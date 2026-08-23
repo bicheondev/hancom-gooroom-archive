@@ -178,9 +178,30 @@ jobs:
             export DEB_BUILD_PROFILES="pkg.linux.nokerneldbg pkg.linux.notools pkg.linux.noudeb"
             export LC_ALL=C.UTF-8
             cd /build/source
+
+            # Debian kernel packaging does not store generated debian/control
+            # in the packaging Git tree. Generate it before mk-build-deps.
+            #
+            # debian/control-real intentionally exits 1 after successful
+            # generation, so success is determined by the resulting file.
+            if [ ! -s debian/control ]; then
+              set +e
+              make -f debian/rules debian/control
+              control_rc=$?
+              set -e
+
+              printf "debian/control generation exit code: %s\\n" "$control_rc"
+              test -s debian/control
+            fi
+
+            test -s debian/control
+            dpkg-parsechangelog -SSource | grep -Fx linux
+            dpkg-parsechangelog -SVersion | grep -Fx "5.10.179-1+grm3u1"
+
             mk-build-deps --install --remove \
               --tool "apt-get -y --no-install-recommends --allow-unauthenticated" \
               debian/control
+
             dpkg-checkbuilddeps
             dpkg-buildpackage -us -uc -B -j2
           ' 2>&1 | tee "$root/build/build.log"
