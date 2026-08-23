@@ -1,0 +1,168 @@
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              DYN (Position-Independent Executable file)
+  Machine:                           Advanced Micro Devices X86-64
+  Version:                           0x1
+  Entry point address:               0x37a0
+  Start of program headers:          64 (bytes into file)
+  Start of section headers:          37992 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               64 (bytes)
+  Size of program headers:           56 (bytes)
+  Number of program headers:         11
+  Size of section headers:           64 (bytes)
+  Number of section headers:         29
+  Section header string table index: 28
+
+Section Headers:
+  [Nr] Name              Type            Address          Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            0000000000000000 000000 000000 00      0   0  0
+  [ 1] .interp           PROGBITS        00000000000002a8 0002a8 00001c 00   A  0   0  1
+  [ 2] .note.gnu.build-id NOTE            00000000000002c4 0002c4 000024 00   A  0   0  4
+  [ 3] .note.ABI-tag     NOTE            00000000000002e8 0002e8 000020 00   A  0   0  4
+  [ 4] .gnu.hash         GNU_HASH        0000000000000308 000308 000064 00   A  5   0  8
+  [ 5] .dynsym           DYNSYM          0000000000000370 000370 000ae0 18   A  6   1  8
+  [ 6] .dynstr           STRTAB          0000000000000e50 000e50 000883 00   A  0   0  1
+  [ 7] .gnu.version      VERSYM          00000000000016d4 0016d4 0000e8 02   A  5   0  2
+  [ 8] .gnu.version_r    VERNEED         00000000000017c0 0017c0 000050 00   A  6   2  8
+  [ 9] .rela.dyn         RELA            0000000000001810 001810 0000f0 18   A  5   0  8
+  [10] .rela.plt         RELA            0000000000001900 001900 000900 18  AI  5  24  8
+  [11] .init             PROGBITS        0000000000003000 003000 000017 00  AX  0   0  4
+  [12] .plt              PROGBITS        0000000000003020 003020 000610 10  AX  0   0 16
+  [13] .plt.got          PROGBITS        0000000000003630 003630 000008 08  AX  0   0  8
+  [14] .text             PROGBITS        0000000000003640 003640 002b71 00  AX  0   0 16
+  [15] .fini             PROGBITS        00000000000061b4 0061b4 000009 00  AX  0   0  4
+  [16] .rodata           PROGBITS        0000000000007000 007000 000f73 00   A  0   0 16
+  [17] .eh_frame_hdr     PROGBITS        0000000000007f74 007f74 00015c 00   A  0   0  4
+  [18] .eh_frame         PROGBITS        00000000000080d0 0080d0 0007d0 00   A  0   0  8
+  [19] .init_array       INIT_ARRAY      0000000000009d70 008d70 000008 08  WA  0   0  8
+  [20] .fini_array       FINI_ARRAY      0000000000009d78 008d78 000008 08  WA  0   0  8
+  [21] .data.rel.ro      PROGBITS        0000000000009d80 008d80 000008 00  WA  0   0 32
+  [22] .dynamic          DYNAMIC         0000000000009d88 008d88 000240 10  WA  6   0  8
+  [23] .got              PROGBITS        0000000000009fc8 008fc8 000030 08  WA  0   0  8
+  [24] .got.plt          PROGBITS        000000000000a000 009000 000318 08  WA  0   0  8
+  [25] .data             PROGBITS        000000000000a318 009318 000010 00  WA  0   0  8
+  [26] .bss              NOBITS          000000000000a328 009328 000048 00  WA  0   0  8
+  [27] .gnu_debuglink    PROGBITS        0000000000000000 009328 000034 00      0   0  4
+  [28] .shstrtab         STRTAB          0000000000000000 00935c 00010a 00      0   0  1
+Key to Flags:
+  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),
+  L (link order), O (extra OS processing required), G (group), T (TLS),
+  C (compressed), x (unknown), o (OS specific), E (exclude),
+  D (mbind), l (large), p (processor specific)
+
+Program Headers:
+  Type           Offset   VirtAddr           PhysAddr           FileSiz  MemSiz   Flg Align
+  PHDR           0x000040 0x0000000000000040 0x0000000000000040 0x000268 0x000268 R   0x8
+  INTERP         0x0002a8 0x00000000000002a8 0x00000000000002a8 0x00001c 0x00001c R   0x1
+      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x002200 0x002200 R   0x1000
+  LOAD           0x003000 0x0000000000003000 0x0000000000003000 0x0031bd 0x0031bd R E 0x1000
+  LOAD           0x007000 0x0000000000007000 0x0000000000007000 0x0018a0 0x0018a0 R   0x1000
+  LOAD           0x008d70 0x0000000000009d70 0x0000000000009d70 0x0005b8 0x000600 RW  0x1000
+  DYNAMIC        0x008d88 0x0000000000009d88 0x0000000000009d88 0x000240 0x000240 RW  0x8
+  NOTE           0x0002c4 0x00000000000002c4 0x00000000000002c4 0x000044 0x000044 R   0x4
+  GNU_EH_FRAME   0x007f74 0x0000000000007f74 0x0000000000007f74 0x00015c 0x00015c R   0x4
+  GNU_STACK      0x000000 0x0000000000000000 0x0000000000000000 0x000000 0x000000 RW  0x10
+  GNU_RELRO      0x008d70 0x0000000000009d70 0x0000000000009d70 0x000290 0x000290 R   0x1
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .interp 
+   02     .interp .note.gnu.build-id .note.ABI-tag .gnu.hash .dynsym .dynstr .gnu.version .gnu.version_r .rela.dyn .rela.plt 
+   03     .init .plt .plt.got .text .fini 
+   04     .rodata .eh_frame_hdr .eh_frame 
+   05     .init_array .fini_array .data.rel.ro .dynamic .got .got.plt .data .bss 
+   06     .dynamic 
+   07     .note.gnu.build-id .note.ABI-tag 
+   08     .eh_frame_hdr 
+   09     
+   10     .init_array .fini_array .data.rel.ro .dynamic .got 
+
+Dynamic section at offset 0x8d88 contains 32 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libgtk-3.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libjson-c.so.5]
+ 0x0000000000000001 (NEEDED)             Shared library: [libnotify.so.4]
+ 0x0000000000000001 (NEEDED)             Shared library: [libgio-2.0.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libgobject-2.0.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x000000000000000c (INIT)               0x3000
+ 0x000000000000000d (FINI)               0x61b4
+ 0x0000000000000019 (INIT_ARRAY)         0x9d70
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x9d78
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x308
+ 0x0000000000000005 (STRTAB)             0xe50
+ 0x0000000000000006 (SYMTAB)             0x370
+ 0x000000000000000a (STRSZ)              2179 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000015 (DEBUG)              0x0
+ 0x0000000000000003 (PLTGOT)             0xa000
+ 0x0000000000000002 (PLTRELSZ)           2304 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x1900
+ 0x0000000000000007 (RELA)               0x1810
+ 0x0000000000000008 (RELASZ)             240 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000006ffffffb (FLAGS_1)            Flags: PIE
+ 0x000000006ffffffe (VERNEED)            0x17c0
+ 0x000000006fffffff (VERNEEDNUM)         2
+ 0x000000006ffffff0 (VERSYM)             0x16d4
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+
+Version symbols section '.gnu.version' contains 116 entries:
+ Addr: 0x00000000000016d4  Offset: 0x000016d4  Link: 5 (.dynsym)
+  000:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  004:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  008:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  00c:   0 (*local*)       0 (*local*)       0 (*local*)       2 (GLIBC_2.2.5)
+  010:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  014:   0 (*local*)       2 (GLIBC_2.2.5)   0 (*local*)       0 (*local*)    
+  018:   0 (*local*)       0 (*local*)       0 (*local*)       3 (JSONC_0.14) 
+  01c:   2 (GLIBC_2.2.5)   0 (*local*)       0 (*local*)       0 (*local*)    
+  020:   0 (*local*)       0 (*local*)       2 (GLIBC_2.2.5)   0 (*local*)    
+  024:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  028:   0 (*local*)       0 (*local*)       0 (*local*)       2 (GLIBC_2.2.5)
+  02c:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  030:   0 (*local*)       0 (*local*)       4 (GLIBC_2.4)     0 (*local*)    
+  034:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  038:   0 (*local*)       3 (JSONC_0.14)    0 (*local*)       0 (*local*)    
+  03c:   0 (*local*)       0 (*local*)       0 (*local*)       2 (GLIBC_2.2.5)
+  040:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  044:   0 (*local*)       3 (JSONC_0.14)    0 (*local*)       0 (*local*)    
+  048:   0 (*local*)       0 (*local*)       0 (*local*)       3 (JSONC_0.14) 
+  04c:   2 (GLIBC_2.2.5)   0 (*local*)       0 (*local*)       0 (*local*)    
+  050:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  054:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  058:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  05c:   0 (*local*)       0 (*local*)       2 (GLIBC_2.2.5)   0 (*local*)    
+  060:   0 (*local*)       0 (*local*)       0 (*local*)       0 (*local*)    
+  064:   0 (*local*)       0 (*local*)       1 (*global*)      2 (GLIBC_2.2.5)
+  068:   0 (*local*)       1 (*global*)      1 (*global*)      1 (*global*)   
+  06c:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   
+  070:   1 (*global*)      1 (*global*)      1 (*global*)      1 (*global*)   
+
+Version needs section '.gnu.version_r' contains 2 entries:
+ Addr: 0x00000000000017c0  Offset: 0x000017c0  Link: 6 (.dynstr)
+  000000: Version: 1  File: libjson-c.so.5  Cnt: 1
+  0x0010:   Name: JSONC_0.14  Flags: none  Version: 3
+  0x0020: Version: 1  File: libc.so.6  Cnt: 2
+  0x0030:   Name: GLIBC_2.4  Flags: none  Version: 4
+  0x0040:   Name: GLIBC_2.2.5  Flags: none  Version: 2
+
+Displaying notes found in: .note.gnu.build-id
+  Owner                Data size 	Description
+
+Displaying notes found in: .note.ABI-tag
+  Owner                Data size 	Description
+  GNU                  0x00000010	NT_GNU_ABI_TAG (ABI version tag)	    OS: Linux, ABI: 3.2.0

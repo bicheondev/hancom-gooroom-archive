@@ -1,0 +1,34 @@
+{
+  "allowed_metadata_differences": [
+    ".gnu_debuglink",
+    ".note.gnu.build-id"
+  ],
+  "allowed_storage_differences": [
+    ".dynstr",
+    ".dynsym"
+  ],
+  "canonical_hashes": {
+    "nm": {
+      "candidate_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "target_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "objdump": {
+      "candidate_sha256": "b795abd077acab0ab349e51d6e484b180d564139adf8b7f54d6c4555f16e0745",
+      "target_sha256": "b795abd077acab0ab349e51d6e484b180d564139adf8b7f54d6c4555f16e0745"
+    },
+    "readelf": {
+      "candidate_sha256": "a67e1fa9abcf5563a71f1a63b15ba7b6cc239f056e8fe0fa334320fcecc69ca2",
+      "target_sha256": "a67e1fa9abcf5563a71f1a63b15ba7b6cc239f056e8fe0fa334320fcecc69ca2"
+    }
+  },
+  "canonical_nm_equal": true,
+  "canonical_objdump_equal": true,
+  "canonical_policy": "canonical-readelf-objdump-nm-plus-runtime-critical-sections-with-dynsym-dynstr-storage-order-tolerance",
+  "canonical_readelf_equal": true,
+  "canonical_schema": 1,
+  "runtime_critical_sections_equal": true,
+  "semantic_equivalent_v3": true,
+  "storage_serialization_only": true,
+  "unexpected_allocated_differences": [],
+  "unexpected_section_differences": []
+}

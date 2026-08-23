@@ -5,6 +5,14 @@
     ".dynsym"
   ],
   "allocated_semantic_equal_excluding_build_id": false,
+  "allowed_metadata_differences": [
+    ".gnu_debuglink",
+    ".note.gnu.build-id"
+  ],
+  "allowed_storage_differences": [
+    ".dynstr",
+    ".dynsym"
+  ],
   "candidate_header": {
     "class": 64,
     "entry": 14240,
@@ -138,6 +146,25 @@
   ],
   "candidate_sha256": "8e1eb4a6292d8095c15dfe88ee5b16ae5593b6006c0667f8e17e31303e7ca22d",
   "candidate_size": 39848,
+  "canonical_hashes": {
+    "nm": {
+      "candidate_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "target_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "objdump": {
+      "candidate_sha256": "b795abd077acab0ab349e51d6e484b180d564139adf8b7f54d6c4555f16e0745",
+      "target_sha256": "b795abd077acab0ab349e51d6e484b180d564139adf8b7f54d6c4555f16e0745"
+    },
+    "readelf": {
+      "candidate_sha256": "a67e1fa9abcf5563a71f1a63b15ba7b6cc239f056e8fe0fa334320fcecc69ca2",
+      "target_sha256": "a67e1fa9abcf5563a71f1a63b15ba7b6cc239f056e8fe0fa334320fcecc69ca2"
+    }
+  },
+  "canonical_nm_equal": true,
+  "canonical_objdump_equal": true,
+  "canonical_policy": "canonical-readelf-objdump-nm-plus-runtime-critical-sections-with-dynsym-dynstr-storage-order-tolerance",
+  "canonical_readelf_equal": true,
+  "canonical_schema": 1,
   "changed_byte_count": 934,
   "changed_range_count": 99,
   "changed_ranges": [
@@ -1470,11 +1497,15 @@
   "exact_binary_equal": false,
   "header_equal": true,
   "main_path": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+  "normalized_non_debug_binary_equal": false,
   "package": "gooroom-session-manager",
+  "runtime_critical_sections_equal": true,
   "schema": 2,
   "section_count": 29,
   "section_name_set_equal": true,
   "semantic_equivalent": false,
+  "semantic_equivalent_v3": true,
+  "storage_serialization_only": true,
   "target_header": {
     "class": 64,
     "entry": 14240,
@@ -1608,6 +1639,7 @@
   ],
   "target_sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66",
   "target_size": 39848,
-  "version": "0.3.9+grm3u1+han3u2",
-  "normalized_non_debug_binary_equal": false
+  "unexpected_allocated_differences": [],
+  "unexpected_section_differences": [],
+  "version": "0.3.9+grm3u1+han3u2"
 }
