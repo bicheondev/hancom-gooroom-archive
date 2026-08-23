@@ -160,7 +160,12 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends \
               build-essential ca-certificates devscripts dpkg-dev equivs \
-              fakeroot git locales
+              fakeroot git kernel-wedge=2.104 locales
+
+            command -v kernel-wedge
+            dpkg-query -W kernel-wedge
+            test "$(dpkg-query -W -f="\${Version}" kernel-wedge)" = "2.104"
+
             sed -i "s/^# *C.UTF-8 UTF-8/C.UTF-8 UTF-8/" /etc/locale.gen 2>/dev/null || true
             locale-gen C.UTF-8 || true
           ' 2>&1 | tee "$root/build/bootstrap-packages.log"
