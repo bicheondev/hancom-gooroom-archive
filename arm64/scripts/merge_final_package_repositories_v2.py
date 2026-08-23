@@ -226,6 +226,16 @@ def main() -> int:
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--debian-repository", type=Path, required=True)
     parser.add_argument("--custom-repository", type=Path, required=True)
+    parser.add_argument(
+        "--supplement-repository",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Additional checksum-backed exact package repository. "
+            "May be specified more than once."
+        ),
+    )
     parser.add_argument("--output-repository", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
@@ -235,6 +245,14 @@ def main() -> int:
     expected, excluded, blockers = expected_routes(normalized, reference)
     candidates = scan_repository(args.debian_repository, "debian-reference")
     candidates.extend(scan_repository(args.custom_repository, "custom-exact"))
+
+    for supplement_repository in args.supplement_repository:
+        candidates.extend(
+            scan_repository(
+                supplement_repository,
+                "promoted-exact",
+            )
+        )
 
     by_identity: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for candidate in candidates:
@@ -359,6 +377,10 @@ def main() -> int:
         ),
         "input_custom_deb_count": sum(
             candidate["origin"] == "custom-exact" for candidate in candidates
+        ),
+        "input_promoted_deb_count": sum(
+            candidate["origin"] == "promoted-exact"
+            for candidate in candidates
         ),
         "output_unique_deb_count": len(copied),
         "blocker_count": len(blockers),
