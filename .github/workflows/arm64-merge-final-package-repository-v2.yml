@@ -10,6 +10,8 @@ on:
       - 'arm64/locks/build-dependency-repository-v2/**'
       - 'arm64/locks/package-plan/**'
       - 'arm64/locks/reference/**'
+      - 'arm64/locks/gooroom-integration-applet-promotion-v1/**'
+      - 'arm64/promoted/gooroom-integration-applet/**'
   workflow_dispatch:
 
 permissions:
@@ -42,13 +44,25 @@ jobs:
           debian_lock=arm64/locks/debian-reference-repository-v2/artifact-lock.json
           custom_summary=arm64/locks/build-dependency-repository-v2/summary.json
           custom_lock=arm64/locks/build-dependency-repository-v2/artifact-lock.json
-          for path in "$normalized" "$debian_summary" "$debian_lock" "$custom_summary" "$custom_lock"; do
+          promotion_summary=arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json
+          promoted_deb=arm64/promoted/gooroom-integration-applet/0.3.1+grm3u1+han3u3/arm64/gooroom-integration-applet_0.3.1+grm3u1+han3u3_arm64.deb
+          for path in \
+            "$normalized" \
+            "$debian_summary" \
+            "$debian_lock" \
+            "$custom_summary" \
+            "$custom_lock" \
+            "$promotion_summary" \
+            "$promoted_deb"
+          do
             [ -f "$path" ] || ready=false
           done
           if [ "$ready" = true ]; then
             jq -e '.summary.complete == true' "$normalized" >/dev/null || ready=false
             jq -e '.repository_ready == true and .blocker_count == 0' "$debian_summary" >/dev/null || ready=false
             jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' "$custom_summary" >/dev/null || ready=false
+            jq -e --arg sha '5b1040be9c6a99273747ac7ca711da918b62cca52fcde4802a1949480e21ba39' --arg path "$promoted_deb" '.status == "ok" and .package == "gooroom-integration-applet" and .version == "0.3.1+grm3u1+han3u3" and .architecture == "arm64" and .promoted_deb_sha256 == $sha and .promoted_repository_path == $path and .native_arm64_candidate_verified == true and .package_promotion_allowed == true and .package_promoted == true and .iso_assembly_allowed == false and .finalizer_required == true and .fail_closed == true' "$promotion_summary" >/dev/null || ready=false
+            test "$(sha256sum "$promoted_deb" | awk '{print $1}')" = '5b1040be9c6a99273747ac7ca711da918b62cca52fcde4802a1949480e21ba39' || ready=false
           fi
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
           if [ "$ready" = true ]; then
@@ -105,6 +119,11 @@ jobs:
           test -n "$custom_summary"
           jq -e '.repository_ready == true and .blocker_count == 0' "$debian_summary"
           jq -e '.repository_ready == true and .failure_count == 0 and .ambiguous_count == 0' "$custom_summary"
+          promoted_deb=arm64/promoted/gooroom-integration-applet/0.3.1+grm3u1+han3u3/arm64/gooroom-integration-applet_0.3.1+grm3u1+han3u3_arm64.deb
+          test "$(sha256sum "$promoted_deb" | awk '{print $1}')" = '5b1040be9c6a99273747ac7ca711da918b62cca52fcde4802a1949480e21ba39' 
+          test "$(dpkg-deb -f "$promoted_deb" Package)" = "gooroom-integration-applet"
+          test "$(dpkg-deb -f "$promoted_deb" Version)" = "0.3.1+grm3u1+han3u3"
+          test "$(dpkg-deb -f "$promoted_deb" Architecture)" = "arm64"
 
       - name: Resolve every reference package to exactly one final DEB
         if: steps.gate.outputs.ready == 'true'
@@ -120,6 +139,7 @@ jobs:
             --reference arm64/locks/reference/amd64-reference.json \
             --debian-repository "$(cat work/debian-repository-path.txt)" \
             --custom-repository "$(cat work/custom-repository-path.txt)" \
+            --supplement-repository arm64/promoted/gooroom-integration-applet/0.3.1+grm3u1+han3u3/arm64 \
             --output-repository work/final-package-repository \
             --output-dir work/final-package-evidence \
             2>&1 | tee work/final-package-workflow.log
@@ -131,6 +151,8 @@ jobs:
             | sort -z | xargs -0 sha256sum \
             > work/final-package-evidence/LOCKSUMS.sha256
           cat work/final-package-evidence/summary.json
+          jq -e '.input_promoted_deb_count == 1' work/final-package-evidence/summary.json
+          jq -e 'all(.[]; .reference_package != "gooroom-integration-applet")' work/final-package-evidence/blockers.json
 
       - name: Upload final exact package repository and blockers
         if: steps.gate.outputs.ready == 'true'
@@ -164,13 +186,21 @@ jobs:
             arm64/locks/final-package-repository-v2/
           cp work/final-package-evidence/LOCKSUMS.sha256 \
             arm64/locks/final-package-repository-v2/
+          promotion_summary=arm64/locks/gooroom-integration-applet-promotion-v1/latest/summary.json
+          promoted_deb=arm64/promoted/gooroom-integration-applet/0.3.1+grm3u1+han3u3/arm64/gooroom-integration-applet_0.3.1+grm3u1+han3u3_arm64.deb
+          promotion_authority_sha256="$(sha256sum "$promotion_summary" | cut -d' ' -f1)"
+          promoted_deb_sha256="$(sha256sum "$promoted_deb" | cut -d' ' -f1)"
           jq -n \
             --arg actions_run_id '${{ github.run_id }}' \
             --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
             --arg artifact_name 'hancom-gooroom-3.3-arm64-final-package-repository-v2' \
             --arg debian_run_id '${{ steps.gate.outputs.debian_run_id }}' \
             --arg custom_run_id '${{ steps.gate.outputs.custom_run_id }}' \
-            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,input_repository_runs:{debian:$debian_run_id,custom:$custom_run_id}}' \
+            --arg promotion_authority_path "$promotion_summary" \
+            --arg promotion_authority_sha256 "$promotion_authority_sha256" \
+            --arg promoted_deb_path "$promoted_deb" \
+            --arg promoted_deb_sha256 "$promoted_deb_sha256" \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,input_repository_runs:{debian:$debian_run_id,custom:$custom_run_id},supplemental_promotions:[{authority_path:$promotion_authority_path,authority_sha256:$promotion_authority_sha256,deb_path:$promoted_deb_path,deb_sha256:$promoted_deb_sha256}]}' \
             > arm64/locks/final-package-repository-v2/artifact-lock.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
