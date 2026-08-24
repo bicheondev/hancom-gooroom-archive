@@ -1,0 +1,165 @@
+name: ARM64 port - promote verified Gooroom libsecurity source lock v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-promote-gooroom-libsecurity-source-lock-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-gooroom-libsecurity-source-lock-v1
+  cancel-in-progress: true
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - name: Check out the verified ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Promote only a successfully built embedded fallback lock
+        id: promote
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest
+          summary="$evidence/summary.json"
+          verification="$evidence/verification-summary.json"
+          effective="$evidence/effective-source-lock.json"
+          authority="$evidence/authority.json"
+
+          test -f "$summary"
+          test -f "$verification"
+          test -f "$effective"
+          test -f "$authority"
+          jq -e '
+            .build_passed == true
+            and .build_architecture == "arm64"
+            and .xsm_module_machine == "AArch64"
+            and .generic_locked_build_verifier_passed == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' "$summary" >/dev/null
+          jq -e '
+            .verified == true
+            and .wrong_architecture_executable_count == 0
+            and .deb_count > 0
+          ' "$verification" >/dev/null
+          jq -e '
+            .source_build_outcome == "success"
+            and .source_build_exit_code == "0"
+          ' "$authority" >/dev/null
+
+          source_name="$(jq -er '.source' "$summary")"
+          source_version="$(jq -er '.source_version' "$summary")"
+          repository="$(jq -er '.repository' "$summary")"
+          commit_sha="$(jq -er '.commit_sha' "$summary")"
+          tree_sha="$(jq -er '.tree_sha' "$summary")"
+          lock_origin="$(jq -er '.source_lock_origin' "$summary")"
+
+          jq -e \
+            --arg source "$source_name" \
+            --arg version "$source_version" \
+            --arg repository "$repository" \
+            --arg commit "$commit_sha" \
+            --arg tree "$tree_sha" '
+              .sources | length == 1
+              and .sources[0].source == $source
+              and .sources[0].source_version == $version
+              and .sources[0].role == "rebuild-arm64"
+              and .sources[0].status == "resolved"
+              and (.sources[0].selected.type // "git") == "git"
+              and .sources[0].selected.repository_full_name == $repository
+              and .sources[0].selected.commit_sha == $commit
+              and .sources[0].selected.tree_sha == $tree
+            ' "$effective" >/dev/null
+
+          if [ "$lock_origin" != embedded-public-source-lock ]; then
+            echo 'promoted=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=project-source-resolution-already-used' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          target_dir=arm64/locks/source-overrides
+          target="$target_dir/$source_name.json"
+          mkdir -p "$target_dir"
+          jq \
+            --arg source "$source_name" \
+            --arg version "$source_version" \
+            --arg repository "$repository" \
+            --arg commit "$commit_sha" \
+            --arg tree "$tree_sha" \
+            --arg build_authority "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/authority.json" \
+            --arg build_summary "arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json" '
+              .schema = 2
+              | .policy = "verified-native-arm64-build-source-override"
+              | .promotion = {
+                  source: $source,
+                  source_version: $version,
+                  repository_full_name: $repository,
+                  commit_sha: $commit,
+                  tree_sha: $tree,
+                  build_authority: $build_authority,
+                  build_summary: $build_summary,
+                  exact_changelog_version_verified: true,
+                  exact_git_tree_verified: true,
+                  native_arm64_package_build_verified: true
+                }
+            ' "$effective" > "$target"
+
+          jq -e \
+            --arg source "$source_name" \
+            --arg version "$source_version" \
+            --arg repository "$repository" \
+            --arg commit "$commit_sha" \
+            --arg tree "$tree_sha" '
+              .schema == 2
+              and .policy == "verified-native-arm64-build-source-override"
+              and .sources | length == 1
+              and .sources[0].source == $source
+              and .sources[0].source_version == $version
+              and .sources[0].selected.repository_full_name == $repository
+              and .sources[0].selected.commit_sha == $commit
+              and .sources[0].selected.tree_sha == $tree
+              and .promotion.native_arm64_package_build_verified == true
+            ' "$target" >/dev/null
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          if git diff --cached --quiet; then
+            echo 'promoted=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=verified-override-already-current' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "Lock verified Gooroom XSM ARM64 source"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              echo 'promoted=true' >> "$GITHUB_OUTPUT"
+              echo 'reason=verified-embedded-source-promoted' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Recheck the effective lock after promotion decision
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=arm64/locks/gooroom-libsecurity-extensions-arm64-build/latest/summary.json
+          origin="$(jq -er '.source_lock_origin' "$summary")"
+          if [ "$origin" = embedded-public-source-lock ]; then
+            test '${{ steps.promote.outputs.promoted }}' = true
+          else
+            test '${{ steps.promote.outputs.reason }}' = project-source-resolution-already-used
+          fi

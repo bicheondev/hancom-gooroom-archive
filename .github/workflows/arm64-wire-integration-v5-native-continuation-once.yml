@@ -1,0 +1,152 @@
+name: ARM64 wire integration v5 native continuation once
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-wire-integration-v5-native-continuation-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-wire-integration-v5-native-continuation-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add push-request continuation without default-branch dispatch dependency
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          native = Path('.github/workflows/arm64-build-integration-applet-history-v5-arm64.yml')
+          text = native.read_text(encoding='utf-8')
+          push_block = (
+              "  push:\n"
+              "    branches:\n"
+              "      - arm64-port\n"
+              "    paths:\n"
+              "      - 'arm64/requests/integration-applet-history-v5-arm64-build.json'\n"
+          )
+          marker = "permissions:\n"
+          if push_block not in text:
+              if marker not in text:
+                  raise SystemExit('native workflow permissions anchor missing')
+              text = text.replace(marker, push_block + "\n" + marker, 1)
+          old_if = (
+              "      github.event_name == 'workflow_dispatch' ||\n"
+              "      (github.event.workflow_run.head_branch == 'arm64-port' &&\n"
+          )
+          new_if = (
+              "      github.event_name == 'workflow_dispatch' ||\n"
+              "      github.event_name == 'push' ||\n"
+              "      (github.event.workflow_run.head_branch == 'arm64-port' &&\n"
+          )
+          if old_if in text:
+              text = text.replace(old_if, new_if, 1)
+          old_resolve = (
+              "          if [[ '${{ github.event_name }}' == workflow_run ]]; then\n"
+              "            run_id='${{ github.event.workflow_run.id }}'\n"
+              "          else\n"
+              "            run_id='${{ inputs.source_run_id }}'\n"
+              "          fi\n"
+          )
+          new_resolve = (
+              "          if [[ '${{ github.event_name }}' == workflow_run ]]; then\n"
+              "            run_id='${{ github.event.workflow_run.id }}'\n"
+              "          elif [[ '${{ github.event_name }}' == push ]]; then\n"
+              "            run_id=\"$(jq -r '.source_run_id' "
+              "arm64/requests/integration-applet-history-v5-arm64-build.json)\"\n"
+              "          else\n"
+              "            run_id='${{ inputs.source_run_id }}'\n"
+              "          fi\n"
+          )
+          if old_resolve in text:
+              text = text.replace(old_resolve, new_resolve, 1)
+          elif new_resolve not in text:
+              raise SystemExit('native workflow run-id resolver anchor missing')
+          native.write_text(text, encoding='utf-8')
+
+          reconstruction = Path('.github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml')
+          text = reconstruction.read_text(encoding='utf-8')
+          request_block = (
+              "          request=arm64/requests/integration-applet-history-v5-arm64-build.json\n"
+              "          mkdir -p \"$(dirname \"$request\")\"\n"
+              "          if jq -e '.native_arm64_build_allowed == true' "
+              "work/aggregate/summary.json >/dev/null; then\n"
+              "            jq -n \\\n"
+              "              --arg source_run_id \"$GITHUB_RUN_ID\" \\\n"
+              "              --arg candidate_label \"$(jq -r '.closest_candidate.candidate_label' "
+              "work/aggregate/summary.json)\" \\\n"
+              "              --arg candidate_commit \"$(jq -r '.closest_candidate.candidate_commit_sha' "
+              "work/aggregate/summary.json)\" '\n"
+              "                {schema:1,source_run_id:$source_run_id,\n"
+              "                 candidate_label:$candidate_label,\n"
+              "                 candidate_commit_sha:$candidate_commit,\n"
+              "                 requested_by:\"integration-applet-public-history-v5\"}\n"
+              "              ' > \"$request\"\n"
+              "          else\n"
+              "            rm -f \"$request\"\n"
+              "          fi\n"
+          )
+          artifact_anchor = (
+              "          (\n"
+              "            cd \"$destination\"\n"
+              "            find . -type f ! -name LOCKSUMS.sha256 -print0 \\\n"
+          )
+          if request_block not in text:
+              if artifact_anchor not in text:
+                  raise SystemExit('v5 destination checksum anchor missing')
+              text = text.replace(artifact_anchor, request_block + artifact_anchor, 1)
+          old_add = '          git add "$destination"\n'
+          new_add = (
+              '          git add "$destination"\n'
+              '          git add -A arm64/requests\n'
+          )
+          if new_add not in text:
+              if old_add not in text:
+                  raise SystemExit('v5 git-add anchor missing')
+              text = text.replace(old_add, new_add, 1)
+          reconstruction.write_text(text, encoding='utf-8')
+          PY
+          grep -F "github.event_name == 'push'" \
+            .github/workflows/arm64-build-integration-applet-history-v5-arm64.yml
+          grep -F 'integration-applet-history-v5-arm64-build.json' \
+            .github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml
+          git diff --check -- .github/workflows
+
+      - name: Commit continuation wiring and remove one-shot workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            .github/workflows/arm64-build-integration-applet-history-v5-arm64.yml \
+            .github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml
+          git rm .github/workflows/arm64-wire-integration-v5-native-continuation-once.yml
+          git diff --cached --check
+          git commit -m 'Wire verified integration reconstruction into native ARM64 build'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1

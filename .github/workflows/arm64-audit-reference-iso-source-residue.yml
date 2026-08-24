@@ -1,0 +1,267 @@
+name: ARM64 port - audit reference ISO source residue
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-reference-iso-source-residue.yml'
+      - 'arm64/scripts/audit_reference_iso_source_residue.py'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-iso-source-residue
+  cancel-in-progress: true
+
+env:
+  ISO_RELEASE: v3.3
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Check out current ARM64 authority and audit code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO, SquashFS, and compressed-index inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bzip2 ca-certificates file jq lz4 p7zip-full python3 \
+            squashfs-tools xorriso xz-utils zstd
+          gh --version
+          python3 -m py_compile arm64/scripts/audit_reference_iso_source_residue.py
+
+      - name: Download and lock the archived Hancom Gooroom 3.3 ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/reference-iso-source-residue
+          rm -rf "$base"
+          mkdir -p "$base"/{download,iso-root,rootfs,evidence}
+          gh release download "$ISO_RELEASE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" \
+            --dir "$base/download" \
+            --clobber
+          iso="$base/download/$ISO_NAME"
+          test -f "$iso"
+          test "$(stat -c '%s' "$iso")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$iso" | sha256sum --check --strict
+          sha256sum "$iso" > "$base/evidence/reference-iso.sha256"
+          stat -c 'name=%n\nsize=%s\nmode=%A\nmtime=%y' "$iso" \
+            > "$base/evidence/reference-iso.stat.txt"
+
+      - name: Extract the hybrid ISO and locate every SquashFS image
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/reference-iso-source-residue
+          iso="$base/download/$ISO_NAME"
+          iso_root="$base/iso-root"
+
+          set +e
+          xorriso -osirrox on -indev "$iso" -extract / "$iso_root" \
+            > "$base/evidence/xorriso.log" 2>&1
+          extract_rc=$?
+          set -e
+          method=xorriso
+          if [ "$extract_rc" -ne 0 ] || ! find "$iso_root" -mindepth 1 -print -quit | grep -q .; then
+            rm -rf "$iso_root"
+            mkdir -p "$iso_root"
+            7z x -y -o"$iso_root" "$iso" \
+              > "$base/evidence/7z-extract.log" 2>&1
+            method=7z
+          fi
+          printf '%s\n' "$method" > "$base/evidence/iso-extraction-method.txt"
+          find "$iso_root" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$base/evidence/iso-file-inventory.tsv"
+
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import subprocess
+          from pathlib import Path
+
+          base = Path('work/reference-iso-source-residue')
+          iso_root = base / 'iso-root'
+          rows = []
+          for path in sorted(iso_root.rglob('*')):
+              if not path.is_file():
+                  continue
+              process = subprocess.run(
+                  ['file', '-b', str(path)],
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+              )
+              description = process.stdout.strip()
+              if 'Squashfs filesystem' not in description and not path.name.endswith('.squashfs'):
+                  continue
+              rows.append(
+                  {
+                      'path': str(path),
+                      'relative_path': path.relative_to(iso_root).as_posix(),
+                      'size': path.stat().st_size,
+                      'file': description,
+                  }
+              )
+          rows.sort(key=lambda row: (-row['size'], row['relative_path']))
+          output = base / 'evidence' / 'squashfs-candidates.json'
+          output.write_text(json.dumps(rows, indent=2) + '\n', encoding='utf-8')
+          if not rows:
+              raise SystemExit('no SquashFS filesystem was found in the ISO')
+          print(rows[0]['path'])
+          PY
+
+      - name: Extract and lock the selected live root filesystem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/reference-iso-source-residue
+          selected="$(jq -er '.[0].path' "$base/evidence/squashfs-candidates.json")"
+          selected_relative="$(jq -er '.[0].relative_path' "$base/evidence/squashfs-candidates.json")"
+          rootfs="$base/rootfs"
+          rm -rf "$rootfs"
+          sudo unsquashfs -no-progress -d "$rootfs" "$selected" \
+            > "$base/evidence/unsquashfs.log" 2>&1
+          sudo chown -R "$(id -u):$(id -g)" "$rootfs"
+          selected_sha256="$(sha256sum "$selected" | awk '{print $1}')"
+          selected_size="$(stat -c '%s' "$selected")"
+          method="$(cat "$base/evidence/iso-extraction-method.txt")"
+          jq -n \
+            --arg method "$method" \
+            --arg selected_path "$selected_relative" \
+            --arg selected_sha256 "$selected_sha256" \
+            --argjson selected_size "$selected_size" \
+            --argjson candidate_count "$(jq 'length' "$base/evidence/squashfs-candidates.json")" '
+              {
+                iso_extraction_method: $method,
+                squashfs_candidate_count: $candidate_count,
+                selected_squashfs_path: $selected_path,
+                selected_squashfs_size: $selected_size,
+                selected_squashfs_sha256: $selected_sha256,
+                rootfs_extracted: true
+              }
+            ' > "$base/evidence/extraction-metadata.json"
+          find "$rootfs" -mindepth 1 -maxdepth 1 -printf '%f\t%y\n' \
+            | LC_ALL=C sort > "$base/evidence/rootfs-top-level.tsv"
+          for path in \
+            "$rootfs/etc/apt" \
+            "$rootfs/var/lib/apt" \
+            "$rootfs/var/cache/apt" \
+            "$rootfs/var/log/apt" \
+            "$rootfs/var/log/installer"; do
+            if [ -e "$path" ]; then
+              find "$path" -type f -printf '%P\t%s\n'
+            fi
+          done | LC_ALL=C sort > "$base/evidence/apt-residue-inventory.tsv"
+
+      - name: Audit exact source indices, archives, package stanzas, and URLs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/reference-iso-source-residue
+          python3 arm64/scripts/audit_reference_iso_source_residue.py \
+            --iso "$base/download/$ISO_NAME" \
+            --iso-root "$base/iso-root" \
+            --rootfs "$base/rootfs" \
+            --output-dir "$base/evidence" \
+            --expected-iso-sha256 "$ISO_SHA256" \
+            --expected-iso-size "$ISO_SIZE" \
+            --extraction-metadata "$base/evidence/extraction-metadata.json"
+          jq -e '
+            .schema == 1
+            and .iso.verified == true
+            and .iso.sha256 == "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a"
+            and .iso.size == 1566277632
+            and .target_count == 7
+            and (
+              .exact_source_index_target_count
+              + .exact_source_archive_target_count
+              + .exact_version_residue_only_target_count
+              + .not_found_target_count
+              == .target_count
+            )
+            and .promotion_allowed == false
+          ' "$base/evidence/summary.json" >/dev/null
+
+      - name: Seal the compact ISO source-residue evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/reference-iso-source-residue/evidence
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$evidence"
+          find "$evidence" -type f -printf '%P\t%s\n' | LC_ALL=C sort
+
+      - name: Upload complete compact audit evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-iso-source-residue
+          path: work/reference-iso-source-residue/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable current ISO source-residue authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-iso-source-residue/evidence
+          destination=arm64/locks/reference-iso-source-residue/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Reference ISO source-residue evidence is already current.'
+            exit 0
+          fi
+          git commit -m 'Audit exact source residue in Hancom Gooroom 3.3 ISO'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Refresh package-layer and phase coverage after browser promotion
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-port-coverage.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-port-coverage-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port

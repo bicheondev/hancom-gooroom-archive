@@ -1,0 +1,96 @@
+name: ARM64 fix integration v3 shell quoting
+# revision: 2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-integration-v3-shell-quoting.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-fix-integration-v3-shell-quoting
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Patch candidate metadata checks
+        shell: bash
+        env:
+          TARGET: .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v3.yml
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ['TARGET'])
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  '          test "$(dpkg-deb -f "$base/downloads/candidate.deb Version)" = "$VERSION"\n',
+                  '          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"\n',
+              ),
+              (
+                  '          test "$(dpkg-deb -f "$base/downloads/candidate.deb Architecture)" = amd64\n',
+                  '          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64\n',
+              ),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one match, found {count}: {old!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          grep -F 'test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"' "$TARGET"
+          grep -F 'test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64' "$TARGET"
+          if grep -F 'candidate.deb Version)' "$TARGET" || grep -F 'candidate.deb Architecture)' "$TARGET"; then
+            echo 'unquoted candidate path remains' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Commit patch and redispatch v3
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: .github/workflows/arm64-analyze-integration-applet-han3u3-reconstruction-v3.yml
+          WORKFLOW: arm64-analyze-integration-applet-han3u3-reconstruction-v3.yml
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$TARGET"
+          git diff --cached --quiet && exit 0
+          git commit -m 'ci(arm64): fix integration v3 candidate metadata quoting'
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin arm64-port && git push origin HEAD:arm64-port; then
+              pushed=true
+              break
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          test "$pushed" = true
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW/dispatches" \
+            --data '{"ref":"arm64-port"}'

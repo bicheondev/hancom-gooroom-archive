@@ -1,0 +1,135 @@
+name: ARM64 port - recover signed sources from vendor pools
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-vendor-pool-source-lock.yml'
+      - 'arm64/scripts/probe_vendor_pool_sources.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-vendor-pool-source-lock
+  cancel-in-progress: true
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install image and signature tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools gpgv jq
+
+      - name: Extract historical binary indexes and trusted keyrings
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p work/iso-root work/vendor-input/keyrings
+          gh release download v3.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" \
+            --dir work
+          test "$(stat -c '%s' "work/$ISO_NAME")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "work/$ISO_NAME" | sha256sum --check --strict
+          xorriso -osirrox on -indev "work/$ISO_NAME" -extract / work/iso-root
+          SQUASHFS="$(find work/iso-root -type f -name 'filesystem.squashfs' -print -quit)"
+          test -n "$SQUASHFS"
+
+          unsquashfs -cat "$SQUASHFS" \
+            var/lib/apt/lists/update.hancomgooroom.com_gooroom_dists_gooroom-3.0_main_binary-amd64_Packages \
+            > work/vendor-input/gooroom-Packages
+          unsquashfs -cat "$SQUASHFS" \
+            var/lib/apt/lists/update.hancomgooroom.com_hancom_dists_hancom-3.0_main_binary-amd64_Packages \
+            > work/vendor-input/hancom-Packages
+
+          for version in 1.0 2.0 3.0; do
+            unsquashfs -cat "$SQUASHFS" \
+              "etc/apt/trusted.gpg.d/gooroom-archive-${version}.gpg" \
+              > "work/vendor-input/keyrings/gooroom-archive-${version}.gpg"
+          done
+          find work/vendor-input -type f ! -name INPUTSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/vendor-input-sums
+          mv /tmp/vendor-input-sums work/vendor-input/INPUTSUMS.sha256
+
+      - name: Probe exact signed source descriptors
+        id: recover
+        run: |
+          set -uxo pipefail
+          rm -rf work/vendor-pool-lock
+          set +e
+          python3 arm64/scripts/probe_vendor_pool_sources.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --packages work/vendor-input/gooroom-Packages \
+            --packages-metadata '{"repository":"gooroom","suite":"gooroom-3.0","base_url":"https://update.hancomgooroom.com/gooroom"}' \
+            --packages work/vendor-input/hancom-Packages \
+            --packages-metadata '{"repository":"hancom","suite":"hancom-3.0","base_url":"https://update.hancomgooroom.com/hancom"}' \
+            --keyring work/vendor-input/keyrings/gooroom-archive-1.0.gpg \
+            --keyring work/vendor-input/keyrings/gooroom-archive-2.0.gpg \
+            --keyring work/vendor-input/keyrings/gooroom-archive-3.0.gpg \
+            --output-dir work/vendor-pool-lock
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/vendor-pool-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/vendor-pool-lock-sums
+          mv /tmp/vendor-pool-lock-sums work/vendor-pool-lock/LOCKSUMS.sha256
+          cat work/vendor-pool-lock/vendor-pool-source-lock-summary.json
+
+      - name: Upload source recovery evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-vendor-pool-source-lock
+          path: |
+            work/vendor-input/INPUTSUMS.sha256
+            work/vendor-pool-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record recovered signed source locks
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/vendor-pool-sources
+          mkdir -p arm64/locks/vendor-pool-sources
+          cp -a work/vendor-pool-lock/. arm64/locks/vendor-pool-sources/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/vendor-pool-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Recover exact signed source descriptors from vendor pools'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Preserve fail-closed status for unresolved sources
+        run: |
+          set -euxo pipefail
+          jq . work/vendor-pool-lock/vendor-pool-source-lock-summary.json
+          if [ '${{ steps.recover.outputs.exit_code }}' != '0' ]; then
+            echo 'Unresolved source descriptors remain blocked; no alternate version was selected.' >&2
+          fi

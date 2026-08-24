@@ -1,0 +1,244 @@
+name: ARM64 port - build record and prove minimal UEFI live boot v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-minimal-boot-iso-v3.yml'
+      - 'arm64/scripts/build_stage0_minimal_boot_iso.sh'
+      - 'arm64/scripts/build_stage0_minimal_boot_iso_v3.sh'
+      - 'arm64/scripts/summarize_arm64_boot_attempt.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-minimal-boot-v3
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT: 20230730T235959Z
+  ISO_NAME: Hancom-Gooroom-3.3-arm64-minimal-boot-v3.iso
+
+jobs:
+  build-record-and-boot:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install native ARM64 image and firmware tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'A native ARM64 runner is required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap debian-archive-keyring dosfstools file grub-common \
+            grub-efi-arm64-bin jq mtools qemu-efi-aarch64 qemu-system-arm \
+            squashfs-tools xorriso
+
+      - name: Assemble the exact-snapshot ARM64 UEFI boot proof
+        id: assemble
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: ${{ env.SNAPSHOT }}
+          HANCOM_GOOROOM_MINIMAL_ISO_NAME: ${{ env.ISO_NAME }}
+          SOURCE_DATE_EPOCH: 1690761599
+        run: |
+          set -uxo pipefail
+          chmod +x \
+            arm64/scripts/build_stage0_minimal_boot_iso.sh \
+            arm64/scripts/build_stage0_minimal_boot_iso_v3.sh
+          rm -rf work/minimal-boot-v3
+          mkdir -p work/minimal-boot-v3
+          set +e
+          sudo -E arm64/scripts/build_stage0_minimal_boot_iso_v3.sh \
+            arm64/locks/reference/amd64-reference.json \
+            work/minimal-boot-v3
+          rc=$?
+          set -e
+          sudo chown -R "$USER:$USER" work/minimal-boot-v3 || true
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" = 0 ]; then
+            jq . work/minimal-boot-v3/minimal-boot-result.json
+            sha256sum --check "work/minimal-boot-v3/$ISO_NAME.sha256"
+          else
+            find work/minimal-boot-v3 -maxdepth 1 -type f -printf '%f\t%s bytes\n' | sort
+          fi
+          exit 0
+
+      - name: Boot through ARM64 UEFI and require the serial readiness marker
+        id: boot
+        if: steps.assemble.outputs.exit_code == '0'
+        run: |
+          set -euxo pipefail
+          ISO="$PWD/work/minimal-boot-v3/$ISO_NAME"
+          CODE="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+            -type f \( -iname 'AAVMF_CODE*.fd' -o -iname 'QEMU_EFI*.fd' \) \
+            2>/dev/null | head -n1)"
+          VARS="$(find /usr/share/AAVMF /usr/share/qemu-efi-aarch64 \
+            -type f -iname 'AAVMF_VARS*.fd' 2>/dev/null | head -n1)"
+          test -n "$CODE"
+          accel=tcg
+          cpu=max
+          if [ -c /dev/kvm ]; then
+            accel=kvm
+            cpu=host
+          fi
+          qemu=(
+            qemu-system-aarch64
+            -machine "virt,accel=$accel"
+            -cpu "$cpu"
+            -smp 2
+            -m 2048
+            -nographic
+            -monitor none
+            -serial stdio
+            -device virtio-rng-pci
+            -drive "if=none,id=cdrom,media=cdrom,format=raw,file=$ISO"
+            -device virtio-scsi-pci,id=scsi0
+            -device scsi-cd,drive=cdrom,bus=scsi0.0
+            -no-reboot
+          )
+          if [ -n "$VARS" ]; then
+            cp "$VARS" work/minimal-boot-v3/AAVMF_VARS.fd
+            qemu+=(
+              -drive "if=pflash,format=raw,readonly=on,file=$CODE"
+              -drive "if=pflash,format=raw,file=$PWD/work/minimal-boot-v3/AAVMF_VARS.fd"
+            )
+          else
+            qemu+=( -bios "$CODE" )
+          fi
+          : > work/minimal-boot-v3/qemu-minimal-boot.log
+          setsid "${qemu[@]}" \
+            > work/minimal-boot-v3/qemu-minimal-boot.log 2>&1 &
+          qemu_pid=$!
+          found=false
+          for _ in $(seq 1 300); do
+            if grep -q 'HANCOM_GOOROOM_ARM64_MINIMAL_READY' \
+              work/minimal-boot-v3/qemu-minimal-boot.log; then
+              found=true
+              break
+            fi
+            if ! kill -0 "$qemu_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill -- "-$qemu_pid" 2>/dev/null || true
+          wait "$qemu_pid" 2>/dev/null || true
+          tail -n 300 work/minimal-boot-v3/qemu-minimal-boot.log
+          test "$found" = true
+          jq '.status = "boot-tested"
+              | .boot_test = {
+                  firmware: "ARM64 UEFI",
+                  machine: "QEMU virt",
+                  readiness_marker: "HANCOM_GOOROOM_ARM64_MINIMAL_READY",
+                  result: "passed"
+                }' \
+            work/minimal-boot-v3/minimal-boot-result.json \
+            > work/minimal-boot-v3/minimal-boot-result.json.tmp
+          mv work/minimal-boot-v3/minimal-boot-result.json.tmp \
+            work/minimal-boot-v3/minimal-boot-result.json
+
+      - name: Upload the ISO and all diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-minimal-boot-v3
+          path: work/minimal-boot-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Summarize this exact build and boot attempt
+        if: always()
+        run: |
+          set -uxo pipefail
+          mkdir -p work/minimal-boot-v3 work/minimal-boot-v3-evidence
+          assembly_rc='${{ steps.assemble.outputs.exit_code }}'
+          [ -n "$assembly_rc" ] || assembly_rc=98
+          boot_outcome='${{ steps.boot.outcome }}'
+          [ -n "$boot_outcome" ] || boot_outcome=skipped
+          set +e
+          python3 arm64/scripts/summarize_arm64_boot_attempt.py \
+            --attempt-root work/minimal-boot-v3 \
+            --evidence-dir work/minimal-boot-v3-evidence \
+            --schema hancom-gooroom-arm64-minimal-boot-v3-attempt-evidence \
+            --readiness-marker HANCOM_GOOROOM_ARM64_MINIMAL_READY \
+            --assembly-exit-code "$assembly_rc" \
+            --boot-outcome "$boot_outcome" \
+            --build-result-name minimal-boot-result.json \
+            --qemu-log-name qemu-minimal-boot.log \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$GITHUB_SHA" \
+            --head-branch "$GITHUB_REF_NAME" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --repository "$GITHUB_REPOSITORY" \
+            --server-url "$GITHUB_SERVER_URL"
+          summary_rc=$?
+          set -e
+          echo "$summary_rc" > work/minimal-boot-v3-evidence/summarizer.exit-code
+          find work/minimal-boot-v3-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/minimal-boot-v3-evidence/LOCKSUMS.sha256
+          jq . work/minimal-boot-v3-evidence/summary.json
+
+      - name: Commit success or failure evidence before enforcing the gate
+        if: always()
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          attempt=arm64/locks/minimal-boot-v3-attempt
+          rm -rf "$attempt"
+          mkdir -p "$attempt"
+          cp -a work/minimal-boot-v3-evidence/. "$attempt/"
+          if [ "$(jq -r '.status' work/minimal-boot-v3-evidence/summary.json)" = passed ]; then
+            success=arm64/locks/minimal-boot-v3
+            rm -rf "$success"
+            mkdir -p "$success"
+            for name in \
+              minimal-boot-result.json \
+              minimal-kernel-version.txt \
+              minimal-packages.tsv \
+              "$ISO_NAME.sha256" \
+              "$ISO_NAME.size"; do
+              test -f "work/minimal-boot-v3/$name"
+              cp "work/minimal-boot-v3/$name" "$success/"
+            done
+            sha256sum "$success"/* | sort -k2 > "$success/LOCKSUMS.sha256"
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/minimal-boot-v3-attempt arm64/locks/minimal-boot-v3
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Hancom Gooroom ARM64 minimal boot v3 attempt'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload bounded consolidated evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-minimal-boot-v3-evidence
+          path: work/minimal-boot-v3-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce the ARM64 UEFI boot-chain gate
+        if: always()
+        run: |
+          set -euxo pipefail
+          test "$(jq -r '.status' work/minimal-boot-v3-evidence/summary.json)" = passed

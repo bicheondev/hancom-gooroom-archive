@@ -1,0 +1,95 @@
+name: ARM64 port - rebuild security status tools with exact vendor dependency
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-security-status-tools.yml'
+      - 'arm64/scripts/run_locked_source_arm64_with_vendor.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v4.sh'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-security-status-tools
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install lock tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl dpkg-dev file git jq python3
+
+      - name: Build exact source with exact Architecture all vendor dependency
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          HANCOM_GOOROOM_VENDOR_LOCK: ${{ github.workspace }}/arm64/locks/vendor-binaries/vendor-binary-lock.json
+          HANCOM_GOOROOM_VENDOR_PACKAGES: gooroom-security-utils
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v4.sh \
+            arm64/scripts/run_locked_source_arm64_with_vendor.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
+          rm -rf work/gooroom-security-status-tools-arm64
+          arm64/scripts/run_locked_source_arm64_with_vendor.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gooroom-security-status-tools \
+            work/gooroom-security-status-tools-arm64
+
+      - name: Verify source, version, architecture, and payload machine types
+        env:
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+        run: |
+          set -euxo pipefail
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            gooroom-security-status-tools \
+            work/gooroom-security-status-tools-arm64
+          jq -e '
+            .policy == "exact-verified-architecture-all-vendor-build-dependencies"
+            and .source == "gooroom-security-status-tools"
+            and (.packages | length) == 1
+            and .packages[0].package == "gooroom-security-utils"
+            and .packages[0].version == "0.3.7+grm3u1"
+            and .packages[0].architecture == "all"
+            and .packages[0].sha256 == "2f59a55125e99d3a468e6247c03aea1f5dd64adf8745ea669b890432523be182"
+          ' work/gooroom-security-status-tools-arm64/vendor-build-dependencies.json
+
+      - name: Upload exact ARM64 DEB and dependency evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-security-status-tools-exact-arm64
+          path: work/gooroom-security-status-tools-arm64
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9

@@ -1,0 +1,97 @@
+{
+  "base_source": {
+    "commit_sha": "9485507dcb027b1d146c5d3edf7a0f15fa13e558",
+    "repository_full_name": "gooroom/gooroom-dockbarx-applet",
+    "source_version": "0.3.1+grm3u1",
+    "tree_sha": "3c3fac8ab436e75fca8d366c85a20f1592a1a5ad"
+  },
+  "claims": {
+    "byte_identity_claimed_for_changed_script_and_changelog": true,
+    "lost_original_source_archive_recovered": false,
+    "native_arm64_build_verified": false,
+    "native_elf_identity_claimed": false,
+    "promotion_allowed": false,
+    "reconstructed_source_claimed": true,
+    "amd64_equivalence_verified": true
+  },
+  "exact_payload_relationship": {
+    "changelog_byte_identity_verified": true,
+    "changelog_decompressed_sha256": "586ab9025d7e46d667889d616ce2d9fe48256e82f8d7ae442dffd350a94e83c0",
+    "packaged_change_description": "Add a new icon theme for Hancom Gooroom 3.3",
+    "packaged_change_id": "95268201",
+    "python_byte_identity_verified": true,
+    "python_path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py",
+    "python_sha256": "46dffbcb5d62f1499c1b5e89646234b4c9fa7716680a5c90cb1c0bb3955a6895"
+  },
+  "reconstruction": {
+    "archive_filename": "reconstructed-source.tar.gz",
+    "archive_sha256": "7cc5439757dbeae8fbb38ddc17ab38b7d4a69636b1b9d454e5724061c1aaf983",
+    "archive_size": 19755,
+    "changed_paths": [
+      "debian/changelog",
+      "src/xfce4-dockbarx-plug.py"
+    ],
+    "patch_filename": "reconstruction.patch",
+    "patch_sha256": "d813de57d5cb5e0e8d9920799e0faf3963bd6c3dcdf82fcdd1307d3918483767",
+    "tree_sha": "818db768fd755a5060266d05b4afe5e746a16da7"
+  },
+  "schema": 1,
+  "source": "gooroom-dockbarx-applet",
+  "source_status": "verified-reconstructed-git-tree",
+  "source_version": "0.3.1+grm3u1+han3u1",
+  "target_binary_authority": {
+    "architecture": "amd64",
+    "filename": "target.deb",
+    "sha256": "9d810f3185babcd24e0d7c868586c930a8d39bcb7b0a01dee4d8cee02f440b0d",
+    "size": 14096
+  },
+  "target_payload_manifest": [
+    {
+      "elf": true,
+      "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+      "sha256": "3eb1e7829003c28d67d3da17883b0fcae08bc7fc38695cb21f8537a9079aedab",
+      "size": 23344
+    },
+    {
+      "elf": true,
+      "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+      "sha256": "5a4f4fce755692720a8965f5e50c095992ec87111f723bce88b884eef70b07c9",
+      "size": 23272
+    },
+    {
+      "elf": false,
+      "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py",
+      "sha256": "46dffbcb5d62f1499c1b5e89646234b4c9fa7716680a5c90cb1c0bb3955a6895",
+      "size": 4743
+    },
+    {
+      "elf": false,
+      "path": "usr/share/doc/gooroom-dockbarx-applet/changelog.gz",
+      "sha256": "f59902b2d9dfc464f65878e5e4ec70d8f5e7f03fd877d28b5e35bd3141eae1a0",
+      "size": 676
+    },
+    {
+      "elf": false,
+      "path": "usr/share/doc/gooroom-dockbarx-applet/copyright",
+      "sha256": "454e47751383f4ecdaf3346c01041bba926f1ee5d2f2581cc528b0a1eacae940",
+      "size": 1896
+    },
+    {
+      "elf": false,
+      "path": "usr/share/locale/en_GB/LC_MESSAGES/gooroom-dockbarx-applet.mo",
+      "sha256": "b3d50c58e4bde65eba5bb2e5f0fb2faeb26df4aea99c04f10155c338c78e8299",
+      "size": 506
+    },
+    {
+      "elf": false,
+      "path": "usr/share/locale/ko/LC_MESSAGES/gooroom-dockbarx-applet.mo",
+      "sha256": "ae52d79be69b0f8d9865120f51940d5bbf229af33c37fbf686952f0c08180730",
+      "size": 507
+    }
+  ],
+  "amd64_equivalence": {
+    "passed": true,
+    "policy": "exact-control-and-non-elf-payload-plus-normalized-elf-byte-identity",
+    "summary": "amd64-equivalence-summary.json"
+  }
+}

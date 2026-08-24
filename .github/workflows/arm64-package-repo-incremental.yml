@@ -1,0 +1,215 @@
+name: ARM64 port - assemble incremental verified package repository
+
+on:
+  workflow_run:
+    workflows:
+      - ARM64 port - build exact package wave 2
+      - ARM64 port - build exact package wave 3
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-package-repository-incremental
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact locks and payload verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Debian repository and machine-code tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            apt-utils binutils dpkg-dev file jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/verify_deb_payload_machine_v2.py
+
+      - name: Record job outcomes and select successful source builds
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/incremental-repository work/incremental-artifacts
+          mkdir -p \
+            work/incremental-repository/pool/main \
+            work/incremental-artifacts
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+            --jq '.jobs[] | [.name, .status, (.conclusion // "")] | @tsv' \
+            | sort -u > work/incremental-repository/job-outcomes.tsv
+          awk -F '\t' '$2 == "completed" && $3 == "success" && $1 != "prepare" {print $1}' \
+            work/incremental-repository/job-outcomes.tsv \
+            > work/incremental-repository/successful-sources.txt
+          awk -F '\t' '$2 == "completed" && $3 != "success" && $1 != "prepare" {print $1 "\t" $3}' \
+            work/incremental-repository/job-outcomes.tsv \
+            > work/incremental-repository/failed-sources.tsv
+          count="$(grep -c . work/incremental-repository/successful-sources.txt || true)"
+          echo "success_count=$count" >> "$GITHUB_OUTPUT"
+          case "$WORKFLOW_PATH" in
+            .github/workflows/arm64-build-wave2.yml) suffix=wave2 ;;
+            .github/workflows/arm64-build-wave3.yml) suffix=wave3 ;;
+            *) echo "unexpected source workflow: $WORKFLOW_PATH" >&2; exit 2 ;;
+          esac
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts only from successful jobs
+        if: steps.select.outputs.success_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SUFFIX: ${{ steps.select.outputs.suffix }}
+        run: |
+          set -euxo pipefail
+          while IFS= read -r source; do
+            [ -n "$source" ] || continue
+            gh run download "$RUN_ID" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "${source}-exact-arm64-${SUFFIX}" \
+              --dir "work/incremental-artifacts/$source"
+          done < work/incremental-repository/successful-sources.txt
+          find work/incremental-artifacts -type f -name '*.deb' -print0 \
+            | xargs -0 -r -I{} cp -n '{}' work/incremental-repository/pool/main/
+          test "$(find work/incremental-repository/pool/main -type f -name '*.deb' | wc -l)" -gt 0
+
+      - name: Reverify exact versions and every machine-code object
+        if: steps.select.outputs.success_count != '0'
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.path }}
+        run: |
+          set -euxo pipefail
+          lock=arm64/locks/effective-sources/effective-source-lock.json
+          manifest=work/incremental-repository/package-manifest.tsv
+          body="$(mktemp)"
+          : > "$body"
+          mapfile -t allowed < work/incremental-repository/successful-sources.txt
+          while IFS= read -r -d '' deb; do
+            package="$(dpkg-deb -f "$deb" Package)"
+            version="$(dpkg-deb -f "$deb" Version)"
+            architecture="$(dpkg-deb -f "$deb" Architecture)"
+            source_field="$(dpkg-deb -f "$deb" Source 2>/dev/null || true)"
+            source="${source_field%% *}"
+            [ -n "$source" ] || source="$package"
+            printf '%s\n' "${allowed[@]}" | grep -Fxq "$source"
+            expected="$(jq -r --arg source "$source" '
+              .sources[] | select(.source == $source) | .source_version
+            ' "$lock" | head -n1)"
+            test -n "$expected"
+            test "$version" = "$expected"
+            test "$architecture" = arm64
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$package" "$version" "$architecture" "$source" \
+              "$(sha256sum "$deb" | cut -d' ' -f1)" \
+              "$(stat -c '%s' "$deb")" "${deb##*/}" >> "$body"
+          done < <(find work/incremental-repository/pool/main -type f -name '*.deb' -print0)
+          {
+            printf 'package\tversion\tarchitecture\tsource\tsha256\tbytes\tfilename\n'
+            sort -t $'\t' -k4,4 -k1,1 "$body"
+          } > "$manifest"
+          rm -f "$body"
+          mapfile -t debs < <(find work/incremental-repository/pool/main -type f -name '*.deb' | sort)
+          python3 arm64/scripts/verify_deb_payload_machine_v2.py \
+            --report work/incremental-repository/deb-payload-machine-report.json \
+            "${debs[@]}"
+          jq -n \
+            --arg status verified-partial-wave \
+            --arg source_workflow "$SOURCE_WORKFLOW" \
+            --arg run_id "$RUN_ID" \
+            --arg reference_iso_sha256 "$(jq -r '.reference_iso.sha256' arm64/locks/reference/amd64-reference.json)" \
+            --argjson successful_source_count "${{ steps.select.outputs.success_count }}" \
+            --argjson failed_source_count "$(wc -l < work/incremental-repository/failed-sources.tsv)" \
+            --argjson deb_count "${#debs[@]}" \
+            '{
+              status: $status,
+              source_workflow: $source_workflow,
+              run_id: $run_id,
+              reference_iso_sha256: $reference_iso_sha256,
+              successful_source_count: $successful_source_count,
+              failed_source_count: $failed_source_count,
+              deb_count: $deb_count
+            }' > work/incremental-repository/repository-result.json
+
+      - name: Generate APT indexes for successful packages
+        if: steps.select.outputs.success_count != '0'
+        run: |
+          set -euxo pipefail
+          cd work/incremental-repository
+          mkdir -p dists/hancom-gooroom-3.3/main/binary-arm64
+          dpkg-scanpackages --multiversion pool /dev/null \
+            > dists/hancom-gooroom-3.3/main/binary-arm64/Packages
+          xz -9e -k dists/hancom-gooroom-3.3/main/binary-arm64/Packages
+          apt-ftparchive release dists/hancom-gooroom-3.3 \
+            > dists/hancom-gooroom-3.3/Release
+          find . -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Write an empty-wave result when no source passed
+        if: steps.select.outputs.success_count == '0'
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.path }}
+        run: |
+          set -euxo pipefail
+          jq -n \
+            --arg status no-successful-source-builds \
+            --arg source_workflow "$SOURCE_WORKFLOW" \
+            --arg run_id "$RUN_ID" \
+            '{status:$status, source_workflow:$source_workflow, run_id:$run_id}' \
+            > work/incremental-repository/repository-result.json
+          find work/incremental-repository -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/incremental-repository/SHA256SUMS
+
+      - name: Upload incremental repository and failure manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-incremental-${{ steps.select.outputs.suffix }}
+          path: work/incremental-repository
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit immutable incremental wave evidence
+        run: |
+          set -euxo pipefail
+          suffix='${{ steps.select.outputs.suffix }}'
+          run_id='${{ github.event.workflow_run.id }}'
+          destination="arm64/locks/package-repository-incremental/${suffix}-${run_id}"
+          mkdir -p "$destination"
+          cp work/incremental-repository/job-outcomes.tsv "$destination/"
+          cp work/incremental-repository/successful-sources.txt "$destination/"
+          cp work/incremental-repository/failed-sources.tsv "$destination/"
+          cp work/incremental-repository/repository-result.json "$destination/"
+          [ ! -f work/incremental-repository/package-manifest.tsv ] || \
+            cp work/incremental-repository/package-manifest.tsv "$destination/"
+          [ ! -f work/incremental-repository/deb-payload-machine-report.json ] || \
+            cp work/incremental-repository/deb-payload-machine-report.json "$destination/"
+          [ ! -f work/incremental-repository/dists/hancom-gooroom-3.3/main/binary-arm64/Packages.xz ] || \
+            cp work/incremental-repository/dists/hancom-gooroom-3.3/main/binary-arm64/Packages.xz "$destination/"
+          find "$destination" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$destination/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/package-repository-incremental
+          git commit -m "Record verified ARM64 ${suffix} package results" || exit 0
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port

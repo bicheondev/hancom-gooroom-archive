@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "policy": "build-only-exactly-locked-native-arm64-sources",
+  "known_success": {
+    "accountsservice": "native-arm64-build-passed",
+    "cups-pk-helper": "native-arm64-build-passed",
+    "file-roller": "native-arm64-build-passed",
+    "mousetweaks": "native-arm64-build-passed",
+    "gnome-screenshot": "native-arm64-build-passed",
+    "celluloid": "compile-passed-graphical-test-not-run-in-headless-ci"
+  },
+  "batches": {
+    "desktop-leaf-1": [
+      "eog",
+      "gedit",
+      "evince",
+      "gnome-calculator",
+      "gnome-system-monitor",
+      "gnome-terminal",
+      "simple-scan",
+      "seahorse"
+    ],
+    "desktop-leaf-2": [
+      "baobab",
+      "gnome-characters",
+      "gnome-clocks",
+      "gnome-font-viewer",
+      "gnome-logs",
+      "gnome-maps",
+      "gnome-weather",
+      "yelp"
+    ],
+    "desktop-core-1": [
+      "nautilus",
+      "gnome-control-center",
+      "gnome-settings-daemon",
+      "gnome-shell",
+      "mutter"
+    ],
+    "system-core-1": [
+      "dpkg",
+      "policykit-1",
+      "systemd"
+    ]
+  }
+}

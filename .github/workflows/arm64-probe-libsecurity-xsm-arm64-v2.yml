@@ -1,0 +1,161 @@
+name: ARM64 port - probe libsecurity XSM source on ARM64
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-probe-libsecurity-xsm-arm64-v2.yml'
+      - 'arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-probe-libsecurity-xsm-arm64-v2
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact probe and evidence policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 runner and install host audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo "Native ARM64 runner required, got $(uname -m)" >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates binutils file git jq python3
+          bash -n arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh
+
+      - name: Compile the immutable public XSM implementation in the dated snapshot
+        id: source_probe
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/libsecurity-xsm-arm64-probe
+          mkdir -p work/libsecurity-xsm-arm64-probe
+          set +e
+          bash arm64/scripts/probe_libsecurity_xsm_arm64_v2.sh \
+            work/libsecurity-xsm-arm64-probe \
+            2>&1 | tee work/libsecurity-xsm-arm64-probe/workflow-probe.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Upload complete source-probe evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libsecurity-xsm-arm64-source-probe-${{ github.run_id }}
+          path: work/libsecurity-xsm-arm64-probe
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact immutable probe authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/libsecurity-xsm-arm64-probe
+          run="arm64/locks/libsecurity-xsm-arm64-probe/runs/${GITHUB_RUN_ID}"
+          latest=arm64/locks/libsecurity-xsm-arm64-probe/latest
+          rm -rf "$run" "$latest"
+          mkdir -p "$run" "$latest"
+
+          for file in \
+            summary.json source-provenance.json \
+            container.exit-code container.stderr.log \
+            transport-apt-update.exit-code transport-apt-update.stderr.log \
+            transport-apt-install.exit-code transport-apt-install.stderr.log \
+            debootstrap.exit-code debootstrap.stderr.log \
+            chroot-apt-update.exit-code chroot-apt-update.stderr.log \
+            chroot-apt-install.exit-code chroot-apt-install.stderr.log \
+            chroot-probe.exit-code chroot-probe.stderr.log \
+            original-build.exit-code original-build.stderr.log \
+            cflags-only-build.exit-code cflags-only-build.stderr.log \
+            xsm-cflags-only-build.file.txt \
+            xsm-cflags-only-build.readelf.txt \
+            xsm-cflags-only-build.dynamic.txt \
+            pkg-config-versions.txt pkg-config-cflags.txt pkg-config-libs.txt; do
+            if [ -f "$source/$file" ]; then
+              cp "$source/$file" "$run/"
+            fi
+          done
+
+          jq -n \
+            --argjson workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_commit "$GITHUB_SHA" \
+            --arg workflow_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg source_probe_outcome '${{ steps.source_probe.outcome }}' \
+            --arg source_probe_exit_code '${{ steps.source_probe.outputs.exit_code }}' \
+            '{
+              schema:2,
+              workflow_run_id:$workflow_run_id,
+              workflow_commit:$workflow_commit,
+              workflow_url:$workflow_url,
+              source_probe_outcome:$source_probe_outcome,
+              source_probe_exit_code:$source_probe_exit_code,
+              policy:"immutable-public-source-exact-snapshot-arm64-compilation-probe"
+            }' > "$run/authority.json"
+
+          (
+            cd "$run"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+          cp -a "$run/." "$latest/"
+          (
+            cd "$latest"
+            sha256sum --check SHA256SUMS
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/libsecurity-xsm-arm64-probe
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record XSM ARM64 source probe ${GITHUB_RUN_ID}"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce a real AArch64 shared-object result
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.source_probe.outcome }}' = success
+          test '${{ steps.source_probe.outputs.exit_code }}' = 0
+          jq -e '
+            .probe_passed == true
+            and .cflags_only_build_exit_code == 0
+            and .cflags_only_binary_present == true
+            and .cflags_only_binary_machine == "AArch64"
+          ' work/libsecurity-xsm-arm64-probe/summary.json

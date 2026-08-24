@@ -1,0 +1,111 @@
+name: ARM64 port - merge exact Git sources into effective lock
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-merge-effective-source-lock.yml'
+      - 'arm64/scripts/merge_effective_git_source_lock.py'
+      - 'arm64/locks/sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-effective-source-lock
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out both source locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate merge inputs
+        id: inputs
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/merge_effective_git_source_lock.py
+          jq empty arm64/locks/effective-sources/effective-source-lock.json
+          if [ -f arm64/locks/sources/source-lock.json ]; then
+            jq empty arm64/locks/sources/source-lock.json
+            echo 'candidate=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'candidate=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge only exact same-tree-compatible Git rows
+        id: merge
+        if: steps.inputs.outputs.candidate == 'true'
+        run: |
+          set -uxo pipefail
+          rm -rf work/effective-source-merge
+          mkdir -p work/effective-source-merge
+          set +e
+          python3 arm64/scripts/merge_effective_git_source_lock.py \
+            --effective arm64/locks/effective-sources/effective-source-lock.json \
+            --candidate arm64/locks/sources/source-lock.json \
+            --output work/effective-source-merge/effective-source-lock.json \
+            --report work/effective-source-merge/merge-report.json
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          jq . work/effective-source-merge/merge-report.json
+          find work/effective-source-merge -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/effective-source-merge/SHA256SUMS
+
+      - name: Upload merge or conflict evidence
+        if: steps.inputs.outputs.candidate == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-effective-source-merge
+          path: work/effective-source-merge
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Reject a different tree for the same exact source version
+        if: >-
+          steps.inputs.outputs.candidate == 'true' &&
+          steps.merge.outputs.exit_code != '0'
+        run: |
+          set -euxo pipefail
+          test '${{ steps.merge.outputs.exit_code }}' = 0
+
+      - name: Commit the expanded effective lock
+        if: >-
+          steps.inputs.outputs.candidate == 'true' &&
+          steps.merge.outputs.exit_code == '0'
+        run: |
+          set -euxo pipefail
+          merged="$(jq -r '.merged_count' work/effective-source-merge/merge-report.json)"
+          same_tree="$(jq -r '.same_tree_count' work/effective-source-merge/merge-report.json)"
+          if [ "$merged" = 0 ] && [ "$same_tree" = 0 ]; then
+            exit 0
+          fi
+          cp work/effective-source-merge/effective-source-lock.json \
+            arm64/locks/effective-sources/effective-source-lock.json
+          cp work/effective-source-merge/merge-report.json \
+            arm64/locks/effective-sources/latest-git-merge-report.json
+          find arm64/locks/effective-sources -maxdepth 1 -type f \
+            ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > arm64/locks/effective-sources/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/effective-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Merge newly verified exact Git sources into ARM64 lock'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port

@@ -1,0 +1,92 @@
+name: ARM64 port - build audited architecture replacements
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-arch-replacements.yml'
+      - 'arm64/scripts/build_arch_replacement_packages.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arch-replacements
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # The replacement is a config-only DEB with no executable payload. Building
+    # it does not require a scarce native ARM64 runner; its Architecture and
+    # immutable reference fields are verified below.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out immutable reference
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Build and verify config-only ARM64 replacement
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 dpkg-dev jq file
+          rm -rf work/arch-replacements
+          mkdir -p work/arch-replacements
+          python3 arm64/scripts/build_arch_replacement_packages.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --output-dir work/arch-replacements
+          deb="$(find work/arch-replacements -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          test -n "$deb"
+          test "$(dpkg-deb -f "$deb" Architecture)" = arm64
+          test "$(dpkg-deb -f "$deb" Package)" = linux-image-arm64
+          root="$(mktemp -d)"
+          trap 'rm -rf "$root"' EXIT
+          dpkg-deb -x "$deb" "$root"
+          if find "$root" -type f -exec file '{}' + | grep -E 'ELF|executable'; then
+            echo 'config-only architecture replacement contains executable payload' >&2
+            exit 1
+          fi
+          find work/arch-replacements -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > work/arch-replacements/SHA256SUMS
+
+      - name: Upload audited architecture replacement
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-arm64-arch-replacements-${{ github.run_id }}
+          path: work/arch-replacements
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact replacement lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/arch-replacements
+          mkdir -p arm64/locks/arch-replacements
+          cp work/arch-replacements/architecture-replacements.json \
+            arm64/locks/arch-replacements/
+          cp work/arch-replacements/SHA256SUMS arm64/locks/arch-replacements/
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-arm64-arch-replacements-${{ github.run_id }}' \
+            '{schema:1,actions_run_id:$actions_run_id,artifact_name:$artifact_name}' \
+            > arm64/locks/arch-replacements/artifact-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/arch-replacements
+          git commit -m 'Lock audited ARM64 architecture replacement packages'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

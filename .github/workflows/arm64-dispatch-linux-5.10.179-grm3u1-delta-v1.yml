@@ -1,0 +1,121 @@
+name: ARM64 dispatch linux 5.10.179 grm3u1 delta v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-dispatch-linux-5.10.179-grm3u1-delta-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-dispatch-linux-5.10.179-grm3u1-delta-v1
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out run-lock destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Dispatch and resolve the exact kernel delta run
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflow=arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+          dispatched_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/$workflow/dispatches" \
+            -f ref=arm64-port
+
+          run_id=''
+          run_url=''
+          head_sha=''
+          status=''
+          conclusion=''
+          created_at=''
+          for attempt in $(seq 1 30); do
+            response="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/$workflow/runs?branch=arm64-port&event=workflow_dispatch&per_page=20")"
+            candidate="$(jq -c --arg dispatched_at "$dispatched_at" '
+              [.workflow_runs[]
+               | select(.created_at >= $dispatched_at)]
+              | sort_by(.created_at)
+              | last // empty
+            ' <<<"$response")"
+            if [[ -n "$candidate" ]]; then
+              run_id="$(jq -r '.id' <<<"$candidate")"
+              run_url="$(jq -r '.html_url' <<<"$candidate")"
+              head_sha="$(jq -r '.head_sha' <<<"$candidate")"
+              status="$(jq -r '.status' <<<"$candidate")"
+              conclusion="$(jq -r '.conclusion // ""' <<<"$candidate")"
+              created_at="$(jq -r '.created_at' <<<"$candidate")"
+              break
+            fi
+            sleep 2
+          done
+          test -n "$run_id"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+          printf 'run_url=%s\n' "$run_url" >> "$GITHUB_OUTPUT"
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+          printf 'status=%s\n' "$status" >> "$GITHUB_OUTPUT"
+          printf 'conclusion=%s\n' "$conclusion" >> "$GITHUB_OUTPUT"
+          printf 'created_at=%s\n' "$created_at" >> "$GITHUB_OUTPUT"
+
+      - name: Commit exact dispatched-run authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/status/linux-5.10.179-grm3u1-delta-v1-dispatch/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          jq -n \
+            --arg dispatcher_run_id "$GITHUB_RUN_ID" \
+            --arg target_run_id '${{ steps.target.outputs.run_id }}' \
+            --arg target_run_url '${{ steps.target.outputs.run_url }}' \
+            --arg target_head_sha '${{ steps.target.outputs.head_sha }}' \
+            --arg target_status '${{ steps.target.outputs.status }}' \
+            --arg target_conclusion '${{ steps.target.outputs.conclusion }}' \
+            --arg target_created_at '${{ steps.target.outputs.created_at }}' '
+              {
+                schema: 1,
+                dispatcher_actions_run_id: $dispatcher_run_id,
+                target_actions_run_id: $target_run_id,
+                target_actions_run_url: $target_run_url,
+                target_head_sha: $target_head_sha,
+                observed_status: $target_status,
+                observed_conclusion: $target_conclusion,
+                target_created_at: $target_created_at
+              }
+            ' > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Lock dispatched linux 5.10.179 grm3u1 delta run'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

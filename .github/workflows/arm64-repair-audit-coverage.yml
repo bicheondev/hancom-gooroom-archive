@@ -1,0 +1,76 @@
+name: ARM64 port - extend state audit to targeted source builds
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-repair-audit-coverage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-repair-audit-coverage
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install YAML parser
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-yaml
+
+      - name: Include targeted source and build evidence in the dashboard
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          script = Path('arm64/scripts/audit_arm64_port_state.py')
+          text = script.read_text(encoding='utf-8')
+          old = 'locks_root.glob("build-wave*/summary.json")'
+          new = 'locks_root.glob("build-*/summary.json")'
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected audit script revision: count={text.count(old)}')
+          script.write_text(text.replace(old, new), encoding='utf-8')
+
+          workflow = Path('.github/workflows/arm64-port-state-audit.yml')
+          text = workflow.read_text(encoding='utf-8')
+          anchor = "      - 'arm64/locks/source-archives/**'\n"
+          addition = (
+              anchor
+              + "      - 'arm64/locks/targeted-sources/**'\n"
+              + "      - 'arm64/locks/build-qtbase-targeted/**'\n"
+          )
+          if text.count(anchor) != 1:
+              raise SystemExit(f'unexpected audit workflow revision: count={text.count(anchor)}')
+          text = text.replace(anchor, addition)
+          yaml.safe_load(text)
+          workflow.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit and retrigger the expanded audit
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/scripts/audit_arm64_port_state.py \
+            .github/workflows/arm64-port-state-audit.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Include targeted source builds in ARM64 port state audit'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port

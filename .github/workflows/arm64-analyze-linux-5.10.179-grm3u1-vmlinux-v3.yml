@@ -1,0 +1,393 @@
+name: ARM64 analyze linux 5.10.179 grm3u1 vmlinux v3
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml'
+      - 'arm64/scripts/download_debian_snapshot_binary_v1.py'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-vmlinux-v3
+  cancel-in-progress: false
+
+env:
+  PACKAGE: linux-image-5.10.0-23-amd64
+  BASE_VERSION: 5.10.179-1
+  VENDOR_VERSION: 5.10.179-1+grm3u1
+  ABI: 5.10.0-23-amd64
+  VENDOR_URL: https://update.hancomgooroom.com/gooroom/pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+  SNAPSHOT_DOWNLOADER: arm64/scripts/download_debian_snapshot_binary_v1.py
+  EXTRACT_VMLINUX_URL: https://raw.githubusercontent.com/torvalds/linux/v5.10.179/scripts/extract-vmlinux
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact analysis authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install package and ELF analysis tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils bzip2 ca-certificates curl dpkg-dev gzip jq lz4 python3 \
+            xz-utils zstd
+          python3 -m py_compile "$SNAPSHOT_DOWNLOADER"
+          mkdir -p work/linux-vmlinux-v3/{downloads,vendor,debian,output,extracted}
+
+      - name: Recover exact vendor and Debian kernel image packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vmlinux-v3
+          curl --location --fail --show-error \
+            --retry 8 --retry-delay 3 --retry-all-errors \
+            --output "$root/downloads/vendor.deb" "$VENDOR_URL"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Version)" = "$VENDOR_VERSION"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Architecture)" = amd64
+          python3 "$SNAPSHOT_DOWNLOADER" \
+            --package "$PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture amd64 \
+            --output "$root/downloads/debian.deb" \
+            --metadata-output "$root/output/debian-snapshot.json"
+          test "$(dpkg-deb -f "$root/downloads/debian.deb" Version)" = "$BASE_VERSION"
+          dpkg-deb -x "$root/downloads/vendor.deb" "$root/vendor"
+          dpkg-deb -x "$root/downloads/debian.deb" "$root/debian"
+          sha256sum "$root/downloads/vendor.deb" "$root/downloads/debian.deb" \
+            > "$root/output/input-debs.sha256"
+
+      - name: Recover uncompressed vmlinux from both exact boot images
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=work/linux-vmlinux-v3
+          curl --location --fail --show-error \
+            --retry 8 --retry-delay 2 --retry-all-errors \
+            "$EXTRACT_VMLINUX_URL" -o "$root/extracted/extract-vmlinux"
+          chmod +x "$root/extracted/extract-vmlinux"
+          sha256sum "$root/extracted/extract-vmlinux" \
+            > "$root/output/extract-vmlinux.sha256"
+          for side in vendor debian; do
+            image="$root/$side/boot/vmlinuz-$ABI"
+            test -f "$image"
+            "$root/extracted/extract-vmlinux" "$image" \
+              > "$root/extracted/$side-vmlinux"
+            test "$(head -c4 "$root/extracted/$side-vmlinux" | od -An -tx1 | tr -d ' \n')" = 7f454c46
+            file "$root/extracted/$side-vmlinux" \
+              > "$root/output/$side-vmlinux.file.txt"
+            readelf -h "$root/extracted/$side-vmlinux" \
+              > "$root/output/$side-vmlinux.elf-header.txt"
+          done
+          sha256sum "$root/extracted/vendor-vmlinux" "$root/extracted/debian-vmlinux" \
+            > "$root/output/extracted-vmlinux.sha256"
+
+      - name: Compare allocated and executable ELF sections plus defined symbols
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
+          from typing import Any
+
+          root = Path('work/linux-vmlinux-v3')
+          output = root / 'output'
+          images = {
+              'vendor': root / 'extracted/vendor-vmlinux',
+              'debian': root / 'extracted/debian-vmlinux',
+          }
+
+          def sha256_file(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def section_inventory(path: Path) -> dict[str, dict[str, Any]]:
+              text = subprocess.check_output(
+                  ['readelf', '-SW', str(path)], text=True,
+                  stderr=subprocess.STDOUT,
+              )
+              descriptors = []
+              pattern = re.compile(
+                  r'\s*\[\s*\d+\]\s+(\S+)\s+(\S+)\s+\S+\s+\S+\s+(\S+)\s+\S+\s+(\S+)'
+              )
+              for line in text.splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  name, kind, size_hex, flags = match.groups()
+                  if 'A' not in flags or name == '.note.gnu.build-id':
+                      continue
+                  descriptors.append((name, kind, int(size_hex, 16), flags))
+              result = {}
+              with tempfile.TemporaryDirectory() as temporary:
+                  temporary_path = Path(temporary)
+                  for index, (name, kind, size, flags) in enumerate(descriptors):
+                      row: dict[str, Any] = {
+                          'type': kind,
+                          'size': size,
+                          'flags': flags,
+                          'executable': 'X' in flags,
+                      }
+                      if kind == 'NOBITS':
+                          row['kind'] = 'nobits'
+                      else:
+                          destination = temporary_path / str(index)
+                          process = subprocess.run(
+                              ['objcopy', '--dump-section', f'{name}={destination}', str(path)],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              text=True,
+                          )
+                          if process.returncode == 0 and destination.exists():
+                              row['sha256'] = sha256_file(destination)
+                              row['dumped_size'] = destination.stat().st_size
+                          else:
+                              row['error'] = process.stderr[-1000:]
+                      result[name] = row
+              return result
+
+          def symbols(path: Path) -> dict[str, dict[str, Any]]:
+              process = subprocess.run(
+                  ['nm', '-S', '--defined-only', '--format=posix', str(path)],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+              )
+              if process.returncode != 0:
+                  return {}
+              result = {}
+              pattern = re.compile(r'^(\S+)\s+(\S)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)')
+              for line in process.stdout.splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  name, kind, value, size = match.groups()
+                  result[name] = {
+                      'kind': kind,
+                      'value': int(value, 16),
+                      'size': int(size, 16),
+                  }
+              return result
+
+          sections = {side: section_inventory(path) for side, path in images.items()}
+          section_rows = []
+          for name in sorted(set(sections['vendor']) | set(sections['debian'])):
+              vendor = sections['vendor'].get(name)
+              debian = sections['debian'].get(name)
+              section_rows.append({
+                  'name': name,
+                  'vendor': vendor,
+                  'debian': debian,
+                  'equal': vendor == debian,
+                  'executable': bool(
+                      (vendor or {}).get('executable') or (debian or {}).get('executable')
+                  ),
+              })
+          different_sections = [row for row in section_rows if not row['equal']]
+          different_executable = [row for row in different_sections if row['executable']]
+
+          symbol_maps = {side: symbols(path) for side, path in images.items()}
+          common_symbols = set(symbol_maps['vendor']) & set(symbol_maps['debian'])
+          target_only_symbols = sorted(set(symbol_maps['vendor']) - set(symbol_maps['debian']))
+          base_only_symbols = sorted(set(symbol_maps['debian']) - set(symbol_maps['vendor']))
+          size_differences = []
+          for name in sorted(common_symbols):
+              vendor = symbol_maps['vendor'][name]
+              debian = symbol_maps['debian'][name]
+              if vendor['size'] != debian['size'] or vendor['kind'] != debian['kind']:
+                  size_differences.append({
+                      'name': name,
+                      'vendor_kind': vendor['kind'],
+                      'debian_kind': debian['kind'],
+                      'vendor_size': vendor['size'],
+                      'debian_size': debian['size'],
+                  })
+
+          document = {
+              'schema': 1,
+              'source': 'linux',
+              'base_version': '5.10.179-1',
+              'vendor_version': '5.10.179-1+grm3u1',
+              'abi': '5.10.0-23-amd64',
+              'vendor_vmlinux': {
+                  'size': images['vendor'].stat().st_size,
+                  'sha256': sha256_file(images['vendor']),
+                  'allocated_section_count': len(sections['vendor']),
+                  'defined_symbol_count': len(symbol_maps['vendor']),
+              },
+              'debian_vmlinux': {
+                  'size': images['debian'].stat().st_size,
+                  'sha256': sha256_file(images['debian']),
+                  'allocated_section_count': len(sections['debian']),
+                  'defined_symbol_count': len(symbol_maps['debian']),
+              },
+              'allocated_section_path_set_identical': (
+                  set(sections['vendor']) == set(sections['debian'])
+              ),
+              'different_allocated_section_count': len(different_sections),
+              'different_executable_section_count': len(different_executable),
+              'executable_allocated_sections_equivalent': not different_executable,
+              'different_allocated_sections': different_sections,
+              'defined_symbol_presence_difference_count': (
+                  len(target_only_symbols) + len(base_only_symbols)
+              ),
+              'vendor_only_defined_symbols': target_only_symbols[:2000],
+              'debian_only_defined_symbols': base_only_symbols[:2000],
+              'defined_symbol_size_or_kind_difference_count': len(size_differences),
+              'defined_symbol_size_or_kind_differences': size_differences[:5000],
+              'code_level_equivalence_candidate': (
+                  not different_executable
+                  and not target_only_symbols
+                  and not base_only_symbols
+                  and not size_differences
+              ),
+              'source_equivalence_proven': False,
+              'native_arm64_build_allowed': False,
+              'package_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+          }
+          (output / 'vmlinux-comparison.json').write_text(
+              json.dumps(document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          summary = {
+              key: document[key]
+              for key in (
+                  'schema',
+                  'source',
+                  'base_version',
+                  'vendor_version',
+                  'abi',
+                  'allocated_section_path_set_identical',
+                  'different_allocated_section_count',
+                  'different_executable_section_count',
+                  'executable_allocated_sections_equivalent',
+                  'defined_symbol_presence_difference_count',
+                  'defined_symbol_size_or_kind_difference_count',
+                  'code_level_equivalence_candidate',
+                  'source_equivalence_proven',
+                  'native_arm64_build_allowed',
+                  'package_promotion_allowed',
+                  'iso_assembly_allowed',
+              )
+          }
+          summary['next_action'] = (
+              'rebuild exact Debian source with vendor config and compare AMD64 output'
+              if document['code_level_equivalence_candidate']
+              else 'reconstruct vendor code or configuration responsible for executable deltas'
+          )
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/linux-vmlinux-v3/output/summary.json >> "$GITHUB_STEP_SUMMARY"
+          jq -e '
+            .schema == 1
+            and .source == "linux"
+            and .base_version == "5.10.179-1"
+            and .vendor_version == "5.10.179-1+grm3u1"
+          ' work/linux-vmlinux-v3/output/summary.json >/dev/null
+
+      - name: Seal complete vmlinux analysis evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          output=work/linux-vmlinux-v3/output
+          find "$output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete vmlinux evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-grm3u1-vmlinux-v3
+          path: work/linux-vmlinux-v3/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed vmlinux authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/linux-vmlinux-v3/output
+          destination=arm64/locks/linux-5.10.179-grm3u1-vmlinux-v3/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/summary.json" "$destination/"
+          cp "$source/vmlinux-comparison.json" "$destination/"
+          cp "$source/debian-snapshot.json" "$destination/"
+          cp "$source/extract-vmlinux.sha256" "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                source_equivalence_proven: false,
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true
+              }
+            ' > "$destination/authority.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record linux 5.10.179 grm3u1 vmlinux analysis v3'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

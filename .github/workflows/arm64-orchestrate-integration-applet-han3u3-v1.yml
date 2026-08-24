@@ -1,0 +1,92 @@
+name: ARM64 orchestrate integration applet han3u3 v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-orchestrate-integration-applet-han3u3-v1.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: arm64-orchestrate-integration-applet-han3u3-v1
+  cancel-in-progress: false
+
+env:
+  RECOVERY_WORKFLOW: arm64-recover-gooroom-integration-applet-han3u3-v1.yml
+  BUILD_WORKFLOW: arm64-build-gooroom-integration-applet-han3u3-v1.yml
+  SOURCE_AUTHORITY: arm64/locks/gooroom-integration-applet-han3u3-source-recovery/latest/source-authority.json
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out orchestration branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Recover exact source and wait for authority
+        id: recovery
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$RECOVERY_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 30); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$RECOVERY_WORKFLOW" --branch arm64-port \
+              --event workflow_dispatch --limit 30 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 10 --exit-status
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Read committed exact-source decision
+        id: decision
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin arm64-port
+          git show "origin/arm64-port:$SOURCE_AUTHORITY" > source-authority.json
+          jq -e '.exact_source_recovered == true and .build_allowed == true' source-authority.json >/dev/null
+          echo 'build_allowed=true' >> "$GITHUB_OUTPUT"
+          jq '.' source-authority.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build and validate native ARM64 package
+        if: steps.decision.outputs.build_allowed == 'true'
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$BUILD_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 30); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$BUILD_WORKFLOW" --branch arm64-port \
+              --event workflow_dispatch --limit 30 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 10 --exit-status
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"

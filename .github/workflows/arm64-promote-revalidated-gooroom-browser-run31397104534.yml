@@ -1,0 +1,248 @@
+name: ARM64 port - promote revalidated Gooroom browser run 31397104534
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-promote-revalidated-gooroom-browser-run31397104534.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-revalidated-browser-31397104534
+  cancel-in-progress: false
+
+env:
+  SOURCE_BUILD_RUN_ID: '31371705497'
+  SOURCE_BUILD_ARTIFACT: gooroom-browser-preverification-arm64-1-31371705497
+  REVALIDATION_RUN_ID: '31397104534'
+  REVALIDATION_ARTIFACT: gooroom-browser-exact-arm64-wave5
+  REVALIDATION_ARTIFACT_ID: '9066078503'
+  REVALIDATION_ARTIFACT_DIGEST: sha256:2fdac7b07c3f642a50c755694c30e93fdff4171fe00dff06928bda9f864f98fd
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out current canonical ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install independent package and Git inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils dpkg-dev file git jq python3
+          python3 -m py_compile arm64/scripts/promote_verified_git_arm64_artifact.py
+
+      - name: Lock the successful revalidation run and exact artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/promote-revalidated-gooroom-browser
+          rm -rf "$base"
+          mkdir -p "$base"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REVALIDATION_RUN_ID" \
+            > "$base/revalidation-run.json"
+          jq -e \
+            --arg head '25bbf49d588b5ea99e6b6c44a53600ee368955e0' '
+              .id == 31397104534
+              and .name == "ARM64 port - revalidate preserved Gooroom browser artifact"
+              and .path == ".github/workflows/arm64-revalidate-gooroom-browser-preserved.yml"
+              and .head_branch == "arm64-port"
+              and .head_sha == $head
+              and .status == "completed"
+              and .conclusion == "success"
+            ' "$base/revalidation-run.json" >/dev/null
+
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$REVALIDATION_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[]' \
+            | jq -s \
+                --arg name "$REVALIDATION_ARTIFACT" \
+                --argjson id "$REVALIDATION_ARTIFACT_ID" \
+                --arg digest "$REVALIDATION_ARTIFACT_DIGEST" '
+                  map(select(.name == $name))
+                  | if length == 1 then .[0]
+                    else error("expected exactly one revalidated browser artifact") end
+                  | select(
+                      .id == $id
+                      and .digest == $digest
+                      and .expired == false
+                      and .size_in_bytes > 0
+                    )
+                ' > "$base/revalidation-artifact.json"
+          test -s "$base/revalidation-artifact.json"
+
+      - name: Download the exact revalidated ARM64 browser artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.REVALIDATION_ARTIFACT }}
+          path: work/promote-revalidated-gooroom-browser/payload
+          repository: ${{ github.repository }}
+          run-id: ${{ env.REVALIDATION_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Verify original build checksums and revalidation evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/promote-revalidated-gooroom-browser
+          payload="$base/payload"
+          test -f "$payload/build-lock.json"
+          test -f "$payload/source-lock-evidence.json"
+          test -f "$payload/upstream-source-evidence.json"
+          test -f "$payload/upstream-source-members.tsv"
+          test -f "$payload/verification-summary.json"
+          test -f "$payload/gooroom-browser-crashpad-verification.json"
+          test -f "$payload/gooroom-browser_3.5.0-1+grm3u3_arm64.deb"
+          test -f "$payload/gooroom-browser-dbgsym_3.5.0-1+grm3u3_arm64.deb"
+          test -f "$payload/SHA256SUMS"
+
+          test ! -e work/gooroom-browser-arm64
+          ln -s "$(realpath "$payload")" work/gooroom-browser-arm64
+          sha256sum --check "$payload/SHA256SUMS"
+
+          jq -e '
+            .source == "gooroom-browser"
+            and .source_version == "3.5.0-1+grm3u3"
+            and .verified == true
+            and .wrong_architecture_executable_count == 0
+            and (.expected_architecture_dependent_packages | sort) == ["gooroom-browser"]
+            and (.produced_binary_packages | sort) == ["gooroom-browser", "gooroom-browser-dbgsym"]
+            and .deb_count == 2
+          ' "$payload/verification-summary.json" >/dev/null
+          jq -e '
+            .source == "gooroom-browser"
+            and .source_version == "3.5.0-1+grm3u3"
+            and .package == "gooroom-browser"
+            and .architecture == "arm64"
+            and .handler_path == "/usr/lib/gooroom-browser/chrome_crashpad_handler"
+            and .handler_machine == "AArch64"
+            and .prebuilt_downstream_handler_installed == false
+            and .verified == true
+            and (.handler_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$payload/gooroom-browser-crashpad-verification.json" >/dev/null
+
+      - name: Independently rescan and promote the exact ARM64 packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/promote-revalidated-gooroom-browser
+          payload="$base/payload"
+          result_dir=arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3
+          result="$result_dir/result.json"
+          rm -rf "$result_dir"
+          mkdir -p "$result_dir"
+
+          python3 arm64/scripts/promote_verified_git_arm64_artifact.py \
+            --source-lock arm64/locks/effective-sources-v3/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --artifact-dir "$payload" \
+            --source gooroom-browser \
+            --run-id "$REVALIDATION_RUN_ID" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$REVALIDATION_RUN_ID" \
+            --artifact-name "$REVALIDATION_ARTIFACT" \
+            --result-path "$result"
+
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "gooroom-browser"
+            and .source_version == "3.5.0-1+grm3u3"
+            and .repository_full_name == "gooroom/gooroom-browser"
+            and .commit_sha == "829ad92a98f523a79c7b30f3d5b604bfaef03eb0"
+            and .tree_sha == "4a5e691645dad54a2a9636dcc21870c66418f978"
+            and .verification.wrong_architecture_executable_count == 0
+            and ([.verification.packages[].architecture] | all(. == "arm64" or . == "all"))
+            and ([.verification.packages[].x86_payload_count] | add == 0)
+            and ([.verification.packages[].foreign_payload_count] | add == 0)
+          ' "$result" >/dev/null
+
+          jq -n \
+            --argjson schema 2 \
+            --argjson source_build_run_id "$SOURCE_BUILD_RUN_ID" \
+            --arg source_build_artifact "$SOURCE_BUILD_ARTIFACT" \
+            --arg source_build_artifact_digest 'sha256:f1fc84f641476f67dfff77da9ca69a9a90ba55a0867b62e4911de2f841d166e7' \
+            --argjson revalidation_run_id "$REVALIDATION_RUN_ID" \
+            --arg revalidation_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$REVALIDATION_RUN_ID" \
+            --argjson artifact_id "$REVALIDATION_ARTIFACT_ID" \
+            --arg artifact_name "$REVALIDATION_ARTIFACT" \
+            --arg artifact_digest "$REVALIDATION_ARTIFACT_DIGEST" \
+            --argjson artifact_size "$(jq -r '.size_in_bytes' "$base/revalidation-artifact.json")" \
+            --arg revalidation_head_sha "$(jq -r '.head_sha' "$base/revalidation-run.json")" '
+              {
+                schema:$schema,
+                policy:"failed-native-build-output-preserved-then-independently-revalidated",
+                source_build_run_id:$source_build_run_id,
+                source_build_artifact:$source_build_artifact,
+                source_build_artifact_digest:$source_build_artifact_digest,
+                revalidation_run_id:$revalidation_run_id,
+                revalidation_run_url:$revalidation_run_url,
+                revalidation_head_sha:$revalidation_head_sha,
+                artifact_id:$artifact_id,
+                artifact_name:$artifact_name,
+                artifact_digest:$artifact_digest,
+                artifact_size:$artifact_size,
+                exact_artifact_locked:true,
+                independent_deb_rescan:true,
+                native_crashpad_reverified:true
+              }
+            ' > "$result_dir/artifact-lock.json"
+          jq -e '
+            .exact_artifact_locked == true
+            and .independent_deb_rescan == true
+            and .native_crashpad_reverified == true
+          ' "$result_dir/artifact-lock.json" >/dev/null
+
+      - name: Commit exact Gooroom browser ARM64 evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          result_dir=arm64/locks/rebuild-results/gooroom-browser/3.5.0-1_grm3u3
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$result_dir"
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'Verified browser evidence is already current.'
+            exit 0
+          fi
+          git commit -m 'Promote revalidated Gooroom browser ARM64 build'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Refresh rebuild indexes, exact package pool, and coverage gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for workflow in \
+            arm64-index-rebuild-results-v2.yml \
+            arm64-recover-exact-package-pool.yml \
+            arm64-port-coverage.yml \
+            arm64-port-coverage-v2.yml \
+            arm64-port-state-audit.yml \
+            arm64-ci-state-snapshot.yml; do
+            gh workflow run "$workflow" \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref arm64-port
+          done

@@ -1,0 +1,294 @@
+name: ARM64 port - diagnose exact Gooroom Guide AMD64 ELF delta v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-gooroom-guide-elf-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-guide-amd64-elf-diagnostics-v1
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-guide
+  VERSION: 0.5.3+grm3u1+han3u1
+  BASE_REPOSITORY: hancomgooroom/gooroom-guide
+  BASE_COMMIT: c788c29119d43bb97c554973f6dabbc41a9abe79
+  BASE_TREE: 0d4bb01b49c69e33208a47c0aff47545291ee646
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_RUN_SHA: f5199ad765b7bd080b4452ecf4bfde785beb35da
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '3620004'
+  TARGET_SHA256: 80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142
+
+jobs:
+  diagnose:
+    name: Rebuild and preserve both exact AMD64 ELFs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the exact reconstruction implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic Debian and ELF tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          bash -n arm64/scripts/build_gooroom_guide_han3u1_chroot.sh
+
+      - name: Download and validate the immutable vendor AMD64 authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-diagnostics
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,authority,output}
+          metadata="$root/vendor-artifact-metadata.json"
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+            ' "$metadata" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          mapfile -t targets < <(
+            find "$root/vendor" -type f -name "$TARGET_FILENAME" -print
+          )
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" "$root/target.deb"
+          test "$(stat -c '%s' "$root/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $root/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$root/target.deb" Package)" = "$SOURCE"
+          test "$(dpkg-deb -f "$root/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/target.deb" Architecture)" = amd64
+
+      - name: Reconstruct the bounded Hancom Gooroom 3.3 source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-diagnostics
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$root/source"
+          git -C "$root/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          python3 arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            --repository "$root/source" \
+            --target-deb "$root/target.deb" \
+            --output-dir "$root/authority"
+          (cd "$root/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+      - name: Build the reconstructed source in the historical AMD64 rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-diagnostics
+          sudo bash arm64/scripts/build_gooroom_guide_han3u1_chroot.sh \
+            amd64 \
+            "$root/authority/reconstructed-source.tar.gz" \
+            "$root/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$root/amd64-build"
+          mapfile -t candidates < <(
+            for deb in "$root"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE" ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#candidates[@]}" -eq 1
+          cp "${candidates[0]}" "$root/candidate.deb"
+          test "$(dpkg-deb -f "$root/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$root/candidate.deb" Architecture)" = amd64
+
+      - name: Capture raw, normalized, section, and disassembly evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-diagnostics
+          diag="$root/output"
+          mkdir -p "$root"/{target-root,candidate-root} "$diag"
+          dpkg-deb -x "$root/target.deb" "$root/target-root"
+          dpkg-deb -x "$root/candidate.deb" "$root/candidate-root"
+          cp "$root/target-root/usr/bin/gooroom-guide" "$diag/target.elf"
+          cp "$root/candidate-root/usr/bin/gooroom-guide" "$diag/candidate.elf"
+          cp "$diag/target.elf" "$diag/normalized-target.elf"
+          cp "$diag/candidate.elf" "$diag/normalized-candidate.elf"
+          for elf in "$diag/normalized-target.elf" "$diag/normalized-candidate.elf"; do
+            objcopy \
+              --remove-section=.note.gnu.build-id \
+              --remove-section=.gnu_debuglink \
+              --remove-section=.gnu_debugaltlink \
+              --remove-section=.comment \
+              "$elf" "$elf.new"
+            mv "$elf.new" "$elf"
+          done
+
+          for label in target candidate normalized-target normalized-candidate; do
+            elf="$diag/$label.elf"
+            readelf -aW "$elf" > "$diag/$label.readelf.txt"
+            readelf --debug-dump=frames-interp -W "$elf" > "$diag/$label.frames.txt" || true
+            objdump -drwC -Mintel "$elf" > "$diag/$label.disassembly.txt"
+            objdump -s "$elf" > "$diag/$label.hex-sections.txt"
+            nm -an "$elf" > "$diag/$label.nm.txt"
+            strings -a -t x "$elf" > "$diag/$label.strings.txt"
+          done
+
+          cmp -l "$diag/target.elf" "$diag/candidate.elf" \
+            > "$diag/raw-byte-differences.txt" || true
+          cmp -l "$diag/normalized-target.elf" "$diag/normalized-candidate.elf" \
+            > "$diag/normalized-byte-differences.txt" || true
+          diff -u "$diag/target.disassembly.txt" "$diag/candidate.disassembly.txt" \
+            > "$diag/disassembly.diff" || true
+          diff -u "$diag/normalized-target.readelf.txt" "$diag/normalized-candidate.readelf.txt" \
+            > "$diag/readelf.diff" || true
+          diff -u "$diag/normalized-target.strings.txt" "$diag/normalized-candidate.strings.txt" \
+            > "$diag/strings.diff" || true
+          diff -u "$diag/normalized-target.frames.txt" "$diag/normalized-candidate.frames.txt" \
+            > "$diag/frames.diff" || true
+
+          python3 - "$diag" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          labels = ("target", "candidate", "normalized-target", "normalized-candidate")
+          section_re = re.compile(
+              r"^\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+[0-9a-fA-F]+\s+"
+              r"[0-9a-fA-F]+\s+([0-9a-fA-F]+)\s+"
+          )
+          manifests: dict[str, dict[str, object]] = {}
+          for label in labels:
+              elf = output / f"{label}.elf"
+              section_dir = output / "sections" / label
+              section_dir.mkdir(parents=True, exist_ok=True)
+              readelf = subprocess.run(
+                  ["readelf", "-SW", str(elf)],
+                  check=True,
+                  text=True,
+                  stdout=subprocess.PIPE,
+              ).stdout
+              rows: dict[str, object] = {}
+              for line in readelf.splitlines():
+                  match = section_re.match(line)
+                  if not match:
+                      continue
+                  name, declared_size_hex = match.groups()
+                  if not name or name == "NULL":
+                      continue
+                  safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).lstrip(".") or "unnamed"
+                  destination = section_dir / f"{safe}.bin"
+                  completed = subprocess.run(
+                      ["objcopy", f"--dump-section={name}={destination}", str(elf)],
+                      text=True,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                  )
+                  if completed.returncode or not destination.exists():
+                      rows[name] = {
+                          "dumped": False,
+                          "declared_size": int(declared_size_hex, 16),
+                          "stderr": completed.stderr.strip(),
+                      }
+                      continue
+                  payload = destination.read_bytes()
+                  rows[name] = {
+                      "dumped": True,
+                      "declared_size": int(declared_size_hex, 16),
+                      "size": len(payload),
+                      "sha256": hashlib.sha256(payload).hexdigest(),
+                      "file": destination.relative_to(output).as_posix(),
+                  }
+              manifests[label] = rows
+          (output / "section-manifests.json").write_text(
+              json.dumps(manifests, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          comparison: list[dict[str, object]] = []
+          left = manifests["normalized-target"]
+          right = manifests["normalized-candidate"]
+          for name in sorted(set(left) | set(right)):
+              lrow = left.get(name)
+              rrow = right.get(name)
+              comparison.append(
+                  {
+                      "section": name,
+                      "target": lrow,
+                      "candidate": rrow,
+                      "identical": lrow == rrow,
+                  }
+              )
+          (output / "normalized-section-comparison.json").write_text(
+              json.dumps(comparison, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          cp "$root/target.deb" "$diag/"
+          cp "$root/candidate.deb" "$diag/"
+          cp "$root/vendor-artifact-metadata.json" "$diag/"
+          cp "$root/authority/reconstruction-lock.json" "$diag/"
+          cp "$root/authority/reconstruction.patch" "$diag/"
+          cp "$root/authority/reconstructed-source.tar.gz" "$diag/"
+          cp "$root/amd64-build/build.log" "$diag/"
+          cp "$root/amd64-build/debootstrap.log" "$diag/"
+          (
+            cd "$diag"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload exact AMD64 ELF diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-han3u1-amd64-elf-diagnostics-v1-${{ github.run_id }}
+          path: work/guide-elf-diagnostics/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9

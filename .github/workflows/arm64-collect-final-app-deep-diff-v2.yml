@@ -1,0 +1,493 @@
+name: ARM64 port - collect final application deep diff v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-collect-final-app-deep-diff-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-app-deep-diff-v2-collector
+  cancel-in-progress: true
+
+env:
+  SOURCE_WORKFLOW: arm64-deep-diff-final-app-blockers-v2.yml
+  SOURCE_HEAD_SHA: 997e7061020cb791fd8e2271b67c949511b2c2ff
+
+jobs:
+  collect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install compact analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils dpkg-dev file jq python3 unzip
+
+      - name: Recover source run and compact both artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/final-app-deep-diff-v2-collector
+          mkdir -p work/final-app-deep-diff-v2-collector
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import shutil
+          import subprocess
+          import time
+          import traceback
+          from pathlib import Path
+          from typing import Any
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          source_workflow = os.environ['SOURCE_WORKFLOW']
+          source_head_sha = os.environ['SOURCE_HEAD_SHA']
+          work = Path('work/final-app-deep-diff-v2-collector')
+          compact = work / 'compact'
+          downloads = work / 'downloads'
+          compact.mkdir(parents=True, exist_ok=True)
+          downloads.mkdir(parents=True, exist_ok=True)
+
+          packages = [
+              'gooroom-integration-applet',
+              'gooroom-session-manager',
+          ]
+
+          def run(arguments: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+              result = subprocess.run(
+                  arguments,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  check=False,
+              )
+              if check and result.returncode:
+                  raise RuntimeError(
+                      f"command failed ({result.returncode}): {' '.join(arguments)}\n{result.stdout}"
+                  )
+              return result
+
+          def gh_json(path: str) -> Any:
+              result = run(['gh', 'api', path])
+              return json.loads(result.stdout)
+
+          def sha256_file(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def is_elf(path: Path) -> bool:
+              if path.is_symlink() or not path.is_file():
+                  return False
+              try:
+                  with path.open('rb') as stream:
+                      return stream.read(4) == b'\x7fELF'
+              except OSError:
+                  return False
+
+          def inventory(root: Path) -> dict[str, dict[str, Any]]:
+              result: dict[str, dict[str, Any]] = {}
+              if not root.is_dir():
+                  return result
+              for path in sorted(root.rglob('*')):
+                  relative = path.relative_to(root).as_posix()
+                  if path.is_symlink():
+                      result[relative] = {
+                          'kind': 'symlink',
+                          'link': os.readlink(path),
+                      }
+                  elif path.is_file():
+                      result[relative] = {
+                          'kind': 'elf' if is_elf(path) else 'file',
+                          'size': path.stat().st_size,
+                          'sha256': sha256_file(path),
+                      }
+              return result
+
+          def compare_inventories(
+              target: dict[str, dict[str, Any]],
+              candidate: dict[str, dict[str, Any]],
+          ) -> list[dict[str, Any]]:
+              rows: list[dict[str, Any]] = []
+              for relative in sorted(set(target) | set(candidate)):
+                  left = target.get(relative)
+                  right = candidate.get(relative)
+                  if left is None:
+                      rows.append({'path': relative, 'status': 'candidate-only', 'candidate': right})
+                  elif right is None:
+                      rows.append({'path': relative, 'status': 'target-only', 'target': left})
+                  elif left == right:
+                      rows.append({'path': relative, 'status': 'identical', 'target': left})
+                  else:
+                      rows.append({
+                          'path': relative,
+                          'status': 'different',
+                          'target': left,
+                          'candidate': right,
+                      })
+              return rows
+
+          def aggregate_strings(elf_root: Path) -> set[str]:
+              values: set[str] = set()
+              if not elf_root.is_dir():
+                  return values
+              for path in elf_root.rglob('strings.txt'):
+                  for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+                      line = line.strip()
+                      if len(line) >= 4:
+                          values.add(line)
+              return values
+
+          def deb_fields(path: Path) -> dict[str, str] | None:
+              if not path.is_file():
+                  return None
+              fields: dict[str, str] = {}
+              for key in ('Package', 'Version', 'Architecture'):
+                  fields[key.lower()] = run(['dpkg-deb', '-f', str(path), key]).stdout.strip()
+              fields['size'] = str(path.stat().st_size)
+              fields['sha256'] = sha256_file(path)
+              return fields
+
+          def copy_if_small(source: Path, destination: Path, limit: int = 2_000_000) -> bool:
+              if not source.is_file() or source.stat().st_size > limit:
+                  return False
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, destination)
+              return True
+
+          status: dict[str, Any] = {
+              'schema': 1,
+              'source_workflow': source_workflow,
+              'source_head_sha': source_head_sha,
+              'repository': repo,
+              'collector_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'collector_run_url': (
+                  f"{os.environ.get('GITHUB_SERVER_URL')}/{repo}/actions/runs/"
+                  f"{os.environ.get('GITHUB_RUN_ID')}"
+              ),
+              'state': 'initializing',
+              'packages': [],
+          }
+
+          try:
+              runs = gh_json(
+                  f'repos/{repo}/actions/workflows/{source_workflow}/runs'
+                  '?branch=arm64-port&per_page=50'
+              )
+              matches = [
+                  item for item in runs.get('workflow_runs', [])
+                  if item.get('head_sha') == source_head_sha
+              ]
+              if not matches:
+                  raise RuntimeError(
+                      f'no {source_workflow} run found for exact head SHA {source_head_sha}'
+                  )
+              source_run = sorted(matches, key=lambda item: item.get('run_number', 0))[-1]
+              run_id = int(source_run['id'])
+
+              for _ in range(120):
+                  source_run = gh_json(f'repos/{repo}/actions/runs/{run_id}')
+                  if source_run.get('status') == 'completed':
+                      break
+                  time.sleep(10)
+              if source_run.get('status') != 'completed':
+                  raise RuntimeError(f'source run {run_id} did not complete during collector window')
+
+              jobs = gh_json(f'repos/{repo}/actions/runs/{run_id}/jobs?per_page=100')
+              artifacts = gh_json(f'repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100')
+              (compact / 'source-run.json').write_text(
+                  json.dumps(source_run, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+              (compact / 'source-jobs.json').write_text(
+                  json.dumps(jobs, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+              (compact / 'source-artifacts.json').write_text(
+                  json.dumps(artifacts, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+
+              status.update({
+                  'state': 'source-run-completed',
+                  'source_run_id': run_id,
+                  'source_run_url': source_run.get('html_url'),
+                  'source_run_status': source_run.get('status'),
+                  'source_run_conclusion': source_run.get('conclusion'),
+                  'source_run_attempt': source_run.get('run_attempt'),
+              })
+
+              if source_run.get('conclusion') != 'success':
+                  failed_log = run(
+                      ['gh', 'run', 'view', str(run_id), '--repo', repo, '--log-failed'],
+                      check=False,
+                  )
+                  (compact / 'failed.log').write_text(
+                      failed_log.stdout[-500_000:],
+                      encoding='utf-8',
+                      errors='replace',
+                  )
+                  status['state'] = 'source-run-failed'
+              else:
+                  artifact_by_name = {
+                      item['name']: item for item in artifacts.get('artifacts', [])
+                  }
+                  for package in packages:
+                      artifact_name = f'final-app-deep-diff-{package}-v2'
+                      artifact = artifact_by_name.get(artifact_name)
+                      if artifact is None:
+                          raise RuntimeError(f'missing artifact: {artifact_name}')
+                      destination = downloads / artifact_name
+                      destination.mkdir(parents=True, exist_ok=True)
+                      download = run(
+                          [
+                              'gh', 'run', 'download', str(run_id), '--repo', repo,
+                              '--name', artifact_name, '--dir', str(destination),
+                          ],
+                          check=False,
+                      )
+                      if download.returncode:
+                          raise RuntimeError(
+                              f'artifact download failed for {artifact_name}:\n{download.stdout}'
+                          )
+
+                      comparison = destination / 'comparison'
+                      target_root = comparison / 'target' / 'root'
+                      candidate_root = comparison / 'candidate' / 'root'
+                      if not target_root.is_dir() or not candidate_root.is_dir():
+                          candidates = list(destination.rglob('comparison/target/root'))
+                          if not candidates:
+                              raise RuntimeError(
+                                  f'comparison roots missing from artifact {artifact_name}'
+                              )
+                          comparison = candidates[0].parents[1]
+                          target_root = comparison / 'target' / 'root'
+                          candidate_root = comparison / 'candidate' / 'root'
+
+                      target_inventory = inventory(target_root)
+                      candidate_inventory = inventory(candidate_root)
+                      payload_rows = compare_inventories(
+                          target_inventory,
+                          candidate_inventory,
+                      )
+                      target_resources = inventory(comparison / 'target' / 'resources')
+                      candidate_resources = inventory(comparison / 'candidate' / 'resources')
+                      resource_rows = compare_inventories(
+                          target_resources,
+                          candidate_resources,
+                      )
+
+                      target_strings = aggregate_strings(comparison / 'target' / 'elf')
+                      candidate_strings = aggregate_strings(comparison / 'candidate' / 'elf')
+                      target_only_strings = sorted(target_strings - candidate_strings)
+                      candidate_only_strings = sorted(candidate_strings - target_strings)
+
+                      package_out = compact / package
+                      package_out.mkdir(parents=True, exist_ok=True)
+                      (package_out / 'payload-comparison.json').write_text(
+                          json.dumps(payload_rows, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+                          encoding='utf-8',
+                      )
+                      (package_out / 'resource-comparison.json').write_text(
+                          json.dumps(resource_rows, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+                          encoding='utf-8',
+                      )
+                      (package_out / 'target-only-strings.txt').write_text(
+                          '\n'.join(target_only_strings[:20_000]) + ('\n' if target_only_strings else ''),
+                          encoding='utf-8',
+                      )
+                      (package_out / 'candidate-only-strings.txt').write_text(
+                          '\n'.join(candidate_only_strings[:20_000]) + ('\n' if candidate_only_strings else ''),
+                          encoding='utf-8',
+                      )
+
+                      source_lock_candidates = list(destination.rglob('source-lock.json'))
+                      if source_lock_candidates:
+                          shutil.copy2(source_lock_candidates[0], package_out / 'source-lock.json')
+                      build_logs = list(destination.rglob('build.log'))
+                      if build_logs:
+                          lines = build_logs[0].read_text(
+                              encoding='utf-8', errors='replace'
+                          ).splitlines()
+                          (package_out / 'build-log-tail.txt').write_text(
+                              '\n'.join(lines[-500:]) + '\n', encoding='utf-8'
+                          )
+                      copy_if_small(
+                          comparison / 'resources.diff', package_out / 'resources.diff'
+                      )
+                      copy_if_small(
+                          comparison / 'payload.diff', package_out / 'payload.diff'
+                      )
+
+                      target_deb_candidates = list(destination.rglob('downloads/target.deb'))
+                      candidate_deb_candidates = list(destination.rglob('downloads/candidate.deb'))
+                      target_deb = target_deb_candidates[0] if target_deb_candidates else Path()
+                      candidate_deb = (
+                          candidate_deb_candidates[0] if candidate_deb_candidates else Path()
+                      )
+                      package_summary = {
+                          'package': package,
+                          'artifact_name': artifact_name,
+                          'artifact_id': artifact.get('id'),
+                          'artifact_digest': artifact.get('digest'),
+                          'artifact_size_in_bytes': artifact.get('size_in_bytes'),
+                          'target_deb': deb_fields(target_deb) if target_deb_candidates else None,
+                          'candidate_deb': (
+                              deb_fields(candidate_deb) if candidate_deb_candidates else None
+                          ),
+                          'path_set_identical': set(target_inventory) == set(candidate_inventory),
+                          'resource_path_set_identical': (
+                              set(target_resources) == set(candidate_resources)
+                          ),
+                          'payload_path_count': len(payload_rows),
+                          'identical_payload_count': sum(
+                              row['status'] == 'identical' for row in payload_rows
+                          ),
+                          'different_payload_count': sum(
+                              row['status'] == 'different' for row in payload_rows
+                          ),
+                          'target_only_paths': [
+                              row['path'] for row in payload_rows
+                              if row['status'] == 'target-only'
+                          ],
+                          'candidate_only_paths': [
+                              row['path'] for row in payload_rows
+                              if row['status'] == 'candidate-only'
+                          ],
+                          'different_elf_paths': [
+                              row['path'] for row in payload_rows
+                              if row['status'] == 'different'
+                              and (
+                                  row.get('target', {}).get('kind') == 'elf'
+                                  or row.get('candidate', {}).get('kind') == 'elf'
+                              )
+                          ],
+                          'different_non_elf_paths': [
+                              row['path'] for row in payload_rows
+                              if row['status'] == 'different'
+                              and row.get('target', {}).get('kind') != 'elf'
+                              and row.get('candidate', {}).get('kind') != 'elf'
+                          ],
+                          'different_resource_paths': [
+                              row['path'] for row in resource_rows
+                              if row['status'] != 'identical'
+                          ],
+                          'target_only_string_count': len(target_only_strings),
+                          'candidate_only_string_count': len(candidate_only_strings),
+                          'target_debug_symbols_available': bool(
+                              list(destination.rglob('downloads/target-dbgsym.deb'))
+                          ),
+                          'candidate_debug_symbols_available': bool(
+                              list(destination.rglob('downloads/candidate-dbgsym.deb'))
+                          ),
+                      }
+                      (package_out / 'summary.json').write_text(
+                          json.dumps(
+                              package_summary,
+                              indent=2,
+                              sort_keys=True,
+                              ensure_ascii=False,
+                          ) + '\n',
+                          encoding='utf-8',
+                      )
+                      status['packages'].append(package_summary)
+
+                  status['state'] = 'artifacts-compacted'
+
+          except Exception as error:
+              status['state'] = 'collector-failed'
+              status['error'] = str(error)
+              status['traceback'] = traceback.format_exc()
+
+          (compact / 'collector-status.json').write_text(
+              json.dumps(status, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(status, indent=2, sort_keys=True, ensure_ascii=False))
+          PY
+
+      - name: Seal compact authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          compact=work/final-app-deep-diff-v2-collector/compact
+          mkdir -p "$compact"
+          if [ ! -f "$compact/collector-status.json" ]; then
+            jq -n \
+              --arg collector_run_id '${{ github.run_id }}' \
+              --arg collector_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+              '{schema:1,state:"collector-step-aborted",collector_run_id:$collector_run_id,
+                collector_run_url:$collector_run_url}' \
+              > "$compact/collector-status.json"
+          fi
+          find "$compact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$compact/FILE-INVENTORY.tsv"
+          (
+            cd "$compact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$compact/collector-status.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compact collector evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: final-app-deep-diff-v2-compact-authority
+          path: work/final-app-deep-diff-v2-collector/compact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact authority to arm64-port
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/final-app-deep-diff-v2-collector/compact
+          destination=arm64/locks/final-app-deep-diff-v2
+          rm -rf "$destination"
+          mkdir -p "$(dirname "$destination")"
+          cp -a "$source" "$destination"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Compact final-application authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock final application deep diff v2 authority'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

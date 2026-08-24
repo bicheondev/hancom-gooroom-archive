@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+  "package": "gooroom-guide",
+  "version": "0.5.3+grm3u1+han3u1",
+  "source": "gooroom-guide",
+  "source_version": "0.5.3+grm3u1+han3u1",
+  "selected_deb": "gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb",
+  "selected_deb_size": 3620004,
+  "selected_deb_sha256": "80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142",
+  "control_fields": {
+    "Package": "gooroom-guide",
+    "Version": "0.5.3+grm3u1+han3u1",
+    "Architecture": "amd64",
+    "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+    "Installed-Size": "4704",
+    "Depends": "libc6 (>= 2.4), libgdk-pixbuf-2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.37.3), libgtk-3-0 (>= 3.21.4), libjson-glib-1.0-0 (>= 1.5.2), libgl1-mesa-dri",
+    "Section": "admin",
+    "Priority": "optional",
+    "Homepage": "https://git.gooroom.kr/gooroom-guide",
+    "Description": "The Gooroom Guide to provide convenience to users."
+  },
+  "parsed_source": "gooroom-guide",
+  "parsed_source_version": "0.5.3+grm3u1+han3u1",
+  "payload_scan": {
+    "native_payloads": [
+      {
+        "path": "/usr/bin/gooroom-guide",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 51336,
+        "sha256": "dce817f68de882b2cc903dc22416d85326636a810efc561cd790c51c35c9a8cf"
+      }
+    ],
+    "native_looking_suffixes": [],
+    "architecture_specific_paths": [],
+    "executable_scripts": [],
+    "python_files": []
+  },
+  "maintainer_script_audit": {
+    "scripts": [
+      {
+        "name": "postinst",
+        "size": 112,
+        "sha256": "d2df84edfa69de2875c6822c78207ac77470e775ae7805248248c6d855d45bff",
+        "shebang": ""
+      }
+    ],
+    "architecture_references": []
+  },
+  "python_verification": {
+    "python_file_count": 0,
+    "compiled_count": 0,
+    "failures": []
+  },
+  "original_payload_manifest_sha256": "3593123a2150a705cae0ed5d53340f57b163368bf2f4bbd8c649dc6143ee4d01",
+  "original_payload_entry_count": 54,
+  "repack_candidate": false,
+  "blocker_reasons": [
+    "native-payload-present"
+  ],
+  "repacked": false,
+  "promotion_allowed": false,
+  "byte_identity_claimed_for_data_payload_only": false,
+  "original_source_recovered": false
+}

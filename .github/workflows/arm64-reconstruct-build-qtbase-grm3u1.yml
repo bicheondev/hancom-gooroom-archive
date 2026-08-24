@@ -1,0 +1,268 @@
+name: ARM64 port - reconstruct QtBase grm3u1 source
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-reconstruct-build-qtbase-grm3u1.yml'
+      - 'arm64/scripts/reconstruct_qtbase_grm3u1.py'
+      - 'arm64/locks/vendor-binaries/vendor-binary-lock.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reconstruct-qtbase-grm3u1
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  BASE_VERSION: 5.15.2+dfsg-9
+  SECURITY_VERSION: 5.15.2+dfsg-9+deb11u1
+  TARGET_VERSION: 5.15.2+dfsg-9+grm3u1
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_FILENAME: libqt5core5a_5.15.2+dfsg-9+grm3u1_amd64.deb
+  DEBIAN_SNAPSHOT: 20230730T235959Z
+  RECONSTRUCTION_ARTIFACT: qtbase-5.15.2-dfsg-9-grm3u1-reconstructed-source
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact reconstruction code and locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install signed-source and Debian reconstruction tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates debian-keyring devscripts dpkg-dev \
+            file gh gnupg jq python3 quilt xz-utils
+          docker version
+          python3 -m py_compile arm64/scripts/reconstruct_qtbase_grm3u1.py
+
+      - name: Prepare deterministic reconstruction workspace
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/qtbase-grm3u1
+          rm -rf "$base"
+          mkdir -p "$base"/{vendor-download,vendor,base-source,security-source,reconstruction,evidence,source-archive,artifact}
+
+      - name: Download and verify the exact AMD64 Gooroom QtBase package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/qtbase-grm3u1
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT" \
+            --dir "$base/vendor-download"
+          vendor="$base/vendor-download/vendor-debs/$VENDOR_FILENAME"
+          test -f "$vendor"
+          record="$(jq -cer \
+            --arg package libqt5core5a \
+            --arg version "$TARGET_VERSION" \
+            --arg architecture amd64 '
+              [.packages[] | select(
+                .package == $package
+                and .version == $version
+                and .architecture == $architecture
+                and .status == "verified"
+              )]
+              | if length == 1 then .[0]
+                else error("verified vendor lock is not unique") end
+            ' arm64/locks/vendor-binaries/vendor-binary-lock.json)"
+          expected_sha="$(jq -er '.actual_sha256' <<<"$record")"
+          expected_size="$(jq -er '.actual_size' <<<"$record")"
+          expected_filename="$(jq -er '.local_filename' <<<"$record")"
+          test "$expected_filename" = "$VENDOR_FILENAME"
+          test "$(stat -c '%s' "$vendor")" = "$expected_size"
+          printf '%s  %s\n' "$expected_sha" "$vendor" | sha256sum --check --strict
+          cp "$vendor" "$base/vendor/$VENDOR_FILENAME"
+          printf '%s\n' "$record" | jq . > "$base/evidence/vendor-binary-lock-record.json"
+          rm -rf "$base/vendor-download"
+
+      - name: Recover the signed Debian 5.15.2+dfsg-9 base source from snapshot
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$GITHUB_WORKSPACE/work/qtbase-grm3u1"
+          output="$base/base-source"
+          docker run --rm \
+            --network host \
+            -e BASE_VERSION \
+            -e DEBIAN_SNAPSHOT \
+            -v "$output:/output" \
+            debian:bullseye-slim \
+            bash -Eeuo pipefail -c '
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates dpkg-dev
+              printf "%s\n" \
+                "Acquire::Check-Valid-Until \"false\";" \
+                "Acquire::Retries \"8\";" \
+                "Acquire::http::Timeout \"60\";" \
+                "Acquire::https::Timeout \"60\";" \
+                > /etc/apt/apt.conf.d/99snapshot
+              printf "%s\n" \
+                "deb-src [trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/ bullseye main" \
+                > /etc/apt/sources.list
+              rm -rf /var/lib/apt/lists/*
+              apt-get update
+              cd /output
+              apt-get source --download-only "qtbase-opensource-src=${BASE_VERSION}"
+            '
+          sudo chown -R "$(id -u):$(id -g)" "$output"
+          mapfile -t dscs < <(find "$output" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#dscs[@]}" -eq 1
+          base_dsc="${dscs[0]}"
+          test "$(sed -n 's/^Source: //p' "$base_dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$base_dsc" | head -n1)" = "$BASE_VERSION"
+          dscverify "$base_dsc" > "$base/evidence/base-dscverify.txt" 2>&1
+          (
+            cd "$output"
+            find . -maxdepth 1 -type f -print0 | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > "$base/evidence/base-source-download.sha256"
+          )
+
+      - name: Acquire the signed Debian security source containing the CVE patch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$GITHUB_WORKSPACE/work/qtbase-grm3u1"
+          security="$base/security-source"
+          dsc_url='https://deb.debian.org/debian/pool/main/q/qtbase-opensource-src/qtbase-opensource-src_5.15.2+dfsg-9+deb11u1.dsc'
+          (
+            cd "$security"
+            dget --download-only "$dsc_url"
+          )
+          mapfile -t dscs < <(find "$security" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#dscs[@]}" -eq 1
+          security_dsc="${dscs[0]}"
+          test "$(sed -n 's/^Source: //p' "$security_dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$security_dsc" | head -n1)" = "$SECURITY_VERSION"
+          dscverify "$security_dsc" > "$base/evidence/security-dscverify.txt" 2>&1
+          rm -rf "$base/security-tree"
+          dpkg-source -x "$security_dsc" "$base/security-tree" \
+            > "$base/evidence/security-dpkg-source.stdout.txt" \
+            2> "$base/evidence/security-dpkg-source.stderr.txt"
+          patch="$base/security-tree/debian/patches/CVE-2022-25255.diff"
+          test -f "$patch"
+          grep -Fxq 'CVE-2022-25255.diff' "$base/security-tree/debian/patches/series"
+          cp "$patch" "$base/evidence/CVE-2022-25255.signed-debian.diff"
+          (
+            cd "$security"
+            find . -maxdepth 1 -type f -print0 | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > "$base/evidence/security-source-download.sha256"
+          )
+
+      - name: Reconstruct and round-trip the exact-version source archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/qtbase-grm3u1
+          cp -a "$base/base-source/." "$base/reconstruction/"
+          base_dsc="$(find "$base/reconstruction" -maxdepth 1 -type f -name '*.dsc' -print -quit)"
+          test -n "$base_dsc"
+          source_tree="$base/reconstruction/qtbase-opensource-src-5.15.2+dfsg"
+          rm -rf "$source_tree"
+          dpkg-source -x "$base_dsc" "$source_tree" \
+            > "$base/evidence/base-dpkg-source.stdout.txt" \
+            2> "$base/evidence/base-dpkg-source.stderr.txt"
+          security_dsc="$(find "$base/security-source" -maxdepth 1 -type f -name '*.dsc' -print -quit)"
+          test -n "$security_dsc"
+          python3 arm64/scripts/reconstruct_qtbase_grm3u1.py \
+            --source-tree "$source_tree" \
+            --base-source-dir "$base/reconstruction" \
+            --base-dsc "$base_dsc" \
+            --security-dsc "$security_dsc" \
+            --vendor-deb "$base/vendor/$VENDOR_FILENAME" \
+            --cve-patch "$base/security-tree/debian/patches/CVE-2022-25255.diff" \
+            --output-dir "$base/evidence" \
+            --archive-output-dir "$base/source-archive"
+          jq -e '
+            .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_status == "reconstructed-not-recovered-original-source"
+            and .byte_identity_claimed == false
+            and .promotion_allowed == false
+            and .claims.only_vendor_declared_code_patch_added == true
+            and .claims.lost_original_source_archive_recovered == false
+            and .reconstruction.round_trip_verified == true
+          ' "$base/evidence/authority.json" >/dev/null
+          mapfile -t reconstructed_dscs < <(find "$base/source-archive" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#reconstructed_dscs[@]}" -eq 1
+
+      - name: Seal and upload reconstructed source plus compact authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/qtbase-grm3u1
+          mkdir -p "$base/artifact/source-archive" "$base/artifact/evidence"
+          cp -a "$base/source-archive/." "$base/artifact/source-archive/"
+          cp -a "$base/evidence/." "$base/artifact/evidence/"
+          (
+            cd "$base/artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$base/artifact"
+
+      - name: Upload reproducible QtBase reconstruction
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.RECONSTRUCTION_ARTIFACT }}
+          path: work/qtbase-grm3u1/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact reconstruction authority without promoting it
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/qtbase-grm3u1/evidence
+          destination=arm64/locks/qtbase-grm3u1-reconstruction/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/authority.json" "$destination/"
+          cp "$source/source-archive-members.json" "$destination/"
+          cp "$source/source-tree-manifest.tsv" "$destination/"
+          cp "$source/vendor-changelog.txt" "$destination/"
+          cp "$source/CVE-2022-25255.diff" "$destination/"
+          cp "$source/base-source-download.sha256" "$destination/"
+          cp "$source/security-source-download.sha256" "$destination/"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record QtBase grm3u1 source reconstruction authority'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

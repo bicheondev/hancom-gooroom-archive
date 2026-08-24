@@ -1,0 +1,25 @@
+{
+  "after_sha256": "08d312123f530f2d13908fea61498ed4e0b28b1bab24a197c95ba55d948c00f0",
+  "before_sha256": "9f7f964da0646718d23b949d0ab256bb4dc8a5582e33ae215d58ba9f39827ebd",
+  "binary_evidence": {
+    "file_offset": "0x96cf",
+    "note": "The surrounding instruction is mov esi, imm32; all other .text bytes matched before this source correction.",
+    "reconstructed_preimage_byte": "0x10",
+    "section": ".text",
+    "target_byte": "0x06"
+  },
+  "claims": {
+    "binary_validation_status": "not-yet-run",
+    "byte_identity_claimed": false,
+    "source_status": "reconstructed-candidate"
+  },
+  "reconstruction_complete": true,
+  "schema": 1,
+  "source_delta": {
+    "call": "gtk_image_set_pixel_size",
+    "function": "applauncher_indicator_append",
+    "hancom_value": 6,
+    "public_value": 16
+  },
+  "source_path": "src/applauncher-indicator.c"
+}

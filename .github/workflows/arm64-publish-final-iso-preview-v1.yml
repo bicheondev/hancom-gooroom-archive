@@ -1,0 +1,281 @@
+name: ARM64 publish verified final ISO preview v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-publish-final-iso-preview-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-publish-final-iso-preview-v1
+  cancel-in-progress: false
+
+env:
+  CONVERGENCE: arm64/locks/final-convergence-v1/latest/status.json
+  LOCK_DIR: arm64/locks/final-iso-publication-v1/latest
+  RELEASE_TAG: v3.3-arm64-preview.1
+  RELEASE_TITLE: Hancom Gooroom 3.3 ARM64 Preview 1
+  ISO_NAME: Hancom-Gooroom-3.3-arm64.hybrid.iso
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out converged ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO verification tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            file genisoimage jq mtools util-linux xorriso
+          mkdir -p work/download work/release work/inspection
+
+      - name: Require closed convergence and successful final ISO run
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s "$CONVERGENCE"
+          jq -e '
+            .schema == 1 and
+            .blocker_gates.all_ready == true and
+            .blocker_gates.qtbase == true and
+            .blocker_gates.integration == true and
+            .blocker_gates.session == true and
+            .blocker_gates.kernel == true and
+            .final_package_repository.conclusion == "success" and
+            .final_rootfs.conclusion == "success" and
+            .final_iso.conclusion == "success" and
+            .iso_completed == true
+          ' "$CONVERGENCE" >/dev/null
+
+      - name: Download the exact final ISO workflow artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso_run_id="$(jq -r '.final_iso.databaseId' "$CONVERGENCE")"
+          test -n "$iso_run_id"
+          gh run view "$iso_run_id" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,url,headSha,createdAt,updatedAt \
+            > work/inspection/source-run.json
+          jq -e '.status == "completed" and .conclusion == "success"' \
+            work/inspection/source-run.json >/dev/null
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${iso_run_id}/artifacts" \
+            > work/inspection/source-artifacts.json
+          jq -e '[.artifacts[] | select(.expired == false)] | length > 0' \
+            work/inspection/source-artifacts.json >/dev/null
+          gh run download "$iso_run_id" --repo "$GITHUB_REPOSITORY" --dir work/download
+
+          mapfile -t candidates < <(find work/download -type f -iname '*.iso' -printf '%s\t%p\n' \
+            | sort -nr | cut -f2-)
+          test "${#candidates[@]}" -ge 1
+          printf '%s\n' "${candidates[@]}" > work/inspection/iso-candidates.txt
+          cp --reflink=auto "${candidates[0]}" "work/release/$ISO_NAME"
+          test -s "work/release/$ISO_NAME"
+
+      - name: Verify ISO-9660, AArch64 UEFI and live boot payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/release/$ISO_NAME"
+          file "$iso" | tee work/inspection/iso-file.txt
+          grep -Eiq 'ISO 9660|bootable' work/inspection/iso-file.txt
+
+          xorriso -indev "$iso" -toc > work/inspection/xorriso-toc.txt 2>&1
+          xorriso -indev "$iso" -report_el_torito plain \
+            > work/inspection/el-torito.txt 2>&1
+          xorriso -indev "$iso" -report_system_area plain \
+            > work/inspection/system-area.txt 2>&1
+          xorriso -indev "$iso" -find / -type f -print \
+            > work/inspection/file-list.txt 2>&1
+          isoinfo -d -i "$iso" > work/inspection/isoinfo.txt
+          fdisk -l "$iso" > work/inspection/fdisk.txt
+
+          grep -Fx '/EFI/BOOT/BOOTAA64.EFI' work/inspection/file-list.txt
+          if grep -Fxq '/EFI/BOOT/BOOTX64.EFI' work/inspection/file-list.txt; then
+            echo 'Unexpected x86-64 UEFI loader remains in ARM64 ISO.' >&2
+            exit 1
+          fi
+          grep -Eiq 'EFI|UEFI' work/inspection/el-torito.txt
+          grep -Eiq 'vmlinuz|linux' work/inspection/file-list.txt
+          grep -Eiq 'initrd|initramfs' work/inspection/file-list.txt
+          grep -Eiq 'filesystem\.squashfs|squashfs' work/inspection/file-list.txt
+
+          xorriso -osirrox on -indev "$iso" \
+            -extract /EFI/BOOT/BOOTAA64.EFI work/inspection/BOOTAA64.EFI \
+            >/dev/null 2>&1
+          file work/inspection/BOOTAA64.EFI \
+            | tee work/inspection/bootaa64-file.txt
+          grep -Eiq 'Aarch64|ARM64' work/inspection/bootaa64-file.txt
+
+          if grep -Eiq 'x86-64|Intel 80386|BOOTX64' \
+            work/inspection/bootaa64-file.txt work/inspection/file-list.txt; then
+            echo 'Foreign x86 boot payload detected.' >&2
+            exit 1
+          fi
+
+      - name: Hash and manifest the release payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/release/$ISO_NAME"
+          sha256sum "$iso" > "work/release/$ISO_NAME.sha256"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          iso = Path('work/release') / os.environ['ISO_NAME']
+          convergence = Path(os.environ['CONVERGENCE'])
+          source_run = json.loads(Path('work/inspection/source-run.json').read_text(encoding='utf-8'))
+          source_artifacts = json.loads(Path('work/inspection/source-artifacts.json').read_text(encoding='utf-8'))
+          file_list = Path('work/inspection/file-list.txt').read_text(encoding='utf-8', errors='replace').splitlines()
+          isoinfo = Path('work/inspection/isoinfo.txt').read_text(encoding='utf-8', errors='replace')
+          volume_match = re.search(r'^Volume id:\s*(.*)$', isoinfo, re.MULTILINE)
+          digest = hashlib.sha256(iso.read_bytes()).hexdigest()
+          manifest = {
+              'schema': 1,
+              'filename': iso.name,
+              'size': iso.stat().st_size,
+              'sha256': digest,
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'source_final_iso_run': source_run,
+              'source_artifacts': source_artifacts,
+              'convergence_authority_path': str(convergence),
+              'convergence_authority_sha256': hashlib.sha256(convergence.read_bytes()).hexdigest(),
+              'volume_id': volume_match.group(1).strip() if volume_match else None,
+              'aarch64_uefi_loader': '/EFI/BOOT/BOOTAA64.EFI',
+              'x86_64_uefi_loader_present': '/EFI/BOOT/BOOTX64.EFI' in file_list,
+              'live_kernel_present': any('vmlinuz' in p.lower() or p.lower().endswith('/linux') for p in file_list),
+              'initramfs_present': any('initrd' in p.lower() or 'initramfs' in p.lower() for p in file_list),
+              'squashfs_present': any('squashfs' in p.lower() for p in file_list),
+              'verification': {
+                  'iso9660': True,
+                  'el_torito_efi': True,
+                  'bootaa64_aarch64': True,
+                  'bootx64_absent': True,
+                  'foreign_x86_boot_payload_absent': True,
+              },
+          }
+          Path('work/release/release-manifest.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+          jq -e '
+            .verification.iso9660 == true and
+            .verification.el_torito_efi == true and
+            .verification.bootaa64_aarch64 == true and
+            .verification.bootx64_absent == true and
+            .verification.foreign_x86_boot_payload_absent == true and
+            .live_kernel_present == true and
+            .initramfs_present == true and
+            .squashfs_present == true and
+            .x86_64_uefi_loader_present == false
+          ' work/release/release-manifest.json >/dev/null
+          jq '.' work/release/release-manifest.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create or update GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/release/RELEASE-NOTES.md <<'EOF'
+          ## Hancom Gooroom 3.3 ARM64 Preview 1
+
+          한컴구름 3.3 AMD64 기준 패키지·소스 계보를 잠근 뒤 AArch64용으로 재구성한 UEFI 하이브리드 ISO입니다.
+
+          검증된 범위:
+
+          - 최종 패키지 저장소 폐쇄 검증 통과
+          - 최종 ARM64 rootfs 생성 통과
+          - AArch64 UEFI 로더 `EFI/BOOT/BOOTAA64.EFI` 확인
+          - x86-64 UEFI 로더 및 x86 부트 payload 부재 확인
+          - live kernel, initramfs, SquashFS 포함 확인
+          - SHA-256 및 빌드·계보 manifest 동봉
+
+          이 릴리스는 실제 장치 배포 전 UTM 부팅·설치 시험을 위한 프리뷰입니다.
+          EOF
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "$RELEASE_TITLE" --notes-file work/release/RELEASE-NOTES.md \
+              --prerelease
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --target arm64-port --title "$RELEASE_TITLE" \
+              --notes-file work/release/RELEASE-NOTES.md --prerelease
+          fi
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            "work/release/$ISO_NAME" \
+            "work/release/$ISO_NAME.sha256" \
+            work/release/release-manifest.json
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,url,isDraft,isPrerelease,publishedAt,targetCommitish,assets \
+            > work/release/release.json
+          jq -e --arg iso "$ISO_NAME" '
+            .isDraft == false and
+            .isPrerelease == true and
+            ([.assets[].name] | index($iso)) != null and
+            ([.assets[].name] | index($iso + ".sha256")) != null and
+            ([.assets[].name] | index("release-manifest.json")) != null
+          ' work/release/release.json >/dev/null
+
+      - name: Seal publication authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/release/release.json "$LOCK_DIR/"
+          cp work/release/release-manifest.json "$LOCK_DIR/"
+          cp "work/release/$ISO_NAME.sha256" "$LOCK_DIR/"
+          cp work/inspection/source-run.json "$LOCK_DIR/"
+          cp work/inspection/source-artifacts.json "$LOCK_DIR/"
+          cp work/inspection/iso-file.txt "$LOCK_DIR/"
+          cp work/inspection/bootaa64-file.txt "$LOCK_DIR/"
+          cp work/inspection/el-torito.txt "$LOCK_DIR/"
+          cp work/inspection/system-area.txt "$LOCK_DIR/"
+          cp work/inspection/isoinfo.txt "$LOCK_DIR/"
+          cp work/inspection/fdisk.txt "$LOCK_DIR/"
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Commit compact publication authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          git commit -m 'Lock published Hancom Gooroom 3.3 ARM64 preview ISO'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

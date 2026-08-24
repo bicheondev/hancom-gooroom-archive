@@ -1,0 +1,208 @@
+name: ARM64 port - recover exact signed vendor sources v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-exact-vendor-sources-v2.yml'
+      - 'arm64/scripts/recover_exact_vendor_sources_v2.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/sources-api-baseline/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-vendor-source-recovery-v2
+  cancel-in-progress: true
+
+env:
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the immutable reference and source locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO, index, and signature tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xorriso squashfs-tools gpgv jq python3 \
+            lz4 xz-utils gzip ca-certificates
+          python3 -m py_compile arm64/scripts/recover_exact_vendor_sources_v2.py
+
+      - name: Download and verify the exact AMD64 image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/reference
+          gh release download v3.3 \
+            --repo '${{ github.repository }}' \
+            --pattern "$ISO_NAME" \
+            --dir work/reference
+          path="work/reference/$ISO_NAME"
+          test "$(stat -c '%s' "$path")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$path" \
+            | sha256sum --check --strict
+
+      - name: Extract the ISO-preserved vendor indexes and trust roots
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/iso-root work/reference-rootfs work/input
+          xorriso -osirrox on \
+            -indev "work/reference/$ISO_NAME" \
+            -extract / work/iso-root \
+            > work/xorriso-extract.log 2>&1
+          squashfs="$(find work/iso-root -type f -name filesystem.squashfs -print -quit)"
+          test -n "$squashfs"
+          unsquashfs -f -d work/reference-rootfs "$squashfs" \
+            var/lib/apt/lists etc/apt/trusted.gpg etc/apt/trusted.gpg.d \
+            > work/unsquashfs-input.log 2>&1
+
+          find work/reference-rootfs/var/lib/apt/lists -maxdepth 1 -type f \
+            -printf '%f\t%s\n' | sort > work/input/apt-list-files.tsv
+          find work/reference-rootfs/etc/apt -type f \
+            \( -name '*.gpg' -o -name trusted.gpg \) \
+            -printf '%p\t%s\n' | sort > work/input/keyring-files.tsv
+
+      - name: Decode exact vendor binary indexes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/input/indexes
+          found=0
+          while IFS= read -r path; do
+            name="$(basename "$path")"
+            case "$name" in
+              *update.hancomgooroom.com*gooroom*Packages*) repository=gooroom; suite=gooroom-3.0 ;;
+              *update.hancomgooroom.com*hancom*Packages*) repository=hancom; suite=hancom-3.0 ;;
+              *) continue ;;
+            esac
+            output="work/input/indexes/${repository}-Packages-${found}"
+            case "$path" in
+              *.lz4) lz4 -dc "$path" > "$output" ;;
+              *.xz) xz -dc "$path" > "$output" ;;
+              *.gz) gzip -dc "$path" > "$output" ;;
+              *) cp "$path" "$output" ;;
+            esac
+            test -s "$output"
+            printf '%s\t%s\t%s\n' "$repository" "$suite" "$output" \
+              >> work/input/index-specs.tsv
+            found=$((found + 1))
+          done < <(find work/reference-rootfs/var/lib/apt/lists -maxdepth 1 -type f | sort)
+          test "$found" -ge 2
+          sha256sum work/input/indexes/* | sort -k2 > work/input/index-sha256.txt
+
+      - name: Recover and verify every remaining exact source
+        id: recover
+        shell: bash
+        run: |
+          set -uxo pipefail
+          lock=arm64/locks/sources-api-baseline/source-lock.json
+          if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
+            lock=arm64/locks/effective-sources/effective-source-lock.json
+          fi
+          test -f "$lock"
+
+          args=()
+          while IFS=$'\t' read -r repository suite path; do
+            base_url="https://update.hancomgooroom.com/$repository"
+            metadata="$(jq -cn \
+              --arg repository "$repository" \
+              --arg suite "$suite" \
+              --arg base_url "$base_url" \
+              '{repository:$repository,suite:$suite,base_url:$base_url}')"
+            args+=(--packages-index "${metadata}::${path}")
+          done < work/input/index-specs.tsv
+
+          keyrings=()
+          while IFS= read -r keyring; do
+            keyrings+=(--keyring "$keyring")
+          done < <(find work/reference-rootfs/etc/apt -type f \
+            \( -name '*.gpg' -o -name trusted.gpg \) | sort)
+          test "${#keyrings[@]}" -gt 0
+
+          rm -rf work/source-recovery
+          set +e
+          python3 arm64/scripts/recover_exact_vendor_sources_v2.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --existing-lock "$lock" \
+            "${args[@]}" \
+            "${keyrings[@]}" \
+            --workers 4 \
+            --component-workers 3 \
+            --output-dir work/source-recovery \
+            2>&1 | tee work/source-recovery-workflow.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/source-recovery -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-recovery/LOCKSUMS.sha256
+          cat work/source-recovery/summary.json
+
+      - name: Upload complete recovery and unresolved evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-exact-vendor-source-recovery-v2
+          path: |
+            work/source-recovery
+            work/source-recovery-workflow.log
+            work/input/apt-list-files.tsv
+            work/input/keyring-files.tsv
+            work/input/index-specs.tsv
+            work/input/index-sha256.txt
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit exact recovered source locks and blockers
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -d work/source-recovery
+          rm -rf arm64/locks/apt-source-fallback-v2
+          mkdir -p arm64/locks/apt-source-fallback-v2
+          cp -a work/source-recovery/. arm64/locks/apt-source-fallback-v2/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/apt-source-fallback-v2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Recover exact signed source packages for ARM64 blockers'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Preserve fail-closed status until every blocker is recovered
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.recover.outputs.exit_code }}' = '0'
+          jq -e '.all_blocking_sources_recovered == true and .unresolved_count == 0' \
+            work/source-recovery/summary.json

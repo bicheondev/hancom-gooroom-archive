@@ -1,0 +1,118 @@
+{
+  "schema": 4,
+  "source": "gooroom-security-status-tools",
+  "source_version": "0.3.9+grm3u1",
+  "source_type": "git",
+  "repository_full_name": "gooroom/gooroom-security-status-tools",
+  "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+  "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+  "dsc_filename": null,
+  "dsc_sha256": null,
+  "authority_provenance": "github-exact-commit",
+  "actions_run_id": "31148819375",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31148819375",
+  "batch": "specialized-exact-vendor-dependency",
+  "artifact_id": "8982546322",
+  "artifact_name": "gooroom-security-status-tools-exact-arm64",
+  "artifact_digest": "sha256:17a11147c4ed3a650a26990f2296fb3ba2ba25e80571e790192605edf65ee0ef",
+  "build_outcome": "success",
+  "build_exit_code": "0",
+  "verify_outcome": "success",
+  "required_native_packages": [
+    "gooroom-security-status-tools"
+  ],
+  "reused_all_packages": [],
+  "job_passed": true,
+  "verification_passed": true,
+  "passed": true,
+  "deb_artifacts": [
+    {
+      "filename": "gooroom-security-status-tools_0.3.9+grm3u1_arm64.deb",
+      "package": "gooroom-security-status-tools",
+      "version": "0.3.9+grm3u1",
+      "architecture": "arm64",
+      "size": 52672,
+      "sha256": "18946a97397b1fb5bcf1938dd3dacaa265d876a3b8d2bdad526b1967c8c0becf"
+    },
+    {
+      "filename": "gooroom-security-status-tools-dbgsym_0.3.9+grm3u1_arm64.deb",
+      "package": "gooroom-security-status-tools-dbgsym",
+      "version": "0.3.9+grm3u1",
+      "architecture": "arm64",
+      "size": 133792,
+      "sha256": "67009a10dd3f59cc8e0b0557fbc01d8cddd33dca840c3a64d75d29fd32f10807"
+    }
+  ],
+  "verification_errors": [],
+  "verification_warnings": [],
+  "build_lock": {
+    "schema": 3,
+    "source": "gooroom-security-status-tools",
+    "source_version": "0.3.9+grm3u1",
+    "repository": "gooroom/gooroom-security-status-tools",
+    "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+    "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+    "source_archive_sha256": "edd97a2fb6c9efbc40ebf95e242538d600dfcabbd33a919ee5a40cb5d2295cb4",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gooroom-security-status-tools"
+    ],
+    "binary_package_policy": "AMD64 reference packages whose Architecture is not all",
+    "source_composition": {
+      "mode": "git-only"
+    },
+    "produced_binary_packages": [
+      "gooroom-security-status-tools-dbgsym",
+      "gooroom-security-status-tools"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gooroom-security-status-tools",
+    "source_version": "0.3.9+grm3u1",
+    "repository": "gooroom/gooroom-security-status-tools",
+    "commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+    "tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+    "verified_commit_sha": "e0617321d1d0ee9db078c44b5da8265b511cc77c",
+    "verified_tree_sha": "083237804297c06e1f7dcec02436c226ca75f1ec",
+    "deterministic_source_archive_sha256": "edd97a2fb6c9efbc40ebf95e242538d600dfcabbd33a919ee5a40cb5d2295cb4"
+  },
+  "exact_vendor_build_dependencies": [
+    {
+      "package": "gooroom-security-utils",
+      "version": "0.3.7+grm3u1",
+      "architecture": "all",
+      "url": "http://update.hancomgooroom.com/gooroom/pool/main/g/gooroom-security-utils/gooroom-security-utils_0.3.7+grm3u1_all.deb",
+      "filename": "gooroom-security-utils_0.3.7+grm3u1_all.deb",
+      "size": 10560,
+      "sha256": "2f59a55125e99d3a468e6247c03aea1f5dd64adf8745ea669b890432523be182"
+    }
+  ],
+  "verification_summary": {
+    "schema": 3,
+    "deb_count": 2,
+    "wrong_architecture_executable_count": 0,
+    "verified": true
+  },
+  "artifact_file_sha256": {
+    "build-lock.json": "0a8baceafe71d25e1baedff7956630eaaf2927e4686e2bc5c7b00a7d6d449cb7",
+    "source-lock-evidence.json": "9b1be47f6267c630228ff9faa20f9f88b5ec39f16e43b9cc7f47c93681a2d570",
+    "vendor-build-dependencies.json": "081b32472971efab76e3631a4a9195b886018cac5624684ee4389386b01e5c39",
+    "verification-summary.json": "6d8640bbfae8751026fbd92ab78a8e9fbdb0097eb8b47e251e15f40811091b65"
+  },
+  "superseded_results": [
+    {
+      "actions_run_id": "31097724529",
+      "evidence_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9+grm3u1/result.json",
+      "reason": "obsolete generic-builder failure; the exact vendor-aware ARM64 workflow subsequently passed"
+    },
+    {
+      "actions_run_id": "31093920102",
+      "evidence_path": "arm64/locks/rebuild-results/gooroom-security-status-tools/0.3.9_grm3u1/result.json",
+      "reason": "valid earlier specialized success superseded by a newer independently verified success"
+    }
+  ]
+}

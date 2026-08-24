@@ -1,0 +1,100 @@
+{
+  "candidate_commit_sha": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "candidate_deb_sha256": "f4f9aa881be254eedca1edc281ab7528c13077c79c82d8bc469627a68e1f811b",
+  "candidate_label": "hancom-hybrid-old-user",
+  "comparison_rank": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    584
+  ],
+  "different_non_elf_payload": [],
+  "main_elf": {
+    "absolute_size_delta": 248,
+    "call_sequence_difference_count": 0,
+    "candidate_only_imports": [],
+    "candidate_only_semantic_strings": [],
+    "candidate_path": "/tmp/tmpu_rr7nd0/candidate/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+    "candidate_sha256": "da156a9dcf19edb011dce2f6cfa6c6a0a9acb9d9cc03f8e40ea333a2902f5b4e",
+    "candidate_size": 211856,
+    "defined_function_count": {
+      "candidate": 94,
+      "target": 94
+    },
+    "defined_function_size_difference_count": 0,
+    "different_functions": [],
+    "different_resources": [],
+    "forbidden_vendor_strings_present": [],
+    "import_difference_count": 0,
+    "missing_required_theme_imports": [],
+    "missing_required_theme_strings": [],
+    "mnemonic_difference_count": 0,
+    "resource_count": {
+      "candidate": 12,
+      "target": 12
+    },
+    "resource_difference_count": 0,
+    "target_only_imports": [],
+    "target_only_semantic_strings": [],
+    "target_path": "/tmp/tmpu_rr7nd0/target/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+    "target_sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+    "target_size": 211608
+  },
+  "nimf_elf": {
+    "absolute_size_delta": 336,
+    "call_sequence_difference_count": 0,
+    "candidate_only_imports": [],
+    "candidate_only_semantic_strings": [],
+    "candidate_path": "/tmp/tmpu_rr7nd0/candidate/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+    "candidate_sha256": "58de31dcb3e0131fd8fdc220e44f417c309dac25a529bdaf285b0fc757bbe9f3",
+    "candidate_size": 14248,
+    "defined_function_count": {
+      "candidate": 4,
+      "target": 4
+    },
+    "defined_function_size_difference_count": 0,
+    "different_functions": [],
+    "different_resources": [],
+    "forbidden_vendor_strings_present": [],
+    "import_difference_count": 0,
+    "missing_required_theme_imports": [
+      "g_object_get_property",
+      "g_strdup_value_contents",
+      "g_value_unset",
+      "gtk_widget_get_settings"
+    ],
+    "missing_required_theme_strings": [
+      "/tmp/.cleanmode",
+      "org.gnome.desktop.interface",
+      "icon-theme",
+      "notify::gtk-icon-theme-name",
+      "style1.css",
+      "style2.css",
+      "style4",
+      "style5"
+    ],
+    "mnemonic_difference_count": 0,
+    "resource_count": {
+      "candidate": 0,
+      "target": 0
+    },
+    "resource_difference_count": 0,
+    "target_only_imports": [],
+    "target_only_semantic_strings": [],
+    "target_path": "/tmp/tmpu_rr7nd0/target/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+    "target_sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+    "target_size": 14584
+  },
+  "non_elf_difference_count": 0,
+  "schema": 1,
+  "semantic_marker_difference_count": 0,
+  "source": "gooroom-integration-applet",
+  "strong_semantic_match": true,
+  "target_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+  "target_version": "0.3.1+grm3u1+han3u3",
+  "user_source_commit_sha": "bcca083b854e4a6c99e0bb69db4d4868e1210cdd"
+}

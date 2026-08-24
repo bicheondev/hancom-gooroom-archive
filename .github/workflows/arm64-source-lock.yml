@@ -1,0 +1,112 @@
+name: ARM64 port - lock exact source commits
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-lock.yml'
+      - 'arm64/scripts/resolve_source_git.py'
+      - 'arm64/scripts/resolve_source_git_public.py'
+      - 'arm64/scripts/resolve_source_git_seeded.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/sources-api-baseline/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-lock
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Preserve verified baseline and resolve only exact-version gaps
+        id: resolve
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -uxo pipefail
+          rm -rf work/source-lock work/source-probes
+          set +e
+          python3 arm64/scripts/resolve_source_git_seeded.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --seed-lock arm64/locks/sources-api-baseline/source-lock.json \
+            --output-dir work/source-lock \
+            --work-dir work/source-probes \
+            --max-depth 800 \
+            --workers 8
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > /tmp/source-lock-sums
+          mv /tmp/source-lock-sums work/source-lock/LOCKSUMS.sha256
+          cat work/source-lock/source-lock-summary.json
+
+      - name: Upload source resolution evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-source-lock
+          path: work/source-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record source locks on the port branch
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/sources
+          mkdir -p arm64/locks/sources
+          cp -a work/source-lock/. arm64/locks/sources/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock exact Hancom Gooroom 3.3 source commits'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Enforce exact sources for every ARM64 rebuild
+        run: |
+          set -euxo pipefail
+          test '${{ steps.resolve.outputs.exit_code }}' = '0'
+          test "$(jq -r '.rebuild_unresolved_count' work/source-lock/source-lock-summary.json)" = '0'
+
+      - name: Dispatch effective source authority merge explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/source-lock/source-lock.json ]; then
+            dispatch arm64-effective-source-lock.yml
+          fi

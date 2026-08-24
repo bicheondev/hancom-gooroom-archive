@@ -1,0 +1,251 @@
+name: ARM64 port - publish verified rebuild package cache
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-publish-rebuild-packages.yml'
+      - 'arm64/scripts/prepare_rebuild_release_assets_v2.py'
+      - 'arm64/locks/rebuild-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-publish-rebuild-packages
+  cancel-in-progress: true
+
+env:
+  PACKAGE_RELEASE_TAG: v3.3-arm64-packages
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out passed rebuild records
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Prepare and reverify persistent package assets
+        id: prepare
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/rebuild-release
+          mkdir -p work/rebuild-release/assets
+          set +e
+          python3 arm64/scripts/prepare_rebuild_release_assets_v2.py \
+            --results arm64/locks/rebuild-results \
+            --github-repository '${{ github.repository }}' \
+            --assets-dir work/rebuild-release/assets \
+            --output work/rebuild-release/prepared.json
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          ready=false
+          if [ -f work/rebuild-release/prepared.json ]; then
+            ready="$(jq -r '.summary.ready_to_publish == true' work/rebuild-release/prepared.json)"
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Create or retain the verified package prerelease
+        if: steps.prepare.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/rebuild-release/release-notes.md <<'EOF'
+          Exact native ARM64 package cache for the Hancom Gooroom 3.3 port.
+
+          Every .deb asset is published only after:
+          - exact AMD64 reference Source and Version matching;
+          - exact Git commit and tree verification;
+          - native ARM64 build;
+          - package control field and ELF architecture verification;
+          - SHA-256 and size verification after Actions artifact recovery.
+
+          This package cache is a build input, not a standalone OS release.
+          EOF
+          if ! gh release view "$PACKAGE_RELEASE_TAG" \
+            --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release create "$PACKAGE_RELEASE_TAG" \
+              --repo '${{ github.repository }}' \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 verified package cache' \
+              --notes-file work/rebuild-release/release-notes.md
+          fi
+
+      - name: Upload verified package and source evidence assets
+        if: steps.prepare.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mapfile -d '' assets < <(
+            find work/rebuild-release/assets -maxdepth 1 -type f -print0 | sort -z
+          )
+          test "${#assets[@]}" -gt 0
+          gh release upload "$PACKAGE_RELEASE_TAG" \
+            --repo '${{ github.repository }}' \
+            --clobber \
+            "${assets[@]}"
+          gh api \
+            "repos/${{ github.repository }}/releases/tags/$PACKAGE_RELEASE_TAG" \
+            > work/rebuild-release/release-api.json
+
+      - name: Lock uploaded release asset identities
+        if: steps.prepare.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('work/rebuild-release')
+          prepared = json.loads((root / 'prepared.json').read_text())
+          release = json.loads((root / 'release-api.json').read_text())
+          assets = {asset['name']: asset for asset in release.get('assets', [])}
+          errors = []
+
+          def lock_asset(row):
+              name = row['filename']
+              asset = assets.get(name)
+              if not asset:
+                  errors.append(f'missing uploaded release asset: {name}')
+                  return {**row, 'release_asset': None}
+              if int(asset.get('size', -1)) != int(row['size']):
+                  errors.append(
+                      f"{name}: release size {asset.get('size')} != {row['size']}"
+                  )
+              digest = asset.get('digest')
+              if digest and digest != f"sha256:{row['sha256']}":
+                  errors.append(
+                      f"{name}: release digest {digest} != sha256:{row['sha256']}"
+                  )
+              return {
+                  **row,
+                  'release_asset': {
+                      'id': asset.get('id'),
+                      'name': name,
+                      'size': asset.get('size'),
+                      'digest': digest,
+                      'browser_download_url': asset.get('browser_download_url'),
+                      'created_at': asset.get('created_at'),
+                      'updated_at': asset.get('updated_at'),
+                  },
+              }
+
+          packages = [lock_asset(row) for row in prepared.get('packages', [])]
+          evidence = [lock_asset(row) for row in prepared.get('evidence_assets', [])]
+          summary = {
+              'schema': 1,
+              'policy': 'verified-actions-artifact-to-persistent-release-asset',
+              'release_tag': release.get('tag_name'),
+              'release_id': release.get('id'),
+              'release_url': release.get('html_url'),
+              'package_asset_count': len(packages),
+              'evidence_asset_count': len(evidence),
+              'error_count': len(errors),
+              'complete': not errors,
+          }
+          output = {
+              'summary': summary,
+              'packages': packages,
+              'evidence_assets': evidence,
+              'errors': errors,
+          }
+          (root / 'rebuild-release-lock.json').write_text(
+              json.dumps(output, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          (root / 'summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          PY
+          find work/rebuild-release -maxdepth 1 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/rebuild-release/LOCKSUMS.sha256
+          jq -e '.complete == true' work/rebuild-release/summary.json
+
+      - name: Upload package-cache publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-rebuild-release-lock
+          path: |
+            work/rebuild-release/prepared.json
+            work/rebuild-release/release-api.json
+            work/rebuild-release/rebuild-release-lock.json
+            work/rebuild-release/summary.json
+            work/rebuild-release/LOCKSUMS.sha256
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit persistent package release lock
+        if: steps.prepare.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/rebuild-release
+          mkdir -p arm64/locks/rebuild-release
+          cp work/rebuild-release/rebuild-release-lock.json arm64/locks/rebuild-release/
+          cp work/rebuild-release/summary.json arm64/locks/rebuild-release/
+          cp work/rebuild-release/LOCKSUMS.sha256 arm64/locks/rebuild-release/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/rebuild-release
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock verified ARM64 rebuild package release assets'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch package-cache consumers explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/rebuild-release/summary.json ] \
+             && jq -e '.complete == true' work/rebuild-release/summary.json >/dev/null; then
+            dispatch arm64-dependency-retry-v2.yml -f limit=4
+            dispatch arm64-package-acquisition-plan-v2.yml
+          fi
+          dispatch arm64-port-coverage.yml || true

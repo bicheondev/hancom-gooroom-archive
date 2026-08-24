@@ -1,0 +1,336 @@
+{
+  "summary": {
+    "schema": 1,
+    "policy": "exact-binary-payload-repack-only-when-no-elf-and-payload-identical",
+    "source_count": 7,
+    "repacked_source_count": 0,
+    "blocked_source_count": 7,
+    "binary_count": 7,
+    "repacked_binary_count": 0,
+    "native_payload_binary_count": 7
+  },
+  "sources": [
+    {
+      "source": "gnome-flashback",
+      "source_version": "3.38.0-2+grm3u2+han3u4",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gnome-flashback",
+          "version": "3.38.0-2+grm3u2+han3u4",
+          "original_architecture": "amd64",
+          "original_filename": "gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb",
+          "original_size": 436564,
+          "original_sha256": "6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gnome-flashback/gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb",
+          "payload_entry_count": 23,
+          "elf_count": 5,
+          "elf_files": [
+            {
+              "path": "usr/bin/gnome-flashback",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "ae0fafd7973325b6d660c7ee997b6b71d2e1bbe71e75d083fe294f16973427e6",
+              "size": 1002672
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/system_indicators.so",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "0cdd4d0fef547a3761a54ce8266897987a24fd2c90f40d7cffe6b738c15529d1",
+              "size": 645496
+            },
+            {
+              "path": "usr/libexec/gnome-flashback-clipboard",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "f912aa3cb204f39ab454dbca0cc9b5c3cf1d8e83b54b8390fb951ff62e888627",
+              "size": 59624
+            },
+            {
+              "path": "usr/libexec/monitors-xml-system-wide-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "8ae2f2abbdb025ff96a50cf6f840ef0dd25b046300eea5d61ef269820371b2a8",
+              "size": 14608
+            },
+            {
+              "path": "usr/libexec/polkit-agent-self-auth-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "6b0c3c1544e3ef6107dcc71e597606d69813e874eea83415453e69dd2a137674",
+              "size": 14496
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-applauncher-applet",
+      "source_version": "0.4.0+grm3u1+han3u2",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-applauncher-applet",
+          "version": "0.4.0+grm3u1+han3u2",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-applauncher-applet_0.4.0+grm3u1+han3u2_amd64.deb",
+          "original_size": 30804,
+          "original_sha256": "97d4ad82497333615de5eea8fa4d64fd9538f000dccaee5acb1f6f26f44edc00",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-applauncher-applet/gooroom-applauncher-applet_0.4.0+grm3u1+han3u2_amd64.deb",
+          "payload_entry_count": 26,
+          "elf_count": 1,
+          "elf_files": [
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-applauncher-applet.so",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "01f8fccd11542920cf603e5e9f4d4fbc32e27dc3c9cac64f653705bbaa1808e4",
+              "size": 99056
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-dockbarx-applet",
+      "source_version": "0.3.1+grm3u1+han3u1",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-dockbarx-applet",
+          "version": "0.3.1+grm3u1+han3u1",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-dockbarx-applet_0.3.1+grm3u1+han3u1_amd64.deb",
+          "original_size": 14096,
+          "original_sha256": "9d810f3185babcd24e0d7c868586c930a8d39bcb7b0a01dee4d8cee02f440b0d",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-dockbarx-applet/gooroom-dockbarx-applet_0.3.1+grm3u1+han3u1_amd64.deb",
+          "payload_entry_count": 20,
+          "elf_count": 2,
+          "elf_files": [
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "3eb1e7829003c28d67d3da17883b0fcae08bc7fc38695cb21f8537a9079aedab",
+              "size": 23344
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "5a4f4fce755692720a8965f5e50c095992ec87111f723bce88b884eef70b07c9",
+              "size": 23272
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-greeter",
+      "source_version": "0.3.1+grm3u1+han3u2",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-greeter",
+          "version": "0.3.1+grm3u1+han3u2",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb",
+          "original_size": 282940,
+          "original_sha256": "61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb",
+          "payload_entry_count": 40,
+          "elf_count": 1,
+          "elf_files": [
+            {
+              "path": "usr/sbin/gooroom-greeter",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "98dc0c6122b64f13fe674dcf5fe591c6c40c8ef45dc564a2d3f709e10fed95e0",
+              "size": 149704
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-guide",
+      "source_version": "0.5.3+grm3u1+han3u1",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-guide",
+          "version": "0.5.3+grm3u1+han3u1",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb",
+          "original_size": 3620004,
+          "original_sha256": "80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-guide/gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb",
+          "payload_entry_count": 54,
+          "elf_count": 1,
+          "elf_files": [
+            {
+              "path": "usr/bin/gooroom-guide",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "dce817f68de882b2cc903dc22416d85326636a810efc561cd790c51c35c9a8cf",
+              "size": 51336
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-integration-applet",
+      "source_version": "0.3.1+grm3u1+han3u3",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-integration-applet",
+          "version": "0.3.1+grm3u1+han3u3",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+          "original_size": 62392,
+          "original_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+          "payload_entry_count": 67,
+          "elf_count": 2,
+          "elf_files": [
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b",
+              "size": 211608
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d",
+              "size": 14584
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    },
+    {
+      "source": "gooroom-session-manager",
+      "source_version": "0.3.9+grm3u1+han3u2",
+      "role": "rebuild-arm64",
+      "status": "blocked",
+      "binary_packages": [
+        {
+          "package": "gooroom-session-manager",
+          "version": "0.3.9+grm3u1+han3u2",
+          "original_architecture": "amd64",
+          "original_filename": "gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb",
+          "original_size": 20328,
+          "original_sha256": "6cdc971c8258ae3e05a97b314128ca212141a7a8913c82ebf7690c79d3fc6c4d",
+          "vendor_url": "http://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb",
+          "payload_entry_count": 25,
+          "elf_count": 4,
+          "elf_files": [
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66",
+              "size": 39848
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "b326f6d53741844e63c82d98706400789c8a96c22ffb9d733ba33ac50c0d5cc8",
+              "size": 14704
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-update-blacklist-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "8f6306dbfd32eda6637b1f74b5024cf5424e321aeade10c6efd025d91dd83a27",
+              "size": 14752
+            },
+            {
+              "path": "usr/lib/x86_64-linux-gnu/gooroom-session-manager/grac-reload-helper",
+              "machine": 62,
+              "machine_name": "x86_64",
+              "sha256": "b1327a0fa58c09a36b9ca9926f153ad8eb84f386707346b991eae2e99bfaab7a",
+              "size": 14496
+            }
+          ],
+          "architecture_neutral": false,
+          "changed_control_fields": {},
+          "repacked_filename": null,
+          "repacked_size": null,
+          "repacked_sha256": null,
+          "payload_identity_preserved": false,
+          "control_auxiliary_identity_preserved": false,
+          "errors": [],
+          "status": "native-payload"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,820 @@
+name: ARM64 reconstruct integration applet public history v5
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+      - 'arm64/scripts/integration_applet_inject_target_resources.py'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-public-history-v5
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  REPOSITORY: gooroom/gooroom-integration-applet
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  TARGET_SHA256: 1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9
+  TARGET_SIZE: '62392'
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+  RECONSTRUCTOR: arm64/scripts/integration_applet_vendor_reconstruct.py
+  RESOURCE_INJECTOR: arm64/scripts/integration_applet_inject_target_resources.py
+
+jobs:
+  discover:
+    name: Discover source-history candidates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Check out discovery authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Clone complete public source history
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --mirror "https://github.com/$REPOSITORY.git" work/upstream.git
+          mkdir -p work/discovery
+
+      - name: Select every source transition relevant to target-only behavior
+        id: matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          import subprocess
+          from pathlib import Path
+
+          repository = Path('work/upstream.git')
+          output = Path('work/discovery')
+          known = [
+              '0f7897ad068da63c6529c5725afdf569152ca4c7',
+              'bcca083b854e4a6c99e0bb69db4d4868e1210cdd',
+              'd170c900dab655bd5c6d8474064e445232d3f49c',
+              '888931318857682df5c13f94128462c1eb80570c',
+              'bc1ffb09ce84b3d7f0428ecc9bbe46ef929074f5',
+              '700b941206bec133317591fb99ba6d1d3917f9fc',
+              '168ff81421ea1f5bae9e715c5ccdd559e015d44c',
+          ]
+          needles = [
+              '/tmp/.cleanmode',
+              'gtk_widget_get_settings',
+              'gtk_widget_override_background_color',
+              'g_object_get_property',
+              'g_strdup_value_contents',
+              'g_string_erase',
+              'g_value_unset',
+              'gtk-icon-theme-name',
+              'notify::gtk-icon-theme-name',
+              'icon-theme',
+              'style1.css',
+              'style2.css',
+              'style4',
+              'style5',
+          ]
+
+          def git(arguments: list[str], *, check: bool = True) -> str:
+              process = subprocess.run(
+                  ['git', f'--git-dir={repository}', *arguments],
+                  check=check,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+              )
+              return process.stdout
+
+          candidates: set[str] = set()
+          reasons: dict[str, set[str]] = {}
+
+          def include(commit: str, reason: str) -> None:
+              commit = commit.strip()
+              if not commit:
+                  return
+              process = subprocess.run(
+                  ['git', f'--git-dir={repository}', 'cat-file', '-e', f'{commit}^{{commit}}'],
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
+              )
+              if process.returncode != 0:
+                  return
+              process = subprocess.run(
+                  ['git', f'--git-dir={repository}', 'cat-file', '-e', f'{commit}:debian/control'],
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
+              )
+              if process.returncode != 0:
+                  return
+              full = git(['rev-parse', commit]).strip()
+              candidates.add(full)
+              reasons.setdefault(full, set()).add(reason)
+
+          for commit in known:
+              include(commit, 'known-release-or-cleanmode-control')
+
+          for needle in needles:
+              transitions = [
+                  line.strip()
+                  for line in git(
+                      ['log', '--all', '--reverse', '--format=%H', f'-S{needle}']
+                  ).splitlines()
+                  if line.strip()
+              ]
+              for commit in transitions:
+                  include(commit, f'string-transition:{needle}')
+                  parents = git(['show', '-s', '--format=%P', commit]).split()
+                  if parents:
+                      include(parents[0], f'parent-before-transition:{needle}')
+
+          paths = [
+              'modules/user/user-module.c',
+              'modules/user/user-control.ui',
+              'src/popup-window.c',
+              'src/popup-window.ui',
+              'data/style.css',
+          ]
+          for path in paths:
+              commits = [
+                  line.strip()
+                  for line in git(
+                      ['log', '--all', '--reverse', '--format=%H', '--', path]
+                  ).splitlines()
+                  if line.strip()
+              ]
+              if commits:
+                  include(commits[0], f'first-change:{path}')
+                  include(commits[-1], f'last-change:{path}')
+
+          rows = []
+          seen_trees: set[str] = set()
+          ordered = sorted(
+              candidates,
+              key=lambda commit: git(['show', '-s', '--format=%ct', commit]).strip(),
+          )
+          for commit in ordered:
+              tree = git(['rev-parse', f'{commit}^{{tree}}']).strip()
+              if tree in seen_trees:
+                  continue
+              seen_trees.add(tree)
+              subject = git(['show', '-s', '--format=%s', commit]).strip()
+              date = git(['show', '-s', '--format=%aI', commit]).strip()
+              safe = re.sub(r'[^a-z0-9]+', '-', subject.lower()).strip('-')[:28]
+              rows.append(
+                  {
+                      'label': f'c{len(rows)+1:02d}-{commit[:10]}-{safe or "candidate"}',
+                      'commit': commit,
+                      'tree': tree,
+                      'author_date': date,
+                      'subject': subject,
+                      'reasons': sorted(reasons.get(commit, {'same-tree-selected'})),
+                  }
+              )
+
+          if not rows:
+              raise SystemExit('no buildable source-history candidates were selected')
+          matrix = {
+              'include': [
+                  {'label': row['label'], 'commit': row['commit']}
+                  for row in rows
+              ]
+          }
+          (output / 'candidates.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (output / 'matrix.json').write_text(
+              json.dumps(matrix, separators=(',', ':')) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          printf 'matrix=%s\n' "$(cat work/discovery/matrix.json)" >> "$GITHUB_OUTPUT"
+          jq '{candidate_count:(.include|length), candidates:.include}' \
+            work/discovery/matrix.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload candidate discovery evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-discovery-v5
+          path: work/discovery
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+  reconstruct:
+    name: Reconstruct ${{ matrix.label }}
+    needs: discover
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+
+    steps:
+      - name: Check out reconstruction authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install bounded exact-build tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          apt_options=(
+            -o Acquire::Retries=4
+            -o Acquire::http::Timeout=30
+            -o Acquire::https::Timeout=30
+            -o Acquire::ForceIPv4=true
+            -o Dpkg::Use-Pty=0
+          )
+          timeout 15m sudo apt-get "${apt_options[@]}" update
+          timeout 15m sudo DEBIAN_FRONTEND=noninteractive \
+            apt-get "${apt_options[@]}" install -y --no-install-recommends \
+              binutils ca-certificates curl debootstrap debian-archive-keyring \
+              dpkg-dev file gettext git jq libglib2.0-bin python3 tar xz-utils
+          python3 -m py_compile "$RECONSTRUCTOR" "$RESOURCE_INJECTOR"
+          mkdir -p work/{downloads,deps,target-root,source-authority,build,comparison,artifact}
+
+      - name: Verify exact target and exact locked Nimf dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o work/downloads/target.deb
+          test "$(stat -c '%s' work/downloads/target.deb)" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  work/downloads/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f work/downloads/target.deb Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f work/downloads/target.deb Version)" = "$VERSION"
+          test "$(dpkg-deb -f work/downloads/target.deb Architecture)" = amd64
+          dpkg-deb -x work/downloads/target.deb work/target-root
+
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+          ' "$NIMF_AUTHORITY" >/dev/null
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            file="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            sha="$(jq -r '.sha256' <<<"$row")"
+            size="$(jq -r '.size' <<<"$row")"
+            package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "work/deps/$file"
+            test "$(stat -c '%s' "work/deps/$file")" = "$size"
+            test "$(sha256sum "work/deps/$file" | awk '{print $1}')" = "$sha"
+            test "$(dpkg-deb -f "work/deps/$file" Package)" = "$package"
+            test "$(dpkg-deb -f "work/deps/$file" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "work/deps/$file" Architecture)" = amd64
+          done
+
+      - name: Reconstruct complete target resource graph on candidate source
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" work/source
+          git -C work/source fetch --depth=1 origin "$CANDIDATE_COMMIT"
+          git -C work/source checkout --detach "$CANDIDATE_COMMIT"
+          test "$(git -C work/source rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          base_tree="$(git -C work/source rev-parse HEAD^{tree})"
+
+          python3 "$RECONSTRUCTOR" reconstruct \
+            --source work/source \
+            --target-root work/target-root \
+            --output work/source-authority/base-reconstruction-report.json \
+            --version "$VERSION"
+          python3 "$RESOURCE_INJECTOR" \
+            --source work/source \
+            --target-root work/target-root \
+            --output work/source-authority/resource-graph-report.json
+          jq -e '.resource_path_set_exact == true and .target_resource_count == .final_manifest_resource_count' \
+            work/source-authority/resource-graph-report.json >/dev/null
+          test "$(dpkg-parsechangelog -lwork/source/debian/changelog -SVersion)" = "$VERSION"
+
+          git -C work/source add -A
+          reconstructed_tree="$(git -C work/source write-tree)"
+          git -C work/source diff --cached --binary --full-index \
+            > work/source-authority/reconstruction.patch
+          git -C work/source archive --format=tar "$reconstructed_tree" \
+            > work/source-authority/reconstructed-source.tar
+          xz -9e work/source-authority/reconstructed-source.tar
+
+          jq -n \
+            --arg source "$PACKAGE" \
+            --arg version "$VERSION" \
+            --arg repository "$REPOSITORY" \
+            --arg label "$CANDIDATE_LABEL" \
+            --arg commit "$CANDIDATE_COMMIT" \
+            --arg base_tree "$base_tree" \
+            --arg reconstructed_tree "$reconstructed_tree" \
+            --arg patch_sha256 "$(sha256sum work/source-authority/reconstruction.patch | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum work/source-authority/reconstructed-source.tar.xz | awk '{print $1}')" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --arg nimf_authority_sha256 "$(sha256sum "$NIMF_AUTHORITY" | awk '{print $1}')" '
+              {
+                schema: 1,
+                source: $source,
+                version: $version,
+                repository: $repository,
+                candidate_label: $label,
+                base_commit_sha: $commit,
+                base_tree_sha: $base_tree,
+                reconstructed_tree_sha: $reconstructed_tree,
+                reconstruction_policy:
+                  "exact-target-changelog-icons-locales-and-complete-gresource-path-graph",
+                reconstruction_patch_sha256: $patch_sha256,
+                source_archive_sha256: $archive_sha256,
+                target_deb_sha256: $target_sha256,
+                nimf_authority_sha256: $nimf_authority_sha256
+              }
+            ' > work/source-authority/source-lock.json
+
+      - name: Build reconstructed candidate in exact historical userspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base="$(pwd)/work"
+          rootfs="$base/build/rootfs"
+          timeout 30m sudo debootstrap \
+            --arch=amd64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$base/build/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "6";' \
+            'Acquire::http::Timeout "45";' \
+            'Acquire::https::Timeout "45";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo cp /etc/resolv.conf "$rootfs/etc/resolv.conf"
+          sudo mkdir -p "$rootfs/build/source" "$rootfs/build/deps"
+          sudo tar -xJf "$base/source-authority/reconstructed-source.tar.xz" \
+            -C "$rootfs/build/source"
+          sudo cp "$base/deps"/*.deb "$rootfs/build/deps/"
+
+          timeout 90m sudo chroot "$rootfs" /bin/bash -Eeuxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export DEB_BUILD_MAINT_OPTIONS="hardening=+all reproducible=+fixfilepath"
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            apt-get install -y \
+              /build/deps/libnimf1_2023.06.30+grm3u1_amd64.deb \
+              /build/deps/nimf-dev_2023.06.30+grm3u1_amd64.deb
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -o Acquire::Retries=6 -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$base/build/build.log"
+
+          mkdir -p "$base/build/debs"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$base/build/debs/"
+          done < <(
+            sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' \
+              | LC_ALL=C sort
+          )
+          sudo chown -R "$(id -u):$(id -g)" "$base/build"
+          for deb in "$base/build/debs"/*.deb; do
+            if [[ "$(dpkg-deb -f "$deb" Package)" == "$PACKAGE" ]]; then
+              cp "$deb" "$base/downloads/candidate.deb"
+            fi
+          done
+          test -f "$base/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64
+          sudo rm -rf "$rootfs"
+
+      - name: Compare resources, exported functions, imports, and payload
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          CANDIDATE_COMMIT: ${{ matrix.commit }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 "$RECONSTRUCTOR" compare \
+            --target-deb work/downloads/target.deb \
+            --candidate-deb work/downloads/candidate.deb \
+            --output work/comparison \
+            --version "$VERSION" \
+            --candidate-label "$CANDIDATE_LABEL" \
+            --candidate-commit "$CANDIDATE_COMMIT"
+
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          root = Path('work')
+          comparison = root / 'comparison'
+          summary_path = comparison / 'summary.json'
+          summary = json.loads(summary_path.read_text(encoding='utf-8'))
+          symbols_root = root / 'symbol-comparison'
+          shutil.rmtree(symbols_root, ignore_errors=True)
+          for side in ('target', 'candidate'):
+              destination = symbols_root / side
+              destination.mkdir(parents=True)
+              subprocess.run(
+                  ['dpkg-deb', '-x', str(root / 'downloads' / f'{side}.deb'), str(destination)],
+                  check=True,
+              )
+
+          def find_unique(base: Path, filename: str) -> Path:
+              matches = sorted(path for path in base.rglob(filename) if path.is_file())
+              if len(matches) != 1:
+                  raise RuntimeError(f'expected one {filename}, found {len(matches)}')
+              return matches[0]
+
+          def symbols(path: Path):
+              text = subprocess.check_output(
+                  ['readelf', '--dyn-syms', '-W', str(path)], text=True
+              )
+              imported = set()
+              defined_functions = {}
+              pattern = re.compile(
+                  r'^\s*\d+:\s+([0-9a-fA-F]+)\s+(\d+)\s+(\S+)\s+\S+\s+\S+\s+(\S+)\s+(.+?)\s*$'
+              )
+              for line in text.splitlines():
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  value, size, kind, section, name = match.groups()
+                  name = name.split('@', 1)[0]
+                  if not name:
+                      continue
+                  if section == 'UND':
+                      imported.add(name)
+                  elif kind == 'FUNC' and int(value, 16) and int(size):
+                      defined_functions[name] = int(size)
+              dynamic = subprocess.check_output(
+                  ['readelf', '-d', '-W', str(path)], text=True
+              )
+              needed = sorted(set(re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic)))
+              return imported, defined_functions, needed
+
+          elf_names = ('libgooroom-integration-applet.so', 'libnimf-gooroom.so')
+          symbol_rows = []
+          total_size_difference = 0
+          total_presence_difference = 0
+          total_import_difference = 0
+          total_needed_difference = 0
+          total_elf_size_delta = 0
+          for filename in elf_names:
+              target = find_unique(symbols_root / 'target', filename)
+              candidate = find_unique(symbols_root / 'candidate', filename)
+              target_imports, target_functions, target_needed = symbols(target)
+              candidate_imports, candidate_functions, candidate_needed = symbols(candidate)
+              common = set(target_functions) & set(candidate_functions)
+              size_differences = {
+                  name: {
+                      'target': target_functions[name],
+                      'candidate': candidate_functions[name],
+                  }
+                  for name in sorted(common)
+                  if target_functions[name] != candidate_functions[name]
+              }
+              target_only_functions = sorted(set(target_functions) - set(candidate_functions))
+              candidate_only_functions = sorted(set(candidate_functions) - set(target_functions))
+              target_only_imports = sorted(target_imports - candidate_imports)
+              candidate_only_imports = sorted(candidate_imports - target_imports)
+              target_only_needed = sorted(set(target_needed) - set(candidate_needed))
+              candidate_only_needed = sorted(set(candidate_needed) - set(target_needed))
+              row = {
+                  'elf': filename,
+                  'target_size': target.stat().st_size,
+                  'candidate_size': candidate.stat().st_size,
+                  'absolute_size_delta': abs(target.stat().st_size - candidate.stat().st_size),
+                  'defined_function_size_differences': size_differences,
+                  'defined_function_size_difference_count': len(size_differences),
+                  'target_only_defined_functions': target_only_functions,
+                  'candidate_only_defined_functions': candidate_only_functions,
+                  'defined_function_presence_difference_count': (
+                      len(target_only_functions) + len(candidate_only_functions)
+                  ),
+                  'target_only_imports': target_only_imports,
+                  'candidate_only_imports': candidate_only_imports,
+                  'import_symbol_difference_count': (
+                      len(target_only_imports) + len(candidate_only_imports)
+                  ),
+                  'target_needed': target_needed,
+                  'candidate_needed': candidate_needed,
+                  'target_only_needed': target_only_needed,
+                  'candidate_only_needed': candidate_only_needed,
+                  'needed_difference_count': (
+                      len(target_only_needed) + len(candidate_only_needed)
+                  ),
+              }
+              symbol_rows.append(row)
+              total_size_difference += row['defined_function_size_difference_count']
+              total_presence_difference += row['defined_function_presence_difference_count']
+              total_import_difference += row['import_symbol_difference_count']
+              total_needed_difference += row['needed_difference_count']
+              total_elf_size_delta += row['absolute_size_delta']
+
+          summary['symbol_comparison'] = symbol_rows
+          summary['defined_function_size_difference_count'] = total_size_difference
+          summary['defined_function_presence_difference_count'] = total_presence_difference
+          summary['import_symbol_difference_count'] = total_import_difference
+          summary['needed_library_difference_count'] = total_needed_difference
+          summary['elf_absolute_size_delta_sum'] = total_elf_size_delta
+          summary['critical_semantic_delta_absent'] = (
+              summary['different_resource_count'] == 0
+              and summary['non_elf_difference_count'] == 0
+              and total_size_difference == 0
+              and total_presence_difference == 0
+              and total_import_difference == 0
+              and total_needed_difference == 0
+          )
+          summary['comparison_rank_v5'] = [
+              summary['different_resource_count'],
+              total_presence_difference,
+              total_size_difference,
+              total_import_difference,
+              total_needed_difference,
+              summary['non_elf_difference_count'],
+              total_elf_size_delta,
+              summary['different_dynamic_function_count'],
+          ]
+          summary_path.write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (comparison / 'symbol-comparison.json').write_text(
+              json.dumps(symbol_rows, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '{
+            candidate_label,
+            comparison_rank_v5,
+            critical_semantic_delta_absent,
+            different_resource_count,
+            defined_function_presence_difference_count,
+            defined_function_size_difference_count,
+            import_symbol_difference_count,
+            needed_library_difference_count,
+            non_elf_difference_count,
+            elf_absolute_size_delta_sum
+          }' work/comparison/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal complete candidate evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/artifact
+          cp -a work/source-authority work/artifact/ || true
+          cp -a work/comparison work/artifact/ || true
+          cp work/downloads/target.deb work/artifact/ || true
+          cp work/downloads/candidate.deb work/artifact/ || true
+          cp work/build/build.log work/artifact/ || true
+          cp work/build/debootstrap.log work/artifact/ || true
+          find work/artifact -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/artifact/FILE-INVENTORY.tsv
+          (
+            cd work/artifact
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-v5-${{ matrix.label }}
+          path: work/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Require complete semantic comparison
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .schema == 1
+            and .source == "gooroom-integration-applet"
+            and .target_version == "0.3.1+grm3u1+han3u3"
+            and (.comparison_rank_v5 | length) == 8
+          ' work/comparison/summary.json >/dev/null
+
+  aggregate:
+    name: Select closest reconstructed public-history source
+    needs: [discover, reconstruct]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out current lock destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download discovery and all completed comparisons
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: integration-applet-*-v5*
+          path: work/downloaded
+
+      - name: Rank completed candidates and seal compact authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/aggregate
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import shutil
+          from pathlib import Path
+
+          roots = sorted(Path('work/downloaded').glob('integration-applet-history-v5-*'))
+          rows = []
+          for root in roots:
+              summary_path = root / 'comparison/summary.json'
+              if not summary_path.exists():
+                  continue
+              summary = json.loads(summary_path.read_text(encoding='utf-8'))
+              rows.append((summary['comparison_rank_v5'], summary['candidate_label'], summary, root))
+          if not rows:
+              raise SystemExit('no completed public-history candidate comparison was downloaded')
+          rows.sort(key=lambda row: (row[0], row[1]))
+          _, _, closest, closest_root = rows[0]
+
+          compact_rows = []
+          for _, _, summary, _ in rows:
+              compact_rows.append({
+                  'candidate_label': summary['candidate_label'],
+                  'candidate_commit_sha': summary['candidate_commit_sha'],
+                  'comparison_rank_v5': summary['comparison_rank_v5'],
+                  'critical_semantic_delta_absent': summary['critical_semantic_delta_absent'],
+                  'different_resource_count': summary['different_resource_count'],
+                  'defined_function_presence_difference_count': summary['defined_function_presence_difference_count'],
+                  'defined_function_size_difference_count': summary['defined_function_size_difference_count'],
+                  'import_symbol_difference_count': summary['import_symbol_difference_count'],
+                  'needed_library_difference_count': summary['needed_library_difference_count'],
+                  'non_elf_difference_count': summary['non_elf_difference_count'],
+                  'elf_absolute_size_delta_sum': summary['elf_absolute_size_delta_sum'],
+                  'different_dynamic_function_count': summary['different_dynamic_function_count'],
+                  'symbol_comparison': summary['symbol_comparison'],
+              })
+
+          semantic = bool(compact_rows[0]['critical_semantic_delta_absent'])
+          aggregate = {
+              'schema': 1,
+              'source': 'gooroom-integration-applet',
+              'version': '0.3.1+grm3u1+han3u3',
+              'completed_candidate_count': len(compact_rows),
+              'closest_candidate': compact_rows[0],
+              'ranked_candidates': compact_rows,
+              'source_reconstruction_semantically_verified': semantic,
+              'native_arm64_build_allowed': semantic,
+              'package_layer_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+              'next_action': (
+                  'build closest reconstructed source natively for arm64'
+                  if semantic
+                  else 'recover remaining source-level semantic delta before native arm64 build'
+              ),
+          }
+          output = Path('work/aggregate')
+          (output / 'summary.json').write_text(
+              json.dumps(aggregate, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          shutil.copy2(
+              closest_root / 'comparison/symbol-comparison.json',
+              output / 'closest-symbol-comparison.json',
+          )
+          shutil.copy2(
+              closest_root / 'source-authority/source-lock.json',
+              output / 'closest-source-lock.json',
+          )
+          shutil.copy2(
+              closest_root / 'source-authority/resource-graph-report.json',
+              output / 'closest-resource-graph-report.json',
+          )
+          shutil.copy2(
+              closest_root / 'source-authority/reconstruction.patch',
+              output / 'closest-reconstruction.patch',
+          )
+          discovery = next(
+              Path('work/downloaded').glob(
+                  'integration-applet-history-discovery-v5/candidates.json'
+              ),
+              None,
+          )
+          if discovery:
+              shutil.copy2(discovery, output / 'discovered-candidates.json')
+          PY
+          jq '.' work/aggregate/summary.json >> "$GITHUB_STEP_SUMMARY"
+          find work/aggregate -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/aggregate/FILE-INVENTORY.tsv
+          (
+            cd work/aggregate
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload compact aggregate authority
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-public-history-reconstruction-v5
+          path: work/aggregate
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit fail-closed public-history reconstruction authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/aggregate/. "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Reconstruct integration applet across public history v5'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

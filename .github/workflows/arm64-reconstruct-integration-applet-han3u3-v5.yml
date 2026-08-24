@@ -1,0 +1,562 @@
+name: ARM64 reconstruct integration applet han3u3 v5
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-reconstruct-integration-applet-han3u3-v5.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-han3u3-v5
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  REPOSITORY: gooroom/gooroom-integration-applet
+  BASE_COMMIT: 168ff81421ea1f5bae9e715c5ccdd559e015d44c
+  OLD_USER_COMMIT: bcca083b854e4a6c99e0bb69db4d4868e1210cdd
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+  TARGET_SHA256: 1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9
+  TARGET_SIZE: '62392'
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+  RECONSTRUCTOR: arm64/scripts/integration_applet_vendor_reconstruct.py
+  SEMANTIC_TOOL: arm64/scripts/integration_applet_han3u3_semantic.py
+
+jobs:
+  reconstruct:
+    name: Reconstruct ${{ matrix.label }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: public-0.3.5-user
+            user_commit: 168ff81421ea1f5bae9e715c5ccdd559e015d44c
+            old_user: 'false'
+          - label: hancom-hybrid-old-user
+            user_commit: bcca083b854e4a6c99e0bb69db4d4868e1210cdd
+            old_user: 'true'
+
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install bounded reconstruction tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          apt_options=(
+            -o Acquire::Retries=4
+            -o Acquire::http::Timeout=30
+            -o Acquire::https::Timeout=30
+            -o Acquire::ForceIPv4=true
+            -o Dpkg::Use-Pty=0
+          )
+          timeout 15m sudo apt-get "${apt_options[@]}" update
+          timeout 15m sudo DEBIAN_FRONTEND=noninteractive \
+            apt-get "${apt_options[@]}" install -y --no-install-recommends \
+              binutils ca-certificates curl debootstrap debian-archive-keyring \
+              dpkg-dev file gettext git jq libglib2.0-bin python3 tar xz-utils
+          python3 -m py_compile "$RECONSTRUCTOR" "$SEMANTIC_TOOL"
+          mkdir -p work/{downloads,deps,target-root,source-authority,build,comparison,artifact}
+
+      - name: Verify exact target and locked Nimf dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o work/downloads/target.deb
+          test "$(stat -c '%s' work/downloads/target.deb)" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  work/downloads/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f work/downloads/target.deb Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f work/downloads/target.deb Version)" = "$VERSION"
+          test "$(dpkg-deb -f work/downloads/target.deb Architecture)" = amd64
+          dpkg-deb -x work/downloads/target.deb work/target-root
+
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+          ' "$NIMF_AUTHORITY" >/dev/null
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            file="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            sha="$(jq -r '.sha256' <<<"$row")"
+            size="$(jq -r '.size' <<<"$row")"
+            package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "work/deps/$file"
+            test "$(stat -c '%s' "work/deps/$file")" = "$size"
+            test "$(sha256sum "work/deps/$file" | awk '{print $1}')" = "$sha"
+            test "$(dpkg-deb -f "work/deps/$file" Package)" = "$package"
+            test "$(dpkg-deb -f "work/deps/$file" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "work/deps/$file" Architecture)" = amd64
+          done
+
+      - name: Recover exact target resources onto gooroom-3.0 source
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          USER_COMMIT: ${{ matrix.user_commit }}
+          OLD_USER: ${{ matrix.old_user }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" work/source
+          git -C work/source fetch --depth=1 origin "$BASE_COMMIT"
+          git -C work/source checkout --detach "$BASE_COMMIT"
+          test "$(git -C work/source rev-parse HEAD)" = "$BASE_COMMIT"
+          base_tree="$(git -C work/source rev-parse HEAD^{tree})"
+
+          python3 "$RECONSTRUCTOR" reconstruct \
+            --source work/source \
+            --target-root work/target-root \
+            --output work/source-authority/target-resource-reconstruction.json \
+            --version "$VERSION"
+
+          if [[ "$OLD_USER" == true ]]; then
+            git -C work/source fetch --depth=1 origin "$OLD_USER_COMMIT"
+            git -C work/source show \
+              "$OLD_USER_COMMIT:modules/user/user-module.c" \
+              > work/source/modules/user/user-module.c
+          fi
+
+          target_elf="$(find work/target-root -type f \
+            -name libgooroom-integration-applet.so -print -quit)"
+          test -n "$target_elf"
+          semantic_args=(
+            patch
+            --source work/source
+            --target-elf "$target_elf"
+            --output work/source-authority/semantic-patch.json
+            --candidate-label "$CANDIDATE_LABEL"
+            --base-commit "$BASE_COMMIT"
+            --user-source-commit "$USER_COMMIT"
+          )
+          if [[ "$OLD_USER" == true ]]; then
+            semantic_args+=(--require-old-user)
+          fi
+          python3 "$SEMANTIC_TOOL" "${semantic_args[@]}"
+
+          test "$(dpkg-parsechangelog -lwork/source/debian/changelog -SVersion)" = "$VERSION"
+          git -C work/source add -A
+          reconstructed_tree="$(git -C work/source write-tree)"
+          git -C work/source diff --cached --binary --full-index \
+            > work/source-authority/reconstruction.patch
+          test -s work/source-authority/reconstruction.patch
+          git -C work/source archive --format=tar "$reconstructed_tree" \
+            > work/source-authority/reconstructed-source.tar
+          xz -9e work/source-authority/reconstructed-source.tar
+
+          jq -n \
+            --arg source "$PACKAGE" \
+            --arg version "$VERSION" \
+            --arg label "$CANDIDATE_LABEL" \
+            --arg base_commit "$BASE_COMMIT" \
+            --arg user_commit "$USER_COMMIT" \
+            --arg base_tree "$base_tree" \
+            --arg reconstructed_tree "$reconstructed_tree" \
+            --arg patch_sha256 "$(sha256sum work/source-authority/reconstruction.patch | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum work/source-authority/reconstructed-source.tar.xz | awk '{print $1}')" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --arg nimf_authority_sha256 "$(sha256sum "$NIMF_AUTHORITY" | awk '{print $1}')" '
+              {
+                schema: 1,
+                source: $source,
+                version: $version,
+                candidate_label: $label,
+                base_commit_sha: $base_commit,
+                user_source_commit_sha: $user_commit,
+                base_tree_sha: $base_tree,
+                reconstructed_tree_sha: $reconstructed_tree,
+                reconstruction_patch_sha256: $patch_sha256,
+                source_archive_sha256: $archive_sha256,
+                target_deb_sha256: $target_sha256,
+                nimf_authority_sha256: $nimf_authority_sha256,
+                reconstruction_policy:
+                  "gooroom-3.0-0.3.5-plus-exact-target-resources-and-recovered-hancom-semantic-delta"
+              }
+            ' > work/source-authority/source-lock.json
+
+      - name: Build reconstructed AMD64 candidate in historical userspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base="$(pwd)/work"
+          rootfs="$base/build/rootfs"
+          timeout 30m sudo debootstrap \
+            --arch=amd64 --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$base/build/debootstrap.log"
+
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "6";' \
+            'Acquire::http::Timeout "45";' \
+            'Acquire::https::Timeout "45";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo cp /etc/resolv.conf "$rootfs/etc/resolv.conf"
+          sudo mkdir -p "$rootfs/build/source" "$rootfs/build/deps"
+          sudo tar -xJf "$base/source-authority/reconstructed-source.tar.xz" \
+            -C "$rootfs/build/source"
+          sudo cp "$base/deps"/*.deb "$rootfs/build/deps/"
+
+          timeout 90m sudo chroot "$rootfs" /bin/bash -Eeuxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export DEB_BUILD_MAINT_OPTIONS="hardening=+all reproducible=+fixfilepath"
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            apt-get install -y \
+              /build/deps/libnimf1_2023.06.30+grm3u1_amd64.deb \
+              /build/deps/nimf-dev_2023.06.30+grm3u1_amd64.deb
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -o Acquire::Retries=6 -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$base/build/build.log"
+
+          mkdir -p "$base/build/debs"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$base/build/debs/"
+          done < <(
+            sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' \
+              | LC_ALL=C sort
+          )
+          sudo chown -R "$(id -u):$(id -g)" "$base/build"
+          for deb in "$base/build/debs"/*.deb; do
+            if [[ "$(dpkg-deb -f "$deb" Package)" == "$PACKAGE" ]]; then
+              cp "$deb" "$base/downloads/candidate.deb"
+            fi
+          done
+          test -f "$base/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64
+          sudo rm -rf "$rootfs"
+
+      - name: Compare payload, resources, symbols, imports, and call flow
+        env:
+          CANDIDATE_LABEL: ${{ matrix.label }}
+          USER_COMMIT: ${{ matrix.user_commit }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/comparison/full work/comparison/semantic
+          python3 "$RECONSTRUCTOR" compare \
+            --target-deb work/downloads/target.deb \
+            --candidate-deb work/downloads/candidate.deb \
+            --output work/comparison/full \
+            --version "$VERSION" \
+            --candidate-label "$CANDIDATE_LABEL" \
+            --candidate-commit "$BASE_COMMIT"
+          python3 "$SEMANTIC_TOOL" compare \
+            --target-deb work/downloads/target.deb \
+            --candidate-deb work/downloads/candidate.deb \
+            --output work/comparison/semantic \
+            --candidate-label "$CANDIDATE_LABEL" \
+            --candidate-commit "$BASE_COMMIT" \
+            --user-source-commit "$USER_COMMIT"
+          jq '{
+            candidate_label,
+            comparison_rank,
+            strong_semantic_match,
+            non_elf_difference_count,
+            semantic_marker_difference_count,
+            main: {
+              resource_differences: .main_elf.resource_difference_count,
+              function_size_differences: .main_elf.defined_function_size_difference_count,
+              import_differences: .main_elf.import_difference_count,
+              call_sequence_differences: .main_elf.call_sequence_difference_count,
+              mnemonic_differences: .main_elf.mnemonic_difference_count,
+              size_delta: .main_elf.absolute_size_delta,
+              target_only_imports: .main_elf.target_only_imports,
+              candidate_only_imports: .main_elf.candidate_only_imports,
+              forbidden_strings: .main_elf.forbidden_vendor_strings_present
+            },
+            nimf: {
+              function_size_differences: .nimf_elf.defined_function_size_difference_count,
+              import_differences: .nimf_elf.import_difference_count,
+              call_sequence_differences: .nimf_elf.call_sequence_difference_count,
+              size_delta: .nimf_elf.absolute_size_delta
+            }
+          }' work/comparison/semantic/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal complete reconstruction evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/artifact
+          cp -a work/source-authority work/artifact/ || true
+          cp -a work/comparison work/artifact/ || true
+          cp work/downloads/target.deb work/artifact/ || true
+          cp work/downloads/candidate.deb work/artifact/ || true
+          cp work/build/build.log work/artifact/ || true
+          cp work/build/debootstrap.log work/artifact/ || true
+          find work/artifact -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/artifact/FILE-INVENTORY.tsv
+          (
+            cd work/artifact
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-han3u3-v5-${{ matrix.label }}
+          path: work/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Require complete semantic comparison
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .schema == 1
+            and .source == "gooroom-integration-applet"
+            and .target_version == "0.3.1+grm3u1+han3u3"
+            and (.comparison_rank | length) == 8
+            and .non_elf_difference_count == 0
+            and .main_elf.resource_difference_count == 0
+          ' work/comparison/semantic/summary.json >/dev/null
+
+  aggregate:
+    name: Select and seal the closest Hancom semantic source
+    needs: reconstruct
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      semantic_match: ${{ steps.result.outputs.semantic_match }}
+      selected_label: ${{ steps.result.outputs.selected_label }}
+    steps:
+      - name: Check out current authority destination
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download completed candidate evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: integration-applet-han3u3-v5-*
+          path: work/candidates
+
+      - name: Rank candidates and copy selected source authority
+        id: result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/aggregate/selected-source
+          python3 - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          rows = []
+          for path in sorted(Path('work/candidates').glob('*/comparison/semantic/summary.json')):
+              summary = json.loads(path.read_text(encoding='utf-8'))
+              artifact_root = path.parents[2]
+              rows.append((summary['comparison_rank'], summary['candidate_label'], summary, artifact_root))
+          if not rows:
+              raise SystemExit('no complete v5 semantic summaries')
+          rows.sort(key=lambda row: (row[0], row[1]))
+          _, _, selected, selected_root = rows[0]
+
+          compact = []
+          for _, _, summary, _ in rows:
+              compact.append({
+                  'candidate_label': summary['candidate_label'],
+                  'candidate_commit_sha': summary['candidate_commit_sha'],
+                  'user_source_commit_sha': summary['user_source_commit_sha'],
+                  'comparison_rank': summary['comparison_rank'],
+                  'strong_semantic_match': summary['strong_semantic_match'],
+                  'non_elf_difference_count': summary['non_elf_difference_count'],
+                  'semantic_marker_difference_count': summary['semantic_marker_difference_count'],
+                  'main': {
+                      'resource_difference_count': summary['main_elf']['resource_difference_count'],
+                      'defined_function_size_difference_count': summary['main_elf']['defined_function_size_difference_count'],
+                      'import_difference_count': summary['main_elf']['import_difference_count'],
+                      'call_sequence_difference_count': summary['main_elf']['call_sequence_difference_count'],
+                      'mnemonic_difference_count': summary['main_elf']['mnemonic_difference_count'],
+                      'absolute_size_delta': summary['main_elf']['absolute_size_delta'],
+                      'target_only_imports': summary['main_elf']['target_only_imports'],
+                      'candidate_only_imports': summary['main_elf']['candidate_only_imports'],
+                      'forbidden_vendor_strings_present': summary['main_elf']['forbidden_vendor_strings_present'],
+                      'target_only_semantic_strings': summary['main_elf']['target_only_semantic_strings'],
+                      'candidate_only_semantic_strings': summary['main_elf']['candidate_only_semantic_strings'],
+                  },
+                  'nimf': {
+                      'defined_function_size_difference_count': summary['nimf_elf']['defined_function_size_difference_count'],
+                      'import_difference_count': summary['nimf_elf']['import_difference_count'],
+                      'call_sequence_difference_count': summary['nimf_elf']['call_sequence_difference_count'],
+                      'absolute_size_delta': summary['nimf_elf']['absolute_size_delta'],
+                  },
+              })
+
+          result = {
+              'schema': 1,
+              'source': 'gooroom-integration-applet',
+              'version': '0.3.1+grm3u1+han3u3',
+              'candidate_count': len(compact),
+              'selected_candidate': compact[0],
+              'ranked_candidates': compact,
+              'source_reconstruction_semantically_verified': bool(compact[0]['strong_semantic_match']),
+              'arm64_build_allowed': bool(compact[0]['strong_semantic_match']),
+              'package_layer_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+              'selection_policy': (
+                  'nonelf-resources-defined-function-sizes-imports-'
+                  'call-sequences-mnemonics-semantic-markers-elf-size-delta'
+              ),
+          }
+          output = Path('work/aggregate')
+          (output / 'summary.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          with (output / 'ranking.tsv').open('w', encoding='utf-8') as stream:
+              stream.write(
+                  'rank\tlabel\tuser_commit\tnonelf\tresources\tfunction_sizes\timports\tcall_sequences\tmnemonics\tmarkers\telf_size_delta\tstrong\n'
+              )
+              for index, row in enumerate(compact, 1):
+                  rank = row['comparison_rank']
+                  stream.write(
+                      f"{index}\t{row['candidate_label']}\t{row['user_source_commit_sha']}\t"
+                      f"{rank[0]}\t{rank[1]}\t{rank[2]}\t{rank[3]}\t{rank[4]}\t"
+                      f"{rank[5]}\t{rank[6]}\t{rank[7]}\t"
+                      f"{str(row['strong_semantic_match']).lower()}\n"
+                  )
+
+          selected_files = {
+              'source-authority/reconstructed-source.tar.xz': 'reconstructed-source.tar.xz',
+              'source-authority/source-lock.json': 'source-lock.json',
+              'source-authority/semantic-patch.json': 'semantic-patch.json',
+              'source-authority/target-resource-reconstruction.json': 'target-resource-reconstruction.json',
+              'comparison/semantic/summary.json': 'semantic-summary.json',
+              'comparison/full/summary.json': 'full-summary.json',
+          }
+          for relative, destination_name in selected_files.items():
+              source = selected_root / relative
+              if not source.is_file():
+                  raise SystemExit(f'missing selected authority file: {source}')
+              destination = output / 'selected-source' / destination_name
+              shutil.copy2(source, destination)
+          PY
+          jq '.' work/aggregate/summary.json >> "$GITHUB_STEP_SUMMARY"
+          selected="$(jq -r '.selected_candidate.candidate_label' work/aggregate/summary.json)"
+          matched="$(jq -r '.source_reconstruction_semantically_verified' work/aggregate/summary.json)"
+          printf 'selected_label=%s\n' "$selected" >> "$GITHUB_OUTPUT"
+          printf 'semantic_match=%s\n' "$matched" >> "$GITHUB_OUTPUT"
+          find work/aggregate -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/aggregate/FILE-INVENTORY.tsv
+          (
+            cd work/aggregate
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload compact selected authority
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-han3u3-v5-selected-source
+          path: work/aggregate
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit fail-closed v5 source authority
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/gooroom-integration-applet-han3u3-semantic-v5/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/aggregate/summary.json "$destination/"
+          cp work/aggregate/ranking.tsv "$destination/"
+          cp work/aggregate/selected-source/source-lock.json "$destination/"
+          cp work/aggregate/selected-source/semantic-patch.json "$destination/"
+          cp work/aggregate/selected-source/semantic-summary.json "$destination/semantic-summary.json"
+          cp work/aggregate/selected-source/full-summary.json "$destination/full-summary.json"
+          cp work/aggregate/selected-source/target-resource-reconstruction.json "$destination/target-resource-reconstruction.json"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --argjson semantic_match '${{ steps.result.outputs.semantic_match }}' '
+              {
+                schema: 1,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                source_reconstruction_semantically_verified: $semantic_match,
+                arm64_build_allowed: $semantic_match,
+                package_layer_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true
+              }
+            ' > "$destination/authority.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Reconstruct integration applet Hancom semantic source v5'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

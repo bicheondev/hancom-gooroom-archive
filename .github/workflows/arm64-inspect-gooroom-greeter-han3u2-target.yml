@@ -1,0 +1,189 @@
+name: ARM64 port - inspect exact Gooroom greeter han3u2 target
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-inspect-gooroom-greeter-han3u2-target.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-inspect-greeter-han3u2-target
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package and DWARF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file jq python3
+
+      - name: Download, verify, and extract exact target packages
+        shell: bash
+        env:
+          TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+          TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+          TARGET_SIZE: '282940'
+          DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_amd64.deb
+          DEBUG_SHA256: 2d883d730eeb0e38d27828fe873d928fca9ef7d44020e5a775e41ca514964237
+          DEBUG_SIZE: '129604'
+        run: |
+          set -euxo pipefail
+          output=work/gooroom-greeter-han3u2-target-inspection
+          rm -rf "$output"
+          mkdir -p "$output/downloads" "$output/root" "$output/debug-root" "$output/compact"
+          curl --fail --show-error --location --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$output/downloads/target.deb"
+          curl --fail --show-error --location --retry 6 --retry-delay 2 --retry-all-errors \
+            "$DEBUG_URL" -o "$output/downloads/target-dbgsym.deb"
+          test "$(stat -c '%s' "$output/downloads/target.deb")" = "$TARGET_SIZE"
+          test "$(stat -c '%s' "$output/downloads/target-dbgsym.deb")" = "$DEBUG_SIZE"
+          echo "$TARGET_SHA256  $output/downloads/target.deb" | sha256sum --check -
+          echo "$DEBUG_SHA256  $output/downloads/target-dbgsym.deb" | sha256sum --check -
+          dpkg-deb -x "$output/downloads/target.deb" "$output/root"
+          dpkg-deb -x "$output/downloads/target-dbgsym.deb" "$output/debug-root"
+          dpkg-deb -f "$output/downloads/target.deb" > "$output/compact/control.txt"
+          dpkg-deb -f "$output/downloads/target-dbgsym.deb" > "$output/compact/debug-control.txt"
+          dpkg-deb -c "$output/downloads/target.deb" > "$output/compact/file-list.txt"
+          dpkg-deb -c "$output/downloads/target-dbgsym.deb" > "$output/compact/debug-file-list.txt"
+          ar tv "$output/downloads/target.deb" > "$output/compact/ar-members.txt"
+          ar tv "$output/downloads/target-dbgsym.deb" > "$output/compact/debug-ar-members.txt"
+          find "$output/root" -printf '%y\t%P\t%s\t%l\n' | LC_ALL=C sort \
+            > "$output/compact/extracted-layout.tsv"
+          find "$output/debug-root" -printf '%y\t%P\t%s\t%l\n' | LC_ALL=C sort \
+            > "$output/compact/debug-extracted-layout.tsv"
+
+          find "$output/root" -type f -print0 | while IFS= read -r -d '' file_path; do
+            rel="${file_path#"$output/root/"}"
+            printf '%s\t%s\t%s\t' "$rel" "$(stat -c '%s' "$file_path")" \
+              "$(sha256sum "$file_path" | awk '{print $1}')"
+            file -b "$file_path"
+          done | LC_ALL=C sort > "$output/compact/file-identities.tsv"
+
+          find "$output/root" -type f -exec sh -c '
+            for file_path do
+              if [ "$(dd if="$file_path" bs=4 count=1 status=none 2>/dev/null)" = "$(printf "\177ELF")" ]; then
+                printf "%s\n" "$file_path"
+              fi
+            done
+          ' sh '{}' + > "$output/elf-paths.txt"
+
+          : > "$output/compact/elf-evidence.txt"
+          while IFS= read -r binary; do
+            [ -n "$binary" ] || continue
+            rel="${binary#"$output/root/"}"
+            {
+              printf '===== %s =====\n' "$rel"
+              file "$binary"
+              readelf -hW "$binary"
+              readelf -nW "$binary"
+              readelf -dW "$binary"
+              readelf -WsW "$binary"
+            } >> "$output/compact/elf-evidence.txt"
+          done < "$output/elf-paths.txt"
+
+          : > "$output/compact/dwarf-source-evidence.txt"
+          find "$output/debug-root" -type f -print0 | while IFS= read -r -d '' debug_file; do
+            if file -b "$debug_file" | grep -q 'ELF'; then
+              {
+                printf '===== %s =====\n' "${debug_file#"$output/debug-root/"}"
+                file "$debug_file"
+                readelf --debug-dump=info --wide "$debug_file" 2>/dev/null \
+                  | grep -E 'DW_AT_(name|comp_dir|producer|language)' || true
+              } >> "$output/compact/dwarf-source-evidence.txt"
+            fi
+          done
+
+          find "$output/root/usr/share/doc" -maxdepth 5 -printf '%y\t%P\t%s\t%l\n' \
+            2>/dev/null | LC_ALL=C sort > "$output/compact/doc-layout.tsv" || true
+          find "$output/root" -type f -iname '*changelog*' -print \
+            > "$output/changelog-paths.txt"
+          : > "$output/compact/changelog-evidence.txt"
+          while IFS= read -r changelog; do
+            [ -n "$changelog" ] || continue
+            printf '===== %s =====\n' "${changelog#"$output/root/"}" \
+              >> "$output/compact/changelog-evidence.txt"
+            case "$changelog" in
+              *.gz) gzip -dc "$changelog" >> "$output/compact/changelog-evidence.txt" ;;
+              *) cat "$changelog" >> "$output/compact/changelog-evidence.txt" ;;
+            esac
+            printf '\n' >> "$output/compact/changelog-evidence.txt"
+          done < "$output/changelog-paths.txt"
+
+          jq -n \
+            --arg target_url "$TARGET_URL" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --argjson target_size "$TARGET_SIZE" \
+            --arg debug_url "$DEBUG_URL" \
+            --arg debug_sha256 "$DEBUG_SHA256" \
+            --argjson debug_size "$DEBUG_SIZE" '
+              {
+                schema: 1,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $target_url,
+                  size: $target_size,
+                  sha256: $target_sha256
+                },
+                debug_symbols: {
+                  package: "gooroom-greeter-dbgsym",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $debug_url,
+                  size: $debug_size,
+                  sha256: $debug_sha256
+                }
+              }
+            ' > "$output/compact/target-lock.json"
+          find "$output/compact" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$output/compact/LOCKSUMS.sha256"
+          (cd "$output/compact" && sha256sum --check LOCKSUMS.sha256)
+
+      - name: Upload target inspection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-target-inspection
+          path: work/gooroom-greeter-han3u2-target-inspection/compact
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit target inspection authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/gooroom-greeter-han3u2-target-inspection/compact
+          destination=arm64/locks/gooroom-greeter-han3u2-target-inspection/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record exact gooroom-greeter han3u2 target inspection'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

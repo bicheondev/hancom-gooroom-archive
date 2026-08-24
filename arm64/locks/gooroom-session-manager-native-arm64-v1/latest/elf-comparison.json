@@ -1,0 +1,4059 @@
+{
+  "amd64_elf_paths": [
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-session-manager",
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-theme-helper",
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-update-blacklist-helper",
+    "usr/lib/{multiarch}/gooroom-session-manager/grac-reload-helper"
+  ],
+  "arm64_elf_paths": [
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-session-manager",
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-theme-helper",
+    "usr/lib/{multiarch}/gooroom-session-manager/gooroom-update-blacklist-helper",
+    "usr/lib/{multiarch}/gooroom-session-manager/grac-reload-helper"
+  ],
+  "needed_normalization_policy": {
+    "all_other_needed_entries": "exact",
+    "maximum_excluded_entries_per_elf": 1,
+    "runtime_loader_name_pattern": "^ld-linux-[A-Za-z0-9_.-]+\\.so(?:\\.[0-9]+)+$",
+    "runtime_loader_rule": "exclude only a DT_NEEDED entry exactly equal to the basename of that ELF's PT_INTERP"
+  },
+  "ok": true,
+  "paths_equal": true,
+  "records": [
+    {
+      "amd64_dynamic_symbols": {
+        "exports": [
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "JSON_OBJECT_GET",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_IO_stdin_used",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__bss_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__data_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__libc_csu_fini",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__libc_csu_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_edata",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_end",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_start",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": true,
+            "name": "data_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "g_utf8_skip",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "main",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "panel_g_utf8_strstrcase",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          }
+        ],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.4",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "bindtextdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "dcgettext",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_own_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_unown_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_unwatch_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_watch_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_child_watch_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_call",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_call_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_new_for_bus_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_error_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_get_contents",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_test",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_get_home_dir",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_get_user_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_idle_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_load_from_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_print",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_return_if_fail_warning",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_get_strv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_new_full",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_has_key",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_source_get_default",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_source_lookup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_enum",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_int",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_strv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_uint",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_shell_parse_argv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_connect_data",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handler_disconnect",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handlers_block_matched",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handlers_unblock_matched",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_source_remove",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_async",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_close_pid",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_async",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_equal",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strcmp0",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup_printf",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strjoinv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strrstr",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strsplit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_return_boolean",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_run_in_thread",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_timeout_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_unichar_tolower",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_get_char",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_dup_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_get",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_get_child_value",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_is_of_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_lookup_value",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "getpwnam",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_main",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_main_quit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_format_secondary_text",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_widget_destroy",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_widget_show",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_window_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_window_set_title",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_get_string",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_object_get_ex",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_put",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_tokener_parse_verbose",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_set_timeout",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_set_urgency",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_show",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "setlocale",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strtol",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "textdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "amd64_interpreter": "/lib64/ld-linux-x86-64.so.2",
+      "amd64_machine": "Advanced Micro Devices X86-64",
+      "amd64_needed": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgtk-3.so.0",
+        "libjson-c.so.5",
+        "libnotify.so.4"
+      ],
+      "amd64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgtk-3.so.0",
+        "libjson-c.so.5",
+        "libnotify.so.4"
+      ],
+      "amd64_runtime_loader_needed_entries": [],
+      "amd64_semantic_api": [
+        "JSON_OBJECT_GET",
+        "g_bus_own_name",
+        "g_bus_unown_name",
+        "g_bus_unwatch_name",
+        "g_bus_watch_name",
+        "g_child_watch_add",
+        "g_dbus_proxy_call",
+        "g_dbus_proxy_call_sync",
+        "g_dbus_proxy_new_for_bus_sync",
+        "g_error_free",
+        "g_file_get_contents",
+        "g_file_test",
+        "g_find_program_in_path",
+        "g_free",
+        "g_get_home_dir",
+        "g_get_user_name",
+        "g_idle_add",
+        "g_key_file_free",
+        "g_key_file_get_string",
+        "g_key_file_load_from_file",
+        "g_key_file_new",
+        "g_log",
+        "g_object_unref",
+        "g_print",
+        "g_return_if_fail_warning",
+        "g_settings_get_string",
+        "g_settings_get_strv",
+        "g_settings_new",
+        "g_settings_new_full",
+        "g_settings_schema_has_key",
+        "g_settings_schema_source_get_default",
+        "g_settings_schema_source_lookup",
+        "g_settings_schema_unref",
+        "g_settings_set_enum",
+        "g_settings_set_int",
+        "g_settings_set_string",
+        "g_settings_set_strv",
+        "g_settings_set_uint",
+        "g_shell_parse_argv",
+        "g_signal_connect_data",
+        "g_signal_handler_disconnect",
+        "g_signal_handlers_block_matched",
+        "g_signal_handlers_unblock_matched",
+        "g_source_remove",
+        "g_spawn_async",
+        "g_spawn_close_pid",
+        "g_spawn_command_line_async",
+        "g_spawn_command_line_sync",
+        "g_str_equal",
+        "g_strcmp0",
+        "g_strdup",
+        "g_strdup_printf",
+        "g_strfreev",
+        "g_strjoinv",
+        "g_strrstr",
+        "g_strsplit",
+        "g_strv_length",
+        "g_task_new",
+        "g_task_return_boolean",
+        "g_task_run_in_thread",
+        "g_timeout_add",
+        "g_type_check_instance_cast",
+        "g_unichar_tolower",
+        "g_utf8_get_char",
+        "g_utf8_skip",
+        "g_variant_dup_string",
+        "g_variant_get",
+        "g_variant_get_child_value",
+        "g_variant_is_of_type",
+        "g_variant_lookup_value",
+        "g_variant_new",
+        "g_variant_unref",
+        "gtk_init",
+        "gtk_main",
+        "gtk_main_quit",
+        "gtk_message_dialog_format_secondary_text",
+        "gtk_message_dialog_get_type",
+        "gtk_message_dialog_new",
+        "gtk_widget_destroy",
+        "gtk_widget_show",
+        "gtk_window_get_type",
+        "gtk_window_set_title",
+        "json_object_get_string",
+        "json_object_object_get_ex",
+        "json_object_put",
+        "json_tokener_parse_verbose",
+        "main",
+        "notify_init",
+        "notify_notification_new",
+        "notify_notification_set_timeout",
+        "notify_notification_set_urgency",
+        "notify_notification_show",
+        "panel_g_utf8_strstrcase"
+      ],
+      "amd64_soname": "",
+      "amd64_type": "DYN (Position-Independent Executable file)",
+      "arm64_dynamic_symbols": {
+        "exports": [
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "JSON_OBJECT_GET",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_IO_stdin_used",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__bss_end__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__bss_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__bss_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__data_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__end__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__libc_csu_fini",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "__libc_csu_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_bss_end__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_edata",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_end",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "_start",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": true,
+            "name": "data_start",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "main",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "panel_g_utf8_strstrcase",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          }
+        ],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_guard",
+            "type": "OBJECT",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "abort",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "bindtextdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "dcgettext",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_own_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_unown_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_unwatch_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_watch_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_child_watch_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_call",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_call_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_proxy_new_for_bus_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_error_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_get_contents",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_test",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_get_home_dir",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_get_user_name",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_idle_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_load_from_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_print",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_return_if_fail_warning",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_get_strv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_new_full",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_has_key",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_source_get_default",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_source_lookup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_schema_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_enum",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_int",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_strv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_settings_set_uint",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_shell_parse_argv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_connect_data",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handler_disconnect",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handlers_block_matched",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_signal_handlers_unblock_matched",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_source_remove",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_async",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_close_pid",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_async",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_equal",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strcmp0",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup_printf",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strjoinv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strrstr",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strsplit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_return_boolean",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_task_run_in_thread",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_timeout_add",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_unichar_tolower",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_get_char",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_skip",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_dup_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_get",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_get_child_value",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_is_of_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_lookup_value",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "getpwnam",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_main",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_main_quit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_format_secondary_text",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_message_dialog_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_widget_destroy",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_widget_show",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_window_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "gtk_window_set_title",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_get_string",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_object_get_ex",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_put",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_tokener_parse_verbose",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_init",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_set_timeout",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_set_urgency",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "notify_notification_show",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "setlocale",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strtol",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "textdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "arm64_interpreter": "/lib/ld-linux-aarch64.so.1",
+      "arm64_machine": "AArch64",
+      "arm64_needed": [
+        "ld-linux-aarch64.so.1",
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgtk-3.so.0",
+        "libjson-c.so.5",
+        "libnotify.so.4"
+      ],
+      "arm64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgtk-3.so.0",
+        "libjson-c.so.5",
+        "libnotify.so.4"
+      ],
+      "arm64_runtime_loader_needed_entries": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "arm64_semantic_api": [
+        "JSON_OBJECT_GET",
+        "g_bus_own_name",
+        "g_bus_unown_name",
+        "g_bus_unwatch_name",
+        "g_bus_watch_name",
+        "g_child_watch_add",
+        "g_dbus_proxy_call",
+        "g_dbus_proxy_call_sync",
+        "g_dbus_proxy_new_for_bus_sync",
+        "g_error_free",
+        "g_file_get_contents",
+        "g_file_test",
+        "g_find_program_in_path",
+        "g_free",
+        "g_get_home_dir",
+        "g_get_user_name",
+        "g_idle_add",
+        "g_key_file_free",
+        "g_key_file_get_string",
+        "g_key_file_load_from_file",
+        "g_key_file_new",
+        "g_log",
+        "g_object_unref",
+        "g_print",
+        "g_return_if_fail_warning",
+        "g_settings_get_string",
+        "g_settings_get_strv",
+        "g_settings_new",
+        "g_settings_new_full",
+        "g_settings_schema_has_key",
+        "g_settings_schema_source_get_default",
+        "g_settings_schema_source_lookup",
+        "g_settings_schema_unref",
+        "g_settings_set_enum",
+        "g_settings_set_int",
+        "g_settings_set_string",
+        "g_settings_set_strv",
+        "g_settings_set_uint",
+        "g_shell_parse_argv",
+        "g_signal_connect_data",
+        "g_signal_handler_disconnect",
+        "g_signal_handlers_block_matched",
+        "g_signal_handlers_unblock_matched",
+        "g_source_remove",
+        "g_spawn_async",
+        "g_spawn_close_pid",
+        "g_spawn_command_line_async",
+        "g_spawn_command_line_sync",
+        "g_str_equal",
+        "g_strcmp0",
+        "g_strdup",
+        "g_strdup_printf",
+        "g_strfreev",
+        "g_strjoinv",
+        "g_strrstr",
+        "g_strsplit",
+        "g_strv_length",
+        "g_task_new",
+        "g_task_return_boolean",
+        "g_task_run_in_thread",
+        "g_timeout_add",
+        "g_type_check_instance_cast",
+        "g_unichar_tolower",
+        "g_utf8_get_char",
+        "g_utf8_skip",
+        "g_variant_dup_string",
+        "g_variant_get",
+        "g_variant_get_child_value",
+        "g_variant_is_of_type",
+        "g_variant_lookup_value",
+        "g_variant_new",
+        "g_variant_unref",
+        "gtk_init",
+        "gtk_main",
+        "gtk_main_quit",
+        "gtk_message_dialog_format_secondary_text",
+        "gtk_message_dialog_get_type",
+        "gtk_message_dialog_new",
+        "gtk_widget_destroy",
+        "gtk_widget_show",
+        "gtk_window_get_type",
+        "gtk_window_set_title",
+        "json_object_get_string",
+        "json_object_object_get_ex",
+        "json_object_put",
+        "json_tokener_parse_verbose",
+        "main",
+        "notify_init",
+        "notify_notification_new",
+        "notify_notification_set_timeout",
+        "notify_notification_set_urgency",
+        "notify_notification_show",
+        "panel_g_utf8_strstrcase"
+      ],
+      "arm64_soname": "",
+      "arm64_type": "DYN (Position-Independent Executable file)",
+      "interpreter_ok": true,
+      "machine_ok": true,
+      "needed_equal": true,
+      "needed_equal_after_interpreter_normalization": true,
+      "needed_normalization_policy_ok": true,
+      "needed_only_amd64_after_normalization": [],
+      "needed_only_amd64_raw": [],
+      "needed_only_arm64_after_normalization": [],
+      "needed_only_arm64_raw": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "ok": true,
+      "path": "usr/lib/{multiarch}/gooroom-session-manager/gooroom-session-manager",
+      "raw_needed_equal": false,
+      "semantic_api_equal": true,
+      "semantic_api_only_amd64": [],
+      "semantic_api_only_arm64": [],
+      "soname_equal": true,
+      "type_equal": true
+    },
+    {
+      "amd64_dynamic_symbols": {
+        "exports": [],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.4",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "bindtextdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_append_to",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_create_readwrite",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_delete",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_new_for_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_query_exists",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_io_stream_get_output_stream",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_io_stream_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_mkdir_with_parents",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_close",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_write_all",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strcmp0",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup_printf",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strsplit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_uri_is_valid",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_array_get_idx",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_array_length",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_get_string",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_object_get_ex",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_put",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_tokener_parse_verbose",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "setlocale",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "textdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "amd64_interpreter": "/lib64/ld-linux-x86-64.so.2",
+      "amd64_machine": "Advanced Micro Devices X86-64",
+      "amd64_needed": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libjson-c.so.5"
+      ],
+      "amd64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libjson-c.so.5"
+      ],
+      "amd64_runtime_loader_needed_entries": [],
+      "amd64_semantic_api": [
+        "g_file_append_to",
+        "g_file_create_readwrite",
+        "g_file_delete",
+        "g_file_new_for_path",
+        "g_file_query_exists",
+        "g_find_program_in_path",
+        "g_free",
+        "g_io_stream_get_output_stream",
+        "g_io_stream_get_type",
+        "g_mkdir_with_parents",
+        "g_object_unref",
+        "g_output_stream_close",
+        "g_output_stream_get_type",
+        "g_output_stream_write_all",
+        "g_spawn_command_line_sync",
+        "g_strcmp0",
+        "g_strdup",
+        "g_strdup_printf",
+        "g_strfreev",
+        "g_strsplit",
+        "g_strv_length",
+        "g_type_check_instance_cast",
+        "g_uri_is_valid",
+        "json_object_array_get_idx",
+        "json_object_array_length",
+        "json_object_get_string",
+        "json_object_object_get_ex",
+        "json_object_put",
+        "json_tokener_parse_verbose"
+      ],
+      "amd64_soname": "",
+      "amd64_type": "DYN (Position-Independent Executable file)",
+      "arm64_dynamic_symbols": {
+        "exports": [],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_guard",
+            "type": "OBJECT",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "abort",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "bindtextdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_append_to",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_create_readwrite",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_delete",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_new_for_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_file_query_exists",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_io_stream_get_output_stream",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_io_stream_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_mkdir_with_parents",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_close",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_output_stream_write_all",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_spawn_command_line_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strcmp0",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup_printf",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strsplit",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_uri_is_valid",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_array_get_idx",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_array_length",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_get_string",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_object_get_ex",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_object_put",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "json_tokener_parse_verbose",
+            "type": "FUNC",
+            "version": "JSONC_0.14",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "setlocale",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "textdomain",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "arm64_interpreter": "/lib/ld-linux-aarch64.so.1",
+      "arm64_machine": "AArch64",
+      "arm64_needed": [
+        "ld-linux-aarch64.so.1",
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libjson-c.so.5"
+      ],
+      "arm64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libjson-c.so.5"
+      ],
+      "arm64_runtime_loader_needed_entries": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "arm64_semantic_api": [
+        "g_file_append_to",
+        "g_file_create_readwrite",
+        "g_file_delete",
+        "g_file_new_for_path",
+        "g_file_query_exists",
+        "g_find_program_in_path",
+        "g_free",
+        "g_io_stream_get_output_stream",
+        "g_io_stream_get_type",
+        "g_mkdir_with_parents",
+        "g_object_unref",
+        "g_output_stream_close",
+        "g_output_stream_get_type",
+        "g_output_stream_write_all",
+        "g_spawn_command_line_sync",
+        "g_strcmp0",
+        "g_strdup",
+        "g_strdup_printf",
+        "g_strfreev",
+        "g_strsplit",
+        "g_strv_length",
+        "g_type_check_instance_cast",
+        "g_uri_is_valid",
+        "json_object_array_get_idx",
+        "json_object_array_length",
+        "json_object_get_string",
+        "json_object_object_get_ex",
+        "json_object_put",
+        "json_tokener_parse_verbose"
+      ],
+      "arm64_soname": "",
+      "arm64_type": "DYN (Position-Independent Executable file)",
+      "interpreter_ok": true,
+      "machine_ok": true,
+      "needed_equal": true,
+      "needed_equal_after_interpreter_normalization": true,
+      "needed_normalization_policy_ok": true,
+      "needed_only_amd64_after_normalization": [],
+      "needed_only_amd64_raw": [],
+      "needed_only_arm64_after_normalization": [],
+      "needed_only_arm64_raw": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "ok": true,
+      "path": "usr/lib/{multiarch}/gooroom-session-manager/gooroom-theme-helper",
+      "raw_needed_equal": false,
+      "semantic_api_equal": true,
+      "semantic_api_only_amd64": [],
+      "semantic_api_only_arm64": [],
+      "soname_equal": true,
+      "type_equal": true
+    },
+    {
+      "amd64_dynamic_symbols": {
+        "exports": [
+          {
+            "binding": "GLOBAL",
+            "defined": true,
+            "name": "g_utf8_skip",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          }
+        ],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.4",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__xstat",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "chmod",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_all",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_id",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_filename",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_locale_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_new_from_filename",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_load_from_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_save_to_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_list_free_full",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_return_if_fail_warning",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_shell_parse_argv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_equal",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_has_suffix",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_unichar_tolower",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_collate",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_get_char",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "amd64_interpreter": "/lib64/ld-linux-x86-64.so.2",
+      "amd64_machine": "Advanced Micro Devices X86-64",
+      "amd64_needed": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "amd64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "amd64_runtime_loader_needed_entries": [],
+      "amd64_semantic_api": [
+        "g_app_info_get_all",
+        "g_app_info_get_id",
+        "g_app_info_get_type",
+        "g_desktop_app_info_get_filename",
+        "g_desktop_app_info_get_locale_string",
+        "g_desktop_app_info_get_string",
+        "g_desktop_app_info_get_type",
+        "g_desktop_app_info_new_from_filename",
+        "g_find_program_in_path",
+        "g_free",
+        "g_key_file_free",
+        "g_key_file_load_from_file",
+        "g_key_file_new",
+        "g_key_file_save_to_file",
+        "g_list_free_full",
+        "g_log",
+        "g_object_unref",
+        "g_return_if_fail_warning",
+        "g_shell_parse_argv",
+        "g_str_equal",
+        "g_str_has_suffix",
+        "g_strdup",
+        "g_strfreev",
+        "g_strv_length",
+        "g_type_check_instance_cast",
+        "g_unichar_tolower",
+        "g_utf8_collate",
+        "g_utf8_get_char",
+        "g_utf8_skip"
+      ],
+      "amd64_soname": "",
+      "amd64_type": "DYN (Position-Independent Executable file)",
+      "arm64_dynamic_symbols": {
+        "exports": [],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_guard",
+            "type": "OBJECT",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__xstat",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "abort",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "chmod",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_all",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_id",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_app_info_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_filename",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_locale_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_string",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_get_type",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_desktop_app_info_new_from_filename",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_find_program_in_path",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_load_from_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_key_file_save_to_file",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_list_free_full",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_return_if_fail_warning",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_shell_parse_argv",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_equal",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_str_has_suffix",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strdup",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strfreev",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_strv_length",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_type_check_instance_cast",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_unichar_tolower",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_collate",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_get_char",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_utf8_skip",
+            "type": "OBJECT",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "strlen",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "arm64_interpreter": "/lib/ld-linux-aarch64.so.1",
+      "arm64_machine": "AArch64",
+      "arm64_needed": [
+        "ld-linux-aarch64.so.1",
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "arm64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "arm64_runtime_loader_needed_entries": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "arm64_semantic_api": [
+        "g_app_info_get_all",
+        "g_app_info_get_id",
+        "g_app_info_get_type",
+        "g_desktop_app_info_get_filename",
+        "g_desktop_app_info_get_locale_string",
+        "g_desktop_app_info_get_string",
+        "g_desktop_app_info_get_type",
+        "g_desktop_app_info_new_from_filename",
+        "g_find_program_in_path",
+        "g_free",
+        "g_key_file_free",
+        "g_key_file_load_from_file",
+        "g_key_file_new",
+        "g_key_file_save_to_file",
+        "g_list_free_full",
+        "g_log",
+        "g_object_unref",
+        "g_return_if_fail_warning",
+        "g_shell_parse_argv",
+        "g_str_equal",
+        "g_str_has_suffix",
+        "g_strdup",
+        "g_strfreev",
+        "g_strv_length",
+        "g_type_check_instance_cast",
+        "g_unichar_tolower",
+        "g_utf8_collate",
+        "g_utf8_get_char",
+        "g_utf8_skip"
+      ],
+      "arm64_soname": "",
+      "arm64_type": "DYN (Position-Independent Executable file)",
+      "interpreter_ok": true,
+      "machine_ok": true,
+      "needed_equal": true,
+      "needed_equal_after_interpreter_normalization": true,
+      "needed_normalization_policy_ok": true,
+      "needed_only_amd64_after_normalization": [],
+      "needed_only_amd64_raw": [],
+      "needed_only_arm64_after_normalization": [],
+      "needed_only_arm64_raw": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "ok": true,
+      "path": "usr/lib/{multiarch}/gooroom-session-manager/gooroom-update-blacklist-helper",
+      "raw_needed_equal": false,
+      "semantic_api_equal": true,
+      "semantic_api_only_amd64": [],
+      "semantic_api_only_arm64": [],
+      "soname_equal": true,
+      "type_equal": true
+    },
+    {
+      "amd64_dynamic_symbols": {
+        "exports": [],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.2.5",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.4",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_get_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_connection_call_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_error_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "amd64_interpreter": "/lib64/ld-linux-x86-64.so.2",
+      "amd64_machine": "Advanced Micro Devices X86-64",
+      "amd64_needed": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "amd64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "amd64_runtime_loader_needed_entries": [],
+      "amd64_semantic_api": [
+        "g_bus_get_sync",
+        "g_dbus_connection_call_sync",
+        "g_error_free",
+        "g_log",
+        "g_object_unref",
+        "g_variant_new",
+        "g_variant_unref"
+      ],
+      "amd64_soname": "",
+      "amd64_type": "DYN (Position-Independent Executable file)",
+      "arm64_dynamic_symbols": {
+        "exports": [],
+        "imports": [
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_deregisterTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "_ITM_registerTMCloneTable",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__cxa_finalize",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "WEAK",
+            "defined": false,
+            "name": "__gmon_start__",
+            "type": "NOTYPE",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__libc_start_main",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_fail",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "__stack_chk_guard",
+            "type": "OBJECT",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "abort",
+            "type": "FUNC",
+            "version": "GLIBC_2.17",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_bus_get_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_dbus_connection_call_sync",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_error_free",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_log",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_object_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_new",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          },
+          {
+            "binding": "GLOBAL",
+            "defined": false,
+            "name": "g_variant_unref",
+            "type": "FUNC",
+            "version": "",
+            "visibility": "DEFAULT"
+          }
+        ]
+      },
+      "arm64_interpreter": "/lib/ld-linux-aarch64.so.1",
+      "arm64_machine": "AArch64",
+      "arm64_needed": [
+        "ld-linux-aarch64.so.1",
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "arm64_needed_normalized": [
+        "libc.so.6",
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgobject-2.0.so.0"
+      ],
+      "arm64_runtime_loader_needed_entries": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "arm64_semantic_api": [
+        "g_bus_get_sync",
+        "g_dbus_connection_call_sync",
+        "g_error_free",
+        "g_log",
+        "g_object_unref",
+        "g_variant_new",
+        "g_variant_unref"
+      ],
+      "arm64_soname": "",
+      "arm64_type": "DYN (Position-Independent Executable file)",
+      "interpreter_ok": true,
+      "machine_ok": true,
+      "needed_equal": true,
+      "needed_equal_after_interpreter_normalization": true,
+      "needed_normalization_policy_ok": true,
+      "needed_only_amd64_after_normalization": [],
+      "needed_only_amd64_raw": [],
+      "needed_only_arm64_after_normalization": [],
+      "needed_only_arm64_raw": [
+        "ld-linux-aarch64.so.1"
+      ],
+      "ok": true,
+      "path": "usr/lib/{multiarch}/gooroom-session-manager/grac-reload-helper",
+      "raw_needed_equal": false,
+      "semantic_api_equal": true,
+      "semantic_api_only_amd64": [],
+      "semantic_api_only_arm64": [],
+      "soname_equal": true,
+      "type_equal": true
+    }
+  ],
+  "runtime_symbol_policy": {
+    "application_and_library_api_names_must_match": true,
+    "exclude_glibc_versioned_symbols": true,
+    "excluded_exact_names": [
+      "_DYNAMIC",
+      "_GLOBAL_OFFSET_TABLE_",
+      "_IO_stdin_used",
+      "_ITM_deregisterTMCloneTable",
+      "_ITM_registerTMCloneTable",
+      "__TMC_END__",
+      "__bss_end__",
+      "__bss_start",
+      "__bss_start__",
+      "__data_start",
+      "__end__",
+      "__gmon_start__",
+      "__libc_csu_fini",
+      "__libc_csu_init",
+      "_bss_end__",
+      "_edata",
+      "_end",
+      "_fini",
+      "_init",
+      "_start",
+      "data_start"
+    ],
+    "excluded_prefixes": [
+      "__aarch64_",
+      "__aeabi_",
+      "__cxa_",
+      "__gnu_",
+      "__libc_",
+      "__stack_chk_",
+      "_Unwind_"
+    ]
+  }
+}

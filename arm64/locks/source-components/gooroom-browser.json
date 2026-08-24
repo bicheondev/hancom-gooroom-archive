@@ -1,0 +1,84 @@
+{
+  "schema": 2,
+  "policy": "exact-packaging-git-plus-exact-upstream-source-members",
+  "source": "gooroom-browser",
+  "source_version": "3.5.0-1+grm3u3",
+  "packaging": {
+    "repository_full_name": "gooroom/gooroom-browser",
+    "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+    "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+    "layout": "debian-directory-only"
+  },
+  "changelog_anchor": {
+    "position": 4,
+    "source": "chromium",
+    "version": "111.0.5563.110-1~deb11u1"
+  },
+  "upstream": {
+    "source": "chromium",
+    "version": "111.0.5563.110-1~deb11u1",
+    "snapshot": "20230730T235959Z",
+    "content_addressed_base": "https://snapshot.debian.org/file",
+    "retrieval": "try the locked Snapshot content object, then only exact locked URLs for the same filename; size, SHA-1, SHA-256, DSC Source/Version and DSC member checksums must all verify before extraction",
+    "signed_acceptance_evidence": {
+      "authority": "Debian FTP Masters",
+      "distribution": "bullseye-security",
+      "accepted_at": "2023-03-25T14:33:34Z",
+      "source": "chromium",
+      "version": "111.0.5563.110-1~deb11u1"
+    },
+    "files": {
+      "dsc": {
+        "name": "chromium_111.0.5563.110-1~deb11u1.dsc",
+        "size": 3808,
+        "sha1": "7413474de8aac0009ff41285bb594fe25dffd1ac",
+        "sha256": "c687af3dadd2fb80bc8bedfe424391f814758e08f97ac0a79bf4b74e9a209811",
+        "pool_url": "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.dsc",
+        "candidate_urls": [
+          "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.dsc",
+          "https://security.debian.org/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.dsc",
+          "https://ftp.riken.go.jp/Linux/debian/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.dsc",
+          "https://debian.sipwise.com/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.dsc"
+        ]
+      },
+      "orig": {
+        "name": "chromium_111.0.5563.110.orig.tar.xz",
+        "size": 653761308,
+        "sha1": "edab4c6cae713a109c23c549684736c0d50ccb76",
+        "sha256": "a9fd234e79d192179124e7efb3a14094c2e54a13c2e261fe5b8cccb53d73d9f2",
+        "pool_url": "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110.orig.tar.xz",
+        "candidate_urls": [
+          "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110.orig.tar.xz",
+          "https://security.debian.org/debian-security/pool/main/c/chromium/chromium_111.0.5563.110.orig.tar.xz",
+          "https://ftp.riken.go.jp/Linux/debian/debian-security/pool/main/c/chromium/chromium_111.0.5563.110.orig.tar.xz",
+          "https://debian.sipwise.com/debian-security/pool/main/c/chromium/chromium_111.0.5563.110.orig.tar.xz"
+        ]
+      },
+      "debian": {
+        "name": "chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+        "size": 298384,
+        "sha1": "63d4184da0b16faf411a18be6802ac05c4395934",
+        "sha256": "7ec5b71bf6e2e715503b12ebe6aed750ac93a7d244407aa4ae6026ea693b5477",
+        "pool_url": "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+        "candidate_urls": [
+          "https://snapshot.debian.org/archive/debian-security/20230325T143334Z/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+          "https://security.debian.org/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+          "https://ftp.riken.go.jp/Linux/debian/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.debian.tar.xz",
+          "https://debian.sipwise.com/debian-security/pool/main/c/chromium/chromium_111.0.5563.110-1~deb11u1.debian.tar.xz"
+        ]
+      }
+    },
+    "required_paths": [
+      "build/linux/unbundle/replace_gn_files.py",
+      "chrome/app/chromium_strings.grd",
+      "content/public/common/content_switches.cc"
+    ]
+  },
+  "composition": {
+    "extract": "upstream.files.orig only",
+    "strip_components": 1,
+    "overlay": "replace debian/ with exact packaging Git tree",
+    "do_not_apply": "Debian debian.tar.xz",
+    "reason": "the exact Gooroom Git commit is the authoritative downstream packaging delta"
+  }
+}

@@ -1,0 +1,173 @@
+name: ARM64 port - recover exact sources from reference APT metadata
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-reference-apt-sources.yml'
+      - 'arm64/scripts/recover_exact_sources_from_reference_apt.py'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-apt-source-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install compressed-index recovery tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bzip2 ca-certificates jq lz4 python3 xz-utils zstd
+          python3 -m py_compile arm64/scripts/recover_exact_sources_from_reference_apt.py
+
+      - name: Verify the locked reference ISO evidence before network recovery
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=arm64/locks/reference-iso-source-residue/latest
+          test -f "$evidence/summary.json"
+          test -f "$evidence/target-findings.json"
+          test -f "$evidence/LOCKSUMS.sha256"
+          (
+            cd "$evidence"
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .schema == 1
+            and .iso.verified == true
+            and .iso.size == 1566277632
+            and .iso.sha256 == "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a"
+            and .target_count == 7
+            and .exact_source_index_target_count == 0
+            and .exact_source_archive_target_count == 0
+            and .exact_version_residue_only_target_count == 7
+            and .promotion_allowed == false
+          ' "$evidence/summary.json" >/dev/null
+
+      - name: Recover historical Sources indexes and exact source archives
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-apt-source-recovery
+          rm -rf "$output"
+          mkdir -p "$output"
+          python3 arm64/scripts/recover_exact_sources_from_reference_apt.py \
+            --evidence-dir arm64/locks/reference-iso-source-residue/latest \
+            --output-dir "$output"
+          jq -e '
+            .schema == 1
+            and .target_count == 7
+            and .automatic_promotion_performed == false
+            and (
+              .exact_source_archive_recovered_count
+              + .exact_source_stanza_only_count
+              + .ambiguous_target_count
+              + .unresolved_target_count
+              == .target_count
+            )
+            and .promotion_allowed_target_count == .exact_source_archive_recovered_count
+          ' "$output/summary.json" >/dev/null
+          cat "$output/SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal complete recovery evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-apt-source-recovery
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          find "$output" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            sha256sum FILE-INVENTORY.tsv >> LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$output"
+
+      - name: Upload complete historical recovery evidence and recovered archives
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-apt-source-recovery
+          path: work/reference-apt-source-recovery
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 1
+
+      - name: Build compact immutable authority record
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-apt-source-recovery
+          compact=work/reference-apt-source-recovery-compact
+          rm -rf "$compact"
+          mkdir -p "$compact"
+          for file in \
+            SUMMARY.md \
+            summary.json \
+            repository-entries.json \
+            historical-releases.json \
+            historical-source-index-expectations.json \
+            verified-source-indexes.json \
+            network-probes.json \
+            target-results.json \
+            download-manifest.json \
+            FILE-INVENTORY.tsv; do
+            test -f "$source/$file"
+            cp "$source/$file" "$compact/$file"
+          done
+          (
+            cd "$compact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Commit compact reference APT source-recovery authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/reference-apt-source-recovery-compact
+          destination=arm64/locks/reference-apt-source-recovery/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Reference APT source-recovery authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Probe exact sources from reference APT metadata'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

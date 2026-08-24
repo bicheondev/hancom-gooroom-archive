@@ -1,0 +1,246 @@
+name: ARM64 port - deep diff final application blockers v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-deep-diff-final-app-blockers-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-final-app-deep-diff-v2
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT: 20230730T235959Z
+
+jobs:
+  compare:
+    name: Compare ${{ matrix.package }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: gooroom-integration-applet
+            version: 0.3.1+grm3u1+han3u3
+            repository: gooroom/gooroom-integration-applet
+            base_commit: 0f7897ad068da63c6529c5725afdf569152ca4c7
+            base_tree: 5f24f24a3421835e18ab7ab894ce0dc78bbda2c9
+            target_url: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb
+            debug_url: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-integration-applet/gooroom-integration-applet-dbgsym_0.3.1+grm3u1+han3u3_amd64.deb
+          - package: gooroom-session-manager
+            version: 0.3.9+grm3u1+han3u2
+            repository: gooroom/gooroom-session-manager
+            base_commit: d70dfbd27ea62e7a71f51c0018eb48cfe6fa0794
+            base_tree: e8fb3bd1279ae7cd0a3526ae4f4c7b375835e1d5
+            target_url: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb
+            debug_url: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager-dbgsym_0.3.9+grm3u1+han3u2_amd64.deb
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      PACKAGE: ${{ matrix.package }}
+      VERSION: ${{ matrix.version }}
+      REPOSITORY: ${{ matrix.repository }}
+      BASE_COMMIT: ${{ matrix.base_commit }}
+      BASE_TREE: ${{ matrix.base_tree }}
+      TARGET_URL: ${{ matrix.target_url }}
+      DEBUG_URL: ${{ matrix.debug_url }}
+    steps:
+      - name: Check out exact authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install build and analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev elfutils file git jq libglib2.0-bin python3 tar xz-utils
+
+      - name: Reconstruct versioned public source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          rm -rf "$base"
+          mkdir -p "$base"/{source-authority,downloads,build,comparison,artifact}
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" "$base/source"
+          git -C "$base/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$base/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$base/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$base/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          prefix="arm64/locks/final-three-blockers-inspection-v1/$PACKAGE/vendor-changelog-prefix"
+          test -s "$prefix"
+          cat "$prefix" "$base/source/debian/changelog" > "$base/source/debian/changelog.new"
+          mv "$base/source/debian/changelog.new" "$base/source/debian/changelog"
+          test "$(dpkg-parsechangelog -l"$base/source/debian/changelog" -SVersion)" = "$VERSION"
+          git -C "$base/source" diff --binary --full-index \
+            > "$base/source-authority/version-only.patch"
+          git -C "$base/source" add debian/changelog
+          tree="$(git -C "$base/source" write-tree)"
+          git -C "$base/source" archive --format=tar "$tree" \
+            > "$base/source-authority/reconstructed-source.tar"
+          cp -a "$base/source" "$base/artifact/source"
+          rm -rf "$base/artifact/source/.git"
+          jq -n \
+            --arg package "$PACKAGE" --arg version "$VERSION" \
+            --arg repository "$REPOSITORY" --arg base_commit "$BASE_COMMIT" \
+            --arg base_tree "$BASE_TREE" --arg tree "$tree" \
+            --arg archive_sha256 "$(sha256sum "$base/source-authority/reconstructed-source.tar" | awk '{print $1}')" \
+            '{schema:1,package:$package,version:$version,repository:$repository,
+              base_commit_sha:$base_commit,base_tree_sha:$base_tree,
+              reconstructed_tree_sha:$tree,source_archive_sha256:$archive_sha256,
+              policy:"public-base-plus-exact-vendor-changelog-prefix-no-code-delta"}' \
+            > "$base/source-authority/source-lock.json"
+
+      - name: Download target packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o "$base/downloads/target.deb"
+          test "$(dpkg-deb -f "$base/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$base/downloads/target.deb" Version)" = "$VERSION"
+          set +e
+          curl --fail --show-error --location --retry 4 --retry-delay 3 \
+            --retry-all-errors "$DEBUG_URL" -o "$base/downloads/target-dbgsym.deb"
+          debug_rc=$?
+          set -e
+          if [ "$debug_rc" -ne 0 ]; then
+            rm -f "$base/downloads/target-dbgsym.deb"
+          fi
+
+      - name: Build version-only AMD64 candidate in historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$(pwd)/work/$PACKAGE"
+          rootfs="$base/build/rootfs"
+          mkdir -p "$base/build/debs"
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$base/build/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "5";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf "$base/source-authority/reconstructed-source.tar" \
+            -C "$rootfs/build/source"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -y --no-install-recommends" debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$base/build/build.log"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$base/build/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$base/build"
+          for deb in "$base/build/debs"/*.deb; do
+            case "$(dpkg-deb -f "$deb" Package)" in
+              "$PACKAGE") cp "$deb" "$base/downloads/candidate.deb" ;;
+              "$PACKAGE-dbgsym") cp "$deb" "$base/downloads/candidate-dbgsym.deb" ;;
+            esac
+          done
+          test -f "$base/downloads/candidate.deb"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"
+          rm -rf "$rootfs"
+
+      - name: Extract payloads and debug data
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          for side in target candidate; do
+            mkdir -p "$base/comparison/$side"/{root,control,resources,elf}
+            dpkg-deb -x "$base/downloads/$side.deb" "$base/comparison/$side/root"
+            dpkg-deb -e "$base/downloads/$side.deb" "$base/comparison/$side/control"
+            dpkg-deb -f "$base/downloads/$side.deb" > "$base/comparison/$side/control-fields.txt"
+            dpkg-deb -c "$base/downloads/$side.deb" > "$base/comparison/$side/data-list.txt"
+            if [ -f "$base/downloads/$side-dbgsym.deb" ]; then
+              mkdir -p "$base/comparison/$side/debug-root"
+              dpkg-deb -x "$base/downloads/$side-dbgsym.deb" "$base/comparison/$side/debug-root"
+            fi
+            find "$base/comparison/$side/root" -type f -print0 | while IFS= read -r -d '' file_path; do
+              relative="${file_path#"$base/comparison/$side/root/"}"
+              if ! file -b "$file_path" | grep -q '^ELF '; then
+                continue
+              fi
+              safe="${relative//\//__}"
+              mkdir -p "$base/comparison/$side/elf/$safe"
+              readelf -h -l -d -s -r -n --wide "$file_path" \
+                > "$base/comparison/$side/elf/$safe/readelf.txt" 2>&1 || true
+              objdump -drwC "$file_path" \
+                > "$base/comparison/$side/elf/$safe/objdump.txt" 2>&1 || true
+              strings -a -n 4 "$file_path" \
+                > "$base/comparison/$side/elf/$safe/strings.txt"
+              if gresource list "$file_path" > "$base/comparison/$side/elf/$safe/gresource-list.txt" 2>/dev/null; then
+                while IFS= read -r resource; do
+                  [ -n "$resource" ] || continue
+                  destination="$base/comparison/$side/resources/${resource#/}"
+                  mkdir -p "$(dirname "$destination")"
+                  gresource extract "$file_path" "$resource" > "$destination"
+                done < "$base/comparison/$side/elf/$safe/gresource-list.txt"
+              else
+                rm -f "$base/comparison/$side/elf/$safe/gresource-list.txt"
+              fi
+              build_id="$(readelf -n "$file_path" 2>/dev/null | awk '/Build ID:/{print $3; exit}')"
+              debug_file="$base/comparison/$side/debug-root/usr/lib/debug/.build-id/${build_id:0:2}/${build_id:2}.debug"
+              if [ -n "$build_id" ] && [ -f "$debug_file" ]; then
+                eu-unstrip -o "$base/comparison/$side/elf/$safe/unstripped" "$file_path" "$debug_file"
+                nm -anC "$base/comparison/$side/elf/$safe/unstripped" \
+                  > "$base/comparison/$side/elf/$safe/nm.txt" 2>&1 || true
+                readelf --debug-dump=decodedline --wide "$base/comparison/$side/elf/$safe/unstripped" \
+                  > "$base/comparison/$side/elf/$safe/decodedline.txt" 2>&1 || true
+              fi
+            done
+          done
+          diff -ruN "$base/comparison/candidate/resources" "$base/comparison/target/resources" \
+            > "$base/comparison/resources.diff" || true
+          diff -ruN "$base/comparison/candidate/root" "$base/comparison/target/root" \
+            > "$base/comparison/payload.diff" || true
+          cp -a "$base/source-authority" "$base/artifact/"
+          cp -a "$base/downloads" "$base/artifact/"
+          cp -a "$base/comparison" "$base/artifact/"
+          cp "$base/build/build.log" "$base/artifact/"
+          cp "$base/build/debootstrap.log" "$base/artifact/"
+          find "$base/artifact" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$base/artifact/FILE-INVENTORY.tsv"
+          (cd "$base/artifact" && find . -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256)
+
+      - name: Upload deep comparison
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: final-app-deep-diff-${{ matrix.package }}-v2
+          path: work/${{ matrix.package }}/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6

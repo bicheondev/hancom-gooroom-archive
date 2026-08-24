@@ -1,0 +1,103 @@
+{
+  "schema": 4,
+  "batch": "reconstructed-libsecurity",
+  "actions_run_id": "31233127653",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31233127653",
+  "source": "gooroom-libsecurity-extensions",
+  "source_version": "0.1.7+grm3u1",
+  "source_type": "git",
+  "authority_provenance": "github-exact-packaging-with-binary-history-constrained-module-reconstruction",
+  "repository_full_name": "gooroom/gooroom-libsecurity-extensions",
+  "commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+  "tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+  "required_native_packages": [
+    "gooroom-libsecurity-extensions"
+  ],
+  "reused_all_packages": [],
+  "build_outcome": "success",
+  "build_exit_code": "0",
+  "verify_outcome": "success",
+  "passed": true,
+  "verification_passed": true,
+  "build_mode": "native-arm64-binary-history-constrained-reconstruction",
+  "source_status": "reconstructed-not-recovered-original-source",
+  "byte_identity_claimed": false,
+  "deb_artifacts": [
+    {
+      "filename": "gooroom-libsecurity-extensions_0.1.7+grm3u1_arm64.deb",
+      "package": "gooroom-libsecurity-extensions",
+      "source": "gooroom-libsecurity-extensions",
+      "source_version": "0.1.7+grm3u1",
+      "version": "0.1.7+grm3u1",
+      "architecture": "arm64",
+      "sha256": "20400d6d2e79e41b149e6bf0dc51534bb923737216fdd21936db711b0f02fc6c",
+      "size": 8016,
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0
+    }
+  ],
+  "verification": {
+    "passed": true,
+    "policy": "exact-package-version-and-packaging-authority-plus-binary-history-constrained-module-reconstruction",
+    "packages": [
+      {
+        "filename": "gooroom-libsecurity-extensions_0.1.7+grm3u1_arm64.deb",
+        "package": "gooroom-libsecurity-extensions",
+        "source": "gooroom-libsecurity-extensions",
+        "source_version": "0.1.7+grm3u1",
+        "version": "0.1.7+grm3u1",
+        "architecture": "arm64",
+        "sha256": "20400d6d2e79e41b149e6bf0dc51534bb923737216fdd21936db711b0f02fc6c",
+        "size": 8016,
+        "x86_payload_count": 0,
+        "foreign_payload_count": 0
+      }
+    ],
+    "payload": {
+      "path": "/usr/lib/xorg/modules/extensions/xsm.so",
+      "sha256": "2bb197e0f1332b0f5e2a0b6d134a19817edb8b3e1d6bf0b3b4575ea1f85cbfd4",
+      "machine": "AArch64"
+    },
+    "wrong_architecture_executable_count": 0
+  },
+  "build_lock": {
+    "source": "gooroom-libsecurity-extensions",
+    "source_version": "0.1.7+grm3u1",
+    "source_type": "git",
+    "repository": "gooroom/gooroom-libsecurity-extensions",
+    "commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+    "tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+    "build_mode": "native-arm64-binary-history-constrained-reconstruction",
+    "source_status": "reconstructed-not-recovered-original-source",
+    "byte_identity_claimed": false
+  },
+  "source_lock_evidence": {
+    "source_type": "git",
+    "repository": "gooroom/gooroom-libsecurity-extensions",
+    "verified_commit_sha": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+    "verified_tree_sha": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+    "public_implementation_repository": "ultract/X.org-Security-Module",
+    "public_implementation_commit": "fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7",
+    "public_implementation_tree": "aef0ff9c73f625763b3822c7cfa7179799f26637",
+    "final_amd64_binary_sha256": "d28c255bb00061b0df60f977e9c022a01e8d98e957b1cbcd145aaa3940aa37c8"
+  },
+  "reconstruction": {
+    "authority_path": "arm64/locks/libsecurity-reconstruction/runs/31233127653/authority.json",
+    "manifest_path": "arm64/locks/libsecurity-reconstruction/runs/31233127653/reconstruction-manifest.json",
+    "source_status": "reconstructed-not-recovered-original-source",
+    "byte_identity_claimed": false,
+    "public_implementation": {
+      "repository": "ultract/X.org-Security-Module",
+      "commit": "fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7",
+      "tree": "aef0ff9c73f625763b3822c7cfa7179799f26637",
+      "xsm_c_sha256": "6ba6fbf4468d0b7f72a15483c43226ffcf686a0cde95998a8bd117aad91d0ddb"
+    },
+    "final_amd64_binary": {
+      "commit": "40d69bd620b022aa4ecb6f7d968c87e7f8df5a28",
+      "blob": "416fbb7260c30d5075b1da6dd32aa8d81ef4a49f",
+      "sha256": "d28c255bb00061b0df60f977e9c022a01e8d98e957b1cbcd145aaa3940aa37c8",
+      "size": 27072
+    },
+    "output_source_sha256": "dacc73ed4e734895608a4e8144096c3e9c6e09d9610fd06cbfbcc6544bb15067"
+  }
+}

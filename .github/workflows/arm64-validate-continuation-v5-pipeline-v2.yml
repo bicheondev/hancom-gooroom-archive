@@ -1,0 +1,138 @@
+name: ARM64 validate continuation v5 pipeline v2
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-validate-continuation-v5-pipeline-v2.yml'
+      - '.github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml'
+      - '.github/workflows/arm64-build-integration-applet-history-v5-arm64.yml'
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml'
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml'
+      - '.github/workflows/arm64-continuation-status-v5.yml'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+      - 'arm64/scripts/integration_applet_inject_target_resources.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-validate-continuation-v5-pipeline-v2
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install pinned actionlint without optional shellcheck integration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates golang-go jq python3
+          mkdir -p work/bin work/validation-v2
+          GOBIN="$PWD/work/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          work/bin/actionlint -version > work/validation-v2/actionlint-version.txt
+
+      - name: Validate workflow graph and Python helpers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflows=(
+            .github/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml
+            .github/workflows/arm64-build-integration-applet-history-v5-arm64.yml
+            .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-normalized-v2.yml
+            .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-vmlinux-v3.yml
+            .github/workflows/arm64-continuation-status-v5.yml
+            .github/workflows/arm64-validate-continuation-v5-pipeline-v2.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            test -f "$workflow"
+          done
+          work/bin/actionlint -shellcheck= -format '{{json .}}' \
+            "${workflows[@]}" > work/validation-v2/actionlint.jsonl
+          python3 -m py_compile \
+            arm64/scripts/integration_applet_vendor_reconstruct.py \
+            arm64/scripts/integration_applet_inject_target_resources.py
+          python3 arm64/scripts/integration_applet_vendor_reconstruct.py --help \
+            > work/validation-v2/reconstructor-help.txt
+          python3 arm64/scripts/integration_applet_inject_target_resources.py --help \
+            > work/validation-v2/resource-injector-help.txt
+
+      - name: Seal validation authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -n \
+            --arg version "$(cat work/validation-v2/actionlint-version.txt)" '
+              {
+                schema: 2,
+                status: "passed",
+                actionlint_version: $version,
+                workflow_count: 6,
+                python_helper_count: 2,
+                workflow_syntax_and_expressions_valid: true,
+                python_helpers_compiled: true,
+                pipeline_execution_allowed: true,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false
+              }
+            ' > work/validation-v2/summary.json
+          find work/validation-v2 -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/validation-v2/FILE-INVENTORY.tsv
+          (
+            cd work/validation-v2
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload validation authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-continuation-v5-pipeline-validation-v2
+          path: work/validation-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact validation result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/continuation-v5-pipeline-validation-v2/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/validation-v2/summary.json "$destination/"
+          cp work/validation-v2/actionlint-version.txt "$destination/"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Validate ARM64 continuation v5 pipeline v2'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1

@@ -1,0 +1,60 @@
+name: ARM64 apply gnome-flashback verifier instrumentation v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-apply-gf-arm64-verifier-instrumentation-v2
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out arm64-port
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply and validate instrumentation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin arm64-port
+          python3 -m py_compile arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py
+          python3 arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py
+          git diff --check
+          grep -Fq 'work/arm64-verifier.exit-status' .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          grep -Fq '            work/arm64-build/debs' .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          git rm -f \
+            .github/workflows/arm64-apply-gf-arm64-verifier-instrumentation-v2.yml \
+            .github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml \
+            arm64/scripts/instrument_gnome_flashback_arm64_verifier_v1.py
+          git add .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          git diff --cached --check
+          git commit -m 'Preserve gnome-flashback ARM64 verifier failure evidence'
+
+      - name: Publish instrumentation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin arm64-port
+            if git rebase origin/arm64-port && git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1

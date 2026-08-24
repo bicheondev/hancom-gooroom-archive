@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+  "package": "gooroom-dockbarx-applet",
+  "version": "0.3.1+grm3u1+han3u1",
+  "source": "gooroom-dockbarx-applet",
+  "source_version": "0.3.1+grm3u1+han3u1",
+  "selected_deb": "gooroom-dockbarx-applet_0.3.1+grm3u1+han3u1_amd64.deb",
+  "selected_deb_size": 14096,
+  "selected_deb_sha256": "9d810f3185babcd24e0d7c868586c930a8d39bcb7b0a01dee4d8cee02f440b0d",
+  "control_fields": {
+    "Package": "gooroom-dockbarx-applet",
+    "Version": "0.3.1+grm3u1+han3u1",
+    "Architecture": "amd64",
+    "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+    "Installed-Size": "71",
+    "Depends": "libc6 (>= 2.4), libglib2.0-0 (>= 2.44.0), libgnome-panel0 (>= 3.38.0), libgtk-3-0 (>= 3.20.0), libjson-c5 (>= 0.15), wget",
+    "Section": "gnome",
+    "Priority": "optional",
+    "Description": "An applet for the GNOME panel which embed DockbarX."
+  },
+  "parsed_source": "gooroom-dockbarx-applet",
+  "parsed_source_version": "0.3.1+grm3u1+han3u1",
+  "payload_scan": {
+    "native_payloads": [
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 23344,
+        "sha256": "3eb1e7829003c28d67d3da17883b0fcae08bc7fc38695cb21f8537a9079aedab"
+      },
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 23272,
+        "sha256": "5a4f4fce755692720a8965f5e50c095992ec87111f723bce88b884eef70b07c9"
+      }
+    ],
+    "native_looking_suffixes": [],
+    "architecture_specific_paths": [
+      "/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/gooroom-update-launchers-helper",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-dockbarx-applet.so",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py"
+    ],
+    "executable_scripts": [
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py",
+        "shebang": "#!/usr/bin/python3"
+      }
+    ],
+    "python_files": [
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/xfce4-dockbarx-plug.py"
+    ]
+  },
+  "maintainer_script_audit": {
+    "scripts": [],
+    "architecture_references": []
+  },
+  "python_verification": {
+    "python_file_count": 1,
+    "compiled_count": 1,
+    "failures": []
+  },
+  "original_payload_manifest_sha256": "08ee69cb2fcaae8d59753e6630e33ff23cb8ccada575ff79b2e4ef39e9fe22c0",
+  "original_payload_entry_count": 20,
+  "repack_candidate": false,
+  "blocker_reasons": [
+    "native-payload-present",
+    "architecture-specific-path-present"
+  ],
+  "repacked": false,
+  "promotion_allowed": false,
+  "byte_identity_claimed_for_data_payload_only": false,
+  "original_source_recovered": false
+}

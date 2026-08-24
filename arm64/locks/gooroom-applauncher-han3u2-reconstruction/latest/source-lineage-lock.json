@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "policy": "public-direct-parent-lineage-candidate-requires-binary-validation",
+  "target": {
+    "package": "gooroom-applauncher-applet",
+    "version": "0.4.0+grm3u1+han3u2",
+    "architecture": "amd64",
+    "sha256": "97d4ad82497333615de5eea8fa4d64fd9538f000dccaee5acb1f6f26f44edc00",
+    "input_lock_sha256": "32c57886d6de56c44a19ecbbeb1c31f05412fcd8c908a64cb9da87b6b50711fc",
+    "changelog_sha256": "38309e587b48785b3242c9db5dfcefff36f7d5f377878da57e615cf325d8f8c7",
+    "icon_sha256": "3a1c906d4eef0caf3c86bb59e2d6efab60bccd601b0d20d1fa7a7bcf0ee4f761",
+    "changelog_reference": {
+      "short_commit": "cf3e553f",
+      "message": "Added drag and drop function",
+      "author_section": "boyeon.choi",
+      "note": "The short hash belongs to the Hancom packaging lineage and is not treated as a globally unique Git object identifier."
+    }
+  },
+  "public_base": {
+    "repository": "gooroom/gooroom-applauncher-applet",
+    "version": "0.4.0+grm3u1",
+    "commit": "f2b5bf5909289796360a64526110d55e41c6f41f",
+    "tree": "946068a768ee6d648a79a3a8c294dcbdc64992df"
+  },
+  "public_candidate": {
+    "repository": "gooroom/gooroom-applauncher-applet",
+    "commit": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+    "tree": "b46c94d465fcae8779a060373ea70650ad484351",
+    "parent": "f2b5bf5909289796360a64526110d55e41c6f41f",
+    "message": "Added drag and drop function",
+    "change_id": "I3ef0ac6cdd9ae53049057464dad992fa7e1cc36c",
+    "author_name": "donghun",
+    "author_date": "2020-11-19T06:32:16Z",
+    "committer_name": "boyeon.choi",
+    "committer_date": "2022-11-03T06:51:13Z",
+    "changed_paths": {
+      "src/applauncher-appitem.c": "31bc6f497247ba778f28d3f6737ad61c99327bd5",
+      "src/applauncher-appitem.h": "f79036dd14435a9f7f9067a294a7197c93c96f96",
+      "src/applauncher-window.c": "e39e3c3e03cd49323a9c90ae7d5895e301cd5475"
+    },
+    "expected_new_dynamic_exports": [
+      "applauncher_appitem_get_drag_surface",
+      "applauncher_appitem_get_path"
+    ]
+  },
+  "reconstruction_recipe": {
+    "source_commit": "20a1b11b624099bf9522f2de7104f4bf776e0a2e",
+    "replace_from_exact_target_payload": [
+      {
+        "target_path": "usr/share/doc/gooroom-applauncher-applet/changelog.gz",
+        "source_path": "debian/changelog",
+        "transform": "gzip-decompress"
+      },
+      {
+        "target_path": "usr/share/icons/hicolor/scalable/apps/gooroom-applauncher-applet.svg",
+        "source_path": "data/gooroom-applauncher-applet.svg",
+        "transform": "copy"
+      }
+    ]
+  },
+  "claims": {
+    "source_status": "public-lineage-candidate",
+    "reconstruction_status": "not-yet-built",
+    "byte_identity_claimed": false
+  }
+}

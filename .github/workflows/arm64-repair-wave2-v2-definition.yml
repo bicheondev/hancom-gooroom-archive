@@ -1,0 +1,58 @@
+name: ARM64 port - repair wave 2 v2 workflow definition
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-repair-wave2-v2-definition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-repair-wave2-v2-definition
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Repair the truncated upload-artifact commit and validate YAML
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path('.github/workflows/arm64-build-wave2-v2.yml')
+          text = path.read_text(encoding='utf-8')
+          old = 'actions/upload-artifact@ea165f8d65b6e75fa02'
+          new = 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+          if text.count(old) != 1:
+              raise SystemExit(
+                  f'refusing unexpected wave2-v2 revision: bad ref count={text.count(old)}'
+              )
+          text = text.replace(old, new)
+          yaml.safe_load(text)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit the repaired workflow
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-build-wave2-v2.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Repair exact ARM64 package wave 2 v2 workflow action pin'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port

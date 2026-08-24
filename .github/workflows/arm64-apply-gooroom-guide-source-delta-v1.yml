@@ -1,0 +1,212 @@
+name: ARM64 port - apply exact remaining Gooroom Guide source delta v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-apply-gooroom-guide-source-delta-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-guide-source-delta-apply-v1
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    name: Apply the exact normalized-ELF-winning source form
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the exact branch head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Patch the bounded reconstruction and gate metadata
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+
+          reconstruction = Path("arm64/scripts/reconstruct_gooroom_guide_han3u1.py")
+          text = reconstruction.read_text(encoding="utf-8")
+
+          def replace_once(value: str, old: str, new: str, label: str) -> str:
+              count = value.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one anchor, found {count}")
+              return value.replace(old, new)
+
+          constants_anchor = '''CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
+          '''
+          constants = '''CLASS_INIT_DECLARATIONS_BLOCK = """  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
+            GObjectClass *object_class = G_OBJECT_CLASS (class);
+          """
+          TARGET_CLASS_INIT_DECLARATIONS_BLOCK = """  GObjectClass *object_class = G_OBJECT_CLASS (class);
+            GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
+          """
+          CONSTRUCTED_BLOCK = """static void
+          guide_window_constructed (GObject *obj)
+          {
+            GuideWindow *self = GUIDE_WINDOW (obj);
+            GtkRequisition req;
+            GdkDisplay *display;
+            GdkMonitor *monitor;
+            GdkRectangle geo;
+            GdkPoint point;
+
+            G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);
+          """
+          TARGET_CONSTRUCTED_BLOCK = """static void
+          guide_window_constructed (GObject *obj)
+          {
+            GuideWindow *self;
+            GtkRequisition req;
+            GdkDisplay *display;
+            GdkMonitor *monitor;
+            GdkRectangle geo;
+            GdkPoint point;
+
+            G_OBJECT_CLASS (guide_window_parent_class)->constructed (obj);
+            self = GUIDE_WINDOW (obj);
+          """
+          GUIDE_UTILS_HEADER_BLOCK = "gchar *     get_norun_file_path ();"
+          TARGET_GUIDE_UTILS_HEADER_BLOCK = "gchar *     get_norun_file_path (void);"
+          GUIDE_UTILS_IMPLEMENTATION_BLOCK = "get_norun_file_path ()"
+          TARGET_GUIDE_UTILS_IMPLEMENTATION_BLOCK = "get_norun_file_path (void)"
+          CONSTRUCTOR_BLOCK = """  return g_object_new (GUIDE_WINDOW_TYPE,
+          '''
+          text = replace_once(
+              text,
+              constants_anchor,
+              constants,
+              "source-delta constants insertion",
+          )
+
+          expected_anchor = '''    "src/guide-window.c",
+              "src/data/guide-window.ui",
+          '''
+          expected_replacement = '''    "src/guide-window.c",
+              "src/guide-utils.c",
+              "src/guide-utils.h",
+              "src/data/guide-window.ui",
+          '''
+          text = replace_once(
+              text,
+              expected_anchor,
+              expected_replacement,
+              "expected changed-path expansion",
+          )
+
+          replacement_anchor = '''        (
+                      FINALIZE_BLOCK,
+                      TARGET_FINALIZE_BLOCK,
+                      "unused finalize cast cleanup",
+                  ),
+          '''
+          replacement_expansion = '''        (
+                      CLASS_INIT_DECLARATIONS_BLOCK,
+                      TARGET_CLASS_INIT_DECLARATIONS_BLOCK,
+                      "GObject-first class declaration order",
+                  ),
+                  (
+                      CONSTRUCTED_BLOCK,
+                      TARGET_CONSTRUCTED_BLOCK,
+                      "parent constructed call before self cast",
+                  ),
+                  (
+                      FINALIZE_BLOCK,
+                      TARGET_FINALIZE_BLOCK,
+                      "unused finalize cast cleanup",
+                  ),
+          '''
+          text = replace_once(
+              text,
+              replacement_anchor,
+              replacement_expansion,
+              "guide-window source replacement expansion",
+          )
+
+          write_anchor = '''    source_c.write_text(source_text, encoding="utf-8")
+
+              source_ui = repository / "src/data/guide-window.ui"
+          '''
+          utils_patch = '''    source_c.write_text(source_text, encoding="utf-8")
+
+              source_utils_h = repository / "src/guide-utils.h"
+              source_utils_h_text = source_utils_h.read_text(encoding="utf-8")
+              if source_utils_h_text.count(GUIDE_UTILS_HEADER_BLOCK) != 1:
+                  raise SystemExit(
+                      "get_norun_file_path header anchor was not found exactly once"
+                  )
+              source_utils_h.write_text(
+                  source_utils_h_text.replace(
+                      GUIDE_UTILS_HEADER_BLOCK,
+                      TARGET_GUIDE_UTILS_HEADER_BLOCK,
+                  ),
+                  encoding="utf-8",
+              )
+
+              source_utils_c = repository / "src/guide-utils.c"
+              source_utils_c_text = source_utils_c.read_text(encoding="utf-8")
+              if source_utils_c_text.count(GUIDE_UTILS_IMPLEMENTATION_BLOCK) != 1:
+                  raise SystemExit(
+                      "get_norun_file_path implementation anchor was not found exactly once"
+                  )
+              source_utils_c.write_text(
+                  source_utils_c_text.replace(
+                      GUIDE_UTILS_IMPLEMENTATION_BLOCK,
+                      TARGET_GUIDE_UTILS_IMPLEMENTATION_BLOCK,
+                  ),
+                  encoding="utf-8",
+              )
+
+              source_ui = repository / "src/data/guide-window.ui"
+          '''
+          text = replace_once(
+              text,
+              write_anchor,
+              utils_patch,
+              "guide-utils source patch insertion",
+          )
+
+          reconstruction.write_text(text, encoding="utf-8")
+
+          workflow = Path(
+              ".github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml"
+          )
+          workflow_text = workflow.read_text(encoding="utf-8")
+          workflow_text = replace_once(
+              workflow_text,
+              "and (.reconstruction.changed_paths | length) == 23",
+              "and (.reconstruction.changed_paths | length) == 25",
+              "reconstruction changed-path gate",
+          )
+          workflow.write_text(workflow_text, encoding="utf-8")
+          PY
+
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          git diff --check
+          git diff --stat
+          git diff -- \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml
+
+      - name: Commit and push the exact source reconstruction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -n "$(git status --porcelain=v1)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml
+          git commit -m 'Complete exact Gooroom Guide AMD64 source reconstruction'
+          git push origin HEAD:arm64-port

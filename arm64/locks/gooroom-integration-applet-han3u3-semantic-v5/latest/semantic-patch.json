@@ -1,0 +1,54 @@
+{
+  "base_commit_sha": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "candidate_label": "hancom-hybrid-old-user",
+  "old_user_module_selected": true,
+  "patched_files": {
+    "applet": {
+      "path": "src/gooroom-integration-applet.c",
+      "sha256": "8517137b2192d48f351e079842a44b74a0e331bc8702f6ecbb1978bbc9f413d9"
+    },
+    "cleanmode_icon": {
+      "makefile": "icons/Makefile.am",
+      "makefile_sha256": "835213b28975ae043a4a90ee8eb775e6c1a741f49b467f05a2251e70611fdec1",
+      "removed_file": true
+    },
+    "datetime": {
+      "path": "modules/datetime/datetime-module.c",
+      "sha256": "ee547ec06e242a25d92838f37f899297bad6949b3abd18682fb4bc6c3caa33bb"
+    },
+    "gresource": {
+      "path": "src/gresource.xml",
+      "sha256": "5efdfdb69ea4490b5f6417b9cbd4ae7b9fc6d396dbd76be99004e7007b7a2804"
+    },
+    "popup_window": {
+      "path": "src/popup-window.c",
+      "sha256": "75eb3235560041003d55527e202f8e9c8c09373cf0e36532c2abb5ebc5a28728"
+    }
+  },
+  "schema": 1,
+  "semantic_policy": [
+    "gooroom-3.0-0.3.5-base",
+    "exact-target-mapped-resources-icons-locales-and-changelog",
+    "exact-target-style1-style2-gresources",
+    "hancom-context-menu-unfocusable-datetime-control",
+    "hancom-runtime-icon-theme-css-switching",
+    "target-payload-cleanmode-icon-pruned"
+  ],
+  "source": "gooroom-integration-applet",
+  "style_resources": [
+    {
+      "resource": "/kr/gooroom/IntegrationApplet/ui/style1.css",
+      "sha256": "e134d52df0cdf9bd0235793e6e433b45967793196d5590381461672d92062d0e",
+      "size": 4485,
+      "source_path": "data/style1.css"
+    },
+    {
+      "resource": "/kr/gooroom/IntegrationApplet/ui/style2.css",
+      "sha256": "57f009ee04f786081605639fbb64364a92b0a067af53d97a26b5b5f1d8a47102",
+      "size": 4504,
+      "source_path": "data/style2.css"
+    }
+  ],
+  "target_version": "0.3.1+grm3u1+han3u3",
+  "user_source_commit_sha": "bcca083b854e4a6c99e0bb69db4d4868e1210cdd"
+}

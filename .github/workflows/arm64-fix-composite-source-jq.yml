@@ -1,0 +1,161 @@
+name: ARM64 port - fix composite source jq object merges
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-fix-composite-source-jq.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-fix-composite-source-jq
+  cancel-in-progress: true
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply guarded jq merge correction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target=arm64/scripts/prepare_composite_source_chroot.sh
+          python3 - "$target" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  '    packaging: .packaging + {\n',
+                  '    packaging: (.packaging + {\n',
+              ),
+              (
+                  '      verified_version: $packaging_version\n'
+                  '    },\n'
+                  '    changelog_anchor: .changelog_anchor,\n',
+                  '      verified_version: $packaging_version\n'
+                  '    }),\n'
+                  '    changelog_anchor: .changelog_anchor,\n',
+              ),
+              (
+                  '    upstream: .upstream + {\n',
+                  '    upstream: (.upstream + {\n',
+              ),
+              (
+                  '      required_paths_verified: true\n'
+                  '    },\n'
+                  '    composition: .composition,\n',
+                  '      required_paths_verified: true\n'
+                  '    }),\n'
+                  '    composition: .composition,\n',
+              ),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f'expected exactly one guarded jq boundary, found {count}: {old!r}'
+                  )
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Prove shell and jq syntax with representative lock data
+        shell: bash
+        run: |
+          set -euxo pipefail
+          bash -n arm64/scripts/prepare_composite_source_chroot.sh
+          ! grep -F 'packaging: .packaging + {' arm64/scripts/prepare_composite_source_chroot.sh
+          ! grep -F 'upstream: .upstream + {' arm64/scripts/prepare_composite_source_chroot.sh
+          grep -F 'packaging: (.packaging + {' arm64/scripts/prepare_composite_source_chroot.sh
+          grep -F 'upstream: (.upstream + {' arm64/scripts/prepare_composite_source_chroot.sh
+
+          cat > /tmp/component-lock.json <<'JSON'
+          {
+            "policy": "test",
+            "source": "gooroom-browser",
+            "source_version": "3.5.0-1+grm3u3",
+            "packaging": {"repository_full_name": "gooroom/gooroom-browser"},
+            "changelog_anchor": {"position": 1},
+            "upstream": {"source": "chromium", "version": "111.0.5563.110-1~deb11u1"},
+            "composition": {"extract": "orig-only-strip-one-component"}
+          }
+          JSON
+          printf '[]\n' > /tmp/resolved.json
+          jq \
+            --slurpfile resolved_downloads /tmp/resolved.json \
+            --arg lock_sha256 lock \
+            --arg snapshot 20230730T235959Z \
+            --arg file_base https://snapshot.debian.org/file \
+            --arg packaging_source gooroom-browser \
+            --arg packaging_version 3.5.0-1+grm3u3 \
+            --arg dsc_sha256 dsc \
+            --arg orig_sha256 orig \
+            --arg debian_sha256 debian '
+            {
+              schema: 3,
+              policy: .policy,
+              source: .source,
+              source_version: .source_version,
+              source_component_lock_sha256: $lock_sha256,
+              packaging: (.packaging + {
+                verified_source: $packaging_source,
+                verified_version: $packaging_version
+              }),
+              changelog_anchor: .changelog_anchor,
+              upstream: (.upstream + {
+                verified_snapshot: $snapshot,
+                verified_content_addressed_base: $file_base,
+                resolved_downloads: $resolved_downloads[0],
+                verified_dsc_identity: true,
+                verified_files: {
+                  dsc_sha256: $dsc_sha256,
+                  orig_sha256: $orig_sha256,
+                  debian_sha256: $debian_sha256
+                },
+                required_paths_verified: true
+              }),
+              composition: .composition,
+              composite_root: "/build/composite-source",
+              verified: true
+            }
+          ' /tmp/component-lock.json > /tmp/evidence.json
+          jq -e '
+            .schema == 3
+            and .source == "gooroom-browser"
+            and .packaging.verified_version == "3.5.0-1+grm3u3"
+            and .upstream.verified_snapshot == "20230730T235959Z"
+            and .verified == true
+          ' /tmp/evidence.json
+
+      - name: Commit the verified builder correction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/prepare_composite_source_chroot.sh
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Fix jq object merges in composite source evidence'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

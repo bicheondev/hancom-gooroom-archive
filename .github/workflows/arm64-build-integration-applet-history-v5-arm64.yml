@@ -1,0 +1,508 @@
+name: ARM64 build verified integration applet history v5 source
+
+'on':
+  workflow_run:
+    workflows:
+      - ARM64 reconstruct integration applet public history v5
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful public-history reconstruction run ID
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-history-v5-arm64-build
+  cancel-in-progress: false
+
+env:
+  PACKAGE: gooroom-integration-applet
+  VERSION: 0.3.1+grm3u1+han3u3
+  RELEASE_TAG: v3.3-arm64-packages
+  SNAPSHOT: 20230730T235959Z
+  NIMF_VERSION: 2023.06.30+grm3u1
+  NIMF_COMMIT: 583ad8b183db06a84c6b85a80fe132583566909d
+  NIMF_AUTHORITY: arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+  RECONSTRUCTION_LOCK: arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/latest
+
+jobs:
+  resolve:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.head_branch == 'arm64-port' &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      source_run_id: ${{ steps.resolve.outputs.source_run_id }}
+      build_allowed: ${{ steps.authority.outputs.build_allowed }}
+      candidate_label: ${{ steps.authority.outputs.candidate_label }}
+      candidate_commit: ${{ steps.authority.outputs.candidate_commit }}
+    steps:
+      - name: Resolve reconstruction run ID
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ '${{ github.event_name }}' == workflow_run ]]; then
+            run_id='${{ github.event.workflow_run.id }}'
+          else
+            run_id='${{ inputs.source_run_id }}'
+          fi
+          if [[ -z "$run_id" ]]; then
+            run_id="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/arm64-reconstruct-integration-applet-public-history-v5.yml/runs?branch=arm64-port&status=completed&per_page=20" \
+              --jq '.workflow_runs[] | select(.conclusion == "success") | .id' \
+              | head -1)"
+          fi
+          test -n "$run_id"
+          printf 'source_run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Check out latest committed authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Read matching fail-closed reconstruction authority
+        id: authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected='${{ steps.resolve.outputs.source_run_id }}'
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            git pull --ff-only origin arm64-port || true
+            if [[ -f "$RECONSTRUCTION_LOCK/artifact-lock.json" ]] && \
+               [[ "$(jq -r '.actions_run_id' "$RECONSTRUCTION_LOCK/artifact-lock.json")" == "$expected" ]]; then
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          test -f "$RECONSTRUCTION_LOCK/artifact-lock.json"
+          test "$(jq -r '.actions_run_id' "$RECONSTRUCTION_LOCK/artifact-lock.json")" = "$expected"
+          summary="$RECONSTRUCTION_LOCK/summary.json"
+          test -f "$summary"
+          allowed="$(jq -r '.native_arm64_build_allowed // false' "$summary")"
+          label="$(jq -r '.closest_candidate.candidate_label' "$summary")"
+          commit="$(jq -r '.closest_candidate.candidate_commit_sha' "$summary")"
+          test -n "$label"
+          test -n "$commit"
+          printf 'build_allowed=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+          printf 'candidate_label=%s\n' "$label" >> "$GITHUB_OUTPUT"
+          printf 'candidate_commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
+          jq '{native_arm64_build_allowed,closest_candidate,next_action}' "$summary" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Native ARM64 build and publish
+    needs: resolve
+    if: needs.resolve.outputs.build_allowed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact build authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install QEMU ARM64 chroot tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo sed -Ei \
+            's|http://azure\.archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://([a-z0-9.-]+\.)?archive\.ubuntu\.com/ubuntu/?|https://archive.ubuntu.com/ubuntu/|g;
+             s|http://security\.ubuntu\.com/ubuntu/?|https://security.ubuntu.com/ubuntu/|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binfmt-support ca-certificates curl debootstrap dpkg-dev file git jq \
+            qemu-user-static unzip xz-utils
+          mkdir -p work/{reconstruction,nimf,rootfs,output,release}
+
+      - name: Download exact closest reconstructed source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.resolve.outputs.source_run_id }}
+          CANDIDATE_LABEL: ${{ needs.resolve.outputs.candidate_label }}
+          CANDIDATE_COMMIT: ${{ needs.resolve.outputs.candidate_commit }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_name="integration-applet-history-v5-$CANDIDATE_LABEL"
+          artifact_id="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name == "'"$artifact_name"'") | .id' \
+            | head -1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > work/reconstruction/artifact.zip
+          unzip -q work/reconstruction/artifact.zip -d work/reconstruction/artifact
+          source_lock=work/reconstruction/artifact/source-authority/source-lock.json
+          source_archive=work/reconstruction/artifact/source-authority/reconstructed-source.tar.xz
+          test -f "$source_lock"
+          test -f "$source_archive"
+          test "$(jq -r '.candidate_label' "$source_lock")" = "$CANDIDATE_LABEL"
+          test "$(jq -r '.base_commit_sha' "$source_lock")" = "$CANDIDATE_COMMIT"
+          test "$(jq -r '.version' "$source_lock")" = "$VERSION"
+          test "$(sha256sum "$source_archive" | awk '{print $1}')" = \
+            "$(jq -r '.source_archive_sha256' "$source_lock")"
+          cp "$source_archive" work/integration-source.tar.xz
+          printf '%s\n' "$artifact_id" > work/reconstruction/source-artifact-id.txt
+
+      - name: Recover exact Nimf source identity and vendor changelog
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e --arg version "$NIMF_VERSION" --arg commit "$NIMF_COMMIT" '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == $version
+            and .source_commit == $commit
+            and (.packages | length) == 2
+          ' "$NIMF_AUTHORITY" >/dev/null
+
+          jq -c '.packages[]' "$NIMF_AUTHORITY" | while IFS= read -r row; do
+            file="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            sha="$(jq -r '.sha256' <<<"$row")"
+            size="$(jq -r '.size' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "work/nimf/$file"
+            test "$(stat -c '%s' "work/nimf/$file")" = "$size"
+            test "$(sha256sum "work/nimf/$file" | awk '{print $1}')" = "$sha"
+          done
+
+          repositories=()
+          authority_repository="$(jq -r '.repository_full_name // .repository // empty' "$NIMF_AUTHORITY")"
+          [[ -z "$authority_repository" ]] || repositories+=("$authority_repository")
+          repositories+=(gooroom/nimf hamonikr/nimf)
+          selected=''
+          for repository in "${repositories[@]}"; do
+            rm -rf work/nimf/source-attempt
+            git init -q work/nimf/source-attempt
+            if git -C work/nimf/source-attempt fetch --depth=1 \
+              "https://github.com/$repository.git" "$NIMF_COMMIT"; then
+              git -C work/nimf/source-attempt checkout --detach FETCH_HEAD
+              if [[ "$(git -C work/nimf/source-attempt rev-parse HEAD)" == "$NIMF_COMMIT" ]]; then
+                selected="$repository"
+                break
+              fi
+            fi
+          done
+          test -n "$selected"
+          mv work/nimf/source-attempt work/nimf/source
+
+          changelog=''
+          for deb in work/nimf/*.deb; do
+            rm -rf work/nimf/extracted
+            mkdir -p work/nimf/extracted
+            dpkg-deb -x "$deb" work/nimf/extracted
+            candidate="$(find work/nimf/extracted/usr/share/doc -type f \
+              \( -name 'changelog.Debian.gz' -o -name 'changelog.gz' -o -name 'changelog.Debian' \) \
+              -print -quit 2>/dev/null || true)"
+            if [[ -n "$candidate" ]]; then
+              changelog="$candidate"
+              break
+            fi
+          done
+          test -n "$changelog"
+          if [[ "$changelog" == *.gz ]]; then
+            gzip -dc "$changelog" > work/nimf/source/debian/changelog
+          else
+            cp "$changelog" work/nimf/source/debian/changelog
+          fi
+          test "$(dpkg-parsechangelog -lwork/nimf/source/debian/changelog -SVersion)" = "$NIMF_VERSION"
+          git -C work/nimf/source add debian/changelog
+          nimf_tree="$(git -C work/nimf/source write-tree)"
+          git -C work/nimf/source archive --format=tar "$nimf_tree" > work/nimf-source.tar
+          xz -9e work/nimf-source.tar
+          jq -n \
+            --arg repository "$selected" \
+            --arg commit "$NIMF_COMMIT" \
+            --arg version "$NIMF_VERSION" \
+            --arg tree "$nimf_tree" \
+            --arg archive_sha256 "$(sha256sum work/nimf-source.tar.xz | awk '{print $1}')" \
+            '{schema:1,repository:$repository,commit:$commit,version:$version,
+              reconstructed_tree_sha:$tree,source_archive_sha256:$archive_sha256}' \
+            > work/nimf/source-lock.json
+
+      - name: Build Nimf and integration applet natively in ARM64 Bullseye userspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rootfs="$(pwd)/work/rootfs"
+          cleanup() {
+            sudo umount -R "$rootfs/proc" 2>/dev/null || true
+            sudo umount -R "$rootfs/sys" 2>/dev/null || true
+            sudo umount -R "$rootfs/dev" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          timeout 60m sudo debootstrap \
+            --arch=arm64 --foreign --variant=minbase --include=ca-certificates \
+            --no-check-gpg bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee work/output/debootstrap-first-stage.log
+          sudo cp /usr/bin/qemu-aarch64-static "$rootfs/usr/bin/"
+          sudo chroot "$rootfs" /debootstrap/debootstrap --second-stage \
+            2>&1 | tee work/output/debootstrap-second-stage.log
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main contrib non-free" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "8";' \
+            'Acquire::http::Timeout "60";' \
+            'Acquire::https::Timeout "60";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo cp /etc/resolv.conf "$rootfs/etc/resolv.conf"
+          sudo mkdir -p "$rootfs/build/nimf" "$rootfs/build/integration" "$rootfs/build/output"
+          sudo tar -xJf work/nimf-source.tar.xz -C "$rootfs/build/nimf"
+          sudo tar -xJf work/integration-source.tar.xz -C "$rootfs/build/integration"
+
+          sudo mount -t proc proc "$rootfs/proc"
+          sudo mount --rbind /sys "$rootfs/sys"
+          sudo mount --make-rslave "$rootfs/sys"
+          sudo mount --rbind /dev "$rootfs/dev"
+          sudo mount --make-rslave "$rootfs/dev"
+
+          timeout 300m sudo chroot "$rootfs" /bin/bash -Eeuxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export DEB_BUILD_MAINT_OPTIONS="hardening=+all reproducible=+fixfilepath"
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential ca-certificates devscripts dpkg-dev equivs file git
+
+            cd /build/nimf
+            mk-build-deps --install --remove \
+              --tool "apt-get -o Acquire::Retries=8 -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+            find /build -maxdepth 1 -type f -name "*.deb" -print0 \
+              | xargs -0 -r apt-get install -y
+
+            cd /build/integration
+            mk-build-deps --install --remove \
+              --tool "apt-get -o Acquire::Retries=8 -y --no-install-recommends" \
+              debian/control
+            dpkg-buildpackage -us -uc -b -j2
+            find /build -maxdepth 1 -type f -name "*.deb" -exec cp -t /build/output {} +
+          ' 2>&1 | tee work/output/native-arm64-build.log
+
+          sudo cp "$rootfs/build/output"/*.deb work/output/
+          sudo chown -R "$(id -u):$(id -g)" work/output
+          integration=''
+          for deb in work/output/*.deb; do
+            if [[ "$(dpkg-deb -f "$deb" Package)" == "$PACKAGE" ]]; then
+              integration="$deb"
+            fi
+          done
+          test -n "$integration"
+          cp "$integration" "work/release/$(basename "$integration")"
+          for deb in work/output/*.deb; do
+            source_name="$(dpkg-deb -f "$deb" Source 2>/dev/null | sed 's/ .*//' || true)"
+            package_name="$(dpkg-deb -f "$deb" Package)"
+            version="$(dpkg-deb -f "$deb" Version)"
+            if [[ "$source_name" == nimf || "$package_name" == nimf* || "$package_name" == libnimf* ]] && \
+               [[ "$version" == "$NIMF_VERSION" ]]; then
+              cp "$deb" "work/release/$(basename "$deb")"
+            fi
+          done
+
+      - name: Verify every promoted package and reject foreign ELF payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/verification
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          release = Path('work/release')
+          verification = Path('work/verification')
+          rows = []
+          integration_found = False
+          for deb in sorted(release.glob('*.deb')):
+              package = subprocess.check_output(['dpkg-deb', '-f', str(deb), 'Package'], text=True).strip()
+              version = subprocess.check_output(['dpkg-deb', '-f', str(deb), 'Version'], text=True).strip()
+              architecture = subprocess.check_output(['dpkg-deb', '-f', str(deb), 'Architecture'], text=True).strip()
+              if architecture not in {'arm64', 'all'}:
+                  raise RuntimeError(f'foreign architecture package: {deb.name}: {architecture}')
+              if package == 'gooroom-integration-applet':
+                  integration_found = True
+                  if version != '0.3.1+grm3u1+han3u3' or architecture != 'arm64':
+                      raise RuntimeError('integration applet package identity mismatch')
+              extract = verification / package
+              subprocess.run(['dpkg-deb', '-x', str(deb), str(extract)], check=True)
+              elfs = []
+              for path in sorted(extract.rglob('*')):
+                  if not path.is_file() or path.is_symlink():
+                      continue
+                  with path.open('rb') as stream:
+                      if stream.read(4) != b'\x7fELF':
+                          continue
+                  header = subprocess.check_output(['readelf', '-h', str(path)], text=True)
+                  machine = next(
+                      line.split(':', 1)[1].strip()
+                      for line in header.splitlines()
+                      if line.strip().startswith('Machine:')
+                  )
+                  if 'AArch64' not in machine:
+                      raise RuntimeError(f'non-AArch64 ELF in {deb.name}: {path}: {machine}')
+                  elfs.append({'path': path.relative_to(extract).as_posix(), 'machine': machine})
+              digest = hashlib.sha256(deb.read_bytes()).hexdigest()
+              rows.append({
+                  'filename': deb.name,
+                  'package': package,
+                  'version': version,
+                  'architecture': architecture,
+                  'size': deb.stat().st_size,
+                  'sha256': digest,
+                  'elfs': elfs,
+              })
+          if not integration_found:
+              raise RuntimeError('verified integration applet package was not found')
+          (verification / 'packages.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (release / 'SHA256SUMS').write_text(
+              ''.join(f"{row['sha256']}  {row['filename']}\n" for row in rows),
+              encoding='utf-8',
+          )
+          PY
+          (cd work/release && sha256sum --check --strict SHA256SUMS)
+          jq '.' work/verification/packages.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified native ARM64 package evidence
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-history-v5-native-arm64
+          path: |
+            work/release
+            work/verification
+            work/output/native-arm64-build.log
+            work/nimf/source-lock.json
+            work/reconstruction/source-artifact-id.txt
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Permanently publish verified ARM64 packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title 'Hancom Gooroom 3.3 ARM64 package pool' \
+              --notes 'Verified ARM64 package artifacts for the Hancom Gooroom 3.3 port.'
+          fi
+          while IFS= read -r file; do
+            name="$(basename "$file")"
+            gh release upload "$RELEASE_TAG" "$file#$name" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          done < <(find work/release -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > work/verification/release-api.json
+
+      - name: Commit package promotion authority and request final-pool recalculation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.resolve.outputs.source_run_id }}
+          CANDIDATE_LABEL: ${{ needs.resolve.outputs.candidate_label }}
+          CANDIDATE_COMMIT: ${{ needs.resolve.outputs.candidate_commit }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/verification/packages.json "$destination/"
+          cp work/nimf/source-lock.json "$destination/nimf-source-lock.json"
+          release=work/verification/release-api.json
+          jq --slurpfile packages work/verification/packages.json \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --arg source_artifact_id "$(cat work/reconstruction/source-artifact-id.txt)" \
+            --arg candidate_label "$CANDIDATE_LABEL" \
+            --arg candidate_commit "$CANDIDATE_COMMIT" \
+            --arg release_tag "$RELEASE_TAG" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --slurpfile release "$release" '
+              {
+                schema: 1,
+                status: "published",
+                source_reconstruction_run_id: $source_run_id,
+                source_reconstruction_artifact_id: $source_artifact_id,
+                candidate_label: $candidate_label,
+                candidate_commit_sha: $candidate_commit,
+                native_build_artifact_id: $artifact_id,
+                native_build_artifact_digest: $artifact_digest,
+                release_tag: $release_tag,
+                packages: $packages[0],
+                release_assets: [
+                  $release[0].assets[]
+                  | select(.name as $name | any($packages[0][]; .filename == $name))
+                  | {id,name,size,state,browser_download_url}
+                ],
+                package_layer_promotion_allowed: true,
+                final_repository_recalculation_requested: true,
+                iso_assembly_allowed: false
+              }
+            ' > "$destination/package-promotion-authority.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Build and publish integration applet ARM64 v5'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+
+          workflows=(
+            arm64-index-rebuild-results-v2.yml
+            arm64-recover-exact-package-pool.yml
+            arm64-summarize-recovered-package-blockers.yml
+            arm64-port-coverage-v2.yml
+            arm64-ci-state-snapshot.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            if gh workflow view "$workflow" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+              sleep 3
+            fi
+          done

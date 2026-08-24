@@ -1,0 +1,120 @@
+name: ARM64 port - map exact Debian binaries
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-debian-map.yml'
+      - 'arm64/scripts/map_debian_arm64.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-debian-arm64-map
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT_BASE: 20230730T235959Z
+  SNAPSHOT_UPDATES: 20240331T235959Z
+
+jobs:
+  map:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Prepare isolated Debian Bullseye snapshot metadata
+        run: |
+          set -euxo pipefail
+          mkdir -p work/apt/lists/partial work/apt/archives/partial
+          : > work/apt/status
+          cat > work/apt/sources.list <<EOF
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_BASE}/ bullseye-security main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_UPDATES}/ bullseye-security main contrib non-free
+          EOF
+          cat > work/apt/apt.conf <<EOF
+          Dir::Etc::sourcelist "$PWD/work/apt/sources.list";
+          Dir::Etc::sourceparts "-";
+          Dir::State::status "$PWD/work/apt/status";
+          Dir::State::lists "$PWD/work/apt/lists";
+          Dir::Cache::archives "$PWD/work/apt/archives";
+          APT::Architecture "arm64";
+          APT::Architectures { "arm64"; };
+          Acquire::Check-Valid-Until "false";
+          Acquire::AllowInsecureRepositories "true";
+          Acquire::Retries "3";
+          EOF
+          sudo apt-get -c "$PWD/work/apt/apt.conf" update
+
+      - name: Map every package to an exact ARM64 disposition and immutable asset
+        id: map
+        run: |
+          set -uxo pipefail
+          rm -rf work/debian-map
+          set +e
+          python3 arm64/scripts/map_debian_arm64.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --apt-config "$PWD/work/apt/apt.conf" \
+            --snapshot "$SNAPSHOT_BASE" \
+            --snapshot "$SNAPSHOT_UPDATES" \
+            --output-dir work/debian-map
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/debian-map -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/debian-map/LOCKSUMS.sha256
+          cat work/debian-map/debian-arm64-map-summary.json
+
+      - name: Upload Debian package mapping evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-debian-arm64-map
+          path: work/debian-map
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record Debian mapping on the latest port branch without rebase conflicts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3 4 5; do
+            git fetch origin arm64-port
+            git reset --hard origin/arm64-port
+            rm -rf arm64/locks/debian-arm64
+            mkdir -p arm64/locks/debian-arm64
+            cp -a work/debian-map/. arm64/locks/debian-arm64/
+            git add arm64/locks/debian-arm64
+            if git diff --cached --quiet; then
+              exit 0
+            fi
+            git commit -m 'Map Hancom Gooroom 3.3 packages to exact ARM64 assets'
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce a complete exact-version asset map
+        run: |
+          set -euxo pipefail
+          test '${{ steps.map.outputs.exit_code }}' = '0'
+          test "$(jq -r '.strict_unresolved_count' work/debian-map/debian-arm64-map-summary.json)" = '0'
+          test "$(jq -r '.selected_asset_count' work/debian-map/debian-arm64-map-summary.json)" -ge 900

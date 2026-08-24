@@ -1,0 +1,144 @@
+name: ARM64 port - build rootfs from recovered exact package pool
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-recovered-exact-rootfs.yml'
+      - 'arm64/scripts/build_recovered_exact_arm64_rootfs.sh'
+      - 'arm64/locks/recovered-package-pool/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-recovered-exact-rootfs
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
+      run_id: ${{ steps.gate.outputs.run_id }}
+    steps:
+      - name: Check out package-pool locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Select latest complete recovered pool
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          latest="$(find arm64/locks/recovered-package-pool -mindepth 2 -maxdepth 2 -type f -name summary.json -printf '%h\n' 2>/dev/null | sort -V | tail -n1 || true)"
+          ready=false
+          run_id=''
+          if [ -n "$latest" ]; then
+            run_id="$(basename "$latest")"
+            if jq -e '.repository_ready == true and .blocker_count == 0' "$latest/summary.json" >/dev/null; then
+              ready=true
+            fi
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          printf 'ready=%s run_id=%s\n' "$ready" "$run_id"
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.ready == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 300
+    steps:
+      - name: Check out exact rootfs builder
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download complete recovered package repository
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: recovered-exact-arm64-package-pool-${{ needs.gate.outputs.run_id }}
+          path: work/pool
+
+      - name: Install native ARM64 rootfs tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mmdebstrap debootstrap debian-archive-keyring \
+            python3 jq dpkg-dev file rsync squashfs-tools zstd ca-certificates
+          chmod +x arm64/scripts/build_recovered_exact_arm64_rootfs.sh
+
+      - name: Build and verify exact recovered-package rootfs
+        shell: bash
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        run: |
+          set -o pipefail
+          rm -rf work/rootfs work/evidence
+          mkdir -p work/evidence
+          sudo -E arm64/scripts/build_recovered_exact_arm64_rootfs.sh \
+            work/pool/package-repository \
+            work/pool/recovery/recovery.json \
+            work/rootfs \
+            work/evidence \
+            2>&1 | tee work/evidence/workflow.log
+          sudo chown -R "$(id -u):$(id -g)" work/rootfs work/evidence
+          jq -e '.passed == true and (.x86_elf | length) == 0' \
+            work/evidence/rootfs-verification.json
+
+      - name: Produce deterministic rootfs images
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo mksquashfs work/rootfs work/evidence/filesystem.squashfs \
+            -noappend -comp xz -b 1M -Xdict-size 100% \
+            -all-root -all-time 0 -mkfs-time 0 -processors "$(nproc)"
+          sudo chown "$(id -u):$(id -g)" work/evidence/filesystem.squashfs
+          sudo tar --sort=name --mtime='@0' --numeric-owner --owner=0 --group=0 \
+            -C work/rootfs -cf - . | zstd -19 -T0 -o work/evidence/rootfs.tar.zst
+          cp work/pool/recovery/recovery.json work/evidence/package-recovery.json
+          find work/evidence -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > work/evidence/SHA256SUMS
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg artifact 'hancom-gooroom-3.3-arm64-recovered-exact-rootfs' \
+            '{schema:1,actions_run_id:$run_id,artifact_name:$artifact}' \
+            > work/evidence/artifact-lock.json
+
+      - name: Upload verified exact recovered rootfs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-recovered-exact-rootfs
+          path: work/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact rootfs evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/recovered-rootfs
+          mkdir -p arm64/locks/recovered-rootfs
+          cp work/evidence/rootfs-verification.json arm64/locks/recovered-rootfs/
+          cp work/evidence/rootfs-build.json arm64/locks/recovered-rootfs/
+          cp work/evidence/artifact-lock.json arm64/locks/recovered-rootfs/
+          cp work/evidence/SHA256SUMS arm64/locks/recovered-rootfs/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/recovered-rootfs
+          git commit -m 'Lock recovered exact ARM64 rootfs'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1

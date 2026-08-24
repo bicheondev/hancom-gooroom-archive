@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "gnome-panel",
+  "source_version": "3.38.0-1+grm3u1",
+  "repository_full_name": "gooroom/gnome-panel",
+  "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
+  "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
+  "expected_native_binary_versions": {
+    "gnome-panel": "3.38.0-1+grm3u1",
+    "libgnome-panel0": "3.38.0-1+grm3u1"
+  },
+  "produced_package_count": 5,
+  "packages": [
+    {
+      "filename": "gnome-panel-dbgsym_3.38.0-1+grm3u1_arm64.deb",
+      "sha256": "8101175a6f2d48c66dbb212c17f06132b02ee6ab4b568221c48999f251e70178",
+      "size": 1028884,
+      "package": "gnome-panel-dbgsym",
+      "version": "3.38.0-1+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gnome-panel",
+      "parsed_source": "gnome-panel",
+      "parsed_source_version": "3.38.0-1+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 12,
+      "elf_machine_counts": {
+        "aarch64": 11
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "gnome-panel_3.38.0-1+grm3u1_arm64.deb",
+      "sha256": "5f14e1fdb4ed5150c83e6f9711245ddb3bf7de9a676e13ad53881db31b4b0cbe",
+      "size": 357472,
+      "package": "gnome-panel",
+      "version": "3.38.0-1+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "gnome-panel",
+      "parsed_source_version": "3.38.0-1+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 15,
+      "elf_machine_counts": {
+        "aarch64": 10
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "libgnome-panel-dev_3.38.0-1+grm3u1_arm64.deb",
+      "sha256": "176a12c8db8dbf4c090041cb713b1e11a4f6c1bdfb09d6a88fed2eede9296311",
+      "size": 39756,
+      "package": "libgnome-panel-dev",
+      "version": "3.38.0-1+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gnome-panel",
+      "parsed_source": "gnome-panel",
+      "parsed_source_version": "3.38.0-1+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 14,
+      "elf_machine_counts": {},
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "libgnome-panel0-dbgsym_3.38.0-1+grm3u1_arm64.deb",
+      "sha256": "499f9035e97ec4de2526a11deebfdfd6226681a2dea28389ffc59ee29d05164a",
+      "size": 68980,
+      "package": "libgnome-panel0-dbgsym",
+      "version": "3.38.0-1+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gnome-panel",
+      "parsed_source": "gnome-panel",
+      "parsed_source_version": "3.38.0-1+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "libgnome-panel0_3.38.0-1+grm3u1_arm64.deb",
+      "sha256": "5bd04c57c8c4ef8843b3ed6759892f450973bf9e8e57100585ee842b65ca12d7",
+      "size": 52480,
+      "package": "libgnome-panel0",
+      "version": "3.38.0-1+grm3u1",
+      "architecture": "arm64",
+      "source_field": "gnome-panel",
+      "parsed_source": "gnome-panel",
+      "parsed_source_version": "3.38.0-1+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 5,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "gnome-panel",
+    "source_version": "3.38.0-1+grm3u1",
+    "repository": "gooroom/gnome-panel",
+    "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
+    "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
+    "source_archive_sha256": "96218dee83f31a431a6d53d2c6bd76b109c5b581552ddbf3bf10a900d10e6665",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gnome-panel",
+      "libgnome-panel0"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "gnome-panel",
+      "gnome-panel-dbgsym",
+      "libgnome-panel-dev",
+      "libgnome-panel0",
+      "libgnome-panel0-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gnome-panel",
+    "source_version": "3.38.0-1+grm3u1",
+    "repository": "gooroom/gnome-panel",
+    "commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
+    "tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
+    "verified_commit_sha": "e64437b876dd907b082bb3709541eb27997958ee",
+    "verified_tree_sha": "84a8082db1aaa90f83bacc5606a23e13c2addd0d",
+    "deterministic_source_archive_sha256": "96218dee83f31a431a6d53d2c6bd76b109c5b581552ddbf3bf10a900d10e6665"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}

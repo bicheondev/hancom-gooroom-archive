@@ -1,0 +1,148 @@
+name: ARM64 upgrade session manager semantic verifier v3
+run-name: "ARM64 session-manager semantic verifier v3 · ${{ github.sha }}"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-upgrade-session-manager-semantic-verifier-v3.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-upgrade-session-manager-semantic-verifier-v3
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install canonical runtime semantic verifier
+        shell: bash
+        env:
+          TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
+        run: |
+          set -uo pipefail
+          rm -rf work/session-manager-semantic-verifier-v3
+          mkdir -p work/session-manager-semantic-verifier-v3 \
+                   arm64/status/session-manager-semantic-verifier-v3
+          set +e
+          python3 - <<'PY_PATCH' 2>&1 | tee work/session-manager-semantic-verifier-v3/patch.log
+          import base64
+          import gzip
+          import os
+          from pathlib import Path
+
+          def decode(value: str) -> str:
+              return gzip.decompress(base64.b64decode(value)).decode('utf-8')
+
+          path = Path(os.environ['TARGET'])
+          text = path.read_text(encoding='utf-8')
+          if 'Canonicalize runtime semantics v3' in text:
+              print('Session-manager semantic verifier v3 is already installed.')
+              raise SystemExit(0)
+
+          canonical_step = decode('H4sIACPKhmoC/7VYW2/bNhR+968gigGSUEtFGmwYjDhA23VbH9oFS/pQZIFAS7TNhKJUkkrspfnvO6RulETZKdDlwZHJcz/fucgI6b8QcZyRBXqHec5pghn9lyBRckUzgiTJMDwlEt2fzlD9J7eEsQVaYbltz4Bhgb61X4GIKBSScpejghZkjSmzLou92ub8FHSfnXkXX+J3bz799cmzCGhW5EKhLahgdDW+uJU5t07XIs9QgZUmbkgu4OvMoknJGizHr3/+JVZkp3z9sUBSiQCF5/r/wiI2LhFVCt7YEFW8hi0iPMlT4nulWoe/ekEQbckupRsilR8MdfJcZCaosSA4JWx9XDOjnEi0RNf6Aa1zYU4Q5cholwWjytD4AaJr5L0tKUvRh98WHmhTmk7f3rj98f7hXnSbU+4bEQF6aY6mzc5Xt2mZFd9h9lDzQQ+GUkyWwalFxUqZiUCGFfIaz1wsjQGg3ztbUY7F/twl4qWhqizwXUrm6CS4PrmZucXLCBcF4akJXvCDIsyzZ6Oxkz0KpEtP0hR1nFIBodFF4XsPubh71V55wRRDlN3Bp19gQbiSyytRkjkiOypVnN+ZrzZr64/QIHgc2O/V6IeQjypiPqStIdejrc9GtDzrkfHMpniynsnXEjNtmX2oq9uAtneqAau74txySoPPcjGiimQO+CosNtD6lhatb6K+rsJe3YePWvxTpHbKCyIdhqopmcZC+WZZtxYItxC5kEsIX8FwQqDZDBRCxlKaYkWmdbYkP1Ct34fWK7T2XK49CIhT3XDNNYgeKHuG5AkHLOEtxXH5BgfXWs4NhKzJ17IL5IC+gkjL8OjoDLXrcTUjAI+9QWPugrmLr9XpZm2vR9xPdpVDkmDixXoA9mscaiuEAlM4lGWWQUuM9ODsRaTiBTZ9E7Ecp9K35B0ASQ8SUuUCb6BKOdvHkiSK5tyUlReley73GWCqelTCs0stIwqDh9jFueFlnJJVuYEOd2cEwHgj+jha6ZEX0rQnCzOWP5AUYLNeE92zbHluC79NGDAbiE0gCamWQlQdngiS6nvtXas0ITImu4SVOlaxsTMGO+cwFnsRa410SB07MOZPAPy6SIDdZm2OW87Y4B34H596ea82vLilb9ojeOQPwLbKc+bfY1aOJl7XKM217pGNwKZBzkajXTM0i4ozKxaLzV5ysiuABILdSwn4TlK/OwrdUidE2RCpJHWZCQ9AyoV+SQTV/RdrCqMdpA6j2Rl6tjzqv2HgqYWWs+UBo3qR623j1R4f35+CRSafo/2iw9BWj2XRAud3zOQo89oom6e2INbJBXPU93HrdfoZHE7MHhHdtGaYil6g+3xPb9d/zb1DVjUu2vXlZpqk2VoOkMCy4rqdxo+DWFeOqxSOkx5DSTt4XftbN5VlsgU4wag6mU8TFTmjyR6IurOwjmFYByrkWViwUoZ1XsMmr2FjaPhA1TasBkhYDY+wjlWYC8BoqHJGBIam6x2wpdZbA2wxSukB1trUIWub6gOsPBty6ewfYKgWDSCvHkaUI/gPWvxiokBGgqbhpvePycuRnKYPNSzWCNSCqm7q7sWTstpx7BTmHtZjaa76GEh0kRyS0zS4SSmNNeNwN80XskFhTuqGfX+qneq68tRLi+uFra2X9teZeq2zF+KBEWa705CV3Xo9hwGcgjHL13MT3/iO7Ku3vOZVcujK6D1hYlLXLbYsdGvtFAbunfV5ZlcM/5/NejGBdmnlZPQKjqkk6HIvYbF5v9M/H7S/mY1+MENtrhMCw7tqxQWWsjdjmp++rKPbr7DmeuhZGUfn5+jFT398uPrz89v48ur9RXz5+ePHN39/eTGb/QeKdD6e3RMAAA==')
+          seal_marker = decode('H4sIACPKhmoC/1NQAAFdhbzE3FQrheDUxByF5PzcgsTkEoXi1NzEvJLMZIXE0pKM/KLMkkouAMilSsguAAAA')
+          if text.count(seal_marker) != 1:
+              raise SystemExit(f'seal marker count was {text.count(seal_marker)}, expected 1')
+          text = text.replace(seal_marker, canonical_step + seal_marker, 1)
+
+          replacements = [
+              ('semantic block', decode('H4sIACPKhmoC/23MMQqAMAxA0d1TZGsF8QauXkKkpDZIISZaq6CnFwdBwT8/PsDTShNKjgM04FXZFvAp0awpd+ZhjpYt7sgk2fSAEn59PVK2RjRNyPGk4ETFBfLb6HwUTMe9QTYVtMgrla9JWVwtsLvonAAAAA=='), decode('H4sIACPKhmoC/1NQgIHi1NzEvJLMZAVbhaT8/ByNotSC/KISvfTUEg11mFx8amFpZlliTmpeSXyZsbqOgltiTnGqpiYXAMhOLi9HAAAA')),
+              ('authority schema', decode('H4sIACPKhmoC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCowwUAbUNpsjMAAAA='), decode('H4sIACPKhmoC/1NQgIHE0pKM/KLMkkoFW4VqLgUUoF6cnJGam6hupWCkwwUANP0vsDMAAAA=')),
+              ('authority policy', decode('H4sIACPKhmoC/02MQQqDQAxF9z3F7GZjLtDbxCRKIE3UmYj19E53/fDgwYNfyv/qFqb0re9S5ULqILZAHOBxfND0Fh7qwDLnCptlAzT7EYR9xCbUNbyB7Kknmvi4uMiS1VeYU41BuU6vB3F3ToN3AAAA'), decode('H4sIACPKhmoC/02LMQ7DMAzE9r7Cm5felK2/EWQ1MWBLhay28e8TZAoXcmFKd/LHWuWZXynLThyQ9oY5mNS0MjX4V6N2wZBOZ/HAb8G/xoYydcx+KRwjzGmVcy7iCGvipCz5+TgAGyqzEHIAAAA=')),
+              ('authority evidence copy', decode('H4sIACPKhmoC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4AaJjRLTEAAAA='), decode('H4sIACPKhmoC/1NQgIHkAoXy/KJs/bz8otzEnMyq1BS94oxEI1MzBSUVH39n73gXzyB9JS4FDA3JiXn5eZnJiTm6RaV5JZm5qbrFqbmJQFZysV5WcX4eHv26iWhGoKoFACS4+PadAAAA')),
+              ('authority evidence fields', decode('H4sIACPKhmoC/1NQQAfqeflFuYk5mVWpKfF5+XnxKalJpenxSZl5iUWV8amFpYk56lYKRakF+UUleumpJRpEqNdRcEvMKU7V1OECAIHjUF5vAAAA'), decode('H4sIACPKhmoC/42SQW7DIBBF9z0Fu7SS1U12OUAvUVVoDGOLCAZ3gLTJ6QNVWqkOwbBi8f77IwYh1mdHnh1Yc0EtyZPUOKZZjoaAzxI/E9jdQTAunuPrjPG5gx/EG9iAL8OTuK9TkFNGgZWMoNFO1ZJHVKfaj0ed3LKh/k91qsltWP+AppATReNQKjbxJxZQReMpVO1bdLMqRM8wY86wKYuDkpSe7HnV0gDbBeggz6fKMOYEFinK034tr0NNMVjrv/I/+x1Mm2lCRlIYVvYWOYj3j7o/EX4v+SVzsAgUlNvjkk28q+m2ur6eGnxruQLMxijOywMAAA==')),
+          ]
+          for label, old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} anchor count was {count}, expected 1')
+              text = text.replace(old, new, 1)
+
+          required = [
+              'name: Canonicalize runtime semantics v3',
+              "semantic = bool(report.get('semantic_equivalent_v3', False))",
+              "'schema': 2",
+              'canonical-runtime-semantics.json',
+          ]
+          missing = [needle for needle in required if needle not in text]
+          if missing:
+              raise SystemExit(f'missing post-patch markers: {missing}')
+          path.write_text(text, encoding='utf-8')
+          PY_PATCH
+          rc=${PIPESTATUS[0]}
+          set -e
+          export PATCH_RC="$rc"
+          python3 - <<'PY_STATUS'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          target = Path(os.environ['TARGET'])
+          rc = int(os.environ['PATCH_RC'])
+          status_dir = Path('arm64/status/session-manager-semantic-verifier-v3')
+          status_dir.mkdir(parents=True, exist_ok=True)
+          log = Path('work/session-manager-semantic-verifier-v3/patch.log')
+          result = {
+              'schema': 1,
+              'generated_at': datetime.now(timezone.utc).isoformat(),
+              'patch_exit_code': rc,
+              'patched': rc == 0 and 'Canonicalize runtime semantics v3' in target.read_text(encoding='utf-8'),
+              'target': str(target),
+              'target_size': target.stat().st_size,
+              'log_tail': log.read_text(encoding='utf-8', errors='replace').splitlines()[-80:] if log.exists() else [],
+          }
+          (status_dir / 'latest.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          if log.exists():
+              (status_dir / 'patch.log').write_text(log.read_text(encoding='utf-8', errors='replace'), encoding='utf-8')
+          PY_STATUS
+
+      - name: Commit verifier upgrade or diagnostics
+        if: always()
+        shell: bash
+        env:
+          TARGET: .github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml
+        run: |
+          set -euxo pipefail
+          status=arm64/status/session-manager-semantic-verifier-v3/latest.json
+          test -s "$status"
+          rc="$(jq -r '.patch_exit_code' "$status")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$TARGET" arm64/status/session-manager-semantic-verifier-v3
+          if git diff --cached --quiet; then
+            test "$rc" = 0
+            exit 0
+          fi
+          if [ "$rc" = 0 ]; then
+            message='ci(arm64): canonicalize session-manager runtime semantics'
+          else
+            message='Record session-manager semantic verifier v3 failure'
+          fi
+          git commit -m "$message"
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin arm64-port && git push origin HEAD:arm64-port; then
+              pushed=true
+              break
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          test "$pushed" = true
+          test "$rc" = 0

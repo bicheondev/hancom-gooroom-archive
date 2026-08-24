@@ -1,0 +1,164 @@
+name: ARM64 port - audit blocked vendor app payload neutrality
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-vendor-app-payload-neutrality.yml'
+      - 'arm64/scripts/audit_vendor_app_payload_neutrality.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-vendor-app-payload-neutrality
+  cancel-in-progress: true
+
+env:
+  VENDOR_BINARY_RUN_ID: '31097604490'
+  VENDOR_BINARY_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact locks and neutrality auditor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic Debian package inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file jq python3
+          python3 -m py_compile arm64/scripts/audit_vendor_app_payload_neutrality.py
+
+      - name: Download the immutable exact AMD64 vendor package pool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/vendor-app-payload-neutrality
+          rm -rf "$base"
+          mkdir -p "$base"/{download,evidence}
+          gh run download "$VENDOR_BINARY_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_BINARY_ARTIFACT" \
+            --dir "$base/download"
+          find "$base/download" -type f -name '*.deb' -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$base/evidence/vendor-deb-inventory.tsv"
+          test "$(find "$base/download" -type f -name '*.deb' | wc -l)" -gt 0
+
+      - name: Audit and deterministically repack only architecture-neutral candidates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/vendor-app-payload-neutrality
+          python3 arm64/scripts/audit_vendor_app_payload_neutrality.py \
+            --deb-root "$base/download" \
+            --output-dir "$base/evidence"
+          jq -e '
+            .schema == 1
+            and .target_count == 4
+            and .exact_deb_selected_count == 4
+            and .repack_candidate_count >= 0
+            and .repack_candidate_count <= 4
+            and .native_source_required_count + .repack_candidate_count == .target_count
+            and .promotion_allowed == false
+          ' "$base/evidence/summary.json" >/dev/null
+
+      - name: Independently verify every candidate repack
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/vendor-app-payload-neutrality/evidence
+          while IFS= read -r package; do
+            test -n "$package"
+            result="$base/$package/result.json"
+            test -f "$result"
+            deb="$base/$package/$(jq -er '.repacked_deb' "$result")"
+            test -f "$deb"
+            test "$(dpkg-deb -f "$deb" Package)" = "$package"
+            test "$(dpkg-deb -f "$deb" Architecture)" = arm64
+            test "$(dpkg-deb -f "$deb" Version)" = "$(jq -er '.version' "$result")"
+            expected="$(jq -er '.repacked_deb_sha256' "$result")"
+            printf '%s  %s\n' "$expected" "$deb" | sha256sum --check --strict
+            jq -e '
+              .repack_candidate == true
+              and .repacked == true
+              and .data_payload_byte_identical == true
+              and .byte_identity_claimed_for_data_payload_only == true
+              and .original_source_recovered == false
+              and (.repacked_payload_scan.native_payloads | length) == 0
+              and (.repacked_payload_scan.architecture_specific_paths | length) == 0
+              and .promotion_allowed == false
+            ' "$result" >/dev/null
+          done < <(jq -r '.candidate_packages[]' "$base/summary.json")
+
+      - name: Seal the complete positive and negative evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/vendor-app-payload-neutrality/evidence
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          {
+            echo '## Vendor app payload neutrality audit'
+            echo
+            echo '```json'
+            cat "$evidence/summary.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload audit evidence and unpromoted candidate DEBs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-vendor-app-payload-neutrality
+          path: work/vendor-app-payload-neutrality/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact audit authority without promoting packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/vendor-app-payload-neutrality/evidence
+          destination=arm64/locks/vendor-app-payload-neutrality/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          find "$source" -type f ! -name '*.deb' -print0 \
+            | while IFS= read -r -d '' path; do
+                relative="${path#"$source"/}"
+                mkdir -p "$destination/$(dirname "$relative")"
+                cp "$path" "$destination/$relative"
+              done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit blocked vendor app payload neutrality'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

@@ -1,0 +1,112 @@
+name: ARM64 instrument - preserve gnome-flashback ARM64 verifier failure evidence
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-instrument-gnome-flashback-arm64-verifier-v1
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add fail-closed verifier transcript and candidate-DEB preservation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin arm64-port
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml')
+          text = workflow.read_text(encoding='utf-8')
+
+          old_verify = '''          rm -rf work/arm64-verification work/arm64-artifact
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_arm64.py \\
+            --target-deb-dir work/target-debs \\
+            --candidate-deb-dir work/arm64-build/debs \\
+            --output-dir work/arm64-verification
+          jq -e '
+          '''
+          new_verify = '''          rm -rf work/arm64-verification work/arm64-artifact
+          rm -f work/arm64-verifier.stdout work/arm64-verifier.stderr \\
+            work/arm64-verifier.exit-status
+          set +e
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_arm64.py \\
+            --target-deb-dir work/target-debs \\
+            --candidate-deb-dir work/arm64-build/debs \\
+            --output-dir work/arm64-verification \\
+            >work/arm64-verifier.stdout \\
+            2>work/arm64-verifier.stderr
+          verifier_status=$?
+          set -e
+          printf '%s\\n' "$verifier_status" > work/arm64-verifier.exit-status
+          cat work/arm64-verifier.stdout
+          cat work/arm64-verifier.stderr >&2
+          test "$verifier_status" -eq 0
+          jq -e '
+          '''
+          if text.count(old_verify) != 1:
+              raise SystemExit(f'verifier anchor count mismatch: {text.count(old_verify)}')
+          text = text.replace(old_verify, new_verify)
+
+          old_diag = '''            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+            work/arm64-verification
+            work/arm64-artifact/verification-summary.json
+          '''
+          new_diag = '''            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+            work/arm64-build/debs
+            work/arm64-verification
+            work/arm64-artifact/verification-summary.json
+            work/arm64-verifier.stdout
+            work/arm64-verifier.stderr
+            work/arm64-verifier.exit-status
+          '''
+          if text.count(old_diag) != 1:
+              raise SystemExit(f'diagnostic anchor count mismatch: {text.count(old_diag)}')
+          text = text.replace(old_diag, new_diag)
+          workflow.write_text(text, encoding='utf-8')
+          PY
+          git diff --check
+          grep -Fq 'work/arm64-verifier.stderr' \
+            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          grep -Fq 'work/arm64-build/debs' \
+            .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+
+          git rm .github/workflows/arm64-instrument-gnome-flashback-arm64-verifier-v1.yml
+          git add .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+          git diff --cached --check
+          git commit -m 'Preserve gnome-flashback ARM64 verifier failure evidence'
+
+      - name: Publish the instrumented workflow
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin arm64-port
+            if git rebase origin/arm64-port && git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1

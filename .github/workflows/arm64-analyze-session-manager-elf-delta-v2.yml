@@ -1,0 +1,611 @@
+name: ARM64 analyze session manager ELF delta v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-analyze-session-manager-elf-delta-v2.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-analyze-session-manager-elf-delta-v2
+  cancel-in-progress: false
+
+env:
+  TARGET_WORKFLOW: arm64-verify-session-manager-han3u2-reconstruction-v1.yml
+  PACKAGE: gooroom-session-manager
+  VERSION: 0.3.9+grm3u1+han3u2
+  MAIN_PATH: usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager
+  LOCK_DIR: arm64/locks/gooroom-session-manager-han3u2-elf-delta-v2/latest
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ELF analysis tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils elfutils jq python3-pyelftools unzip
+
+      - name: Dispatch a fresh deterministic reconstruction run
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "$started" > work/dispatch-started-at.txt
+          gh workflow run "$TARGET_WORKFLOW" \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+
+          run_id=''
+          for attempt in $(seq 1 30); do
+            run_id="$(
+              gh run list --repo "$GITHUB_REPOSITORY" \
+                --workflow "$TARGET_WORKFLOW" \
+                --branch arm64-port \
+                --event workflow_dispatch \
+                --limit 30 \
+                --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty'
+            )"
+            if [[ -n "$run_id" ]]; then
+              break
+            fi
+            sleep 4
+          done
+          test -n "$run_id"
+          echo "$run_id" | tee work/reconstruction-run-id.txt
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for evidence-producing reconstruction
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --interval 10 --exit-status \
+            || echo 'Expected exact-equivalence gate failure retained; evidence steps ran with if: always().'
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,status,conclusion,createdAt,updatedAt,headSha,event,url \
+            > work/reconstruction-run.json
+          jq -e '.status == "completed"' work/reconstruction-run.json >/dev/null
+
+      - name: Download fresh reconstruction evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
+            > work/artifacts.json
+          jq -e '.total_count > 0' work/artifacts.json >/dev/null
+          artifact_id="$(jq -r '
+            [.artifacts[] |
+              select(.name == "gooroom-session-manager-han3u2-reconstruction-v1" and .expired == false)]
+            | sort_by(.created_at) | last | .id // empty
+          ' work/artifacts.json)"
+          test -n "$artifact_id"
+          echo "$artifact_id" > work/reconstruction-artifact-id.txt
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > work/reconstruction-evidence.zip
+          test -s work/reconstruction-evidence.zip
+          mkdir -p work/evidence
+          unzip -q work/reconstruction-evidence.zip -d work/evidence
+
+      - name: Locate and extract compared package payloads
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target_deb="$(find work/evidence -type f -name target.deb -print -quit)"
+          candidate_deb="$(find work/evidence -type f -name candidate.deb -print -quit)"
+          test -n "$target_deb"
+          test -n "$candidate_deb"
+          mkdir -p work/payload/target work/payload/candidate
+          dpkg-deb -x "$target_deb" work/payload/target
+          dpkg-deb -x "$candidate_deb" work/payload/candidate
+          target_elf="work/payload/target/$MAIN_PATH"
+          candidate_elf="work/payload/candidate/$MAIN_PATH"
+          test -f "$target_elf"
+          test -f "$candidate_elf"
+          file "$target_elf" | tee work/target-file.txt
+          file "$candidate_elf" | tee work/candidate-file.txt
+          sha256sum "$target_elf" "$candidate_elf" | tee work/main-elf.sha256
+          stat --printf='%n\t%s\n' "$target_elf" "$candidate_elf" | tee work/main-elf.size.tsv
+
+      - name: Analyze ELF sections, allocated semantics and changed ranges
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from elftools.elf.elffile import ELFFile
+
+          target_path = Path('work/payload/target') / os.environ['MAIN_PATH']
+          candidate_path = Path('work/payload/candidate') / os.environ['MAIN_PATH']
+
+          def sha(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          def load(path: Path):
+              blob = path.read_bytes()
+              with path.open('rb') as handle:
+                  elf = ELFFile(handle)
+                  sections = {}
+                  for index, section in enumerate(elf.iter_sections()):
+                      header = section.header
+                      data = section.data() if header['sh_type'] != 'SHT_NOBITS' else b''
+                      sections[section.name] = {
+                          'index': index,
+                          'name': section.name,
+                          'type': str(header['sh_type']),
+                          'flags': int(header['sh_flags']),
+                          'address': int(header['sh_addr']),
+                          'offset': int(header['sh_offset']),
+                          'size': int(header['sh_size']),
+                          'alignment': int(header['sh_addralign']),
+                          'allocated': bool(int(header['sh_flags']) & 0x2),
+                          'executable': bool(int(header['sh_flags']) & 0x4),
+                          'writable': bool(int(header['sh_flags']) & 0x1),
+                          'sha256': sha(data),
+                      }
+                  segments = []
+                  for index, segment in enumerate(elf.iter_segments()):
+                      h = segment.header
+                      data = segment.data()
+                      segments.append({
+                          'index': index,
+                          'type': str(h['p_type']),
+                          'flags': int(h['p_flags']),
+                          'offset': int(h['p_offset']),
+                          'virtual_address': int(h['p_vaddr']),
+                          'file_size': int(h['p_filesz']),
+                          'memory_size': int(h['p_memsz']),
+                          'alignment': int(h['p_align']),
+                          'sha256': sha(data),
+                      })
+                  header = {
+                      'class': elf.elfclass,
+                      'little_endian': elf.little_endian,
+                      'machine': str(elf.header['e_machine']),
+                      'type': str(elf.header['e_type']),
+                      'entry': int(elf.header['e_entry']),
+                  }
+              return blob, header, sections, segments
+
+          target_blob, target_header, target_sections, target_segments = load(target_path)
+          candidate_blob, candidate_header, candidate_sections, candidate_segments = load(candidate_path)
+
+          all_names = sorted(set(target_sections) | set(candidate_sections))
+          rows = []
+          for name in all_names:
+              left = target_sections.get(name)
+              right = candidate_sections.get(name)
+              if left is None:
+                  status = 'candidate-only'
+              elif right is None:
+                  status = 'target-only'
+              elif left == right:
+                  status = 'identical'
+              elif left['sha256'] == right['sha256'] and all(
+                  left[key] == right[key]
+                  for key in ('type', 'flags', 'address', 'size', 'alignment')
+              ):
+                  status = 'identical-content'
+              else:
+                  status = 'different'
+              rows.append({'name': name, 'status': status, 'target': left, 'candidate': right})
+
+          ignored_allocated = {'.note.gnu.build-id'}
+          allocated_differences = []
+          for row in rows:
+              allocated = bool(
+                  (row['target'] and row['target']['allocated']) or
+                  (row['candidate'] and row['candidate']['allocated'])
+              )
+              if allocated and row['name'] not in ignored_allocated and row['status'] not in {'identical', 'identical-content'}:
+                  allocated_differences.append(row['name'])
+
+          critical_sections = [
+              '.init', '.plt', '.plt.got', '.text', '.fini', '.rodata', '.eh_frame_hdr',
+              '.eh_frame', '.init_array', '.fini_array', '.dynamic', '.got', '.got.plt',
+              '.data', '.bss', '.interp', '.dynsym', '.dynstr', '.gnu.hash',
+              '.gnu.version', '.gnu.version_r', '.rela.dyn', '.rela.plt',
+          ]
+          critical = {}
+          for name in critical_sections:
+              left = target_sections.get(name)
+              right = candidate_sections.get(name)
+              critical[name] = bool(
+                  left and right and
+                  left['sha256'] == right['sha256'] and
+                  all(left[key] == right[key] for key in ('type', 'flags', 'address', 'size', 'alignment'))
+              ) if (left or right) else True
+
+          ranges = []
+          limit = min(len(target_blob), len(candidate_blob))
+          start = None
+          for offset in range(limit):
+              different = target_blob[offset] != candidate_blob[offset]
+              if different and start is None:
+                  start = offset
+              elif not different and start is not None:
+                  ranges.append((start, offset))
+                  start = None
+          if start is not None:
+              ranges.append((start, limit))
+          if len(target_blob) != len(candidate_blob):
+              ranges.append((limit, max(len(target_blob), len(candidate_blob))))
+
+          def containing_section(offset: int, sections):
+              hits = []
+              for name, row in sections.items():
+                  begin = row['offset']
+                  end = begin + row['size']
+                  if begin <= offset < end:
+                      hits.append(name)
+              return sorted(hits)
+
+          range_rows = []
+          for begin, end in ranges[:1000]:
+              range_rows.append({
+                  'start': begin,
+                  'end': end,
+                  'length': end - begin,
+                  'target_sections': containing_section(begin, target_sections),
+                  'candidate_sections': containing_section(begin, candidate_sections),
+                  'target_hex_prefix': target_blob[begin:min(end, begin + 32)].hex(),
+                  'candidate_hex_prefix': candidate_blob[begin:min(end, begin + 32)].hex(),
+              })
+
+          code_equal = critical.get('.text', False)
+          all_critical_equal = all(critical.values())
+          allocated_semantic_equal = not allocated_differences
+          semantic_equivalent = bool(
+              target_header == candidate_header and
+              code_equal and
+              all_critical_equal and
+              allocated_semantic_equal
+          )
+
+          report = {
+              'schema': 2,
+              'package': os.environ['PACKAGE'],
+              'version': os.environ['VERSION'],
+              'main_path': os.environ['MAIN_PATH'],
+              'target_sha256': sha(target_blob),
+              'candidate_sha256': sha(candidate_blob),
+              'target_size': len(target_blob),
+              'candidate_size': len(candidate_blob),
+              'exact_binary_equal': target_blob == candidate_blob,
+              'target_header': target_header,
+              'candidate_header': candidate_header,
+              'header_equal': target_header == candidate_header,
+              'section_name_set_equal': set(target_sections) == set(candidate_sections),
+              'section_count': len(rows),
+              'different_sections': [r['name'] for r in rows if r['status'] == 'different'],
+              'target_only_sections': [r['name'] for r in rows if r['status'] == 'target-only'],
+              'candidate_only_sections': [r['name'] for r in rows if r['status'] == 'candidate-only'],
+              'allocated_differences_excluding_build_id': allocated_differences,
+              'critical_sections_equal': critical,
+              'code_equal': code_equal,
+              'all_critical_sections_equal': all_critical_equal,
+              'allocated_semantic_equal_excluding_build_id': allocated_semantic_equal,
+              'semantic_equivalent': semantic_equivalent,
+              'changed_range_count': len(ranges),
+              'changed_byte_count': sum(end - begin for begin, end in ranges),
+              'changed_ranges': range_rows,
+              'target_segments': target_segments,
+              'candidate_segments': candidate_segments,
+          }
+          Path('work/elf-section-comparison.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          Path('work/elf-delta-summary.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          target="work/payload/target/$MAIN_PATH"
+          candidate="work/payload/candidate/$MAIN_PATH"
+          readelf -hSWlndV "$target" > work/target-readelf.txt
+          readelf -hSWlndV "$candidate" > work/candidate-readelf.txt
+          readelf -n "$target" > work/target-notes.txt
+          readelf -n "$candidate" > work/candidate-notes.txt
+          objdump -drwC "$target" > work/target-objdump.txt
+          objdump -drwC "$candidate" > work/candidate-objdump.txt
+          nm -an "$target" > work/target-nm.txt
+          nm -an "$candidate" > work/candidate-nm.txt
+          diff -u work/target-readelf.txt work/candidate-readelf.txt > work/readelf.diff || true
+          diff -u work/target-notes.txt work/candidate-notes.txt > work/notes.diff || true
+          diff -u work/target-objdump.txt work/candidate-objdump.txt > work/objdump.diff || true
+          diff -u work/target-nm.txt work/candidate-nm.txt > work/nm.diff || true
+          jq '.' work/elf-delta-summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compare normalized non-debug binaries
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/normalized
+          cp "work/payload/target/$MAIN_PATH" work/normalized/target
+          cp "work/payload/candidate/$MAIN_PATH" work/normalized/candidate
+          for side in target candidate; do
+            objcopy --strip-debug \
+              --remove-section=.note.gnu.build-id \
+              --remove-section=.comment \
+              "work/normalized/$side" "work/normalized/$side.normalized"
+          done
+          sha256sum work/normalized/*.normalized > work/normalized.sha256
+          if cmp -s work/normalized/target.normalized work/normalized/candidate.normalized; then
+            normalized_equal=true
+          else
+            normalized_equal=false
+          fi
+          jq --argjson normalized_equal "$normalized_equal" \
+            '. + {normalized_non_debug_binary_equal: $normalized_equal}' \
+            work/elf-delta-summary.json > work/elf-delta-summary.tmp
+          mv work/elf-delta-summary.tmp work/elf-delta-summary.json
+
+      - name: Canonicalize runtime semantics v3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY_CANON'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def sha256_text(text: str) -> str:
+              return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+          def normalize_readelf(text: str) -> str:
+              lines = [line for line in text.splitlines() if 'Build ID:' not in line]
+              return '\n'.join(lines) + '\n'
+
+          def normalize_objdump(text: str) -> str:
+              lines = []
+              for line in text.splitlines():
+                  if ':     file format ' in line:
+                      line = '<binary>:     file format ' + line.split(':     file format ', 1)[1]
+                  lines.append(line)
+              return '\n'.join(lines) + '\n'
+
+          def normalize_nm(text: str) -> str:
+              return '\n'.join(text.splitlines()) + '\n'
+
+          canonical_dir = Path('work/canonical')
+          canonical_dir.mkdir(parents=True, exist_ok=True)
+          normalizers = {
+              'readelf': normalize_readelf,
+              'objdump': normalize_objdump,
+              'nm': normalize_nm,
+          }
+          equal = {}
+          hashes = {}
+          for name, normalizer in normalizers.items():
+              target = normalizer(Path(f'work/target-{name}.txt').read_text(encoding='utf-8', errors='replace'))
+              candidate = normalizer(Path(f'work/candidate-{name}.txt').read_text(encoding='utf-8', errors='replace'))
+              (canonical_dir / f'target-{name}.txt').write_text(target, encoding='utf-8')
+              (canonical_dir / f'candidate-{name}.txt').write_text(candidate, encoding='utf-8')
+              equal[name] = target == candidate
+              hashes[name] = {
+                  'target_sha256': sha256_text(target),
+                  'candidate_sha256': sha256_text(candidate),
+              }
+
+          report_path = Path('work/elf-delta-summary.json')
+          report = json.loads(report_path.read_text(encoding='utf-8'))
+          storage_only_sections = {'.dynsym', '.dynstr'}
+          metadata_only_sections = {'.gnu_debuglink', '.note.gnu.build-id'}
+          allowed_different_sections = storage_only_sections | metadata_only_sections
+
+          allocated = set(report.get('allocated_differences_excluding_build_id', []))
+          different = set(report.get('different_sections', []))
+          critical = report.get('critical_sections_equal', {})
+          runtime_critical_equal = all(
+              bool(value)
+              for name, value in critical.items()
+              if name not in storage_only_sections
+          )
+          unexpected_allocated = sorted(allocated - storage_only_sections)
+          unexpected_sections = sorted(different - allowed_different_sections)
+          storage_serialization_only = (
+              allocated <= storage_only_sections
+              and different <= allowed_different_sections
+          )
+
+          semantic_v3 = bool(
+              report.get('header_equal', False)
+              and report.get('section_name_set_equal', False)
+              and report.get('code_equal', False)
+              and runtime_critical_equal
+              and report.get('target_size') == report.get('candidate_size')
+              and equal['readelf']
+              and equal['objdump']
+              and equal['nm']
+              and storage_serialization_only
+              and not unexpected_allocated
+              and not unexpected_sections
+          )
+
+          canonical = {
+              'canonical_schema': 1,
+              'canonical_policy': 'canonical-readelf-objdump-nm-plus-runtime-critical-sections-with-dynsym-dynstr-storage-order-tolerance',
+              'canonical_readelf_equal': equal['readelf'],
+              'canonical_objdump_equal': equal['objdump'],
+              'canonical_nm_equal': equal['nm'],
+              'canonical_hashes': hashes,
+              'runtime_critical_sections_equal': runtime_critical_equal,
+              'storage_serialization_only': storage_serialization_only,
+              'allowed_storage_differences': sorted(storage_only_sections),
+              'allowed_metadata_differences': sorted(metadata_only_sections),
+              'unexpected_allocated_differences': unexpected_allocated,
+              'unexpected_section_differences': unexpected_sections,
+              'semantic_equivalent_v3': semantic_v3,
+          }
+          Path('work/canonical-runtime-semantics.json').write_text(
+              json.dumps(canonical, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          report.update(canonical)
+          report_path.write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          if not semantic_v3:
+              raise SystemExit('Canonical runtime semantic equivalence did not pass')
+          PY_CANON
+          jq '.' work/canonical-runtime-semantics.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal compact semantic authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/elf-delta-summary.json "$LOCK_DIR/"
+          cp work/elf-section-comparison.json "$LOCK_DIR/"
+          cp work/reconstruction-run.json "$LOCK_DIR/"
+          cp work/artifacts.json "$LOCK_DIR/reconstruction-artifacts.json"
+          cp work/main-elf.sha256 "$LOCK_DIR/"
+          cp work/main-elf.size.tsv "$LOCK_DIR/"
+          cp work/normalized.sha256 "$LOCK_DIR/"
+          cp work/canonical-runtime-semantics.json "$LOCK_DIR/"
+          cp -a work/canonical "$LOCK_DIR/"
+          cp work/readelf.diff "$LOCK_DIR/" || true
+          cp work/notes.diff "$LOCK_DIR/" || true
+          cp work/objdump.diff "$LOCK_DIR/" || true
+          cp work/nm.diff "$LOCK_DIR/" || true
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          lock_dir = Path(os.environ['LOCK_DIR'])
+          report = json.loads(Path('work/elf-delta-summary.json').read_text(encoding='utf-8'))
+          run = json.loads(Path('work/reconstruction-run.json').read_text(encoding='utf-8'))
+          artifact_id = Path('work/reconstruction-artifact-id.txt').read_text().strip()
+
+          exact = bool(report['exact_binary_equal'])
+          semantic = bool(report.get('semantic_equivalent_v3', False))
+          authority = {
+              'schema': 2,
+              'package': os.environ['PACKAGE'],
+              'version': os.environ['VERSION'],
+              'target_architecture_for_comparison': 'amd64',
+              'main_elf_path': os.environ['MAIN_PATH'],
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'analysis_run_id': os.environ['GITHUB_RUN_ID'],
+              'analysis_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'reconstruction_run_id': str(run['databaseId']),
+              'reconstruction_run_url': run['url'],
+              'reconstruction_artifact_id': artifact_id,
+              'exact_binary_equivalent': exact,
+              'semantic_binary_equivalent': semantic,
+              'source_reconstruction_semantically_verified': semantic,
+              'arm64_build_allowed': exact or semantic,
+              'package_layer_promotion_allowed': exact or semantic,
+              'global_exact_reproducibility_claimed': exact,
+              'policy': 'exact-elf-or-canonical-runtime-semantics-v3-with-dynsym-dynstr-storage-order-tolerance',
+              'evidence': {
+                  'target_sha256': report['target_sha256'],
+                  'candidate_sha256': report['candidate_sha256'],
+                  'target_size': report['target_size'],
+                  'candidate_size': report['candidate_size'],
+                  'header_equal': report['header_equal'],
+                  'code_equal': report['code_equal'],
+                  'all_critical_sections_equal': report['all_critical_sections_equal'],
+                  'allocated_semantic_equal_excluding_build_id': report['allocated_semantic_equal_excluding_build_id'],
+                  'normalized_non_debug_binary_equal': report.get('normalized_non_debug_binary_equal', False),
+                  'canonical_readelf_equal': report.get('canonical_readelf_equal', False),
+                  'canonical_objdump_equal': report.get('canonical_objdump_equal', False),
+                  'canonical_nm_equal': report.get('canonical_nm_equal', False),
+                  'runtime_critical_sections_equal': report.get('runtime_critical_sections_equal', False),
+                  'storage_serialization_only': report.get('storage_serialization_only', False),
+                  'semantic_equivalent_v3': report.get('semantic_equivalent_v3', False),
+                  'allowed_storage_differences': report.get('allowed_storage_differences', []),
+                  'unexpected_allocated_differences': report.get('unexpected_allocated_differences', []),
+                  'unexpected_section_differences': report.get('unexpected_section_differences', []),
+                  'different_sections': report['different_sections'],
+                  'allocated_differences_excluding_build_id': report['allocated_differences_excluding_build_id'],
+                  'changed_range_count': report['changed_range_count'],
+                  'changed_byte_count': report['changed_byte_count'],
+              },
+          }
+          (lock_dir / 'semantic-authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq '.' "$LOCK_DIR/semantic-authority.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete ELF delta evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-session-manager-han3u2-elf-delta-v2-${{ github.run_id }}
+          path: |
+            work
+            ${{ env.LOCK_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit semantic authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s "$LOCK_DIR/semantic-authority.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898242+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          if git diff --cached --quiet; then
+            echo 'Session manager ELF delta authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock session manager han3u2 ELF delta analysis'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

@@ -1,0 +1,200 @@
+name: ARM64 port - probe reference source index availability
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-probe-reference-source-index-availability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reference-source-index-availability
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out current ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Probe direct URLs, by-hash paths, and Wayback CDX
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/reference-source-index-availability
+          rm -rf "$output"
+          mkdir -p "$output"
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          output = Path('work/reference-source-index-availability')
+          targets = [
+              {
+                  'key': 'gooroom',
+                  'url': 'http://update.hancomgooroom.com/gooroom/dists/gooroom-3.0/main/source/Sources.gz',
+                  'size': 51094,
+                  'sha256': '09e1abccac1bcd86a430318caab0f0c68224f42a567b8cee7bcf308ed7f4a166',
+              },
+              {
+                  'key': 'hancom',
+                  'url': 'http://update.hancomgooroom.com/hancom/dists/hancom-3.0/main/source/Sources.gz',
+                  'size': 7142,
+                  'sha256': '5898f493b7ae9c750dbd11c80325bde5a3778357500d9acda24cc6e4e41c6a58',
+              },
+          ]
+
+          def get(url: str, timeout: int = 8, limit: int = 8 * 1024 * 1024):
+              request = urllib.request.Request(
+                  url,
+                  headers={
+                      'User-Agent': 'hancom-gooroom-arm64-source-index-probe/1',
+                      'Accept-Encoding': 'identity',
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=timeout) as response:
+                      body = response.read(limit + 1)
+                      if len(body) > limit:
+                          raise RuntimeError('response exceeds probe limit')
+                      return body, {
+                          'url': url,
+                          'status': int(getattr(response, 'status', 200)),
+                          'final_url': response.geturl(),
+                          'size': len(body),
+                          'sha256': hashlib.sha256(body).hexdigest(),
+                          'content_type': response.headers.get('Content-Type'),
+                      }
+              except urllib.error.HTTPError as error:
+                  return None, {'url': url, 'status': error.code, 'error': str(error)}
+              except Exception as error:
+                  return None, {'url': url, 'status': None, 'error': repr(error)}
+
+          results = []
+          for target in targets:
+              direct = []
+              for scheme in ('http', 'https'):
+                  parsed = urllib.parse.urlsplit(target['url'])
+                  url = urllib.parse.urlunsplit((scheme, parsed.netloc, parsed.path, '', ''))
+                  by_hash = urllib.parse.urlunsplit((
+                      scheme,
+                      parsed.netloc,
+                      str(Path(parsed.path).parent) + '/by-hash/SHA256/' + target['sha256'],
+                      '',
+                      '',
+                  ))
+                  for candidate in (url, by_hash):
+                      body, row = get(candidate)
+                      row['exact_match'] = bool(
+                          body is not None
+                          and len(body) == target['size']
+                          and hashlib.sha256(body).hexdigest() == target['sha256']
+                      )
+                      direct.append(row)
+
+              cdx_rows = []
+              cdx_attempts = []
+              for original in (target['url'], target['url'].replace('http://', 'https://', 1)):
+                  query = urllib.parse.urlencode({
+                      'url': original,
+                      'output': 'json',
+                      'fl': 'timestamp,original,statuscode,mimetype,digest,length',
+                      'filter': 'statuscode:200',
+                      'from': '2023',
+                      'to': '2024',
+                      'collapse': 'digest',
+                      'limit': '200',
+                  })
+                  endpoint = 'https://web.archive.org/cdx/search/cdx?' + query
+                  body, attempt = get(endpoint)
+                  attempt['original'] = original
+                  if body is not None:
+                      try:
+                          data = json.loads(body.decode('utf-8'))
+                          if isinstance(data, list) and data:
+                              header = data[0]
+                              for values in data[1:]:
+                                  if isinstance(values, list) and len(values) == len(header):
+                                      cdx_rows.append(dict(zip(header, values)))
+                      except Exception as error:
+                          attempt['parse_error'] = repr(error)
+                  cdx_attempts.append(attempt)
+
+              results.append({
+                  **target,
+                  'direct_attempts': direct,
+                  'direct_exact_match_count': sum(row['exact_match'] for row in direct),
+                  'cdx_snapshot_count': len(cdx_rows),
+                  'cdx_rows': cdx_rows,
+                  'cdx_attempts': cdx_attempts,
+              })
+
+          summary = {
+              'schema': 1,
+              'target_count': len(results),
+              'direct_exact_target_count': sum(
+                  row['direct_exact_match_count'] > 0 for row in results
+              ),
+              'cdx_snapshot_target_count': sum(
+                  row['cdx_snapshot_count'] > 0 for row in results
+              ),
+              'targets': results,
+              'promotion_allowed': False,
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, indent=2, ensure_ascii=False))
+          PY
+          (
+            cd "$output"
+            sha256sum summary.json > LOCKSUMS.sha256
+          )
+
+      - name: Upload availability evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-reference-source-index-availability
+          path: work/reference-source-index-availability
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit current availability evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/reference-source-index-availability/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/reference-source-index-availability/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact source index availability'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

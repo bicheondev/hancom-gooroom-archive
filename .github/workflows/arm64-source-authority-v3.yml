@@ -1,0 +1,33 @@
+name: ARM64 port - merge exact source authority v3
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-authority-legacy-redirect
+  cancel-in-progress: true
+
+jobs:
+  redirect:
+    name: Redirect legacy v3 requests to canonical source authority v5
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch the only canonical source-authority producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
+          {
+            echo '## Legacy source-authority v3 redirected'
+            echo
+            echo 'This workflow no longer writes `arm64/locks/effective-sources-v3`.'
+            echo 'The canonical v5 controller was dispatched instead.'
+          } >> "$GITHUB_STEP_SUMMARY"

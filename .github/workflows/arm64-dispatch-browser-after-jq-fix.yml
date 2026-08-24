@@ -1,0 +1,33 @@
+name: ARM64 port - dispatch browser after composite jq fix
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-browser-after-jq-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-dispatch-browser-after-jq-fix
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch exact Gooroom browser ARM64 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh api \
+            --method POST \
+            "/repos/${GH_REPO}/actions/workflows/arm64-build-wave5-browser.yml/dispatches" \
+            -f ref=arm64-port

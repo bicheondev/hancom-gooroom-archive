@@ -1,0 +1,27 @@
+name: ARM64 one-shot rerun session manager forensics
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-rerun-session-manager-forensics-once.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch locked reconstruction workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run arm64-verify-session-manager-han3u2-reconstruction-v1.yml \
+            --repo "${{ github.repository }}" \
+            --ref arm64-port

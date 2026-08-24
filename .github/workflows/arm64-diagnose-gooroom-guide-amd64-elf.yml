@@ -1,0 +1,304 @@
+name: ARM64 port - diagnose gooroom-guide AMD64 ELF delta
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-gooroom-guide-amd64-elf.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-diagnose-guide-amd64-elf
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-guide
+  VERSION: 0.5.3+grm3u1+han3u1
+  BASE_REPOSITORY: hancomgooroom/gooroom-guide
+  BASE_COMMIT: c788c29119d43bb97c554973f6dabbc41a9abe79
+  BASE_TREE: 0d4bb01b49c69e33208a47c0aff47545291ee646
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '3620004'
+  TARGET_SHA256: 80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142
+
+jobs:
+  diagnose:
+    name: Rebuild and retain both AMD64 ELF authorities
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the exact diagnostic implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic Debian and ELF analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq python3 python3-pyelftools xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          bash -n arm64/scripts/build_gooroom_guide_han3u1_chroot.sh
+
+      - name: Recover the exact target, reconstruct source, and rebuild AMD64
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/guide-elf-diagnostic
+          rm -rf "$output"
+          mkdir -p "$output"/{vendor,authority,extracted,binaries,analysis}
+
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$output/vendor"
+          mapfile -t targets < <(
+            find "$output/vendor" -type f -name "$TARGET_FILENAME" -print
+          )
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" "$output/target.deb"
+          test "$(stat -c '%s' "$output/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $output/target.deb" | sha256sum --check --strict -
+          test "$(dpkg-deb -f "$output/target.deb" Package)" = "$SOURCE"
+          test "$(dpkg-deb -f "$output/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$output/target.deb" Architecture)" = amd64
+
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$output/source"
+          git -C "$output/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$output/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$output/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+
+          python3 arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            --repository "$output/source" \
+            --target-deb "$output/target.deb" \
+            --output-dir "$output/authority"
+          sudo bash arm64/scripts/build_gooroom_guide_han3u1_chroot.sh \
+            amd64 \
+            "$output/authority/reconstructed-source.tar.gz" \
+            "$output/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$output/amd64-build"
+          mapfile -t candidates < <(
+            for deb in "$output"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE" ]; then
+                printf '%s\n' "$deb"
+              fi
+            done
+          )
+          test "${#candidates[@]}" -eq 1
+          cp "${candidates[0]}" "$output/candidate.deb"
+
+          dpkg-deb -x "$output/target.deb" "$output/extracted/target"
+          dpkg-deb -x "$output/candidate.deb" "$output/extracted/candidate"
+          cp "$output/extracted/target/usr/bin/gooroom-guide" \
+            "$output/binaries/gooroom-guide.target"
+          cp "$output/extracted/candidate/usr/bin/gooroom-guide" \
+            "$output/binaries/gooroom-guide.candidate"
+          chmod 0755 "$output/binaries"/*
+          sha256sum "$output/target.deb" "$output/candidate.deb" \
+            "$output/binaries/gooroom-guide.target" \
+            "$output/binaries/gooroom-guide.candidate" \
+            > "$output/analysis/SHA256SUMS"
+
+      - name: Produce section, relocation, symbol, disassembly, and byte-range evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/guide-elf-diagnostic
+          analysis="$output/analysis"
+          target="$output/binaries/gooroom-guide.target"
+          candidate="$output/binaries/gooroom-guide.candidate"
+
+          for side in target candidate; do
+            binary="$output/binaries/gooroom-guide.$side"
+            readelf -hW "$binary" > "$analysis/$side.readelf-header.txt"
+            readelf -SW "$binary" > "$analysis/$side.readelf-sections.txt"
+            readelf -lW "$binary" > "$analysis/$side.readelf-program-headers.txt"
+            readelf -dW "$binary" > "$analysis/$side.readelf-dynamic.txt"
+            readelf -rW "$binary" > "$analysis/$side.readelf-relocations.txt"
+            readelf -sW "$binary" > "$analysis/$side.readelf-symbols.txt"
+            readelf -nW "$binary" > "$analysis/$side.readelf-notes.txt"
+            objdump -f "$binary" > "$analysis/$side.objdump-file-header.txt"
+            objdump -p "$binary" > "$analysis/$side.objdump-private-headers.txt"
+            objdump -h "$binary" > "$analysis/$side.objdump-section-headers.txt"
+            objdump -drwC "$binary" > "$analysis/$side.objdump-disassembly.txt"
+            objdump -s "$binary" > "$analysis/$side.objdump-full-contents.txt"
+            nm -an "$binary" > "$analysis/$side.nm.txt"
+            strings -a -t x "$binary" > "$analysis/$side.strings.txt"
+          done
+
+          for stem in \
+            readelf-header readelf-sections readelf-program-headers \
+            readelf-dynamic readelf-relocations readelf-symbols readelf-notes \
+            objdump-file-header objdump-private-headers objdump-section-headers \
+            objdump-disassembly objdump-full-contents nm strings; do
+            diff -u "$analysis/target.$stem.txt" "$analysis/candidate.$stem.txt" \
+              > "$analysis/$stem.diff" || true
+          done
+
+          cp "$target" "$output/binaries/gooroom-guide.target.normalized"
+          cp "$candidate" "$output/binaries/gooroom-guide.candidate.normalized"
+          for normalized in "$output/binaries"/*.normalized; do
+            objcopy \
+              --remove-section=.note.gnu.build-id \
+              --remove-section=.gnu_debuglink \
+              --remove-section=.gnu_debugaltlink \
+              --remove-section=.comment \
+              "$normalized" "$normalized.new"
+            mv "$normalized.new" "$normalized"
+          done
+          cmp -l \
+            "$output/binaries/gooroom-guide.target.normalized" \
+            "$output/binaries/gooroom-guide.candidate.normalized" \
+            > "$analysis/normalized-byte-cmp.txt" || true
+
+          python3 - "$target" "$candidate" "$analysis" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          from elftools.elf.elffile import ELFFile
+
+          target = Path(sys.argv[1])
+          candidate = Path(sys.argv[2])
+          output = Path(sys.argv[3])
+
+          def digest(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          def inspect(path: Path) -> dict:
+              with path.open('rb') as stream:
+                  elf = ELFFile(stream)
+                  sections = []
+                  for index, section in enumerate(elf.iter_sections()):
+                      data = section.data() if section['sh_type'] != 'SHT_NOBITS' else b''
+                      sections.append({
+                          'index': index,
+                          'name': section.name,
+                          'type': section['sh_type'],
+                          'flags': int(section['sh_flags']),
+                          'address': int(section['sh_addr']),
+                          'offset': int(section['sh_offset']),
+                          'size': int(section['sh_size']),
+                          'link': int(section['sh_link']),
+                          'info': int(section['sh_info']),
+                          'alignment': int(section['sh_addralign']),
+                          'entry_size': int(section['sh_entsize']),
+                          'content_sha256': digest(data),
+                      })
+                  segments = []
+                  for index, segment in enumerate(elf.iter_segments()):
+                      segments.append({
+                          'index': index,
+                          'type': segment['p_type'],
+                          'flags': int(segment['p_flags']),
+                          'offset': int(segment['p_offset']),
+                          'virtual_address': int(segment['p_vaddr']),
+                          'physical_address': int(segment['p_paddr']),
+                          'file_size': int(segment['p_filesz']),
+                          'memory_size': int(segment['p_memsz']),
+                          'alignment': int(segment['p_align']),
+                      })
+                  return {
+                      'path': str(path),
+                      'size': path.stat().st_size,
+                      'sha256': digest(path.read_bytes()),
+                      'header': {
+                          key: int(elf.header[key]) if isinstance(elf.header[key], int) else str(elf.header[key])
+                          for key in elf.header
+                      },
+                      'sections': sections,
+                      'segments': segments,
+                  }
+
+          left = inspect(target)
+          right = inspect(candidate)
+          left_sections = {row['name']: row for row in left['sections']}
+          right_sections = {row['name']: row for row in right['sections']}
+          section_differences = []
+          for name in sorted(set(left_sections) | set(right_sections)):
+              a = left_sections.get(name)
+              b = right_sections.get(name)
+              if a != b:
+                  section_differences.append({'name': name, 'target': a, 'candidate': b})
+
+          left_bytes = target.read_bytes()
+          right_bytes = candidate.read_bytes()
+          ranges = []
+          start = None
+          for index in range(max(len(left_bytes), len(right_bytes))):
+              a = left_bytes[index] if index < len(left_bytes) else None
+              b = right_bytes[index] if index < len(right_bytes) else None
+              different = a != b
+              if different and start is None:
+                  start = index
+              if not different and start is not None:
+                  ranges.append({'start': start, 'end_exclusive': index, 'length': index - start})
+                  start = None
+          if start is not None:
+              end = max(len(left_bytes), len(right_bytes))
+              ranges.append({'start': start, 'end_exclusive': end, 'length': end - start})
+
+          report = {
+              'schema': 1,
+              'target': left,
+              'candidate': right,
+              'header_identical': left['header'] == right['header'],
+              'segments_identical': left['segments'] == right['segments'],
+              'section_differences': section_differences,
+              'different_byte_count': sum(
+                  1
+                  for index in range(max(len(left_bytes), len(right_bytes)))
+                  if (left_bytes[index] if index < len(left_bytes) else None)
+                  != (right_bytes[index] if index < len(right_bytes) else None)
+              ),
+              'different_byte_ranges': ranges,
+          }
+          (output / 'elf-structural-comparison.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps({
+              'header_identical': report['header_identical'],
+              'segments_identical': report['segments_identical'],
+              'section_difference_count': len(section_differences),
+              'different_byte_count': report['different_byte_count'],
+              'different_byte_range_count': len(ranges),
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload retained target, candidate, and complete ELF diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-han3u1-amd64-elf-diagnostic-${{ github.run_id }}
+          path: |
+            work/guide-elf-diagnostic/target.deb
+            work/guide-elf-diagnostic/candidate.deb
+            work/guide-elf-diagnostic/binaries
+            work/guide-elf-diagnostic/analysis
+            work/guide-elf-diagnostic/authority/reconstruction-lock.json
+            work/guide-elf-diagnostic/authority/reconstruction.patch
+            work/guide-elf-diagnostic/amd64-build/build.log
+            work/guide-elf-diagnostic/amd64-build/debootstrap.log
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9

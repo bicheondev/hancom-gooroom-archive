@@ -1,0 +1,509 @@
+name: ARM64 continuation - gnome-flashback han3u4 to Stage 0 v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-continuation-gnome-flashback-han3u4-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-continuation-gnome-flashback-han3u4-v3
+  cancel-in-progress: false
+
+env:
+  PARENT_RUN_ID: '31940464529'
+  PARENT_HEAD_SHA: ab94cf9f3e1f78088f284f1d8300ee0dfd90da8b
+  PARENT_WORKFLOW_PATH: .github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml
+  STATUS_PATH: arm64/status/gnome-flashback-han3u4-continuation-v3.json
+
+jobs:
+  continue:
+    name: Verify promotion and advance the fail-closed ARM64 pipeline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out the evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install controller prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          gh --version
+
+      - name: Lock the parent result and advance downstream gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf work/gnome-flashback-continuation-v3
+          mkdir -p work/gnome-flashback-continuation-v3/runs
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import subprocess
+          import time
+          import traceback
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+
+          REPOSITORY = os.environ['GITHUB_REPOSITORY']
+          PARENT_RUN_ID = int(os.environ['PARENT_RUN_ID'])
+          PARENT_HEAD_SHA = os.environ['PARENT_HEAD_SHA']
+          PARENT_WORKFLOW_PATH = os.environ['PARENT_WORKFLOW_PATH']
+          STATUS_PATH = Path(os.environ['STATUS_PATH'])
+          ROOT = Path('work/gnome-flashback-continuation-v3')
+          RUNS = ROOT / 'runs'
+          WORK_STATUS = ROOT / 'state.json'
+          BRANCH = 'arm64-port'
+
+          state: dict[str, Any] = {
+              'schema': 3,
+              'controller': 'gnome-flashback-han3u4-continuation-v3',
+              'repository': REPOSITORY,
+              'branch': BRANCH,
+              'generated_at': None,
+              'phase': 'initializing',
+              'parent': None,
+              'promotion': None,
+              'downstream': [],
+              'stage0_gate': None,
+              'stage0_run': None,
+              'blocking_reasons': [],
+              'error': None,
+          }
+
+          def utcnow() -> str:
+              return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+
+          def write_json(path: Path, value: Any) -> None:
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(
+                  json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+
+          def save() -> None:
+              state['generated_at'] = utcnow()
+              write_json(WORK_STATUS, state)
+
+          def command(arguments: list[str], *, check: bool = True) -> str:
+              completed = subprocess.run(
+                  arguments,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+              if check and completed.returncode:
+                  raise RuntimeError(
+                      f"command failed ({completed.returncode}): {' '.join(arguments)}\n"
+                      f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+                  )
+              return completed.stdout
+
+          def gh_json(endpoint: str) -> Any:
+              return json.loads(command(['gh', 'api', endpoint]))
+
+          def compact_run(run: dict[str, Any]) -> dict[str, Any]:
+              return {
+                  key: run.get(key)
+                  for key in (
+                      'id', 'name', 'path', 'event', 'status', 'conclusion',
+                      'head_branch', 'head_sha', 'run_number', 'created_at',
+                      'run_started_at', 'updated_at', 'html_url'
+                  )
+              }
+
+          def compact_jobs(run_id: int) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/runs/{run_id}/jobs?per_page=100'
+              )
+              rows = []
+              for job in payload.get('jobs', []):
+                  rows.append({
+                      'id': job.get('id'),
+                      'name': job.get('name'),
+                      'status': job.get('status'),
+                      'conclusion': job.get('conclusion'),
+                      'steps': [
+                          {
+                              'number': step.get('number'),
+                              'name': step.get('name'),
+                              'status': step.get('status'),
+                              'conclusion': step.get('conclusion'),
+                          }
+                          for step in job.get('steps', [])
+                      ],
+                  })
+              return rows
+
+          def compact_artifacts(run_id: int) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/runs/{run_id}/artifacts?per_page=100'
+              )
+              return [
+                  {
+                      'id': row.get('id'),
+                      'name': row.get('name'),
+                      'size_in_bytes': row.get('size_in_bytes'),
+                      'digest': row.get('digest'),
+                      'expired': row.get('expired'),
+                      'created_at': row.get('created_at'),
+                  }
+                  for row in payload.get('artifacts', [])
+              ]
+
+          def wait_run(run_id: int, label: str) -> dict[str, Any]:
+              for _ in range(480):
+                  run = gh_json(f'/repos/{REPOSITORY}/actions/runs/{run_id}')
+                  write_json(RUNS / f'{label}-live.json', compact_run(run))
+                  if run.get('status') == 'completed':
+                      write_json(RUNS / f'{label}.json', {
+                          'run': compact_run(run),
+                          'jobs': compact_jobs(run_id),
+                          'artifacts': compact_artifacts(run_id),
+                      })
+                      return run
+                  time.sleep(30)
+              raise TimeoutError(f'{label}: run {run_id} did not complete within the controller window')
+
+          def pull_latest() -> None:
+              last_error = None
+              for attempt in range(1, 13):
+                  completed = subprocess.run(
+                      ['git', 'pull', '--rebase', 'origin', BRANCH],
+                      text=True,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                      check=False,
+                  )
+                  if completed.returncode == 0:
+                      return
+                  last_error = completed.stderr
+                  time.sleep(attempt * 2)
+              raise RuntimeError(f'cannot update {BRANCH}: {last_error}')
+
+          def workflow_runs(workflow: str) -> list[dict[str, Any]]:
+              payload = gh_json(
+                  f'/repos/{REPOSITORY}/actions/workflows/{workflow}/runs'
+                  f'?branch={BRANCH}&per_page=100'
+              )
+              return payload.get('workflow_runs', [])
+
+          def dispatch_new_run(workflow: str, label: str) -> int:
+              before = {int(row['id']) for row in workflow_runs(workflow)}
+              dispatched_at = utcnow()
+              command([
+                  'gh', 'workflow', 'run', workflow,
+                  '--repo', REPOSITORY,
+                  '--ref', BRANCH,
+              ])
+              for _ in range(36):
+                  candidates = [
+                      row for row in workflow_runs(workflow)
+                      if int(row['id']) not in before
+                      and row.get('head_branch') == BRANCH
+                      and row.get('created_at', '') >= dispatched_at[:19] + 'Z'
+                  ]
+                  if candidates:
+                      candidates.sort(key=lambda row: row.get('created_at', ''), reverse=True)
+                      run_id = int(candidates[0]['id'])
+                      write_json(RUNS / f'{label}-dispatch.json', {
+                          'workflow': workflow,
+                          'dispatched_at': dispatched_at,
+                          'run': compact_run(candidates[0]),
+                      })
+                      return run_id
+                  time.sleep(5)
+              raise RuntimeError(f'{label}: dispatched {workflow} but could not resolve the new run')
+
+          def ensure_downstream(workflow: str, label: str, anchor: str) -> dict[str, Any]:
+              candidates = [
+                  row for row in workflow_runs(workflow)
+                  if row.get('head_branch') == BRANCH
+                  and row.get('created_at', '') >= anchor
+              ]
+              candidates.sort(key=lambda row: row.get('created_at', ''), reverse=True)
+              selected = candidates[0] if candidates else None
+              if selected is not None:
+                  selected = wait_run(int(selected['id']), label)
+              if selected is None or selected.get('conclusion') != 'success':
+                  retry_id = dispatch_new_run(workflow, label + '-retry')
+                  selected = wait_run(retry_id, label + '-retry')
+              if selected.get('conclusion') != 'success':
+                  raise RuntimeError(
+                      f'{label}: workflow {workflow} concluded {selected.get("conclusion")}'
+                  )
+              record = {
+                  'label': label,
+                  'workflow': workflow,
+                  'run': compact_run(selected),
+                  'artifacts': compact_artifacts(int(selected['id'])),
+              }
+              state['downstream'].append(record)
+              save()
+              pull_latest()
+              return selected
+
+          def promotion_record() -> dict[str, Any]:
+              result_path = Path(
+                  'arm64/locks/rebuild-results/gnome-flashback/'
+                  '3.38.0-2_grm3u2_han3u4/result.json'
+              )
+              source_locks_path = Path(
+                  'arm64/locks/reconstructed-sources/source-locks.json'
+              )
+              for _ in range(24):
+                  pull_latest()
+                  if result_path.is_file() and source_locks_path.is_file():
+                      break
+                  time.sleep(5)
+              if not result_path.is_file() or not source_locks_path.is_file():
+                  raise RuntimeError('promotion records were not committed by the successful parent run')
+              result = json.loads(result_path.read_text(encoding='utf-8'))
+              locks = json.loads(source_locks_path.read_text(encoding='utf-8'))
+              if not (
+                  result.get('source') == 'gnome-flashback'
+                  and result.get('source_version') == '3.38.0-2+grm3u2+han3u4'
+                  and result.get('source_type') == 'verified-reconstructed-git-tree'
+                  and result.get('passed') is True
+                  and result.get('verification_passed') is True
+                  and result.get('job_passed') is True
+              ):
+                  raise RuntimeError('gnome-flashback promotion result is not a verified pass')
+              matching = []
+              for row in locks.get('sources', []):
+                  selected = row.get('selected') or {}
+                  verification = row.get('verification') or {}
+                  if (
+                      row.get('source') == 'gnome-flashback'
+                      and row.get('source_version') == '3.38.0-2+grm3u2+han3u4'
+                      and row.get('status') == 'resolved'
+                      and selected.get('type') == 'reconstructed-git-tree'
+                      and verification.get('passed') is True
+                      and verification.get('native_arm64_build_verified') is True
+                      and verification.get('exact_shipped_embedded_css_verified') is True
+                      and verification.get('arm64_embedded_gresource_identity_verified') is True
+                      and verification.get('original_source_archive_recovered') is False
+                  ):
+                      matching.append(row)
+              if len(matching) != 1:
+                  raise RuntimeError(
+                      f'expected one resolved gnome-flashback source lock, found {len(matching)}'
+                  )
+              return {
+                  'result_path': str(result_path),
+                  'source_locks_path': str(source_locks_path),
+                  'result': result,
+                  'source_lock': matching[0],
+              }
+
+          def find_gate_record() -> tuple[Path, dict[str, Any]]:
+              preferred = [
+                  Path('arm64/status/stage0-iso-safety-gate.json'),
+                  Path('arm64/status/stage0-iso-safety-gate-latest.json'),
+              ]
+              candidates = preferred + sorted(Path('arm64').rglob('*iso*safety*gate*.json'))
+              seen: set[Path] = set()
+              for path in candidates:
+                  if path in seen or not path.is_file():
+                      continue
+                  seen.add(path)
+                  try:
+                      value = json.loads(path.read_text(encoding='utf-8'))
+                  except (OSError, json.JSONDecodeError):
+                      continue
+                  if isinstance(value, dict) and isinstance(value.get('eligible'), bool):
+                      return path, value
+              raise RuntimeError('Stage 0 ISO safety gate did not commit a readable eligibility record')
+
+          def selected_run_id(gate: dict[str, Any]) -> int | None:
+              dispatch = gate.get('dispatch') or {}
+              selected = dispatch.get('selected') or {}
+              values = [
+                  selected.get('run_id'),
+                  dispatch.get('run_id'),
+                  gate.get('selected_run_id'),
+                  gate.get('run_id') if gate.get('eligible') else None,
+              ]
+              for value in values:
+                  if isinstance(value, int) and value > 0:
+                      return value
+                  if isinstance(value, str) and value.isdigit():
+                      return int(value)
+              return None
+
+          try:
+              state['phase'] = 'waiting-for-parent'
+              save()
+              parent = wait_run(PARENT_RUN_ID, 'parent')
+              parent_jobs = compact_jobs(PARENT_RUN_ID)
+              parent_artifacts = compact_artifacts(PARENT_RUN_ID)
+              state['parent'] = {
+                  'run': compact_run(parent),
+                  'jobs': parent_jobs,
+                  'artifacts': parent_artifacts,
+              }
+              save()
+
+              if parent.get('path') != PARENT_WORKFLOW_PATH:
+                  raise RuntimeError(f'parent workflow path mismatch: {parent.get("path")}')
+              if parent.get('head_sha') != PARENT_HEAD_SHA:
+                  raise RuntimeError(f'parent head SHA mismatch: {parent.get("head_sha")}')
+              if parent.get('conclusion') != 'success':
+                  raise RuntimeError(f'parent run concluded {parent.get("conclusion")}')
+
+              required_jobs = {
+                  'Reconstruct and verify the exact AMD64 source relationship',
+                  'Build and verify the reconstructed tree natively on ARM64',
+                  'Persist the reconstructed source and verified ARM64 authority',
+              }
+              successful_jobs = {
+                  row.get('name') for row in parent_jobs
+                  if row.get('conclusion') == 'success'
+              }
+              if not required_jobs.issubset(successful_jobs):
+                  raise RuntimeError(
+                      f'parent run lacks successful required jobs: '
+                      f'{sorted(required_jobs - successful_jobs)}'
+                  )
+              artifact_names = {row.get('name') for row in parent_artifacts}
+              required_artifacts = {
+                  'gnome-flashback-han3u4-verified-source-v1',
+                  'gnome-flashback-han3u4-exact-arm64-v1',
+              }
+              if not required_artifacts.issubset(artifact_names):
+                  raise RuntimeError(
+                      f'parent run lacks verified artifacts: '
+                      f'{sorted(required_artifacts - artifact_names)}'
+                  )
+
+              state['phase'] = 'verifying-promotion-records'
+              save()
+              state['promotion'] = promotion_record()
+              state['phase'] = 'promotion-verified'
+              save()
+
+              anchor = parent.get('created_at') or parent.get('run_started_at') or ''
+              for workflow, label in (
+                  ('arm64-source-authority-v5.yml', 'source-authority-v5'),
+                  ('arm64-index-rebuild-results-v2.yml', 'rebuild-results-index-v2'),
+                  ('arm64-recover-exact-package-pool.yml', 'exact-package-pool'),
+              ):
+                  state['phase'] = f'waiting-{label}'
+                  save()
+                  ensure_downstream(workflow, label, anchor)
+
+              state['phase'] = 'dispatching-stage0-safety-gate'
+              save()
+              gate_run_id = dispatch_new_run(
+                  'arm64-stage0-000-iso-safety-gate.yml',
+                  'stage0-safety-gate',
+              )
+              gate_run = wait_run(gate_run_id, 'stage0-safety-gate')
+              if gate_run.get('conclusion') != 'success':
+                  raise RuntimeError(
+                      f'Stage 0 safety gate concluded {gate_run.get("conclusion")}'
+                  )
+              pull_latest()
+              gate_path, gate = find_gate_record()
+              state['stage0_gate'] = {
+                  'workflow_run': compact_run(gate_run),
+                  'record_path': str(gate_path),
+                  'record': gate,
+              }
+              save()
+
+              if gate.get('eligible') is not True:
+                  state['phase'] = 'stage0-blocked-safely'
+                  reasons = gate.get('blocking_reasons') or []
+                  state['blocking_reasons'] = reasons if isinstance(reasons, list) else [reasons]
+                  save()
+              else:
+                  run_id = selected_run_id(gate)
+                  if run_id is None:
+                      raise RuntimeError('eligible Stage 0 gate did not record a selected workflow run')
+                  state['phase'] = 'waiting-stage0-run'
+                  save()
+                  stage0 = wait_run(run_id, 'stage0-selected-run')
+                  state['stage0_run'] = {
+                      'run': compact_run(stage0),
+                      'jobs': compact_jobs(run_id),
+                      'artifacts': compact_artifacts(run_id),
+                  }
+                  if stage0.get('conclusion') != 'success':
+                      raise RuntimeError(
+                          f'selected Stage 0 run {run_id} concluded {stage0.get("conclusion")}'
+                      )
+                  pull_latest()
+                  state['phase'] = 'stage0-completed'
+                  save()
+
+          except Exception as error:
+              state['phase'] = 'failed'
+              state['error'] = {
+                  'type': type(error).__name__,
+                  'message': str(error),
+                  'traceback': traceback.format_exc(),
+              }
+              save()
+              raise
+          finally:
+              save()
+          PY
+
+      - name: Commit the continuation evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/gnome-flashback-continuation-v3/state.json
+          mkdir -p "$(dirname "$STATUS_PATH")"
+          cp work/gnome-flashback-continuation-v3/state.json "$STATUS_PATH"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          pushed=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin arm64-port
+            git rebase origin/arm64-port
+            cp work/gnome-flashback-continuation-v3/state.json "$STATUS_PATH"
+            git add "$STATUS_PATH"
+            if git diff --cached --quiet; then
+              pushed=1
+              break
+            fi
+            git commit -m 'Record gnome-flashback ARM64 continuation v3' || true
+            if git push origin HEAD:arm64-port; then
+              pushed=1
+              break
+            fi
+            git reset --soft HEAD~1 || true
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = 1
+
+      - name: Upload the complete continuation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-continuation-v3-${{ github.run_id }}
+          path: work/gnome-flashback-continuation-v3
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9

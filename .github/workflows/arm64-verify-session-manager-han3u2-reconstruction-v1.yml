@@ -1,0 +1,424 @@
+name: ARM64 port - verify session manager han3u2 reconstruction v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-verify-session-manager-han3u2-reconstruction-v1.yml'
+      - 'arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-session-manager-han3u2-reconstruction-v1
+  cancel-in-progress: true
+
+env:
+  PACKAGE: gooroom-session-manager
+  VERSION: 0.3.9+grm3u1+han3u2
+  REPOSITORY: gooroom/gooroom-session-manager
+  BASE_COMMIT: d70dfbd27ea62e7a71f51c0018eb48cfe6fa0794
+  BASE_TREE: e8fb3bd1279ae7cd0a3526ae4f4c7b375835e1d5
+  SNAPSHOT: 20230730T235959Z
+  TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb
+  DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-session-manager/gooroom-session-manager-dbgsym_0.3.9+grm3u1+han3u2_amd64.deb
+  PATCH: arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/hancom-source-reconstruction.patch
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact reconstruction authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install historical build and ELF analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            diffutils dpkg-dev elfutils file git jq python3 tar xz-utils
+
+      - name: Reconstruct exact-version source candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          rm -rf "$base"
+          mkdir -p "$base"/{source-authority,downloads,build,comparison,artifact}
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/$REPOSITORY.git" "$base/source"
+          git -C "$base/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$base/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$base/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$base/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          test -s "$PATCH"
+          git -C "$base/source" apply --check "$(pwd)/$PATCH"
+          git -C "$base/source" apply "$(pwd)/$PATCH"
+
+          prefix="arm64/locks/final-three-blockers-inspection-v1/$PACKAGE/vendor-changelog-prefix"
+          test -s "$prefix"
+          cat "$prefix" "$base/source/debian/changelog" \
+            > "$base/source/debian/changelog.new"
+          mv "$base/source/debian/changelog.new" "$base/source/debian/changelog"
+          test "$(dpkg-parsechangelog -l"$base/source/debian/changelog" -SVersion)" = "$VERSION"
+
+          git -C "$base/source" diff --binary --full-index \
+            > "$base/source-authority/complete-reconstruction.patch"
+          cp "$PATCH" "$base/source-authority/hancom-source-reconstruction.patch"
+          sha256sum "$PATCH" > "$base/source-authority/patch.sha256"
+          sha256sum "$base/source/src/gooroom-session-manager.c" \
+            > "$base/source-authority/reconstructed-source-file.sha256"
+          git -C "$base/source" add debian/changelog src/gooroom-session-manager.c
+          tree="$(git -C "$base/source" write-tree)"
+          git -C "$base/source" archive --format=tar "$tree" \
+            > "$base/source-authority/reconstructed-source.tar"
+          jq -n \
+            --arg package "$PACKAGE" --arg version "$VERSION" \
+            --arg repository "$REPOSITORY" --arg base_commit "$BASE_COMMIT" \
+            --arg base_tree "$BASE_TREE" --arg reconstructed_tree "$tree" \
+            --arg patch_sha256 "$(sha256sum "$PATCH" | awk '{print $1}')" \
+            --arg archive_sha256 "$(sha256sum "$base/source-authority/reconstructed-source.tar" | awk '{print $1}')" '
+              {schema:1,package:$package,version:$version,repository:$repository,
+               base_commit_sha:$base_commit,base_tree_sha:$base_tree,
+               reconstruction_policy:"public-base-plus-exact-vendor-changelog-and-binary-derived-hancom-source-delta",
+               reconstructed_tree_sha:$reconstructed_tree,
+               reconstruction_patch_sha256:$patch_sha256,
+               source_archive_sha256:$archive_sha256}
+            ' > "$base/source-authority/source-lock.json"
+
+      - name: Download exact target and debug-symbol packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$TARGET_URL" -o "$base/downloads/target.deb"
+          curl --fail --show-error --location --retry 8 --retry-delay 3 \
+            --retry-all-errors "$DEBUG_URL" -o "$base/downloads/target-dbgsym.deb"
+          test "$(dpkg-deb -f "$base/downloads/target.deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$base/downloads/target.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/target.deb" Architecture)" = amd64
+          test "$(dpkg-deb -f "$base/downloads/target-dbgsym.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/target-dbgsym.deb" Architecture)" = amd64
+          sha256sum "$base/downloads/target.deb" \
+            "$base/downloads/target-dbgsym.deb" \
+            > "$base/downloads/target-SHA256SUMS"
+
+      - name: Build reconstructed AMD64 candidate in historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="$(pwd)/work/$PACKAGE"
+          rootfs="$base/build/rootfs"
+          mkdir -p "$base/build/debs"
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=ca-certificates \
+            --no-check-gpg \
+            bullseye "$rootfs" \
+            "https://snapshot.debian.org/archive/debian/$SNAPSHOT/" \
+            2>&1 | tee "$base/build/debootstrap.log"
+          printf '%s\n' \
+            "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$SNAPSHOT bullseye main" \
+            | sudo tee "$rootfs/etc/apt/sources.list" >/dev/null
+          printf '%s\n' \
+            'Acquire::Check-Valid-Until "false";' \
+            'Acquire::Retries "5";' \
+            'Dpkg::Use-Pty "0";' \
+            | sudo tee "$rootfs/etc/apt/apt.conf.d/99snapshot" >/dev/null
+          sudo mkdir -p "$rootfs/build/source"
+          sudo tar -xf "$base/source-authority/reconstructed-source.tar" \
+            -C "$rootfs/build/source"
+          sudo chroot "$rootfs" /bin/bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            export DEB_BUILD_OPTIONS=nocheck
+            export LC_ALL=C.UTF-8
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential devscripts dpkg-dev equivs git
+            cd /build/source
+            mk-build-deps --install --remove \
+              --tool "apt-get -y --no-install-recommends" debian/control
+            dpkg-buildpackage -us -uc -b -j2
+          ' 2>&1 | tee "$base/build/build.log"
+          while IFS= read -r deb; do
+            sudo cp "$deb" "$base/build/debs/"
+          done < <(sudo find "$rootfs/build" -maxdepth 1 -type f -name '*.deb' | LC_ALL=C sort)
+          sudo chown -R "$(id -u):$(id -g)" "$base/build"
+          for deb in "$base/build/debs"/*.deb; do
+            case "$(dpkg-deb -f "$deb" Package)" in
+              "$PACKAGE") cp "$deb" "$base/downloads/candidate.deb" ;;
+              "$PACKAGE-dbgsym") cp "$deb" "$base/downloads/candidate-dbgsym.deb" ;;
+            esac
+          done
+          test -f "$base/downloads/candidate.deb"
+          test -f "$base/downloads/candidate-dbgsym.deb"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$base/downloads/candidate.deb" Architecture)" = amd64
+          sha256sum "$base/downloads/candidate.deb" \
+            "$base/downloads/candidate-dbgsym.deb" \
+            > "$base/downloads/candidate-SHA256SUMS"
+          rm -rf "$rootfs"
+
+      - name: Extract, unstrip, and compare every payload file
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          for side in target candidate; do
+            mkdir -p "$base/comparison/$side"/{root,control,debug-root,elf}
+            dpkg-deb -x "$base/downloads/$side.deb" "$base/comparison/$side/root"
+            dpkg-deb -e "$base/downloads/$side.deb" "$base/comparison/$side/control"
+            dpkg-deb -x "$base/downloads/$side-dbgsym.deb" "$base/comparison/$side/debug-root"
+            dpkg-deb -f "$base/downloads/$side.deb" \
+              > "$base/comparison/$side/control-fields.txt"
+            dpkg-deb -c "$base/downloads/$side.deb" \
+              > "$base/comparison/$side/data-list.txt"
+            find "$base/comparison/$side/root" -type f -print0 \
+              | while IFS= read -r -d '' file_path; do
+                  if ! file -b "$file_path" | grep -q '^ELF '; then
+                    continue
+                  fi
+                  relative="${file_path#"$base/comparison/$side/root/"}"
+                  safe="${relative//\//__}"
+                  out="$base/comparison/$side/elf/$safe"
+                  mkdir -p "$out"
+                  file -b "$file_path" > "$out/file.txt"
+                  readelf -h -l -d -s -r -n --wide "$file_path" \
+                    > "$out/readelf.txt" 2>&1 || true
+                  objdump -drwC -Mintel "$file_path" \
+                    > "$out/objdump.txt" 2>&1 || true
+                  strings -a -n 4 "$file_path" > "$out/strings.txt"
+                  build_id="$(readelf -n "$file_path" 2>/dev/null | awk '/Build ID:/{print $3; exit}')"
+                  debug_file="$base/comparison/$side/debug-root/usr/lib/debug/.build-id/${build_id:0:2}/${build_id:2}.debug"
+                  if [ -n "$build_id" ] && [ -f "$debug_file" ]; then
+                    eu-unstrip -o "$out/unstripped" "$file_path" "$debug_file"
+                    nm -anC "$out/unstripped" > "$out/nm.txt" 2>&1 || true
+                    readelf --debug-dump=decodedline --wide "$out/unstripped" \
+                      > "$out/decodedline.txt" 2>&1 || true
+                    readelf --debug-dump=info --wide "$out/unstripped" \
+                      > "$out/debuginfo.txt" 2>&1 || true
+                  fi
+                done
+          done
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          package = os.environ['PACKAGE']
+          version = os.environ['VERSION']
+          base = Path('work') / package
+
+          def sha256(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+          def inventory(root: Path) -> dict[str, dict]:
+              result = {}
+              for path in sorted(root.rglob('*')):
+                  relative = path.relative_to(root).as_posix()
+                  if path.is_symlink():
+                      result[relative] = {'kind': 'symlink', 'link': os.readlink(path)}
+                  elif path.is_file():
+                      with path.open('rb') as stream:
+                          elf = stream.read(4) == b'\x7fELF'
+                      result[relative] = {
+                          'kind': 'elf' if elf else 'file',
+                          'size': path.stat().st_size,
+                          'sha256': sha256(path),
+                      }
+              return result
+
+          target = inventory(base / 'comparison' / 'target' / 'root')
+          candidate = inventory(base / 'comparison' / 'candidate' / 'root')
+          rows = []
+          for relative in sorted(set(target) | set(candidate)):
+              left = target.get(relative)
+              right = candidate.get(relative)
+              if left is None:
+                  status = 'candidate-only'
+              elif right is None:
+                  status = 'target-only'
+              elif left == right:
+                  status = 'identical'
+              else:
+                  status = 'different'
+              rows.append({'path': relative, 'status': status,
+                           'target': left, 'candidate': right})
+
+          main_path = (
+              'usr/lib/x86_64-linux-gnu/gooroom-session-manager/'
+              'gooroom-session-manager'
+          )
+          target_main = target.get(main_path)
+          candidate_main = candidate.get(main_path)
+          target_deb = base / 'downloads' / 'target.deb'
+          candidate_deb = base / 'downloads' / 'candidate.deb'
+          target_debug = base / 'downloads' / 'target-dbgsym.deb'
+          candidate_debug = base / 'downloads' / 'candidate-dbgsym.deb'
+
+          result = {
+              'schema': 1,
+              'package': package,
+              'version': version,
+              'comparison_policy': 'exact-file-set-and-sha256',
+              'path_set_identical': set(target) == set(candidate),
+              'payload_file_count': len(rows),
+              'identical_payload_count': sum(r['status'] == 'identical' for r in rows),
+              'different_payload_count': sum(r['status'] == 'different' for r in rows),
+              'target_only_paths': [r['path'] for r in rows if r['status'] == 'target-only'],
+              'candidate_only_paths': [r['path'] for r in rows if r['status'] == 'candidate-only'],
+              'different_paths': [r['path'] for r in rows if r['status'] == 'different'],
+              'main_elf_path': main_path,
+              'target_main_elf': target_main,
+              'candidate_main_elf': candidate_main,
+              'exact_main_elf_equivalent': target_main == candidate_main,
+              'exact_payload_equivalent': bool(rows) and all(r['status'] == 'identical' for r in rows),
+              'target_deb_sha256': sha256(target_deb),
+              'candidate_deb_sha256': sha256(candidate_deb),
+              'exact_deb_equivalent': sha256(target_deb) == sha256(candidate_deb),
+              'target_dbgsym_sha256': sha256(target_debug),
+              'candidate_dbgsym_sha256': sha256(candidate_debug),
+              'exact_dbgsym_equivalent': sha256(target_debug) == sha256(candidate_debug),
+              'source_reconstruction_patch_sha256': sha256(Path(os.environ['PATCH'])),
+          }
+          (base / 'comparison' / 'payload-comparison.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (base / 'comparison' / 'summary.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+
+          for side in ('target', 'candidate'):
+              decoded = next((base / 'comparison' / side / 'elf').rglob('decodedline.txt'))
+              selected = []
+              for line in decoded.read_text(encoding='utf-8', errors='replace').splitlines():
+                  if 'gooroom-session-manager.c' not in line:
+                      continue
+                  fields = line.split()
+                  if len(fields) >= 3:
+                      try:
+                          number = int(fields[1])
+                      except ValueError:
+                          continue
+                      if number in {55, 56, 57, 366, 373, 376, 379, 382, 385, 388,
+                                    391, 1366, 1368, 1369, 1370, 1373, 1375, 1376,
+                                    1378, 1379, 1382, 1385, 1389, 1393, 1396, 1398,
+                                    1399, 1401, 1405, 1441, 1443, 1444, 1445, 1446,
+                                    1448, 1451}:
+                          selected.append(line)
+              (base / 'comparison' / f'{side}-source-line-landmarks.txt').write_text(
+                  '\n'.join(selected) + ('\n' if selected else ''), encoding='utf-8'
+              )
+          PY
+          jq '.' "$base/comparison/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal complete equivalence evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base="work/$PACKAGE"
+          artifact="$base/artifact"
+          mkdir -p "$artifact"
+          cp -a "$base/source-authority" "$artifact/" || true
+          cp -a "$base/downloads" "$artifact/" || true
+          cp -a "$base/comparison" "$artifact/" || true
+          cp "$base/build/build.log" "$artifact/" || true
+          cp "$base/build/debootstrap.log" "$artifact/" || true
+          find "$artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload reconstructed-source equivalence evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-session-manager-han3u2-reconstruction-v1
+          path: work/gooroom-session-manager/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact reconstruction authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/gooroom-session-manager
+          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/source-authority/source-lock.json" "$destination/" || true
+          cp "$source/source-authority/patch.sha256" "$destination/" || true
+          cp "$source/source-authority/reconstructed-source-file.sha256" "$destination/" || true
+          cp "$source/comparison/summary.json" "$destination/" || true
+          cp "$source/comparison/payload-comparison.json" "$destination/" || true
+          cp "$source/comparison/target-source-line-landmarks.txt" "$destination/" || true
+          cp "$source/comparison/candidate-source-line-landmarks.txt" "$destination/" || true
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'gooroom-session-manager-han3u2-reconstruction-v1' \
+            '{schema:1,actions_run_id:$run_id,actions_run_url:$run_url,
+              artifact_name:$artifact_name}' \
+            > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Reconstruction authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock session manager han3u2 reconstruction result'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Require exact AMD64 payload equivalence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -e '.exact_main_elf_equivalent == true and .exact_payload_equivalent == true' \
+            work/gooroom-session-manager/comparison/summary.json >/dev/null

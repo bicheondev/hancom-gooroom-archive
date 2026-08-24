@@ -1,0 +1,552 @@
+name: ARM64 build session manager han3u2 v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-session-manager-han3u2-arm64-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-build-session-manager-han3u2-arm64-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE: gooroom-session-manager
+  VERSION: 0.3.9+grm3u1+han3u2
+  SEMANTIC_AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-elf-delta-v2/latest/semantic-authority.json
+  PATCH: arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/hancom-source-reconstruction.patch
+  RECONSTRUCTION_LOCK: arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest
+  LOCK_DIR: arm64/locks/gooroom-session-manager-han3u2-arm64-build/latest
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install host and emulation tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binfmt-support dpkg-dev file git jq qemu-user-static unzip xz-utils
+          sudo update-binfmts --enable qemu-aarch64 || true
+          docker run --rm --privileged tonistiigi/binfmt:qemu-v8.1.5 --install arm64
+          mkdir -p work/evidence work/mirrors work/source work/build-output work/validation
+
+      - name: Require exact or rigorously normalized semantic equivalence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s "$SEMANTIC_AUTHORITY"
+          test -s "$PATCH"
+          test -s "$RECONSTRUCTION_LOCK/source-lock.json"
+          test -s "$RECONSTRUCTION_LOCK/patch.sha256"
+          test -s "$RECONSTRUCTION_LOCK/reconstructed-source-file.sha256"
+          jq -e --arg package "$SOURCE" --arg version "$VERSION" '
+            .schema == 1 and
+            .package == $package and
+            .version == $version and
+            .arm64_build_allowed == true and
+            .package_layer_promotion_allowed == true and
+            (.exact_binary_equivalent == true or
+              (.semantic_binary_equivalent == true and
+               .source_reconstruction_semantically_verified == true and
+               .evidence.code_equal == true and
+               .evidence.all_critical_sections_equal == true and
+               .evidence.allocated_semantic_equal_excluding_build_id == true and
+               .evidence.normalized_non_debug_binary_equal == true and
+               (.evidence.allocated_differences_excluding_build_id | length) == 0))
+          ' "$SEMANTIC_AUTHORITY" >/dev/null
+          patch_sha="$(sha256sum "$PATCH" | cut -d' ' -f1)"
+          grep -F "$patch_sha" "$RECONSTRUCTION_LOCK/patch.sha256" >/dev/null
+
+      - name: Recover the locked upstream base and reapply Hancom delta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          import tempfile
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          source = os.environ['SOURCE']
+          version = os.environ['VERSION']
+          patch = Path(os.environ['PATCH']).resolve()
+          lock_path = Path(os.environ['RECONSTRUCTION_LOCK']) / 'source-lock.json'
+          source_lock = json.loads(lock_path.read_text(encoding='utf-8'))
+
+          urls = {
+              'https://github.com/hancomgooroom/gooroom-session-manager.git',
+              'https://github.com/hancom-io/gooroom-session-manager.git',
+              'https://github.com/gooroom/gooroom-session-manager.git',
+          }
+          commits = set()
+
+          def walk(value, key=''):
+              if isinstance(value, dict):
+                  for k, v in value.items():
+                      walk(v, str(k))
+              elif isinstance(value, list):
+                  for item in value:
+                      walk(item, key)
+              elif isinstance(value, str):
+                  text = value.strip()
+                  if ('github.com' in text or text.endswith('.git')) and source in text:
+                      if text.startswith('git+'):
+                          text = text[4:]
+                      urls.add(text)
+                  if re.fullmatch(r'[0-9a-fA-F]{40}', text) and any(
+                      token in key.lower() for token in ('commit', 'revision', 'sha', 'base')
+                  ):
+                      commits.add(text.lower())
+          walk(source_lock)
+
+          try:
+              search = subprocess.check_output(
+                  ['gh', 'api', '--paginate', '/search/repositories?q=gooroom-session-manager+in:name&per_page=100', '--jq', '.items[].clone_url'],
+                  text=True, stderr=subprocess.DEVNULL,
+              )
+              urls.update(line.strip() for line in search.splitlines() if line.strip())
+          except subprocess.CalledProcessError:
+              pass
+
+          def run(args, cwd=None, check=False):
+              return subprocess.run(
+                  args, cwd=cwd, check=check, text=True,
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+              )
+
+          candidates = []
+          repository_rows = []
+          ordered_urls = sorted(
+              urls,
+              key=lambda u: (
+                  0 if '/hancomgooroom/' in u else
+                  1 if '/hancom-io/' in u else
+                  2 if '/gooroom/' in u else 3,
+                  u,
+              ),
+          )[:80]
+
+          for index, url in enumerate(ordered_urls):
+              slug = urlparse(url).path.strip('/').removesuffix('.git')
+              mirror = Path('work/mirrors') / f'{index:03d}-{re.sub(r"[^A-Za-z0-9_.-]+", "__", slug)}.git'
+              clone = run(['git', 'clone', '--mirror', '--filter=blob:none', url, str(mirror)])
+              if clone.returncode != 0:
+                  clone = run(['git', 'clone', '--mirror', url, str(mirror)])
+              row = {'url': url, 'slug': slug, 'cloned': clone.returncode == 0}
+              if clone.returncode != 0:
+                  row['error'] = clone.stderr[-2000:]
+                  repository_rows.append(row)
+                  continue
+
+              commit_candidates = []
+              for commit in commits:
+                  if run(['git', 'cat-file', '-e', f'{commit}^{{commit}}'], cwd=mirror).returncode == 0:
+                      commit_candidates.append(commit)
+              if not commit_candidates:
+                  revs = run(['git', 'rev-list', '--all'], cwd=mirror)
+                  commit_candidates = revs.stdout.splitlines()
+              row['candidate_commit_count'] = len(commit_candidates)
+
+              for commit in commit_candidates:
+                  with tempfile.TemporaryDirectory(prefix='session-source-') as td:
+                      root = Path(td) / 'source'
+                      root.mkdir()
+                      archive = subprocess.Popen(
+                          ['git', 'archive', commit], cwd=mirror, stdout=subprocess.PIPE,
+                      )
+                      extract = subprocess.run(['tar', '-x', '-C', str(root)], stdin=archive.stdout, stderr=subprocess.PIPE)
+                      if archive.stdout:
+                          archive.stdout.close()
+                      archive.wait()
+                      if archive.returncode != 0 or extract.returncode != 0:
+                          continue
+                      check = run(['git', 'apply', '--check', str(patch)], cwd=root)
+                      if check.returncode != 0:
+                          continue
+                      apply = run(['git', 'apply', str(patch)], cwd=root)
+                      if apply.returncode != 0:
+                          continue
+                      changelog = root / 'debian/changelog'
+                      if not changelog.exists():
+                          continue
+                      first = changelog.read_text(encoding='utf-8', errors='strict').splitlines()[0]
+                      if not first.startswith(f'{source} ({version})'):
+                          continue
+
+                      expected_file_hashes = []
+                      hash_lock = Path(os.environ['RECONSTRUCTION_LOCK']) / 'reconstructed-source-file.sha256'
+                      for line in hash_lock.read_text(encoding='utf-8', errors='replace').splitlines():
+                          fields = line.split()
+                          if len(fields) >= 2 and re.fullmatch(r'[0-9a-f]{64}', fields[0]):
+                              expected_file_hashes.append((fields[0], fields[-1].lstrip('*')))
+                      hash_checks = []
+                      for expected_sha, rel in expected_file_hashes:
+                          candidate_paths = [root / rel, root / Path(rel).name]
+                          path = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
+                          if path is None:
+                              hash_checks.append({'path': rel, 'exists': False, 'verified': False})
+                              continue
+                          actual_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+                          hash_checks.append({
+                              'path': path.relative_to(root).as_posix(),
+                              'exists': True,
+                              'expected_sha256': expected_sha,
+                              'actual_sha256': actual_sha,
+                              'verified': actual_sha == expected_sha,
+                          })
+                      if hash_checks and not all(item['verified'] for item in hash_checks):
+                          continue
+
+                      meta = run(
+                          ['git', 'show', '-s', '--format=%H%n%T%n%aI%n%cI%n%s', commit], cwd=mirror,
+                      ).stdout.splitlines()
+                      destination = Path('work/source')
+                      if destination.exists():
+                          shutil.rmtree(destination)
+                      shutil.copytree(root, destination, symlinks=True)
+                      candidates.append({
+                          'repository_url': url,
+                          'repository_slug': slug,
+                          'base_commit': meta[0],
+                          'base_tree': meta[1],
+                          'author_date': meta[2],
+                          'committer_date': meta[3],
+                          'subject': '\n'.join(meta[4:]),
+                          'patched_changelog_first_line': first,
+                          'hash_checks': hash_checks,
+                      })
+                      break
+              repository_rows.append(row)
+              if candidates:
+                  break
+
+          result = {
+              'schema': 1,
+              'source': source,
+              'version': version,
+              'source_lock': source_lock,
+              'candidate_count': len(candidates),
+              'selected': candidates[0] if candidates else None,
+              'repositories': repository_rows,
+              'patch_sha256': hashlib.sha256(patch.read_bytes()).hexdigest(),
+          }
+          Path('work/validation/source-reconstruction.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          if len(candidates) != 1:
+              raise SystemExit(json.dumps(result, indent=2, ensure_ascii=False))
+          PY
+          test -s work/source/debian/changelog
+          jq -e '.candidate_count == 1 and .selected.base_commit != null' \
+            work/validation/source-reconstruction.json >/dev/null
+
+      - name: Manifest reconstructed source tree
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('work/source')
+          rows = []
+          for path in sorted(p for p in root.rglob('*') if p.is_file() or p.is_symlink()):
+              rel = path.relative_to(root).as_posix()
+              if path.is_symlink():
+                  rows.append(f'L\t{rel}\t{os.readlink(path)}')
+              else:
+                  rows.append(f'F\t{rel}\t{path.stat().st_size}\t{hashlib.sha256(path.read_bytes()).hexdigest()}')
+          manifest = ('\n'.join(rows) + '\n').encode()
+          Path('work/validation/source-tree-manifest.tsv').write_bytes(manifest)
+          Path('work/validation/source-tree-summary.json').write_text(
+              json.dumps({
+                  'schema': 1,
+                  'file_count': len(rows),
+                  'manifest_sha256': hashlib.sha256(manifest).hexdigest(),
+              }, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Build native ARM64 packages in Debian 11
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source_date_epoch="$(date -u -d "$(jq -r '.selected.committer_date' work/validation/source-reconstruction.json)" +%s)"
+          chmod -R a+rX work/source
+          docker run --rm --platform linux/arm64 \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e SOURCE="$SOURCE" \
+            -e VERSION="$VERSION" \
+            -e SOURCE_DATE_EPOCH="$source_date_epoch" \
+            -e DEB_BUILD_OPTIONS='parallel=2' \
+            -e DEB_BUILD_MAINT_OPTIONS='hardening=+all reproducible=+fixfilepath' \
+            -v "$PWD/work/source:/input:ro" \
+            -v "$PWD/work/build-output:/output" \
+            debian:bullseye \
+            bash -euxo pipefail -c '
+              printf "%s\n" \
+                "deb http://deb.debian.org/debian bullseye main contrib non-free" \
+                "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" \
+                "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" \
+                > /etc/apt/sources.list
+              apt-get -o Acquire::Retries=5 update
+              apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
+                build-essential ca-certificates debhelper devscripts dpkg-dev equivs fakeroot git
+              mkdir -p /build/source
+              cp -a /input/. /build/source/
+              cd /build/source
+              mk-build-deps --install --remove \
+                --tool "apt-get -o Acquire::Retries=5 -y --no-install-recommends" \
+                debian/control
+              dpkg-buildpackage -b -us -uc -j2
+              cp -av /build/*.deb /build/*.buildinfo /build/*.changes /output/
+            '
+          test -n "$(find work/build-output -maxdepth 1 -type f -name '*.deb' -print -quit)"
+
+      - name: Validate package metadata and reject foreign ELF
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          source = os.environ['SOURCE']
+          version = os.environ['VERSION']
+          output = Path('work/build-output')
+          extracted = Path('work/validation/extracted')
+          extracted.mkdir(parents=True, exist_ok=True)
+          packages = []
+          errors = []
+
+          def field(path: Path, key: str) -> str:
+              return subprocess.check_output(['dpkg-deb', '-f', str(path), key], text=True).strip()
+
+          for deb in sorted(output.glob('*.deb')):
+              package = field(deb, 'Package')
+              package_version = field(deb, 'Version')
+              architecture = field(deb, 'Architecture')
+              source_field = field(deb, 'Source')
+              root = extracted / package
+              subprocess.run(['dpkg-deb', '-x', str(deb), str(root)], check=True)
+              elfs = []
+              for path in sorted(p for p in root.rglob('*') if p.is_file()):
+                  if path.read_bytes()[:4] != b'\x7fELF':
+                      continue
+                  description = subprocess.check_output(['file', '-b', str(path)], text=True).strip()
+                  arm64 = 'ARM aarch64' in description or 'ARM64' in description
+                  rel = path.relative_to(root).as_posix()
+                  elfs.append({'path': rel, 'file': description, 'arm64': arm64})
+                  if not arm64:
+                      errors.append({'kind': 'foreign-elf', 'package': package, 'path': rel, 'file': description})
+              checks = {
+                  'version': package_version == version,
+                  'architecture': architecture in {'arm64', 'all'},
+                  'source': source_field.split(' ', 1)[0] == source,
+              }
+              if not all(checks.values()):
+                  errors.append({'kind': 'metadata-mismatch', 'filename': deb.name, 'checks': checks})
+              packages.append({
+                  'filename': deb.name,
+                  'package': package,
+                  'version': package_version,
+                  'architecture': architecture,
+                  'source': source_field,
+                  'size': deb.stat().st_size,
+                  'sha256': hashlib.sha256(deb.read_bytes()).hexdigest(),
+                  'checks': checks,
+                  'elfs': elfs,
+              })
+
+          principal = [row for row in packages if row['package'] == source and row['architecture'] == 'arm64']
+          if len(principal) != 1:
+              errors.append({'kind': 'principal-package-count', 'count': len(principal)})
+          report = {
+              'schema': 1,
+              'source': source,
+              'version': version,
+              'target_architecture': 'arm64',
+              'package_count': len(packages),
+              'principal_package_count': len(principal),
+              'foreign_elf_count': sum(e['kind'] == 'foreign-elf' for e in errors),
+              'packages': packages,
+              'errors': errors,
+              'verified': bool(packages) and not errors,
+          }
+          Path('work/validation/build-verification.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          if errors or not packages:
+              raise SystemExit(json.dumps(report, indent=2, sort_keys=True))
+          PY
+          jq -e '.verified == true and .foreign_elf_count == 0 and .principal_package_count == 1' \
+            work/validation/build-verification.json >/dev/null
+          jq '.' work/validation/build-verification.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified ARM64 packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-session-manager-han3u2-arm64-${{ github.run_id }}
+          path: |
+            work/build-output
+            work/validation/source-reconstruction.json
+            work/validation/source-tree-manifest.tsv
+            work/validation/source-tree-summary.json
+            work/validation/build-verification.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Capture package artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          artifact_name="gooroom-session-manager-han3u2-arm64-${GITHUB_RUN_ID}"
+          artifact=''
+          for attempt in $(seq 1 20); do
+            artifact="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              | jq -c --arg name "$artifact_name" \
+                '[.artifacts[] | select(.name == $name and .expired == false)] | last // empty')"
+            [[ -z "$artifact" ]] || break
+            sleep 3
+          done
+          test -n "$artifact"
+          printf '%s\n' "$artifact" > work/validation/artifact-metadata.json
+
+      - name: Seal native package promotion authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/validation/source-reconstruction.json "$LOCK_DIR/"
+          cp work/validation/source-tree-summary.json "$LOCK_DIR/"
+          cp work/validation/build-verification.json "$LOCK_DIR/"
+          cp work/validation/artifact-metadata.json "$LOCK_DIR/"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          semantic_path = Path(os.environ['SEMANTIC_AUTHORITY'])
+          semantic = json.loads(semantic_path.read_text(encoding='utf-8'))
+          reconstruction = json.loads(Path('work/validation/source-reconstruction.json').read_text(encoding='utf-8'))
+          tree = json.loads(Path('work/validation/source-tree-summary.json').read_text(encoding='utf-8'))
+          verification = json.loads(Path('work/validation/build-verification.json').read_text(encoding='utf-8'))
+          artifact = json.loads(Path('work/validation/artifact-metadata.json').read_text(encoding='utf-8'))
+          allowed = bool(
+              semantic['arm64_build_allowed'] and
+              semantic['package_layer_promotion_allowed'] and
+              verification['verified'] and
+              verification['foreign_elf_count'] == 0 and
+              verification['principal_package_count'] == 1
+          )
+          authority = {
+              'schema': 1,
+              'source': os.environ['SOURCE'],
+              'source_version': os.environ['VERSION'],
+              'target_architecture': 'arm64',
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'semantic_authority_path': str(semantic_path),
+              'semantic_authority_sha256': hashlib.sha256(semantic_path.read_bytes()).hexdigest(),
+              'semantic_binary_equivalent': semantic['semantic_binary_equivalent'],
+              'exact_binary_equivalent': semantic['exact_binary_equivalent'],
+              'base_repository_url': reconstruction['selected']['repository_url'],
+              'base_commit': reconstruction['selected']['base_commit'],
+              'base_tree': reconstruction['selected']['base_tree'],
+              'patch_sha256': reconstruction['patch_sha256'],
+              'reconstructed_source_tree_manifest_sha256': tree['manifest_sha256'],
+              'native_arm64_build_verified': verification['verified'],
+              'foreign_elf_count': verification['foreign_elf_count'],
+              'package_layer_promotion_allowed': allowed,
+              'package_count': verification['package_count'],
+              'packages': [
+                  {key: row[key] for key in ('filename', 'package', 'version', 'architecture', 'size', 'sha256')}
+                  for row in verification['packages']
+              ],
+              'artifact': {
+                  'id': str(artifact['id']),
+                  'name': artifact['name'],
+                  'digest': artifact.get('digest'),
+                  'size_in_bytes': artifact['size_in_bytes'],
+                  'expired': artifact['expired'],
+              },
+              'policy': 'locked-upstream-base-plus-locked-hancom-patch-plus-amd64-semantic-equivalence-plus-native-arm64-zero-foreign-elf',
+          }
+          Path(os.environ['LOCK_DIR'], 'package-promotion-authority.json').write_text(
+              json.dumps(authority, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '.package_layer_promotion_allowed == true and .foreign_elf_count == 0' \
+            "$LOCK_DIR/package-promotion-authority.json" >/dev/null
+
+      - name: Commit compact build authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          git commit -m 'Lock session manager han3u2 ARM64 build'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch final package repository reconciliation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-merge-final-package-repository-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port

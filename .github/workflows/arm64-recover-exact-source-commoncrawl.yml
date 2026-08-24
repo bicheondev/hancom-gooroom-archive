@@ -1,0 +1,249 @@
+name: ARM64 port - recover exact sources from Common Crawl
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-exact-source-commoncrawl.yml'
+      - 'arm64/scripts/recover_exact_source_archives.py'
+      - 'arm64/scripts/recover_exact_source_archives_commoncrawl.py'
+      - 'arm64/locks/exact-source-recovery-v2/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-commoncrawl-source-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 135
+    steps:
+      - name: Check out ARM64 authority and Common Crawl recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install WARC and compression dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl file jq lz4 python3 util-linux xz-utils zstd
+
+      - name: Run Common Crawl source recovery with retained diagnostics
+        id: recovery
+        shell: bash
+        run: |
+          set -uox pipefail
+          base=work/exact-source-commoncrawl
+          rm -rf "$base"
+          mkdir -p "$base"/{evidence,archives}
+
+          previous=arm64/locks/exact-source-recovery-v2/latest
+          previous_args=()
+          if [ -f "$previous/target-results.json" ]; then
+            previous_args=(--previous-evidence "$previous")
+          fi
+
+          set +e
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_source_archives.py \
+            arm64/scripts/recover_exact_source_archives_commoncrawl.py \
+            > "$base/evidence/python-compile.log" 2>&1
+          compile_rc=$?
+
+          recovery_rc=125
+          if [ "$compile_rc" -eq 0 ]; then
+            timeout --signal=TERM --kill-after=90s 105m \
+              python3 arm64/scripts/recover_exact_source_archives_commoncrawl.py \
+                "${previous_args[@]}" \
+                --evidence-dir "$base/evidence" \
+                --archive-dir "$base/archives" \
+              > "$base/evidence/recovery.stdout.log" \
+              2> "$base/evidence/recovery.stderr.log"
+            recovery_rc=$?
+          fi
+          set -e
+
+          jq -n \
+            --argjson compile_rc "$compile_rc" \
+            --argjson recovery_rc "$recovery_rc" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
+              {
+                schema: 1,
+                compile_exit_code: $compile_rc,
+                recovery_exit_code: $recovery_rc,
+                workflow_run_id: $workflow_run_id,
+                workflow_run_attempt: $workflow_run_attempt,
+                head_sha: $head_sha,
+                generated_at: $generated_at
+              }
+            ' > "$base/evidence/runner-status.json"
+
+          if [ ! -f "$base/evidence/summary.json" ]; then
+            stderr_tail="$(tail -c 12000 "$base/evidence/recovery.stderr.log" 2>/dev/null || true)"
+            compile_tail="$(tail -c 12000 "$base/evidence/python-compile.log" 2>/dev/null || true)"
+            jq -n \
+              --argjson compile_rc "$compile_rc" \
+              --argjson recovery_rc "$recovery_rc" \
+              --arg compile_tail "$compile_tail" \
+              --arg stderr_tail "$stderr_tail" '
+                {
+                  schema: 1,
+                  policy: "commoncrawl-source-recovery-runner-failure",
+                  input_target_count: 7,
+                  collection_count: 0,
+                  lookup_url_count: 0,
+                  exact_source_stanza_target_count: 0,
+                  exact_source_archive_recovered_count: 0,
+                  unresolved_count: 7,
+                  commoncrawl_index_attempt_count: 0,
+                  commoncrawl_warc_attempt_count: 0,
+                  recovered_archive_bytes: 0,
+                  source_recovery_ready: false,
+                  all_input_targets_recovered: false,
+                  promotion_allowed: false,
+                  runner_failed: true,
+                  compile_exit_code: $compile_rc,
+                  recovery_exit_code: $recovery_rc,
+                  compile_log_tail: $compile_tail,
+                  stderr_log_tail: $stderr_tail
+                }
+              ' > "$base/evidence/summary.json"
+            {
+              printf 'source\tversion\tstatus\tsource_stanza_candidates\tdirect_dsc_hits\tcandidate_attempts\treason\n'
+              printf 'runner\tn/a\tfailed\t0\t0\t0\tcompile_rc=%s recovery_rc=%s\n' \
+                "$compile_rc" "$recovery_rc"
+            } > "$base/evidence/targets.tsv"
+          fi
+
+          jq -e '
+            .schema == 1
+            and .input_target_count >= 0
+            and .exact_source_archive_recovered_count >= 0
+            and .unresolved_count >= 0
+            and (
+              .exact_source_archive_recovered_count + .unresolved_count
+              == .input_target_count
+            )
+            and .promotion_allowed == false
+          ' "$base/evidence/summary.json" >/dev/null
+
+          echo "compile_rc=$compile_rc" >> "$GITHUB_OUTPUT"
+          echo "recovery_rc=$recovery_rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Seal compact Common Crawl evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/exact-source-commoncrawl/evidence
+          test -f "$evidence/summary.json"
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$evidence"
+          find "$evidence" -type f -printf '%P\t%s\n' | LC_ALL=C sort
+
+      - name: Write Common Crawl recovery report
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=work/exact-source-commoncrawl/evidence/summary.json
+          targets=work/exact-source-commoncrawl/evidence/targets.tsv
+          runner=work/exact-source-commoncrawl/evidence/runner-status.json
+          {
+            echo '## Common Crawl exact-source recovery'
+            echo
+            echo '| Metric | Value |'
+            echo '|---|---:|'
+            echo "| Compile exit | $(jq -r '.compile_exit_code' "$runner") |"
+            echo "| Recovery exit | $(jq -r '.recovery_exit_code' "$runner") |"
+            echo "| Input targets | $(jq -r '.input_target_count' "$summary") |"
+            echo "| Crawl collections | $(jq -r '.collection_count' "$summary") |"
+            echo "| Exact Sources-stanza targets | $(jq -r '.exact_source_stanza_target_count' "$summary") |"
+            echo "| Fully recovered exact archives | $(jq -r '.exact_source_archive_recovered_count' "$summary") |"
+            echo "| Unresolved | $(jq -r '.unresolved_count' "$summary") |"
+            echo "| URL-index attempts | $(jq -r '.commoncrawl_index_attempt_count' "$summary") |"
+            echo "| WARC attempts | $(jq -r '.commoncrawl_warc_attempt_count' "$summary") |"
+            echo "| Recovered bytes | $(jq -r '.recovered_archive_bytes' "$summary") |"
+            echo
+            echo '```text'
+            column -ts $'\t' "$targets" || cat "$targets"
+            echo '```'
+            echo
+            echo '> Common Crawl evidence is non-promoting; every accepted archive still requires the separate package-layer verifier.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compact Common Crawl evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-commoncrawl-source-recovery-evidence
+          path: work/exact-source-commoncrawl/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Upload verified Common Crawl source members
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-commoncrawl-recovered-source-archives
+          path: work/exact-source-commoncrawl/archives
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Commit immutable Common Crawl recovery evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/exact-source-commoncrawl/evidence
+          destination=arm64/locks/exact-source-commoncrawl/latest
+          test -f "$source/summary.json"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Common Crawl source-recovery evidence is already current.'
+            exit 0
+          fi
+          git commit -m 'Record Common Crawl exact source recovery evidence'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce Common Crawl runner health after evidence commit
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test "${{ steps.recovery.outputs.compile_rc }}" = 0
+          test "${{ steps.recovery.outputs.recovery_rc }}" = 0

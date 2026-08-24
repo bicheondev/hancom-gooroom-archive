@@ -1,0 +1,90 @@
+name: ARM64 repair session manager reconstruction v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-repair-session-manager-reconstruction-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-repair-session-manager-reconstruction-v2
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out current ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply the exact source correction and preserve complete evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/arm64-verify-session-manager-han3u2-reconstruction-v1.yml')
+          text = workflow.read_text(encoding='utf-8')
+          old = (
+              '          source=work/gooroom-session-manager\n'
+              '          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest\n'
+              '          rm -rf "$destination"\n'
+          )
+          new = (
+              '          source=work/gooroom-session-manager\n'
+              '          destination=arm64/locks/gooroom-session-manager-han3u2-reconstruction/latest\n'
+              '          if [ ! -s "$source/comparison/summary.json" ] || [ ! -s "$source/comparison/payload-comparison.json" ]; then\n'
+              "            echo 'Comparison did not complete; preserving the previous complete authority.'\n"
+              '            exit 0\n'
+              '          fi\n'
+              '          rm -rf "$destination"\n'
+          )
+          if text.count(old) != 1:
+              raise SystemExit('session-manager authority replacement anchor count was not one')
+          workflow.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          patch = Path('arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/hancom-source-reconstruction.patch')
+          patch_text = patch.read_text(encoding='utf-8')
+          old_line = '\t\tg_signal_connect (G_OBJECT (g_icon_settings), "changed",'
+          new_line = '\t\tg_signal_connect (g_icon_settings, "changed",'
+          if patch_text.count(old_line) != 1:
+              raise SystemExit('G_OBJECT reconstruction anchor count was not one')
+          patch.write_text(patch_text.replace(old_line, new_line, 1), encoding='utf-8')
+          PY
+
+          grep -F 'g_signal_connect (g_icon_settings, "changed",' \
+            arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/hancom-source-reconstruction.patch
+          grep -F 'preserving the previous complete authority' \
+            .github/workflows/arm64-verify-session-manager-han3u2-reconstruction-v1.yml
+
+      - name: Commit both repairs as one source-authority change
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            .github/workflows/arm64-verify-session-manager-han3u2-reconstruction-v1.yml \
+            arm64/patches/gooroom-session-manager/0.3.9+grm3u1+han3u2/hancom-source-reconstruction.patch
+          if git diff --cached --quiet; then
+            echo 'Session manager repairs are already applied.'
+            exit 0
+          fi
+          git commit -m 'Fix exact session manager han3u2 reconstruction'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

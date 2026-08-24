@@ -1,0 +1,425 @@
+name: ARM64 reconstruct integration applet han3u3 v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-reconstruct-integration-applet-han3u3-v1.yml'
+      - 'arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reconstruct-integration-applet-han3u3-v1
+  cancel-in-progress: false
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out the triggering ARM64 commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install reconstruction and inspection tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gettext git jq libglib2.0-bin \
+            python3 xz-utils
+          docker version
+
+      - name: Restore and validate the locked reconstruction payload
+        id: payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          target=arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz
+          base_commit=92d01be140b79ced26e66f83df029b999f9aa2bb
+          corrupt_blob=56e73838ed5191eb7c15e6cd7d23f49528f160a1
+          corrupt_sha=e9eed734e4c8f6f217ea312a9666111203dfd1c1aa573000cc9c3b1909f33095
+          fixed_blob=ac8fcc44b878f07ec5175b76bfe10caa318bf939
+          fixed_gzip_sha=072ee8eea14141fd08695c5bff06fb2488f4c478a2c70542c07ee3ff28e3cd63
+          fixed_payload_sha=f49d6da54042f93c65ef14b5fbfc904b0ea208d068f73cc7ccbb134b03c34415
+          base_gzip_sha=6da98a98a7d5629a6c93aea2e2d1e7b417b06e03f8c5dcc3d2687f1d0210b7af
+          base_payload_sha=f3b8a90b05a725de54449cee27fe4c1b6a18bf3a92324dd288379e2c93ab4d92
+
+          test -f "$target"
+          current_blob="$(git hash-object "$target")"
+          current_sha="$(sha256sum "$target" | awk '{print $1}')"
+          repaired=false
+
+          if [[ "$current_blob:$current_sha" == "$fixed_blob:$fixed_gzip_sha" ]]; then
+            printf 'Reconstruction payload is already complete.\n'
+          elif [[ "$current_blob:$current_sha" == "$corrupt_blob:$corrupt_sha" ]]; then
+            temporary="$(mktemp -d)"
+            trap 'rm -rf "$temporary"' EXIT
+
+            if ! git cat-file -e "$base_commit:$target" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$base_commit"
+            fi
+            git cat-file -e "$base_commit:$target"
+            git show "$base_commit:$target" > "$temporary/base.sh.gz"
+            test "$(sha256sum "$temporary/base.sh.gz" | awk '{print $1}')" = "$base_gzip_sha"
+            gzip -t "$temporary/base.sh.gz"
+            gzip -dc "$temporary/base.sh.gz" > "$temporary/recovered.sh"
+            test "$(sha256sum "$temporary/recovered.sh" | awk '{print $1}')" = "$base_payload_sha"
+
+            python3 - "$temporary/recovered.sh" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+          indices = [
+              index
+              for index, line in enumerate(lines)
+              if 'docker exec "$RESOURCE_CONTAINER" bash -lc' in line
+              and 'libxml2-utils' in line
+          ]
+          if len(indices) != 1:
+              raise SystemExit(
+                  f'expected one resource-container install line, found {len(indices)}'
+              )
+          lines[indices[0]] = (
+              "docker exec \"$RESOURCE_CONTAINER\" bash -lc "
+              "'set -Eeuo pipefail; apt-get update; apt-get install -y "
+              "--no-install-recommends libglib2.0-dev-bin libxml2-utils; "
+              "command -v glib-compile-resources; "
+              "glib-compile-resources --version' \\\n"
+          )
+          path.write_text(''.join(lines), encoding='utf-8')
+          PY
+
+            test "$(sha256sum "$temporary/recovered.sh" | awk '{print $1}')" = "$fixed_payload_sha"
+            bash -n "$temporary/recovered.sh"
+            grep -F 'libglib2.0-dev-bin' "$temporary/recovered.sh" >/dev/null
+            grep -F 'command -v glib-compile-resources' "$temporary/recovered.sh" >/dev/null
+            gzip -n -9 -c "$temporary/recovered.sh" > "$temporary/recovered.sh.gz"
+            test "$(sha256sum "$temporary/recovered.sh.gz" | awk '{print $1}')" = "$fixed_gzip_sha"
+            test "$(git hash-object "$temporary/recovered.sh.gz")" = "$fixed_blob"
+            install -m 0644 "$temporary/recovered.sh.gz" "$target"
+            repaired=true
+          else
+            printf 'Unknown reconstruction payload state.\n' >&2
+            printf '  blob:   %s\n' "$current_blob" >&2
+            printf '  sha256: %s\n' "$current_sha" >&2
+            exit 1
+          fi
+
+          gzip -t "$target"
+          gzip -dc "$target" > "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          test "$(sha256sum "$target" | awk '{print $1}')" = "$fixed_gzip_sha"
+          test "$(git hash-object "$target")" = "$fixed_blob"
+          test "$(sha256sum "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" | awk '{print $1}')" = "$fixed_payload_sha"
+          bash -n "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          chmod +x "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh"
+          printf 'repaired=%s\n' "$repaired" >> "$GITHUB_OUTPUT"
+          printf 'gzip_sha256=%s\n' "$fixed_gzip_sha" >> "$GITHUB_OUTPUT"
+          printf 'payload_sha256=%s\n' "$fixed_payload_sha" >> "$GITHUB_OUTPUT"
+          printf 'git_blob_sha1=%s\n' "$fixed_blob" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare the vendor-locked Bullseye Nimf dependency image
+        id: nimf_image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          authority=arm64/locks/nimf-amd64-builddeps-v1/latest/authority.json
+          base_digest=sha256:99cdf7792e25416bd801861ccd8e2fb27fb527b25e8d9a8704ebc3ead2015675
+          root="$RUNNER_TEMP/bullseye-nimf-image"
+          rm -rf "$root"
+          mkdir -p "$root/deps"
+
+          jq -e '
+            .schema == 1
+            and .source == "nimf"
+            and .source_version == "2023.06.30+grm3u1"
+            and .source_commit == "583ad8b183db06a84c6b85a80fe132583566909d"
+            and (.packages | length) == 2
+            and all(.packages[]; .architecture == "amd64")
+            and ([.packages[].package] | sort) == ["libnimf1", "nimf-dev"]
+          ' "$authority" >/dev/null
+
+          jq -c '.packages[]' "$authority" | while IFS= read -r row; do
+            filename="$(jq -r '.filename' <<<"$row")"
+            url="$(jq -r '.url' <<<"$row")"
+            expected_sha="$(jq -r '.sha256' <<<"$row")"
+            expected_size="$(jq -r '.size' <<<"$row")"
+            expected_package="$(jq -r '.package' <<<"$row")"
+            curl --fail --show-error --location --retry 8 --retry-delay 2 \
+              --retry-all-errors "$url" -o "$root/deps/$filename"
+            test "$(stat -c '%s' "$root/deps/$filename")" = "$expected_size"
+            test "$(sha256sum "$root/deps/$filename" | awk '{print $1}')" = "$expected_sha"
+            test "$(dpkg-deb -f "$root/deps/$filename" Package)" = "$expected_package"
+            test "$(dpkg-deb -f "$root/deps/$filename" Version)" = '2023.06.30+grm3u1'
+            test "$(dpkg-deb -f "$root/deps/$filename" Architecture)" = amd64
+          done
+
+          cat > "$root/Dockerfile" <<'EOF'
+          FROM debian:bullseye@__BASE_DIGEST__
+          COPY deps/ /tmp/nimf-deps/
+          RUN set -Eeux; \
+              apt-get update; \
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                /tmp/nimf-deps/libnimf1_2023.06.30+grm3u1_amd64.deb \
+                /tmp/nimf-deps/nimf-dev_2023.06.30+grm3u1_amd64.deb; \
+              test "$(dpkg-query -W -f='${Version}' libnimf1)" = '2023.06.30+grm3u1'; \
+              test "$(dpkg-query -W -f='${Version}' nimf-dev)" = '2023.06.30+grm3u1'; \
+              rm -rf /var/lib/apt/lists/* /tmp/nimf-deps
+          EOF
+          sed -i "s|__BASE_DIGEST__|$base_digest|" "$root/Dockerfile"
+
+          docker build --pull=false --tag debian:bullseye "$root"
+          image_id="$(docker image inspect --format '{{.Id}}' debian:bullseye)"
+          docker run --rm debian:bullseye bash -Eeuo pipefail -c '
+            test "$(dpkg-query -W -f="\${Version}" libnimf1)" = "2023.06.30+grm3u1"
+            test "$(dpkg-query -W -f="\${Version}" nimf-dev)" = "2023.06.30+grm3u1"
+          '
+          printf 'image_id=%s\n' "$image_id" >> "$GITHUB_OUTPUT"
+          printf 'base_digest=%s\n' "$base_digest" >> "$GITHUB_OUTPUT"
+          printf 'authority_sha256=%s\n' "$(sha256sum "$authority" | awk '{print $1}')" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Install a fail-closed non-runtime ELF metadata shim
+        id: elf_tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/elf-tools"
+          mkdir -p "$root"
+          cat > "$root/objcopy" <<'EOF'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          real=/usr/bin/objcopy
+          spec=
+          previous=
+          for argument in "$@"; do
+            if [[ "$previous" == --dump-section ]]; then
+              spec="$argument"
+              break
+            fi
+            case "$argument" in
+              --dump-section=*) spec="${argument#--dump-section=}"; break ;;
+            esac
+            previous="$argument"
+          done
+          if [[ "$spec" == .shstrtab=* ]]; then
+            output="${spec#.shstrtab=}"
+            input="${!#}"
+            test -n "$output"
+            test -f "$input"
+            section_line="$(
+              readelf -SW "$input" \
+                | grep -E '^[[:space:]]*\[[[:space:]]*[0-9]+\][[:space:]]+\.shstrtab[[:space:]]+STRTAB[[:space:]]+0+' \
+                | head -1
+            )"
+            test -n "$section_line"
+            mkdir -p "$(dirname "$output")"
+            : > "$output"
+            printf 'excluded non-runtime section .shstrtab from %s\n' "$input" \
+              >> "${ELF_METADATA_SHIM_LOG:?}"
+            exit 0
+          fi
+          exec "$real" "$@"
+          EOF
+          chmod 0755 "$root/objcopy"
+          bash -n "$root/objcopy"
+          printf 'shim_sha256=%s\n' "$(sha256sum "$root/objcopy" | awk '{print $1}')" \
+            >> "$GITHUB_OUTPUT"
+          printf 'policy=%s\n' 'exclude-nonalloc-shstrtab-from-runtime-section-equivalence' \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Reconstruct vendor overlay and attempt bullseye AMD64 equivalence
+        id: reconstruct
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$RUNNER_TEMP/elf-tools:$PATH"
+          export ELF_METADATA_SHIM_LOG="$RUNNER_TEMP/objcopy-shstrtab-exclusions.log"
+          : > "$ELF_METADATA_SHIM_LOG"
+          workspace=work/integration-applet-reconstruction-v1
+          temporary_log="$RUNNER_TEMP/integration-applet-reconstruction-v1.log"
+          rm -f "$temporary_log"
+          set +e
+          "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" \
+            "$workspace" > "$temporary_log" 2>&1
+          rc=$?
+          set -e
+          mkdir -p "$workspace/output"
+          cp "$temporary_log" "$workspace/output/orchestrator.log"
+          cp "$RUNNER_TEMP/reconstruct_integration_applet_han3u3_v1.sh" \
+            "$workspace/output/reconstruction-runner.sh"
+          cp "$ELF_METADATA_SHIM_LOG" "$workspace/output/objcopy-shstrtab-exclusions.log"
+          printf '%s\n' "$rc" > "$workspace/output/orchestrator.exit"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          if [[ ! -f work/integration-applet-reconstruction-v1/output/summary.json ]]; then
+            jq -n --argjson exit_code "$rc" '
+              {
+                schema: 1,
+                status: "reconstruction-failed-before-summary",
+                orchestrator_exit_code: $exit_code,
+                exact_vendor_source_recovered: false,
+                candidate_source_reconstructed: false,
+                amd64_normalized_equivalence_verified: false,
+                native_arm64_build_allowed: false,
+                package_promotion_allowed: false,
+                iso_assembly_allowed: false,
+                fail_closed: true,
+                next_action: "inspect reconstruction artifact and repair the failed stage"
+              }
+            ' > work/integration-applet-reconstruction-v1/output/summary.json
+          fi
+          tail -n 200 work/integration-applet-reconstruction-v1/output/orchestrator.log \
+            > work/integration-applet-reconstruction-v1/output/orchestrator-tail.log
+          find work/integration-applet-reconstruction-v1/output -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/integration-applet-reconstruction-v1/output/FILE-INVENTORY.final.tsv
+          (
+            cd work/integration-applet-reconstruction-v1/output
+            find . -type f ! -name LOCKSUMS.final.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.final.sha256
+            sha256sum --check --strict LOCKSUMS.final.sha256
+          )
+          jq '.' work/integration-applet-reconstruction-v1/output/summary.json \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete reconstruction and build evidence
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-han3u3-reconstruction-v1
+          path: work/integration-applet-reconstruction-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed reconstruction authority
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          RECONSTRUCTION_EXIT: ${{ steps.reconstruct.outputs.exit_code }}
+          PAYLOAD_REPAIRED: ${{ steps.payload.outputs.repaired }}
+          PAYLOAD_GZIP_SHA256: ${{ steps.payload.outputs.gzip_sha256 }}
+          PAYLOAD_SHA256: ${{ steps.payload.outputs.payload_sha256 }}
+          PAYLOAD_GIT_BLOB: ${{ steps.payload.outputs.git_blob_sha1 }}
+          NIMF_IMAGE_ID: ${{ steps.nimf_image.outputs.image_id }}
+          NIMF_BASE_DIGEST: ${{ steps.nimf_image.outputs.base_digest }}
+          NIMF_AUTHORITY_SHA256: ${{ steps.nimf_image.outputs.authority_sha256 }}
+          ELF_METADATA_SHIM_SHA256: ${{ steps.elf_tools.outputs.shim_sha256 }}
+          ELF_METADATA_SHIM_POLICY: ${{ steps.elf_tools.outputs.policy }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/integration-applet-reconstruction-v1/output
+          target=arm64/scripts/reconstruct_integration_applet_han3u3_v1.sh.gz
+          destination=arm64/locks/gooroom-integration-applet-reconstruction-v1/latest
+          stale=arm64/locks/goorom-integration-applet-reconstruction-v1
+
+          git rm -r --ignore-unmatch "$stale" || true
+          rm -rf "$stale" "$destination"
+          mkdir -p "$destination"
+          for name in \
+            summary.json \
+            vendor-changelog.txt \
+            main-gresource-reconstruction.json \
+            main-gresource-attempts.json \
+            module-gresource-reconstruction.json \
+            locale-roundtrip.tsv \
+            overlay-name-status.tsv \
+            candidate-status.txt \
+            build.exit \
+            orchestrator.exit \
+            orchestrator-tail.log \
+            payload-comparison.json \
+            elf-section-comparison.json \
+            target-control.normalized.txt \
+            built-control.normalized.txt \
+            objcopy-shstrtab-exclusions.log
+          do
+            [[ ! -f "$source/$name" ]] || cp "$source/$name" "$destination/"
+          done
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg reconstruction_exit "$RECONSTRUCTION_EXIT" \
+            --arg payload_repaired "$PAYLOAD_REPAIRED" \
+            --arg payload_gzip_sha256 "$PAYLOAD_GZIP_SHA256" \
+            --arg payload_sha256 "$PAYLOAD_SHA256" \
+            --arg payload_git_blob "$PAYLOAD_GIT_BLOB" \
+            --arg nimf_image_id "$NIMF_IMAGE_ID" \
+            --arg nimf_base_digest "$NIMF_BASE_DIGEST" \
+            --arg nimf_authority_sha256 "$NIMF_AUTHORITY_SHA256" \
+            --arg elf_metadata_shim_sha256 "$ELF_METADATA_SHIM_SHA256" \
+            --arg elf_metadata_shim_policy "$ELF_METADATA_SHIM_POLICY" '
+              {
+                schema: 2,
+                actions_run_id: $run_id,
+                actions_run_attempt: $run_attempt,
+                actions_run_url: $run_url,
+                triggering_head_sha: $head_sha,
+                artifact_id: $artifact_id,
+                artifact_digest: $artifact_digest,
+                reconstruction_exit_code: $reconstruction_exit,
+                reconstruction_payload_repaired: ($payload_repaired == "true"),
+                reconstruction_payload_gzip_sha256: $payload_gzip_sha256,
+                reconstruction_payload_sha256: $payload_sha256,
+                reconstruction_payload_git_blob_sha1: $payload_git_blob,
+                nimf_dependency_image_id: $nimf_image_id,
+                nimf_dependency_base_digest: $nimf_base_digest,
+                nimf_dependency_authority_sha256: $nimf_authority_sha256,
+                elf_metadata_shim_sha256: $elf_metadata_shim_sha256,
+                elf_metadata_shim_policy: $elf_metadata_shim_policy,
+                fail_closed: true
+              }
+            ' > "$destination/artifact-lock.json"
+          python3 - "$destination" <<'PY'
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1])
+          for name in ('orchestrator-tail.log', 'objcopy-shstrtab-exclusions.log'):
+              path = root / name
+              if not path.exists():
+                  continue
+              data = path.read_bytes().rstrip(b'\n')
+              path.write_bytes(data + b'\n' if data else b'')
+          PY
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination" "$target"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m 'Record integration applet han3u3 reconstruction v1'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1

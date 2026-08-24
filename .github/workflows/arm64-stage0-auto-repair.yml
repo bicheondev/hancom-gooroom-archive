@@ -1,0 +1,352 @@
+name: ARM64 port - diagnose and repair latest stage0 failure
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-auto-repair.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-stage0-auto-repair
+  cancel-in-progress: true
+
+jobs:
+  diagnose-repair-rerun:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Locate the latest completed stage0 run
+        id: locate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/stage0-repair
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=arm64-port&per_page=100" \
+            > work/stage0-repair/runs-pages.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          pages = json.loads(Path('work/stage0-repair/runs-pages.json').read_text())
+          if isinstance(pages, dict):
+              pages = [pages]
+          runs = []
+          for page in pages:
+              runs.extend(page.get('workflow_runs', []))
+          candidates = []
+          for run in runs:
+              name = (run.get('name') or '').lower()
+              path = (run.get('path') or '').lower()
+              if 'stage0' not in name and 'stage0' not in path:
+                  continue
+              if 'auto-repair' in name or 'auto-repair' in path:
+                  continue
+              if run.get('status') != 'completed':
+                  continue
+              candidates.append(run)
+          candidates.sort(key=lambda r: (r.get('run_started_at') or '', int(r.get('id') or 0)), reverse=True)
+          if not candidates:
+              raise SystemExit('No completed stage0 workflow run was found on arm64-port')
+          selected = candidates[0]
+          Path('work/stage0-repair/selected-run.json').write_text(
+              json.dumps(selected, indent=2) + '\n', encoding='utf-8'
+          )
+          Path('work/stage0-repair/run-id.txt').write_text(str(selected['id']) + '\n')
+          Path('work/stage0-repair/workflow-path.txt').write_text(selected['path'] + '\n')
+          print(json.dumps({
+              'id': selected['id'],
+              'name': selected.get('name'),
+              'path': selected.get('path'),
+              'conclusion': selected.get('conclusion'),
+              'head_sha': selected.get('head_sha'),
+          }, indent=2))
+          PY
+
+          run_id="$(cat work/stage0-repair/run-id.txt)"
+          workflow_path="$(cat work/stage0-repair/workflow-path.txt)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "workflow_path=$workflow_path" >> "$GITHUB_OUTPUT"
+
+      - name: Download failed logs and exact job/step state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id='${{ steps.locate.outputs.run_id }}'
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            > work/stage0-repair/jobs.json
+          set +e
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --log-failed \
+            > work/stage0-repair/failed.log 2>&1
+          log_rc=$?
+          set -e
+          printf '%s\n' "$log_rc" > work/stage0-repair/log-download-exit-code.txt
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          jobs = json.loads(Path('work/stage0-repair/jobs.json').read_text())
+          failed = []
+          for job in jobs.get('jobs', []):
+              failed_steps = [
+                  {
+                      'number': step.get('number'),
+                      'name': step.get('name'),
+                      'status': step.get('status'),
+                      'conclusion': step.get('conclusion'),
+                  }
+                  for step in job.get('steps', [])
+                  if step.get('conclusion') == 'failure'
+              ]
+              if job.get('conclusion') == 'failure' or failed_steps:
+                  failed.append({
+                      'job_id': job.get('id'),
+                      'job_name': job.get('name'),
+                      'conclusion': job.get('conclusion'),
+                      'failed_steps': failed_steps,
+                  })
+          Path('work/stage0-repair/failed-jobs.json').write_text(
+              json.dumps(failed, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(failed, indent=2))
+          PY
+
+      - name: Apply only deterministic architecture-safe repairs
+        id: repair
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+
+          log_path = Path('work/stage0-repair/failed.log')
+          log = log_path.read_text(encoding='utf-8', errors='replace') if log_path.exists() else ''
+          selected = json.loads(Path('work/stage0-repair/selected-run.json').read_text())
+          workflow_path = Path(selected['path'])
+
+          candidate_paths = []
+          for root in (Path('arm64/scripts'), Path('.github/workflows')):
+              if not root.exists():
+                  continue
+              for path in root.rglob('*'):
+                  if path.is_file() and path.suffix in {'.sh', '.py', '.yml', '.yaml'}:
+                      candidate_paths.append(path)
+
+          replacements = {
+              'linux-image-5.10.0-23-amd64': 'linux-image-5.10.0-23-arm64',
+              'linux-image-amd64': 'linux-image-arm64',
+              'grub-pc-bin': 'grub-efi-arm64-bin',
+              'grub-pc': 'grub-efi-arm64',
+              'binutils-x86-64-linux-gnu': 'binutils-aarch64-linux-gnu',
+          }
+          changed = []
+          replacement_counts = {}
+          for path in candidate_paths:
+              # Never rewrite immutable evidence/locks. Only executable pipeline source is inspected.
+              text = path.read_text(encoding='utf-8', errors='strict')
+              original = text
+              counts = {}
+              for old, new in replacements.items():
+                  count = text.count(old)
+                  if count:
+                      text = text.replace(old, new)
+                      counts[f'{old} -> {new}'] = count
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+                  changed.append(str(path))
+                  replacement_counts[str(path)] = counts
+
+          # Missing host-side build tools are repaired only when the failed log proves
+          # that exact executable was absent. Package names are stable in Ubuntu 24.04.
+          missing_tools = {
+              'grub-mkstandalone': 'grub-common grub-efi-arm64-bin',
+              'mkfs.vfat': 'dosfstools',
+              'mcopy': 'mtools',
+              'mmd': 'mtools',
+              'mksquashfs': 'squashfs-tools',
+              'xorriso': 'xorriso',
+              'qemu-system-aarch64': 'qemu-system-arm',
+          }
+          proven_missing = []
+          for tool, packages in missing_tools.items():
+              patterns = [
+                  rf'{re.escape(tool)}: command not found',
+                  rf'{re.escape(tool)}: not found',
+                  rf'No such file or directory[^\n]*{re.escape(tool)}',
+              ]
+              if any(re.search(pattern, log, re.IGNORECASE) for pattern in patterns):
+                  proven_missing.append({'tool': tool, 'packages': packages})
+
+          # Add missing host packages to the selected workflow's first apt install block.
+          if proven_missing and workflow_path.exists():
+              text = workflow_path.read_text(encoding='utf-8')
+              original = text
+              packages = sorted({p for row in proven_missing for p in row['packages'].split()})
+              install_match = re.search(
+                  r'(sudo\s+apt-get\s+install\s+-y(?:\s+--no-install-recommends)?)([\s\\\n]+)(.*?)(?=\n\s*\n|\n\s*-\s+name:|\Z)',
+                  text,
+                  flags=re.DOTALL,
+              )
+              if install_match:
+                  block = install_match.group(0)
+                  additions = [p for p in packages if re.search(rf'(?<![A-Za-z0-9+_.-]){re.escape(p)}(?![A-Za-z0-9+_.-])', block) is None]
+                  if additions:
+                      replacement = block.rstrip() + ' \\\n            ' + ' '.join(additions) + '\n'
+                      text = text[:install_match.start()] + replacement + text[install_match.end():]
+              if text != original:
+                  workflow_path.write_text(text, encoding='utf-8')
+                  if str(workflow_path) not in changed:
+                      changed.append(str(workflow_path))
+                  replacement_counts.setdefault(str(workflow_path), {})['host tool packages'] = packages
+
+          # Record exact package names whose absence is proved, but do not silently omit
+          # or substitute them. This is diagnostic evidence for the next deterministic fix.
+          missing_packages = sorted(set(
+              re.findall(r"Unable to locate package\s+([^\s]+)", log)
+              + re.findall(r"Package ['‘]?([^'’\s]+)['’]? has no installation candidate", log)
+              + re.findall(r"E:\s+Package '([^']+)' has no installation candidate", log)
+          ))
+
+          error_context = []
+          lines = log.splitlines()
+          error_re = re.compile(
+              r'(?i)(error|fatal|failed|failure|unable|cannot|not found|no such file|unmet dependencies|broken packages|mismatch|refusing|exit code)'
+          )
+          for index, line in enumerate(lines):
+              if error_re.search(line):
+                  error_context.append({
+                      'line': index + 1,
+                      'context': lines[max(0, index - 2): min(len(lines), index + 4)],
+                  })
+          error_context = error_context[-100:]
+
+          report = {
+              'schema': 1,
+              'source_run_id': selected.get('id'),
+              'source_run_name': selected.get('name'),
+              'source_workflow_path': selected.get('path'),
+              'source_conclusion': selected.get('conclusion'),
+              'changed_files': changed,
+              'replacement_counts': replacement_counts,
+              'proven_missing_host_tools': proven_missing,
+              'unresolved_missing_packages': missing_packages,
+              'error_context': error_context,
+              'safe_repair_applied': bool(changed),
+          }
+          Path('work/stage0-repair/repair-report.json').write_text(
+              json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
+          Path('work/stage0-repair/changed-files.txt').write_text(
+              ''.join(path + '\n' for path in changed), encoding='utf-8'
+          )
+          print(json.dumps(report, ensure_ascii=False, indent=2))
+          PY
+
+          if [ -s work/stage0-repair/changed-files.txt ]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate modified scripts and workflow YAML
+        shell: bash
+        run: |
+          set -euxo pipefail
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            case "$path" in
+              *.sh) bash -n "$path" ;;
+              *.py) python3 -m py_compile "$path" ;;
+            esac
+          done < work/stage0-repair/changed-files.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          try:
+              import yaml
+          except ImportError:
+              raise SystemExit(0)
+          errors=[]
+          for path in Path('.github/workflows').glob('*.yml'):
+              try:
+                  data=yaml.safe_load(path.read_text(encoding='utf-8'))
+                  if not isinstance(data, dict) or not isinstance(data.get('jobs'), dict):
+                      raise ValueError('invalid workflow mapping/jobs')
+              except Exception as exc:
+                  errors.append(f'{path}: {exc}')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          PY
+
+      - name: Persist diagnostic and safe repair on arm64-port
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id='${{ steps.locate.outputs.run_id }}'
+          destination="arm64/audit/stage0-repair/${run_id}"
+          mkdir -p "$destination"
+          cp work/stage0-repair/selected-run.json "$destination/"
+          cp work/stage0-repair/failed-jobs.json "$destination/"
+          cp work/stage0-repair/repair-report.json "$destination/"
+          cp work/stage0-repair/log-download-exit-code.txt "$destination/"
+          tail -n 1200 work/stage0-repair/failed.log > "$destination/failed-tail.log" || true
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts .github/workflows "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Diagnose and safely repair stage0 run ${run_id}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Rerun the repaired stage0 workflow
+        if: steps.repair.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          workflow_path='${{ steps.locate.outputs.workflow_path }}'
+          gh workflow run "$workflow_path" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+
+      - name: Upload complete diagnosis
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stage0-auto-repair-${{ steps.locate.outputs.run_id }}
+          path: work/stage0-repair
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9

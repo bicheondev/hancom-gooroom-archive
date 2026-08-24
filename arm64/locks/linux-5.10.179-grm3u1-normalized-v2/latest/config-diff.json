@@ -1,0 +1,400 @@
+{
+  "difference_count": 63,
+  "differences": [
+    {
+      "debian": null,
+      "symbol": "CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_CRYPTO_AES",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_CRYPTO_CBC",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_CRYPTO_FIPS",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_CRYPTO_LIB_AES",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_CRYPTO_RNG",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_EFI_VARS",
+      "transition": "n->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_EFI_VARS_PSTORE",
+      "transition": "m->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_ENCRYPTED_KEYS",
+      "transition": "n->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_EVM",
+      "transition": "n->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_EVM_ADD_XATTRS",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_EVM_ATTR_FSUUID",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_EVM_LOAD_X509",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_HW_RANDOM_TPM",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_IMA",
+      "transition": "n->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_APPRAISE",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_APPRAISE_BOOTPARAM",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_APPRAISE_BUILD_POLICY",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_APPRAISE_MODSIG",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_ARCH_POLICY",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_BLACKLIST_KEYRING",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_DEFAULT_HASH",
+      "transition": "None->\"sha256\"",
+      "vendor": "\"sha256\""
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_DEFAULT_HASH_SHA1",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_DEFAULT_HASH_SHA256",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_DEFAULT_TEMPLATE",
+      "transition": "None->\"ima-ng\"",
+      "vendor": "\"ima-ng\""
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_LOAD_X509",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_LSM_RULES",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_MEASURE_PCR_IDX",
+      "transition": "None->10",
+      "vendor": "10"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_NG_TEMPLATE",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_QUEUE_EARLY_BOOT_KEYS",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_READ_POLICY",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_SIG_TEMPLATE",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_TRUSTED_KEYRING",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_IMA_WRITE_POLICY",
+      "transition": "None->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_INTEGRITY_TRUSTED_KEYRING",
+      "transition": "n->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_JUMP_LABEL",
+      "transition": "y->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_LOCK_DOWN_IN_EFI_SECURE_BOOT",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_LOCK_DOWN_KERNEL_FORCE_CONFIDENTIALITY",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_LOCK_DOWN_KERNEL_FORCE_INTEGRITY",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_LOCK_DOWN_KERNEL_FORCE_NONE",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_MODULE_SIG",
+      "transition": "y->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_ALL",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_FORCE",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_MODULE_SIG_FORMAT",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "\"sha256\"",
+      "symbol": "CONFIG_MODULE_SIG_HASH",
+      "transition": "\"sha256\"->None",
+      "vendor": null
+    },
+    {
+      "debian": "\"\"",
+      "symbol": "CONFIG_MODULE_SIG_KEY",
+      "transition": "\"\"->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_SHA1",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_SHA224",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_MODULE_SIG_SHA256",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_SHA384",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_MODULE_SIG_SHA512",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": null,
+      "symbol": "CONFIG_NVDIMM_KEYS",
+      "transition": "None->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_SECURITY_LOCKDOWN_LSM",
+      "transition": "y->n",
+      "vendor": "n"
+    },
+    {
+      "debian": "y",
+      "symbol": "CONFIG_SECURITY_LOCKDOWN_LSM_EARLY",
+      "transition": "y->None",
+      "vendor": null
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_STATIC_KEYS_SELFTEST",
+      "transition": "n->None",
+      "vendor": null
+    },
+    {
+      "debian": "\"debian/certs/debian-uefi-certs.pem\"",
+      "symbol": "CONFIG_SYSTEM_TRUSTED_KEYS",
+      "transition": "\"debian/certs/debian-uefi-certs.pem\"->\"debian/certs/gooroom_x509_system.pem\"",
+      "vendor": "\"debian/certs/gooroom_x509_system.pem\""
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_TCG_CRB",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_TCG_TIS",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_TCG_TIS_CORE",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "m",
+      "symbol": "CONFIG_TCG_TPM",
+      "transition": "m->y",
+      "vendor": "y"
+    },
+    {
+      "debian": "n",
+      "symbol": "CONFIG_TRUSTED_KEYS",
+      "transition": "n->y",
+      "vendor": "y"
+    }
+  ],
+  "schema": 2,
+  "transition_counts": {
+    "\"\"->None": 1,
+    "\"debian/certs/debian-uefi-certs.pem\"->\"debian/certs/gooroom_x509_system.pem\"": 1,
+    "\"sha256\"->None": 1,
+    "None->\"ima-ng\"": 1,
+    "None->\"sha256\"": 1,
+    "None->10": 1,
+    "None->n": 10,
+    "None->y": 12,
+    "m->n": 1,
+    "m->y": 8,
+    "n->None": 10,
+    "n->y": 6,
+    "y->None": 7,
+    "y->n": 3
+  }
+}

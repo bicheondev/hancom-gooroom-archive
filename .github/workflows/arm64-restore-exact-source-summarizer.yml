@@ -1,0 +1,147 @@
+name: ARM64 port - restore exact source recovery summarizer
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-restore-exact-source-summarizer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-restore-exact-source-summarizer
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Restore and contract-test missing summarizer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the triggering revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Restore the verified script from the development branch
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin \
+            refs/heads/agent/arm64-v3.3-port:refs/remotes/origin/agent/arm64-v3.3-port
+          mkdir -p arm64/scripts
+          git show \
+            origin/agent/arm64-v3.3-port:arm64/scripts/summarize_exact_source_recovery.py \
+            > arm64/scripts/summarize_exact_source_recovery.py
+          chmod 0755 arm64/scripts/summarize_exact_source_recovery.py
+          test -s arm64/scripts/summarize_exact_source_recovery.py
+          python3 -m py_compile arm64/scripts/summarize_exact_source_recovery.py
+
+      - name: Execute the current workflow contract
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-yaml
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import yaml
+
+          workflow = yaml.safe_load(
+              Path('.github/workflows/arm64-summarize-exact-source-recovery.yml')
+              .read_text(encoding='utf-8')
+          )
+          invocations = []
+          for job in (workflow.get('jobs') or {}).values():
+              for step in job.get('steps') or []:
+                  command = step.get('run')
+                  if (
+                      isinstance(command, str)
+                      and 'summarize_exact_source_recovery.py' in command
+                  ):
+                      invocations.append(command)
+          if len(invocations) != 1:
+              raise SystemExit(
+                  f'expected exactly one summarizer invocation, found {len(invocations)}'
+              )
+          subprocess.run(
+              ['bash', '-c', 'set -Eeuo pipefail\n' + invocations[0]],
+              check=True,
+          )
+          PY
+
+      - name: Verify generated JSON and checksum manifests
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+
+          changed = subprocess.check_output(
+              ['git', 'status', '--porcelain=v1'], text=True
+          ).splitlines()
+          paths = []
+          for line in changed:
+              path = line[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              paths.append(Path(path))
+
+          for path in paths:
+              if path.is_file() and path.suffix == '.json':
+                  json.loads(path.read_text(encoding='utf-8'))
+
+          for sums in sorted({
+              path.parent / 'LOCKSUMS.sha256'
+              for path in paths
+              if path.exists()
+          }):
+              if not sums.is_file():
+                  continue
+              for raw in sums.read_text(encoding='utf-8').splitlines():
+                  if not raw.strip():
+                      continue
+                  digest, relative = raw.split(None, 1)
+                  target = sums.parent / relative.lstrip('* ')
+                  if not target.is_file():
+                      raise SystemExit(f'missing checksummed file: {target}')
+                  actual = hashlib.sha256(target.read_bytes()).hexdigest()
+                  if actual != digest:
+                      raise SystemExit(f'checksum mismatch: {target}')
+          PY
+
+      - name: Commit only the restored script and remove this bootstrap
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git restore --worktree --staged -- . \
+            ':!arm64/scripts/summarize_exact_source_recovery.py' \
+            ':!.github/workflows/arm64-restore-exact-source-summarizer.yml'
+          git rm .github/workflows/arm64-restore-exact-source-summarizer.yml
+          git add arm64/scripts/summarize_exact_source_recovery.py
+
+          python3 - <<'PY'
+          import subprocess
+          lines = subprocess.check_output(
+              ['git', 'status', '--porcelain=v1'], text=True
+          ).splitlines()
+          allowed = {
+              'arm64/scripts/summarize_exact_source_recovery.py',
+              '.github/workflows/arm64-restore-exact-source-summarizer.yml',
+          }
+          actual = {line[3:] for line in lines}
+          if not actual or not actual.issubset(allowed):
+              raise SystemExit(f'unexpected commit paths: {sorted(actual)}')
+          PY
+
+          git commit -m 'Restore exact source recovery summarizer'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_HEAD"
+          git push origin HEAD:refs/heads/arm64-port

@@ -1,0 +1,271 @@
+name: ARM64 port - resolve linux 5.10.0-23 grm3u1 v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml'
+      - 'arm64/scripts/download_debian_snapshot_binary_v1.py'
+      - 'arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-0-23-grm3u1-resolution-v1
+  cancel-in-progress: true
+
+env:
+  VENDOR_PACKAGE: linux-image-5.10.0-23-amd64
+  ARM64_PACKAGE: linux-image-5.10.0-23-arm64
+  BASE_VERSION: 5.10.179-1
+  TARGET_VERSION: 5.10.179-1+grm3u1
+  VENDOR_FILENAME: linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+  ARM64_FILENAME: linux-image-5.10.0-23-arm64_5.10.179-1+grm3u1_arm64.deb
+  ARTIFACT_NAME: linux-image-5.10.0-23-arm64-5.10.179-1-grm3u1-v1
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install Debian package and binary-audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file jq python3 xz-utils zstd
+
+      - name: Recover the exact Hancom Gooroom AMD64 kernel package
+        id: vendor
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/linux-5.10.0-23-grm3u1
+          mkdir -p "$base"/{downloads,evidence,resolution,artifact}
+          urls="$base/evidence/vendor-candidate-urls.txt"
+          probes="$base/evidence/vendor-url-probes.tsv"
+          selected="$base/evidence/vendor-selected-url.txt"
+          vendor="$base/downloads/$VENDOR_FILENAME"
+          authority=arm64/locks/reference-iso-source-residue/latest/repository-urls.txt
+
+          {
+            if [ -f "$authority" ]; then
+              grep -F "$VENDOR_FILENAME" "$authority" \
+                | sed -n 's#.*\(https\?://[^[:space:]"<>]*\).*#\1#p' || true
+            fi
+            for suite in hancom gooroom; do
+              for source_directory in linux linux-signed-amd64; do
+                printf '%s\n' \
+                  "https://update.hancomgooroom.com/$suite/pool/main/l/$source_directory/$VENDOR_FILENAME"
+              done
+            done
+            printf '%s\n' \
+              "https://update.gooroom.kr/gooroom/pool/main/l/linux/$VENDOR_FILENAME" \
+              "https://update.gooroom.kr/gooroom/pool/main/l/linux-signed-amd64/$VENDOR_FILENAME"
+          } | awk 'NF' | LC_ALL=C sort -u > "$urls"
+
+          printf 'result\thttp_code\tsize\turl\n' > "$probes"
+          recovered=false
+          while IFS= read -r url; do
+            [ -n "$url" ] || continue
+            candidate="$base/downloads/candidate.deb"
+            rm -f "$candidate"
+            set +e
+            code="$(curl --location --silent --show-error \
+              --max-time 180 --retry 3 --retry-delay 3 --retry-all-errors \
+              --write-out '%{http_code}' --output "$candidate" "$url")"
+            rc=$?
+            set -e
+            size=0
+            [ -f "$candidate" ] && size="$(stat -c '%s' "$candidate")"
+            if [ "$rc" -eq 0 ] && [ "$code" = 200 ] \
+              && [ "$(dpkg-deb -f "$candidate" Package 2>/dev/null || true)" = "$VENDOR_PACKAGE" ] \
+              && [ "$(dpkg-deb -f "$candidate" Version 2>/dev/null || true)" = "$TARGET_VERSION" ] \
+              && [ "$(dpkg-deb -f "$candidate" Architecture 2>/dev/null || true)" = amd64 ]; then
+              mv "$candidate" "$vendor"
+              printf '%s\n' "$url" > "$selected"
+              printf 'accepted\t%s\t%s\t%s\n' "$code" "$size" "$url" >> "$probes"
+              recovered=true
+              break
+            fi
+            printf 'rejected\t%s\t%s\t%s\n' "${code:-000}" "$size" "$url" >> "$probes"
+            rm -f "$candidate"
+          done < "$urls"
+
+          if [ "$recovered" != true ]; then
+            jq -n \
+              --arg package "$VENDOR_PACKAGE" \
+              --arg version "$TARGET_VERSION" \
+              --arg filename "$VENDOR_FILENAME" \
+              '{schema:1,status:"blocked",reason:"exact-vendor-amd64-deb-not-recovered",
+                package:$package,version:$version,filename:$filename}' \
+              > "$base/resolution/summary.json"
+            exit 2
+          fi
+
+          sha256sum "$vendor" > "$base/evidence/vendor-deb.sha256"
+          stat -c '%n\t%s' "$vendor" > "$base/evidence/vendor-deb.stat.tsv"
+          dpkg-deb -f "$vendor" > "$base/evidence/vendor-control-fields.txt"
+          dpkg-deb -c "$vendor" > "$base/evidence/vendor-data-list.txt"
+
+      - name: Download exact Debian AMD64 and ARM64 base packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/linux-5.10.0-23-grm3u1
+          python3 arm64/scripts/download_debian_snapshot_binary_v1.py \
+            --package "$VENDOR_PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture amd64 \
+            --output "$base/downloads/debian-amd64.deb" \
+            --metadata-output "$base/evidence/debian-amd64-snapshot.json"
+          python3 arm64/scripts/download_debian_snapshot_binary_v1.py \
+            --package "$ARM64_PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture arm64 \
+            --output "$base/downloads/debian-arm64.deb" \
+            --metadata-output "$base/evidence/debian-arm64-snapshot.json"
+
+      - name: Compare exact AMD64 payloads and conditionally promote ARM64
+        id: equivalence
+        shell: bash
+        run: |
+          set -uo pipefail
+          base=work/linux-5.10.0-23-grm3u1
+          set +e
+          python3 arm64/scripts/resolve_linux_5_10_0_23_grm3u1_v1.py \
+            --vendor-amd64-deb "$base/downloads/$VENDOR_FILENAME" \
+            --debian-amd64-deb "$base/downloads/debian-amd64.deb" \
+            --debian-arm64-deb "$base/downloads/debian-arm64.deb" \
+            --output-directory "$base/resolution" \
+            --promoted-deb "$base/artifact/$ARM64_FILENAME" \
+            2>&1 | tee "$base/evidence/resolver.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$rc" > "$base/evidence/resolver.exit-code"
+          if [ -f "$base/resolution/summary.json" ]; then
+            allowed="$(jq -r '.promotion_allowed // false' "$base/resolution/summary.json")"
+          else
+            allowed=false
+          fi
+          printf 'promotion_allowed=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+          printf 'resolver_exit_code=%s\n' "$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Seal complete kernel-resolution evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/linux-5.10.0-23-grm3u1
+          mkdir -p "$base"/{artifact,evidence,resolution}
+          if [ ! -f "$base/resolution/summary.json" ]; then
+            jq -n \
+              --arg status '${{ job.status }}' \
+              --arg run_id '${{ github.run_id }}' \
+              '{schema:1,status:"blocked",reason:"resolution-did-not-produce-summary",
+                actions_job_status:$status,actions_run_id:$run_id,promotion_allowed:false}' \
+              > "$base/resolution/summary.json"
+          fi
+          cp -a "$base/resolution/." "$base/artifact/evidence/"
+          cp -a "$base/evidence/." "$base/artifact/input-authority/"
+          cp "$base/resolution/summary.json" "$base/artifact/summary.json"
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_attempt '${{ github.run_attempt }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg commit '${{ github.sha }}' \
+            --arg artifact_name "$ARTIFACT_NAME" '
+              {schema:1,actions_run_id:$run_id,actions_run_attempt:$run_attempt,
+               actions_run_url:$run_url,workflow_commit:$commit,artifact_name:$artifact_name}
+            ' > "$base/artifact/artifact-lock.json"
+          find "$base/artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$base/artifact/FILE-INVENTORY.tsv"
+          (
+            cd "$base/artifact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          cat "$base/resolution/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload kernel package and full evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: work/linux-5.10.0-23-grm3u1/artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact kernel-resolution authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/linux-5.10.0-23-grm3u1
+          destination=arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp "$source/resolution/summary.json" "$destination/"
+          for filename in payload-differences.json control-differences.json arm64-payload-scan.json SHA256SUMS; do
+            if [ -f "$source/resolution/$filename" ]; then
+              cp "$source/resolution/$filename" "$destination/"
+            fi
+          done
+          for filename in vendor-candidate-urls.txt vendor-url-probes.tsv vendor-selected-url.txt \
+                          vendor-deb.sha256 vendor-deb.stat.tsv \
+                          debian-amd64-snapshot.json debian-arm64-snapshot.json \
+                          resolver.exit-code; do
+            if [ -f "$source/evidence/$filename" ]; then
+              cp "$source/evidence/$filename" "$destination/"
+            fi
+          done
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_attempt '${{ github.run_attempt }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name "$ARTIFACT_NAME" \
+            --arg workflow_commit '${{ github.sha }}' \
+            --argjson promotion_allowed "$(jq '.promotion_allowed // false' "$source/resolution/summary.json")" '
+              {schema:1,actions_run_id:$run_id,actions_run_attempt:$run_attempt,
+               actions_run_url:$run_url,artifact_name:$artifact_name,
+               workflow_commit:$workflow_commit,promotion_allowed:$promotion_allowed,
+               iso_assembly_allowed:false}
+            ' > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Kernel resolution authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock linux 5.10.0-23 ARM64 resolution v1'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

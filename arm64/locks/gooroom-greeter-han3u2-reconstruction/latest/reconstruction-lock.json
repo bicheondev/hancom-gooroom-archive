@@ -1,0 +1,80 @@
+{
+  "acceptance_gate": {
+    "plain_version_relabel_allowed": false,
+    "required": [
+      "Rebuild this exact tree for AMD64 in a locked Bullseye environment.",
+      "Compare its path set, non-ELF payload, normalized ELF behavior, and shipped changelog with the exact target AMD64 package.",
+      "Build ARM64 only after that equivalence gate passes."
+    ]
+  },
+  "base_source": {
+    "commit_sha": "886f8b6c5cd35117fd5a2d31896e4f9818400960",
+    "repository_full_name": "hancom-io/gooroom-greeter",
+    "tree_sha": "ef841874d45b7f44f08c4d337d49802b28d35b5e",
+    "version": "0.3.1+grm3u1+han3u1"
+  },
+  "patch_authority": {
+    "additions": 1,
+    "change_id": "I0fe62f0bed88fcb1ca9760d210335fc774263e65",
+    "changed_paths": [
+      "src/greeter-window.c"
+    ],
+    "commit_sha": "053a6835c1b24866876c1bd082ee923d3f5a30c7",
+    "deletions": 0,
+    "merge_commit_sha": "d6076ffe9ffa2203567d60f06339fe4bf5fd3091",
+    "parent_sha": "a4ff3ff58418c1e03d9707ac9a95ade7c291e480",
+    "repository_full_name": "hancomgooroom/gooroom-greeter",
+    "subject": "Fixed Laterbutton actable when the message a password change for security pop up",
+    "tree_sha": "5d05541bcc8d3160fb92bb1d3a5032a222f2b547"
+  },
+  "reconstruction": {
+    "archive_filename": "reconstructed-source.tar",
+    "archive_sha256": "b7f832cdc417ec0f669f2d07db987c57dbb6e1039f4b4ccc4137aacf67b36c6d",
+    "archive_size": 614400,
+    "changed_paths": [
+      "debian/changelog",
+      "src/greeter-window.c"
+    ],
+    "changelog_delta": {
+      "base_sha256": "6346513d14451692c172f71858f1889fb645c8182ca5ddc337341b1c9078c12b",
+      "path": "debian/changelog",
+      "prefix_sha256": "ee7f5aa853da77444fb7bbc1886cdeeb3e047f0072ae1f4a3f0db3293ae462f3",
+      "prefix_text": "gooroom-greeter (0.3.1+grm3u1+han3u2) unstable; urgency=medium\n\n  [ boyeon.choi ]\n  * [daff60c9] [HGOOROOM-171]Fixed Laterbutton actable when the message a password change for security pop up\n\n -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:02:02 +0900\n\n",
+      "reconstructed_sha256": "5a843cdc103427616c1b5f8e98f6259187941658d805b16e50b9cfafc170bb71"
+    },
+    "code_delta": {
+      "base_sha256": "dd01de42e0b750fb9e53b9ac70af373972e66c077408d22212582727c149cf3d",
+      "inserted_statement": "return;",
+      "newline": "lf",
+      "path": "src/greeter-window.c",
+      "reconstructed_sha256": "a1d5514ddf22f506dc5ea05f438f5617c87eeda9153bc9e7443494abea9a462c"
+    },
+    "patch_filename": "reconstruction.patch",
+    "patch_sha256": "ae3d1ae5cc9b0561954eaa21d9a502a9ee0d536af5eaa8c18c6320d79c096112",
+    "patch_size": 948,
+    "tree_sha": "007aea315dd41a4ca878589957ba10baa71353b8"
+  },
+  "schema": 2,
+  "source": "gooroom-greeter",
+  "source_version": "0.3.1+grm3u1+han3u2",
+  "status": "verified-reconstructed-source",
+  "target_binary_authority": {
+    "sha256": "61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836",
+    "shipped_changelog": {
+      "gzip_sha256": "67c5c5ff7dd0a77442744b2bdb76d6d03ae2432a223db7c6d937a6f3bff0d737",
+      "issue": "HGOOROOM-171",
+      "path": "usr/share/doc/gooroom-greeter/changelog.gz",
+      "subject": "Fixed Laterbutton actable when the message a password change for security pop up",
+      "text_sha256": "5a843cdc103427616c1b5f8e98f6259187941658d805b16e50b9cfafc170bb71",
+      "vendor_commit_short": "daff60c9"
+    },
+    "size": 282940,
+    "url": "https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb"
+  },
+  "amd64_equivalence": {
+    "passed": true,
+    "policy": "exact-non-elf-payload-and-elf-abi-resource-relocation-symbol-dwarf-equivalence",
+    "raw_elf_identical": false,
+    "summary": "amd64-equivalence-summary.json"
+  }
+}

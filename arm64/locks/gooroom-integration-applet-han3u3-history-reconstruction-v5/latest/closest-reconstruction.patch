@@ -1,0 +1,2700 @@
+diff --git a/data/style.css b/data/style.css
+index e1da4e2c37986a44c568920bfbf1cc5e21d32afd..033607b4fdd070334a86fbff9f0cfedec3a48876 100644
+--- a/data/style.css
++++ b/data/style.css
+@@ -5,29 +5,47 @@
+ /*  -gtk-icon-effect: none; */
+   -gtk-icon-shadow: none; }
+ 
++.flat.toggle {
++  color: #FFFFFF;
++}
++
++.separator {
++  margin: 5px;
++  border-bottom: solid 1px rgba(179, 186, 221, 0.0);
++}
+ 
+ .main-box {
+-  padding: 5px;
++  padding: 9px;
+   min-width: 340px;
+   border-radius: 12px;
+-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.2);
+-  background-color: rgba(0, 0, 0, 0.2);}
++  box-shadow: 0px 2px 10px 0px rgba(0, 0, 0, 0.3);
++  background-color: rgba(255, 255, 255, 0.3);
++}
+ 
+ .box-start {
+   min-height: 74px;
+   border-radius: 12px;
+-  background-color: white;
++  background-color: #E6E9F0;
+   padding: 0 10px; }
++.lbl-cleanmode {
++  min-height: 27px;
++  min-width: 72px;
++  border-radius: 17px;
++  background-color: #4D84DB;
++  color: #ffffff;
++  padding: 4px 12px;
++  font-weight: 400;
++}
+ 
+ .box-middle {
+   border-radius: 12px;
+-  background-color: white;
++  background-color: #E6E9F0;
+   padding: 20px 10px; }
+ 
+ .box-end {
+   min-height: 64px;
+   border-radius: 12px;
+-  background-color: white;
++  background-color: #E6E9F0;
+   padding: 0 64px; }
+   .box-end button {
+     border: none;
+@@ -38,7 +56,7 @@
+     box-shadow: none;
+     background: transparent; }
+   .box-end button:hover {
+-    background-color: rgba(255, 255, 255, 0.7);
++    background-color: #E6E9F0;
+     color: #3e6ddc; }
+   .box-end button:active,
+   .box-end button:checked {
+@@ -71,7 +89,7 @@
+   border: none;
+   color: #000100;
+   border-radius: 12px;
+-  background-color: white;
++  background-color: #E6E9F0;
+   padding: 20px 10px; }
+   .module-menu-box button {
+     border: none;
+@@ -86,6 +104,9 @@
+     color: #cb011a; }
+   .module-menu-box .btn-shutdown:hover image {
+     color: #cb011a; }
++  .module-menu-box:disabled {
++    color: #000100;
++    opacity: 0.5; }
+ 
+ .module-menu-backward-box {
+   min-height: 74px;
+@@ -94,7 +115,7 @@
+   color: #000100;
+   border-radius: 12px;
+   font-weight: normal;
+-  background-color: white; }
++  background-color: #E6E9F0; }
+   .module-menu-backward-box:hover {
+     color: #3e6ddc; }
+ 
+@@ -112,7 +133,7 @@
+   padding: 5px;
+   border-radius: 50%;
+   background-color: transparent;
+-  color: #ffffff;
++  color: #000100;
+ }
+ 
+ .rounded-icon-style1 {
+diff --git a/debian/changelog b/debian/changelog
+index bb9bca80f30a2fe51ab9dfe2fb2223694eeb6b95..7591fba8c156b51dac3db506fbe8beb5dacd8788 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,26 @@
++gooroom-integration-applet (0.3.1+grm3u1+han3u3) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [15d785a8] Merge gooroom-3.0
++  * [d0a3f95d] Add a new icon theme for Hancom Gooroom 3.3
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:15:35 +0900
++
++gooroom-integration-applet (0.3.1+grm3u1+han3u2) unstable; urgency=medium
++
++  [ subin.kim ]
++  * [b805e9b8] [HGOOROOM-404]Updated ko.po
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 03 Feb 2023 18:30:18 +0900
++
++gooroom-integration-applet (0.3.1+grm3u1+han3u1) unstable; urgency=medium
++
++  [ subin.kim ]
++  * [a948fb93] Made context menus unfocusable
++  * [1a87c9db] Updated UI
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Mon, 20 Jun 2022 09:32:36 +0900
++
+ gooroom-integration-applet (0.3.1+grm3u1) unstable; urgency=medium
+ 
+   [ subin.kim ]
+diff --git a/icons/audio-volume-error-symbolic.svg b/icons/audio-volume-error-symbolic.svg
+index d8f532f3378db0c518a1c66f718d55be9363bd77..9a25de7e6e42561817d959137118e74bed7488ba 100644
+--- a/icons/audio-volume-error-symbolic.svg
++++ b/icons/audio-volume-error-symbolic.svg
+@@ -1,75 +1,13 @@
+-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+-<svg
+-   xmlns:dc="http://purl.org/dc/elements/1.1/"
+-   xmlns:cc="http://creativecommons.org/ns#"
+-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+-   xmlns:svg="http://www.w3.org/2000/svg"
+-   xmlns="http://www.w3.org/2000/svg"
+-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+-   width="24"
+-   height="24"
+-   viewBox="0 0 24 24"
+-   version="1.1"
+-   id="svg14"
+-   sodipodi:docname="error.svg"
+-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+-  <metadata
+-     id="metadata20">
+-    <rdf:RDF>
+-      <cc:Work
+-         rdf:about="">
+-        <dc:format>image/svg+xml</dc:format>
+-        <dc:type
+-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+-      </cc:Work>
+-    </rdf:RDF>
+-  </metadata>
+-  <defs
+-     id="defs18" />
+-  <sodipodi:namedview
+-     pagecolor="#ffffff"
+-     bordercolor="#666666"
+-     borderopacity="1"
+-     objecttolerance="10"
+-     gridtolerance="10"
+-     guidetolerance="10"
+-     inkscape:pageopacity="0"
+-     inkscape:pageshadow="2"
+-     inkscape:window-width="1920"
+-     inkscape:window-height="1004"
+-     id="namedview16"
+-     showgrid="false"
+-     inkscape:zoom="9.8333333"
+-     inkscape:cx="12"
+-     inkscape:cy="12"
+-     inkscape:window-x="0"
+-     inkscape:window-y="0"
+-     inkscape:window-maximized="1"
+-     inkscape:current-layer="svg14" />
+-  <path
+-     style="fill:#ffffff;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path2"
+-     d="M 7,9 10,6 V 18 L 7,15 H 4 A 1,1 0 0 1 3,14 V 10 A 1,1 0 0 1 4,9 Z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path4"
+-     d="m 12,3 a 9,9 0 0 1 0,18 V 19 A 7,7 0 0 0 12,5 Z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path6"
+-     d="m 12,6 a 6,6 0 1 1 0,12 v -2 a 4,4 0 1 0 0,-8 z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path8"
+-     d="m 12,9 a 3,3 0 0 1 0,6 v -2 a 1,1 0 1 0 0,-2 z" />
+-  <path
+-     style="fill:#ffffff;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path10"
+-     d="m 15,7 a 1,1 0 0 1 1,1 v 5 a 1,1 0 0 1 -2,0 V 8 a 1,1 0 0 1 1,-1 z m 0,8 a 1,1 0 1 1 0,2 1,1 0 0 1 0,-2 z" />
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=error">
++<g id="ic/volum/error">
++<g id="ic/volum/mute">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M30 18L21 27H12C10.3431 27 9 28.3431 9 30V42C9 43.6569 10.3431 45 12 45H21L30 54V18Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M63 36C63 50.9117 50.9117 63 36 63V57C47.598 57 57 47.598 57 36C57 24.402 47.598 15 36 15V9C50.9117 9 63 21.0883 63 36Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M54 36C54 45.9411 45.9411 54 36 54V48C42.6274 48 48 42.6274 48 36C48 29.3726 42.6274 24 36 24V18C45.9411 18 54 26.0589 54 36Z" fill="white" fill-opacity="0.2"/>
++</g>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M18 27H27V36V45H18V27Z" fill="white" fill-opacity="0.2"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M45 21C46.6569 21 48 22.3431 48 24V39C48 40.6569 46.6569 42 45 42C43.3431 42 42 40.6569 42 39V24C42 22.3431 43.3431 21 45 21ZM45 45C46.6569 45 48 46.3431 48 48C48 49.6569 46.6569 51 45 51C43.3431 51 42 49.6569 42 48C42 46.3431 43.3431 45 45 45Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/audio-volume-high-symbolic.svg b/icons/audio-volume-high-symbolic.svg
+index 1d31728d7e7ffc4d0731361158cf9c24cbb1ddf4..c69c28d7bb1ecf86a90edcd1d5dce22f847f4b4c 100644
+--- a/icons/audio-volume-high-symbolic.svg
++++ b/icons/audio-volume-high-symbolic.svg
+@@ -1,7 +1,15 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path d="M7 9l3-3v12l-3-3H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3zM12 3a9 9 0 0 1 0 18v-2a7 7 0 0 0 0-14V3z"/>
+-        <path d="M12 6a6 6 0 1 1 0 12v-2a4 4 0 1 0 0-8V6z"/>
+-        <path d="M12 9a3 3 0 0 1 0 6v-2a1 1 0 1 0 0-2V9z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=full">
++<mask id="mask0_459_10556" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
++<rect id="Background" width="24" height="24" fill="white"/>
++</mask>
++<g mask="url(#mask0_459_10556)">
++<g id="ic/volum/full">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M10 6L7 9H4C3.44772 9 3 9.44772 3 10V14C3 14.5523 3.44772 15 4 15H7L10 18V6Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M21 12C21 16.9706 16.9706 21 12 21V19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5V3C16.9706 3 21 7.02944 21 12Z" fill="white"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M18 12C18 15.3137 15.3137 18 12 18V16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8V6C15.3137 6 18 8.68629 18 12Z" fill="white"/>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M6 9H9V12V15H6V9Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/audio-volume-low-symbolic.svg b/icons/audio-volume-low-symbolic.svg
+index 207f31a22ba52720dd36b93517a12a418d3e238d..7556696f61d15cba1d86ea9d15b106ed1df4a75f 100644
+--- a/icons/audio-volume-low-symbolic.svg
++++ b/icons/audio-volume-low-symbolic.svg
+@@ -1,8 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path d="M7 9l3-3v12l-3-3H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3z"/>
+-        <path fill-opacity=".2" d="M12 3a9 9 0 0 1 0 18v-2a7 7 0 0 0 0-14V3z"/>
+-        <path fill-opacity=".2" d="M12 6a6 6 0 1 1 0 12v-2a4 4 0 1 0 0-8V6z"/>
+-        <path d="M12 9a3 3 0 0 1 0 6v-2a1 1 0 0 0 0-2V9z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=mute">
++<g id="ic/volum/mute">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M10 6L7 9H4C3.44772 9 3 9.44772 3 10V14C3 14.5523 3.44772 15 4 15H7L10 18V6Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M21 12C21 16.9706 16.9706 21 12 21V19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5V3C16.9706 3 21 7.02944 21 12Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M18 12C18 15.3137 15.3137 18 12 18V16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8V6C15.3137 6 18 8.68629 18 12Z" fill="white" fill-opacity="0.2"/>
++</g>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M6 9H9V12V15H6V9Z" fill="white" fill-opacity="0.2"/>
++</g>
+ </svg>
+diff --git a/icons/audio-volume-medium-symbolic.svg b/icons/audio-volume-medium-symbolic.svg
+index 9386a89ad1b34ad0f6395ce41328781eec3d3824..30586b17e0e5198391162039c669a504e58a5b88 100644
+--- a/icons/audio-volume-medium-symbolic.svg
++++ b/icons/audio-volume-medium-symbolic.svg
+@@ -1,8 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path d="M7 9l3-3v12l-3-3H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3z"/>
+-        <path fill-opacity=".2" d="M12 3a9 9 0 0 1 0 18v-2a7 7 0 0 0 0-14V3z"/>
+-        <path d="M12 6a6 6 0 1 1 0 12v-2a4 4 0 1 0 0-8V6z"/>
+-        <path d="M12 9a3 3 0 0 1 0 6v-2a1 1 0 1 0 0-2V9z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=middle">
++<g id="ic/volum/middle">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M10 6L7 9H4C3.44772 9 3 9.44772 3 10V14C3 14.5523 3.44772 15 4 15H7L10 18V6Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M21 12C21 16.9706 16.9706 21 12 21V19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5V3C16.9706 3 21 7.02944 21 12Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M18 12C18 15.3137 15.3137 18 12 18V16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8V6C15.3137 6 18 8.68629 18 12Z" fill="white"/>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M6 9H9V12V15H6V9Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/audio-volume-muted-symbolic.svg b/icons/audio-volume-muted-symbolic.svg
+index ef27f2ed12a33964951129054a9cac5db5342875..da26dbe99fbaa10df3ade4a462b10fd21b0185fe 100644
+--- a/icons/audio-volume-muted-symbolic.svg
++++ b/icons/audio-volume-muted-symbolic.svg
+@@ -1,75 +1,13 @@
+-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+-<svg
+-   xmlns:dc="http://purl.org/dc/elements/1.1/"
+-   xmlns:cc="http://creativecommons.org/ns#"
+-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+-   xmlns:svg="http://www.w3.org/2000/svg"
+-   xmlns="http://www.w3.org/2000/svg"
+-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+-   width="24"
+-   height="24"
+-   viewBox="0 0 24 24"
+-   version="1.1"
+-   id="svg14"
+-   sodipodi:docname="mute-02.svg"
+-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+-  <metadata
+-     id="metadata20">
+-    <rdf:RDF>
+-      <cc:Work
+-         rdf:about="">
+-        <dc:format>image/svg+xml</dc:format>
+-        <dc:type
+-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+-      </cc:Work>
+-    </rdf:RDF>
+-  </metadata>
+-  <defs
+-     id="defs18" />
+-  <sodipodi:namedview
+-     pagecolor="#ffffff"
+-     bordercolor="#666666"
+-     borderopacity="1"
+-     objecttolerance="10"
+-     gridtolerance="10"
+-     guidetolerance="10"
+-     inkscape:pageopacity="0"
+-     inkscape:pageshadow="2"
+-     inkscape:window-width="1920"
+-     inkscape:window-height="1004"
+-     id="namedview16"
+-     showgrid="false"
+-     inkscape:zoom="9.8333333"
+-     inkscape:cx="12"
+-     inkscape:cy="5.3041364"
+-     inkscape:window-x="0"
+-     inkscape:window-y="0"
+-     inkscape:window-maximized="1"
+-     inkscape:current-layer="svg14" />
+-  <path
+-     style="fill:#ffffff;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path2"
+-     d="M 7,9 10,6 V 18 L 7,15 H 4 A 1,1 0 0 1 3,14 V 10 A 1,1 0 0 1 4,9 Z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path4"
+-     d="m 12,3 a 9,9 0 0 1 0,18 V 19 A 7,7 0 0 0 12,5 Z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path6"
+-     d="m 12,6 a 6,6 0 1 1 0,12 v -2 a 4,4 0 1 0 0,-8 z" />
+-  <path
+-     style="fill:#ffffff;fill-opacity:0.2;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path8"
+-     d="m 12,9 a 3,3 0 0 1 0,6 v -2 a 1,1 0 1 0 0,-2 z" />
+-  <path
+-     style="fill:#ffffff;fill-rule:evenodd"
+-     inkscape:connector-curvature="0"
+-     id="path10"
+-     d="m 16.243,10.828 2.121,-2.12 a 1,1 0 0 1 1.414,1.413 l -2.121,2.122 2.121,2.121 a 1,1 0 0 1 -1.414,1.414 l -2.121,-2.121 -2.122,2.121 a 1,1 0 1 1 -1.414,-1.414 l 2.121,-2.121 -2.12,-2.122 a 1,1 0 0 1 1.413,-1.414 z" />
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=mute02">
++<g id="ic/volum/mute02">
++<g id="ic/volum/mute">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M30 18L21 27H12C10.3431 27 9 28.3431 9 30V42C9 43.6569 10.3431 45 12 45H21L30 54V18Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M63 36C63 50.9117 50.9117 63 36 63V57C47.598 57 57 47.598 57 36C57 24.402 47.598 15 36 15V9C50.9117 9 63 21.0883 63 36Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M54 36C54 45.9411 45.9411 54 36 54V48C42.6274 48 48 42.6274 48 36C48 29.3726 42.6274 24 36 24V18C45.9411 18 54 26.0589 54 36Z" fill="white" fill-opacity="0.2"/>
++</g>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M18 27H27V36V45H18V27Z" fill="white" fill-opacity="0.2"/>
++<path id="Path" fill-rule="evenodd" clip-rule="evenodd" d="M48.7282 32.4848L55.0922 26.1209C56.2637 24.9493 58.1632 24.9493 59.3348 26.1209C60.5064 27.2924 60.5064 29.1919 59.3348 30.3635L52.9708 36.7275L59.3348 43.0914C60.5064 44.263 60.5064 46.1625 59.3348 47.3341C58.1632 48.5056 56.2637 48.5056 55.0922 47.3341L48.7282 40.9701L42.3642 47.3341C41.1927 48.5056 39.2932 48.5056 38.1216 47.3341C36.95 46.1625 36.95 44.263 38.1216 43.0914L44.4856 36.7275L38.1216 30.3635C36.95 29.1919 36.95 27.2924 38.1216 26.1209C39.2932 24.9493 41.1927 24.9493 42.3642 26.1209L48.7282 32.4848Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/audio-volume-zero-symbolic.svg b/icons/audio-volume-zero-symbolic.svg
+index d197907afe679d17d5ca78709abae09a454be301..7556696f61d15cba1d86ea9d15b106ed1df4a75f 100644
+--- a/icons/audio-volume-zero-symbolic.svg
++++ b/icons/audio-volume-zero-symbolic.svg
+@@ -1,8 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path d="M7 9l3-3v12l-3-3H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3z"/>
+-        <path fill-opacity=".2" d="M12 3a9 9 0 0 1 0 18v-2a7 7 0 0 0 0-14V3z"/>
+-        <path fill-opacity=".2" d="M12 6a6 6 0 1 1 0 12v-2a4 4 0 1 0 0-8V6z"/>
+-        <path fill-opacity=".2" d="M12 9a3 3 0 0 1 0 6v-2a1 1 0 0 0 0-2V9z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=mute">
++<g id="ic/volum/mute">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M10 6L7 9H4C3.44772 9 3 9.44772 3 10V14C3 14.5523 3.44772 15 4 15H7L10 18V6Z" fill="white"/>
++<path id="Combined Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M21 12C21 16.9706 16.9706 21 12 21V19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5V3C16.9706 3 21 7.02944 21 12Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape_3" fill-rule="evenodd" clip-rule="evenodd" d="M18 12C18 15.3137 15.3137 18 12 18V16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8V6C15.3137 6 18 8.68629 18 12Z" fill="white" fill-opacity="0.2"/>
++</g>
++<path id="Combined Shape_4" fill-rule="evenodd" clip-rule="evenodd" d="M6 9H9V12V15H6V9Z" fill="white" fill-opacity="0.2"/>
++</g>
+ </svg>
+diff --git a/icons/battery-10-charging.svg b/icons/battery-10-charging.svg
+index cab4c8f246d227ca14571170d9b0e95d7a2502e0..6ea146aa9ae307d48bcef2e00a852490122bb2df 100644
+--- a/icons/battery-10-charging.svg
++++ b/icons/battery-10-charging.svg
+@@ -1,7 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path fill="#D0021B" d="M6 21v-2h6v2z"/>
+-        <path fill="#FFF" d="M18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=10">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="2" height="6" transform="rotate(-90 6 21)" fill="#F52C2C"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-10.svg b/icons/battery-10.svg
+index 9b0ca2ec38d17796b8ba16155d0aa084199f4614..e2ebbc7e3f38a0ecd44fb24ec831d8f45d7d4684 100644
+--- a/icons/battery-10.svg
++++ b/icons/battery-10.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path fill="#D0021B" d="M9 21v-2h6v2z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=10">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="2" height="6" transform="rotate(-90 9 21)" fill="#F52C2C"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-25-charging.svg b/icons/battery-25-charging.svg
+index ac096662a7eab5626e5766054f733376a25adee3..898c7a155698d1a986027fb4ac9c0fbb72417e92 100644
+--- a/icons/battery-25-charging.svg
++++ b/icons/battery-25-charging.svg
+@@ -1,7 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path fill="#F5A623" d="M6 21v-4h6v4z"/>
+-        <path fill="#FFF" d="M18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=25">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="4" height="6" transform="rotate(-90 6 21)" fill="#F57F17"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-25.svg b/icons/battery-25.svg
+index f179ec3300dd147e5c5753bcbf06b4de44c0e4f5..2b6696149bbbc5af5786f4bee41f3521b90308c5 100644
+--- a/icons/battery-25.svg
++++ b/icons/battery-25.svg
+@@ -1,6 +1,6 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
++<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+     <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
++        <path d="M7 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5zm1 0v16a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1zm2-3a1 1 0 0 1 1-1h2a1 1 0 0 1 .993.883L14 2h-4z" fill-opacity=".9" fill="#FFF"/>
+         <path fill="#F5A623" d="M9 21v-4h6v4z"/>
+     </g>
+ </svg>
+diff --git a/icons/battery-40-charging.svg b/icons/battery-40-charging.svg
+index 417124285bae12b9b3645a3df0eb22cbf3b83e60..e7ad01847309dfa0620376fba8d72ff1d6d38a9a 100644
+--- a/icons/battery-40-charging.svg
++++ b/icons/battery-40-charging.svg
+@@ -1,6 +1,6 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
++<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+     <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
++        <path d="M4 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm1 0v16a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1zm2-3a1 1 0 0 1 1-1h2a1 1 0 0 1 .993.883L11 2H7z" fill-opacity=".9"/>
+         <path d="M6 21v-6h6v6zM18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+     </g>
+ </svg>
+diff --git a/icons/battery-40.svg b/icons/battery-40.svg
+index 35e006597c784f5acfdcc4b67f7f66e2aeeeef69..290df14b45a851f174b1d08c6cc0ea5c14111f11 100644
+--- a/icons/battery-40.svg
++++ b/icons/battery-40.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path d="M9 21v-6h6v6z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=40">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="6" height="6" transform="rotate(-90 9 21)" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-50-charging.svg b/icons/battery-50-charging.svg
+index 5cb11db0a9bffad5061f659e766fb15f5a8717bb..d920a3ebb9a96f9585b2dcfd3e250eef61e0879f 100644
+--- a/icons/battery-50-charging.svg
++++ b/icons/battery-50-charging.svg
+@@ -1,6 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path d="M6 21v-8h6v8zM18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=50">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="8" height="6" transform="rotate(-90 6 21)" fill="white"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-50.svg b/icons/battery-50.svg
+index 1629f009cbf5185471d05c803e9e107a256dff22..3edfe2718de4b2cf862d0c3924055e1d4ad73648 100644
+--- a/icons/battery-50.svg
++++ b/icons/battery-50.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path d="M9 21v-8h6v8z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=50">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="8" height="6" transform="rotate(-90 9 21)" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-60-charging.svg b/icons/battery-60-charging.svg
+index 84a03c5544631904765d79505adba123d558b613..2279c17afc3491ba406c59d15741885883940863 100644
+--- a/icons/battery-60-charging.svg
++++ b/icons/battery-60-charging.svg
+@@ -1,6 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path d="M6 21V11h6v10zM18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=60">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="10" height="6" transform="rotate(-90 6 21)" fill="white"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-60.svg b/icons/battery-60.svg
+index 09fbedb7d57e46f35e6b02d45af149cace482936..6906bbcc9b5f4c0d250c72b4b126aa6a971b660e 100644
+--- a/icons/battery-60.svg
++++ b/icons/battery-60.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path d="M9 21V11h6v10z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=60">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="10" height="6" transform="rotate(-90 9 21)" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-75-charging.svg b/icons/battery-75-charging.svg
+index 01f0cd45152dbe98a98a3090f1233bff8f59cd99..35afca3ec69abfbc214733e669278afb8f001bf5 100644
+--- a/icons/battery-75-charging.svg
++++ b/icons/battery-75-charging.svg
+@@ -1,6 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path d="M6 21V9h6v12zM18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=75">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="12" height="6" transform="rotate(-90 6 21)" fill="white"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-75.svg b/icons/battery-75.svg
+index f2c5cd948a613b3e5907bd180f30a39837c70702..04cd6b7b8415e04d97f2e20a2314444f1fa7dee7 100644
+--- a/icons/battery-75.svg
++++ b/icons/battery-75.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path d="M9 21V9h6v12z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=75">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="12" height="6" transform="rotate(-90 9 21)" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-90-charging.svg b/icons/battery-90-charging.svg
+index c5b3ba527dbb1b63e9c87037ed9931de4a0a4fea..6847633af4c7ee5ba36fb6622f605720905e95de 100644
+--- a/icons/battery-90-charging.svg
++++ b/icons/battery-90-charging.svg
+@@ -1,6 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path d="M6 21V7h6v14zM18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=90">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="6" y="21" width="14" height="6" transform="rotate(-90 6 21)" fill="white"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-90.svg b/icons/battery-90.svg
+index 8261aa90cf5cab0cedec8840a93702c4a3a7c500..0a323387461b63ba35467410676034b8a82e3dfb 100644
+--- a/icons/battery-90.svg
++++ b/icons/battery-90.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path d="M9 21V7h6v14z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=90">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<rect id="Rectangle 18" x="9" y="21" width="14" height="6" transform="rotate(-90 9 21)" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-empty-charging.svg b/icons/battery-empty-charging.svg
+index 4a166c3c56fcfaabdc833eac6261e2a054cd5c50..a216710355d07c81d77fc81a410231615fd6a617 100644
+--- a/icons/battery-empty-charging.svg
++++ b/icons/battery-empty-charging.svg
+@@ -1,6 +1,10 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path d="M18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=0">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-empty.svg b/icons/battery-empty.svg
+index 36a11b4a892c0220c76f67e68c23c79fe351785b..2b9169392c87f2673921aca3a16428a93de8bc79 100644
+--- a/icons/battery-empty.svg
++++ b/icons/battery-empty.svg
+@@ -1,3 +1,9 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <path fill="#FFF" fill-opacity=".9" fill-rule="evenodd" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=0">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++</g>
++</g>
++</g>
+ </svg>
+diff --git a/icons/battery-error.svg b/icons/battery-error.svg
+index 660ee5af966c20724cdd564e27f258ea615ed6e2..2e62f1bbbbe1878b97d2afc4b3221e890cd04763 100644
+--- a/icons/battery-error.svg
++++ b/icons/battery-error.svg
+@@ -1,7 +1,11 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M14 12h-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h2v1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v7zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path fill="#D0021B" d="M15.36 13.457l4.748 8.034a1 1 0 0 1-.86 1.509H9.752a1 1 0 0 1-.86-1.509l4.747-8.034a1 1 0 0 1 1.722 0z"/>
+-        <path fill="#FFF" d="M14 16h1v4h-1v-4zm0 5h1v1h-1v-1z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=error">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M14 12H13L13 5C13 4.44772 12.5523 4 12 4H6C5.44772 4 5 4.44772 5 5L5 21C5 21.5523 5.44772 22 6 22H8V23H6C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 12ZM7 2C7 1.44772 7.44772 1 8 1H10C10.5523 1 11 1.44772 11 2H7Z" fill="white" fill-opacity="0.9"/>
++</g>
++</g>
++<path id="Triangle" fill-rule="evenodd" clip-rule="evenodd" d="M15.3609 13.4568L20.1085 21.4911C20.3894 21.9666 20.2318 22.5798 19.7563 22.8607C19.6022 22.9518 19.4265 22.9998 19.2475 22.9998H9.75244C9.20016 22.9998 8.75244 22.5521 8.75244 21.9998C8.75244 21.8208 8.80047 21.6452 8.89151 21.4911L13.6391 13.4568C13.92 12.9813 14.5332 12.8236 15.0087 13.1046C15.1539 13.1904 15.2751 13.3115 15.3609 13.4568Z" fill="#F52C2C"/>
++<path id="Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M14 16H15V20H14V16ZM14 21H15V22H14V21Z" fill="white"/>
++</g>
+ </svg>
+diff --git a/icons/battery-full-charged.svg b/icons/battery-full-charged.svg
+index 1ccba2cb79205fa473ef0a4b59707f112c24c277..163f19be51e9e4e81c333ab3457a793276671300 100644
+--- a/icons/battery-full-charged.svg
++++ b/icons/battery-full-charged.svg
+@@ -1,7 +1,17 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path fill="#7ED321" d="M6 21V5h6v16z"/>
+-        <path fill="#FFF" d="M18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=100">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<path id="Rectangle 18" d="M6 21V5H12V21H6Z" fill="url(#paint0_linear_459_10934)"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
++<defs>
++<linearGradient id="paint0_linear_459_10934" x1="-1.59375" y1="-28.2308" x2="29.2892" y2="-18.8211" gradientUnits="userSpaceOnUse">
++<stop stop-color="#188392"/>
++<stop offset="1" stop-color="#ADFF87"/>
++</linearGradient>
++</defs>
+ </svg>
+diff --git a/icons/battery-full-charging.svg b/icons/battery-full-charging.svg
+index 1ccba2cb79205fa473ef0a4b59707f112c24c277..163f19be51e9e4e81c333ab3457a793276671300 100644
+--- a/icons/battery-full-charging.svg
++++ b/icons/battery-full-charging.svg
+@@ -1,7 +1,17 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v16zM7 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1H7z"/>
+-        <path fill="#7ED321" d="M6 21V5h6v16z"/>
+-        <path fill="#FFF" d="M18 12v-2h1v2h1v3.5a2.5 2.5 0 0 1-2 2.45V23h-1v-5.05a2.5 2.5 0 0 1-2-2.45V12h1v-2h1v2h1zm-2 3.5a1.5 1.5 0 0 0 3 0V13h-3v2.5z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=100">
++<g id="ic/battery/low/charge">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M6 23C4.89543 23 4 22.1046 4 21L4 5C4 3.89543 4.89543 3 6 3H12C13.1046 3 14 3.89543 14 5L14 21C14 22.1046 13.1046 23 12 23H6ZM6 22C5.44772 22 5 21.5523 5 21L5 5C5 4.44772 5.44772 4 6 4H12C12.5523 4 13 4.44772 13 5L13 21C13 21.5523 12.5523 22 12 22H6ZM8 1C7.44772 1 7 1.44772 7 2H11C11 1.44772 10.5523 1 10 1H8Z" fill="white" fill-opacity="0.9"/>
++<path id="Rectangle 18" d="M6 21V5H12V21H6Z" fill="url(#paint0_linear_459_10934)"/>
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M18 12V10H19V12H20V15.5C20 16.7095 19.1411 17.7184 18 17.95V23H17V17.95C15.8589 17.7184 15 16.7095 15 15.5V12H16V10H17V12H18ZM16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5V13H16V15.5Z" fill="white"/>
++</g>
++</g>
++</g>
++<defs>
++<linearGradient id="paint0_linear_459_10934" x1="-1.59375" y1="-28.2308" x2="29.2892" y2="-18.8211" gradientUnits="userSpaceOnUse">
++<stop stop-color="#188392"/>
++<stop offset="1" stop-color="#ADFF87"/>
++</linearGradient>
++</defs>
+ </svg>
+diff --git a/icons/battery-full.svg b/icons/battery-full.svg
+index b0bb1ed4b3ec2dea66342f20f2b2b863e45f1b58..4a5adc3730cddc417256896647686f42c8d04438 100644
+--- a/icons/battery-full.svg
++++ b/icons/battery-full.svg
+@@ -1,6 +1,21 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".9" d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zm1 0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v16zm2-19a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h-4z"/>
+-        <path fill="#7ED321" d="M9 21V5h6v16z"/>
+-    </g>
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=100">
++<mask id="mask0_459_10818" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
++<rect id="Background" width="24" height="24" fill="white"/>
++</mask>
++<g mask="url(#mask0_459_10818)">
++<g id="ic/battery/middle">
++<g id="Group 10">
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M9 23C7.89543 23 7 22.1046 7 21L7 5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V21C17 22.1046 16.1046 23 15 23H9ZM9 22C8.44772 22 8 21.5523 8 21L8 5C8 4.44772 8.44772 4 9 4H15C15.5523 4 16 4.44772 16 5V21C16 21.5523 15.5523 22 15 22H9ZM11 1C10.4477 1 10 1.44772 10 2H14C14 1.44772 13.5523 1 13 1H11Z" fill="white" fill-opacity="0.9"/>
++<path id="Rectangle 18" d="M9 21V5H15V21H9Z" fill="url(#paint0_linear_459_10818)"/>
++</g>
++</g>
++</g>
++</g>
++<defs>
++<linearGradient id="paint0_linear_459_10818" x1="1.40625" y1="-28.2308" x2="32.2892" y2="-18.8211" gradientUnits="userSpaceOnUse">
++<stop stop-color="#188392"/>
++<stop offset="1" stop-color="#ADFF87"/>
++</linearGradient>
++</defs>
+ </svg>
+diff --git a/icons/security-status-safety.svg b/icons/security-status-safety.svg
+index 41811e335c9cc4ac2edb4f38ad13ef9616411f24..0db356a8cdb3fcf56a9b5dc3723326137c29aabc 100644
+--- a/icons/security-status-safety.svg
++++ b/icons/security-status-safety.svg
+@@ -1,6 +1,14 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#7ED321" d="M5 3h14v13.5L12 21l-7-4.5z"/>
+-        <path fill="#000" fill-opacity=".1" d="M12 3h7v13.5L12 21V3z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=safe">
++<g id="ic/security/safe">
++<path id="Rectangle" fill-rule="evenodd" clip-rule="evenodd" d="M15 9H57V49.5L36 63L15 49.5V9Z" fill="url(#paint0_linear_459_10365)"/>
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M57 9H36V63L57 49.5V9Z" fill="black" fill-opacity="0.1"/>
++</g>
++</g>
++<defs>
++<linearGradient id="paint0_linear_459_10365" x1="-38.1563" y1="-103.154" x2="130.672" y2="3.53604" gradientUnits="userSpaceOnUse">
++<stop stop-color="#188392"/>
++<stop offset="1" stop-color="#ADFF87"/>
++</linearGradient>
++</defs>
+ </svg>
+diff --git a/icons/security-status-unknown.svg b/icons/security-status-unknown.svg
+index 474a1d41089796bfe17c873fc33b700a27d78e0d..e13a2aadc852f4d624fc52c9d88c66cdcd7c9892 100644
+--- a/icons/security-status-unknown.svg
++++ b/icons/security-status-unknown.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#FFF" fill-opacity=".2" d="M5 3h14v13.5L12 21l-7-4.5z"/>
+-        <path fill="#000" fill-opacity=".1" d="M12 3h7v13.5L12 21V3z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=unknown">
++<g id="ic/security/safe">
++<path id="Rectangle" fill-rule="evenodd" clip-rule="evenodd" d="M15 9H57V49.5L36 63L15 49.5V9Z" fill="white" fill-opacity="0.2"/>
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M57 9H36V63L57 49.5V9Z" fill="black" fill-opacity="0.1"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/security-status-vulnerable.svg b/icons/security-status-vulnerable.svg
+index 55e8487694131c6462cf834e3e2b526e7ab7d979..0c074a0f9cb68a4b12ac3e342f0f3038d21bf0e1 100644
+--- a/icons/security-status-vulnerable.svg
++++ b/icons/security-status-vulnerable.svg
+@@ -1,6 +1,14 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd">
+-        <path fill="#CA1229" d="M5 3h14v13.5L12 21l-7-4.5z"/>
+-        <path fill="#000" fill-opacity=".1" d="M12 3h7v13.5L12 21V3z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=danger">
++<g id="ic/security/safe">
++<path id="Rectangle" fill-rule="evenodd" clip-rule="evenodd" d="M15 9H57V49.5L36 63L15 49.5V9Z" fill="url(#paint0_linear_459_10371)"/>
++<path id="Combined Shape" fill-rule="evenodd" clip-rule="evenodd" d="M57 9H36V63L57 49.5V9Z" fill="black" fill-opacity="0.1"/>
++</g>
++</g>
++<defs>
++<linearGradient id="paint0_linear_459_10371" x1="49.7812" y1="58.3448" x2="-9.44345" y2="8.50965" gradientUnits="userSpaceOnUse">
++<stop stop-color="#FDA966"/>
++<stop offset="0.826278" stop-color="#FF73A5"/>
++</linearGradient>
++</defs>
+ </svg>
+diff --git a/icons/updater-base-apply.svg b/icons/updater-base-apply.svg
+index 3bc169daa4cf5e673ff3bb90a262e6eb5db1bf66..14cee5458fc01fc9fa6d89b85051eb551c4ab5bb 100644
+--- a/icons/updater-base-apply.svg
++++ b/icons/updater-base-apply.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-rule="nonzero" d="M8.188 21.248a9.929 9.929 0 0 1-.036-.015L12 18.004V21a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 22 12c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zm7.624-18.496l.036.015L12 5.996V3a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 2 12C2 6.477 6.477 2 12 2a9.97 9.97 0 0 1 3.812.752z"/>
+-        <path d="M16 8l.879.879-6.44 6.45L7 11.878 7.879 11l2.56 2.55z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=base apply">
++<g id="ic/update/base apply">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++<path id="Check" fill-rule="evenodd" clip-rule="evenodd" d="M48 24L50.6367 26.6367L31.3184 45.9844L21 35.6367L23.6367 33L31.3184 40.6523L48 24Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/updater-base-error2.svg b/icons/updater-base-error2.svg
+index 5dd6cb4be730443a20fd1e46a6bfdf4c595d3008..c0a11625b4b3010c4d5a674f67f369451310f166 100644
+--- a/icons/updater-base-error2.svg
++++ b/icons/updater-base-error2.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="evenodd">
+-        <path fill-rule="nonzero" d="M8.188 21.248a9.929 9.929 0 0 1-.036-.015L12 18.004V21a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 22 12c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zm7.624-18.496l.036.015L12 5.996V3a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 2 12C2 6.477 6.477 2 12 2a9.97 9.97 0 0 1 3.812.752z"/>
+-        <path d="M7 11h10v1.4H7z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=error">
++<g id="ic/update/error">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++<path id="Rectangle" fill-rule="evenodd" clip-rule="evenodd" d="M21 33H51V37.2H21V33Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/updater-base-exec.svg b/icons/updater-base-exec.svg
+index dc9020f30907dda6eb0f3e124b0562a9f1e22112..ece9253bb4a3f7a5145eceaea2b00d8bce442ae1 100644
+--- a/icons/updater-base-exec.svg
++++ b/icons/updater-base-exec.svg
+@@ -1,3 +1,7 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <path fill="#FFF" fill-rule="nonzero" d="M8.188 21.248a9.929 9.929 0 0 1-.036-.015L12 18.004V21a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 22 12c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zm7.624-18.496l.036.015L12 5.996V3a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 2 12C2 6.477 6.477 2 12 2a9.97 9.97 0 0 1 3.812.752z"/>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=exec">
++<g id="ic/update/exec">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/updater-base-info.svg b/icons/updater-base-info.svg
+index a59dcb1a844ea689868def7556783e68bc0c66d2..48ba4a7484a89ecdcaef18be6ccea344bb37863d 100644
+--- a/icons/updater-base-info.svg
++++ b/icons/updater-base-info.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="none" fill-rule="evenodd" transform="translate(2 2)">
+-        <path fill="#FFF" fill-rule="nonzero" d="M6.188 19.248a9.929 9.929 0 0 1-.036-.015L10 16.004V19a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 20 10c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zM13.812.752l.036.015L10 3.996V1a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 0 10C0 4.477 4.477 0 10 0a9.97 9.97 0 0 1 3.812.752z"/>
+-        <circle cx="17" cy="5" r="4" fill="#D0021B"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=info">
++<g id="ic/update/info">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++<circle id="Oval" cx="57" cy="21" r="12" fill="#F52C2C"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/updater-base-unkown.svg b/icons/updater-base-unkown.svg
+index 08ccecf42f1b3021f4a116cbb9dea48d4603546f..6351b0824a45b481200cf6899e065f436aa6bca3 100644
+--- a/icons/updater-base-unkown.svg
++++ b/icons/updater-base-unkown.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="nonzero">
+-        <path d="M8.188 21.248a9.929 9.929 0 0 1-.036-.015L12 18.004V21a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 22 12c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zm7.624-18.496l.036.015L12 5.996V3a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 2 12C2 6.477 6.477 2 12 2a9.97 9.97 0 0 1 3.812.752z"/>
+-        <path d="M10.996 14.253c.004-.65.08-1.114.225-1.393.145-.28.467-.63.967-1.052.354-.345.635-.676.844-.991.209-.316.313-.664.313-1.045 0-.44-.119-.782-.357-1.025-.239-.243-.578-.365-1.018-.365-.377 0-.697.104-.96.31-.264.207-.396.512-.396.916H9.021L9 9.568c-.014-.809.257-1.439.813-1.89C10.37 7.226 11.09 7 11.97 7c.953 0 1.696.243 2.23.729.533.485.8 1.16.8 2.022 0 .577-.167 1.111-.5 1.604a6.197 6.197 0 0 1-1.264 1.352c-.259.227-.42.442-.487.647-.065.204-.098.504-.098.899h-1.655zm1.682 2.805h-1.689v-1.586h1.689v1.586z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=unknown">
++<g id="ic/update/unknown">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++<path id="?" fill-rule="evenodd" clip-rule="evenodd" d="M33.6615 38.5797C33.2257 39.4173 33.001 40.81 32.9874 42.7576H37.9518C37.9518 41.5727 38.0505 40.6738 38.248 40.0609C38.4455 39.448 38.9324 38.8011 39.7087 38.1201C41.2341 36.8943 42.4974 35.5425 43.4984 34.0648C44.4995 32.587 45 30.9833 45 29.2536C45 26.6658 44.1998 24.6433 42.5995 23.186C40.9992 21.7287 38.769 21 35.9088 21C33.2665 21 31.1112 21.6776 29.4428 23.0328C27.7744 24.3879 26.9606 26.2777 27.0015 28.702L27.0628 28.8246H31.8433C31.8433 27.6124 32.2383 26.6965 33.0282 26.0768C33.8182 25.4571 34.7784 25.1472 35.9088 25.1472C37.2299 25.1472 38.248 25.5115 38.963 26.2402C39.6781 26.9689 40.0356 27.9937 40.0356 29.3149C40.0356 30.4589 39.7223 31.5042 39.0958 32.4508C38.4693 33.3974 37.6249 34.3882 36.5625 35.4233C35.0644 36.69 34.0974 37.7421 33.6615 38.5797ZM32.9669 51.1746H38.0335V46.4145H32.9669V51.1746Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/icons/updater-base.svg b/icons/updater-base.svg
+index be9ee99cd72a38d3a6aa1b4d27c745c9b0665590..4c20648ea5c49cf09f849a016efd30b45905858a 100644
+--- a/icons/updater-base.svg
++++ b/icons/updater-base.svg
+@@ -1,6 +1,8 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+-    <g fill="#FFF" fill-rule="nonzero">
+-        <path d="M8.188 21.248a9.929 9.929 0 0 1-.036-.015L12 18.004V21a9 9 0 0 0 5.034-16.462l.793-.666A9.987 9.987 0 0 1 22 12c0 5.523-4.477 10-10 10a9.97 9.97 0 0 1-3.812-.752zm7.624-18.496l.036.015L12 5.996V3a9 9 0 0 0-5.034 16.462l-.793.666A9.987 9.987 0 0 1 2 12C2 6.477 6.477 2 12 2a9.97 9.97 0 0 1 3.812.752z"/>
+-        <path d="M14.16 13.453l2.376 2.375-.708.708-2.375-2.376a4 4 0 1 1 .707-.707zM11 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+-    </g>
++<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
++<g id="Property 1=base">
++<g id="ic/update/base">
++<path id="Shape" fill-rule="evenodd" clip-rule="evenodd" d="M47.5437 8.30139L47.4353 8.25644C43.9111 6.80224 40.0492 6 36 6C19.4315 6 6 19.4315 6 36C6 46.0455 10.9374 54.9379 18.5179 60.3827L20.8985 58.3851C13.7196 53.5325 9 45.3174 9 36C9 21.0883 21.0883 9 36 9V17.9877L47.5437 8.30139ZM24.4563 63.6986L24.5647 63.7436C28.0889 65.1978 31.9508 66 36 66C52.5685 66 66 52.5685 66 36C66 25.9545 61.0626 17.0621 53.4821 11.6174L51.1015 13.6149C58.2804 18.4675 63 26.6826 63 36C63 50.9117 50.9117 63 36 63V54.0123L24.4563 63.6986Z" fill="white"/>
++<path id="Shape_2" fill-rule="evenodd" clip-rule="evenodd" d="M49.6066 47.4853L42.4798 40.3585C44.0594 38.3264 45 35.7731 45 33C45 26.3726 39.6274 21 33 21C26.3726 21 21 26.3726 21 33C21 39.6274 26.3726 45 33 45C35.7731 45 38.3264 44.0594 40.3585 42.4798L47.4853 49.6066L49.6066 47.4853ZM42 33C42 37.9706 37.9706 42 33 42C28.0294 42 24 37.9706 24 33C24 28.0294 28.0294 24 33 24C37.9706 24 42 28.0294 42 33Z" fill="white"/>
++</g>
++</g>
+ </svg>
+diff --git a/modules/datetime/datetime-control-menu.ui b/modules/datetime/datetime-control-menu.ui
+index cd9bdf1cae23c862aab462c127659d35d91b9f9b..81f63eebe4b8bb35ca20fb2172bea9621aa4d79a 100644
+--- a/modules/datetime/datetime-control-menu.ui
++++ b/modules/datetime/datetime-control-menu.ui
+@@ -21,6 +21,20 @@
+             <child>
+               <placeholder/>
+             </child>
++            <child>
++              <object class="GtkSeparator">
++                <property name="visible">True</property>
++                <property name="can-focus">False</property>
++                <style>
++                  <class name="separator"/>
++                </style>
++              </object>
++              <packing>
++                <property name="expand">False</property>
++                <property name="fill">True</property>
++                <property name="position">1</property>
++              </packing>
++            </child>
+             <child>
+               <object class="GtkButton" id="btn_settings">
+                 <property name="visible">True</property>
+diff --git a/modules/datetime/gresource.xml b/modules/datetime/gresource.xml
+index b18eec4c157aeaf91c5ed7881c581c5566ef67f3..ea1a49e6f53709bc065e731c6c3983b192022173 100644
+--- a/modules/datetime/gresource.xml
++++ b/modules/datetime/gresource.xml
+@@ -1,7 +1,6 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/datetime">
+-		<file preprocess="xml-stripblanks">datetime-control-menu.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/datetime">
++    <file preprocess="xml-stripblanks">datetime-control-menu.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/modules/endsession/gresource.xml b/modules/endsession/gresource.xml
+index eae0fc5fa817810c8a494adab3a6110832a7e718..5f1bf2b174b77bd4fbfdbcffc05196fc7b4e3693 100644
+--- a/modules/endsession/gresource.xml
++++ b/modules/endsession/gresource.xml
+@@ -1,7 +1,6 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/endsession">
+-		<file preprocess="xml-stripblanks">endsession-control.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/endsession">
++    <file preprocess="xml-stripblanks">endsession-control.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/modules/nimf/gresource.xml b/modules/nimf/gresource.xml
+index d1db64c034e870c2c27b27f4886856ddc61e2454..533f3d9a265fed6dc1fee94cb48feb02fb995b22 100644
+--- a/modules/nimf/gresource.xml
++++ b/modules/nimf/gresource.xml
+@@ -1,7 +1,6 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/nimf">
+-		<file preprocess="xml-stripblanks">nimf-control.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/nimf">
++    <file preprocess="xml-stripblanks">nimf-control.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/modules/nimf/nimf-control.ui b/modules/nimf/nimf-control.ui
+index aabfc29ff91a91106071fffa8dbad27716dd1535..de158d5b3679b1ea8df8f2b1794ead496c55a1bb 100644
+--- a/modules/nimf/nimf-control.ui
++++ b/modules/nimf/nimf-control.ui
+@@ -4,7 +4,7 @@
+   <requires lib="gtk+" version="3.20"/>
+   <object class="GtkButton" id="control">
+     <property name="visible">True</property>
+-    <property name="can-focus">True</property>
++    <property name="can-focus">False</property>
+     <property name="receives-default">True</property>
+     <property name="relief">none</property>
+     <child>
+diff --git a/modules/security/gresource.xml b/modules/security/gresource.xml
+index 1c38c2592c5996aaf6c3a736e0f1272ea193dd00..67406d8a00554a46528b109621c73420d1614ea5 100644
+--- a/modules/security/gresource.xml
++++ b/modules/security/gresource.xml
+@@ -1,8 +1,7 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/security">
+-		<file preprocess="xml-stripblanks">security-control.ui</file>
+-		<file preprocess="xml-stripblanks">security-control-menu.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/security">
++    <file preprocess="xml-stripblanks">security-control.ui</file>
++    <file preprocess="xml-stripblanks">security-control-menu.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/modules/security/security-control.ui b/modules/security/security-control.ui
+index 122a4370bf667cc4d9bc67ea94f444a5c4f668ed..6fbac2bf8b399f17aad8fa3756112e69545207c1 100644
+--- a/modules/security/security-control.ui
++++ b/modules/security/security-control.ui
+@@ -4,7 +4,7 @@
+   <requires lib="gtk+" version="3.20"/>
+   <object class="GtkButton" id="control">
+     <property name="visible">True</property>
+-    <property name="can-focus">True</property>
++    <property name="can-focus">False</property>
+     <property name="receives-default">True</property>
+     <property name="relief">none</property>
+     <child>
+diff --git a/modules/updater/gresource.xml b/modules/updater/gresource.xml
+index f69d4bdfc3c10bd6efa9318257518160ca8c4a30..52dcbe85a2298a8db1410a644a4aae2f024f20b5 100644
+--- a/modules/updater/gresource.xml
++++ b/modules/updater/gresource.xml
+@@ -1,8 +1,7 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/updater">
+-		<file preprocess="xml-stripblanks">updater-control.ui</file>
+-		<file preprocess="xml-stripblanks">updater-control-menu.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/updater">
++    <file preprocess="xml-stripblanks">updater-control.ui</file>
++    <file preprocess="xml-stripblanks">updater-control-menu.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/modules/updater/updater-control-menu.ui b/modules/updater/updater-control-menu.ui
+index 99796e401211c60b6f0e65f0526d6a8d55b908fd..ae81280650f0a7f825055065a4c3192677dac21e 100644
+--- a/modules/updater/updater-control-menu.ui
++++ b/modules/updater/updater-control-menu.ui
+@@ -10,7 +10,6 @@
+     <property name="baseline-position">top</property>
+     <child>
+       <object class="GtkButton" id="btn_show">
+-        <property name="name">sec-module-widget</property>
+         <property name="visible">True</property>
+         <property name="can-focus">True</property>
+         <property name="receives-default">True</property>
+@@ -25,6 +24,9 @@
+             <property name="xalign">0</property>
+           </object>
+         </child>
++        <style>
++          <class name="module-menu-btn"/>
++        </style>
+       </object>
+       <packing>
+         <property name="expand">False</property>
+@@ -48,6 +50,9 @@
+             <property name="xalign">2.2351741291171123e-10</property>
+           </object>
+         </child>
++        <style>
++          <class name="module-menu-btn"/>
++        </style>
+       </object>
+       <packing>
+         <property name="expand">False</property>
+@@ -71,6 +76,9 @@
+             <property name="xalign">0</property>
+           </object>
+         </child>
++        <style>
++          <class name="module-menu-btn"/>
++        </style>
+       </object>
+       <packing>
+         <property name="expand">False</property>
+diff --git a/modules/updater/updater-control.ui b/modules/updater/updater-control.ui
+index 625dc4b1ef72e80c5ea1a79b869741192dad886f..e8f7ff696cb0268249226f6e6f9b35b03f8b02a7 100644
+--- a/modules/updater/updater-control.ui
++++ b/modules/updater/updater-control.ui
+@@ -4,7 +4,7 @@
+   <requires lib="gtk+" version="3.20"/>
+   <object class="GtkButton" id="control">
+     <property name="visible">True</property>
+-    <property name="can-focus">True</property>
++    <property name="can-focus">False</property>
+     <property name="receives-default">True</property>
+     <property name="relief">none</property>
+     <child>
+diff --git a/modules/user/gresource.xml b/modules/user/gresource.xml
+index 5951589221426ba40b1c1d9b10e7bd544f704d66..368c6716f49da667e1b5a24abee3dfe4e2d316d9 100644
+--- a/modules/user/gresource.xml
++++ b/modules/user/gresource.xml
+@@ -1,7 +1,6 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+-	<gresource prefix="/kr/gooroom/IntegrationApplet/modules/user">
+-		<file preprocess="xml-stripblanks">user-control.ui</file>
+-	</gresource>
+-</gresources>
+-
++  <gresource prefix="/kr/gooroom/IntegrationApplet/modules/user">
++    <file preprocess="xml-stripblanks">user-control.ui</file>
++  </gresource>
++</gresources>
+\ No newline at end of file
+diff --git a/po/en_GB.po b/po/en_GB.po
+index 2542ebbafee992bd1981e18f450af0eac8465ed5..4fe6488068bea1de6cbb49280be235790eb132d0 100644
+--- a/po/en_GB.po
++++ b/po/en_GB.po
+@@ -1,13 +1,7 @@
+-# English(USA) translations for gooroom-integration-applet package.
+-# Copyright (C) 2015-2019 THE gooroom-integration-applet'S COPYRIGHT HOLDER
+-# This file is distributed under the same license as the gooroom-integration-applet package.
+-#
+-#, fuzzy
+ msgid ""
+ msgstr ""
+ "Project-Id-Version: gooroom-integration-applet 0.1.0\n"
+ "Report-Msgid-Bugs-To: \n"
+-"POT-Creation-Date: 2021-08-06 12:27+0900\n"
+ "PO-Revision-Date: 2019-01-22 12:54+0900\n"
+ "Language-Team: Gooroom <gooroom@gooroom.kr>\n"
+ "Language: en\n"
+@@ -16,288 +10,197 @@ msgstr ""
+ "Content-Transfer-Encoding: 8bit\n"
+ "Plural-Forms: nplurals=1; plural=0;\n"
+ 
+-#. print warning for user
+-#: ../common/common.c:319
+-#, c-format
+-msgid ""
+-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
+-"\"."
+-msgstr ""
+-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
+-"\"."
+-
+-#: ../modules/user/user-module.c:101 ../modules/security/security-module.c:204
+-#: ../modules/security/security-module.c:348 ../src/popup-window.ui.h:7
+-#: ../modules/security/security-control.ui.h:3
+-#: ../modules/updater/updater-control.ui.h:1
+-msgid "Unknown"
+-msgstr "Unknown"
++msgid "%B %-d %Y   %T"
++msgstr "%B %-d %Y   %T"
+ 
+-#: ../modules/power/power-module.c:132
+-msgid "Unknown time"
+-msgstr "Unknown time"
++msgid "%B %-d %Y   %l:%M:%S %p"
++msgstr "%-d %B %Y   %l:%M:%S %p"
+ 
+-#: ../modules/power/power-module.c:137
+-#, c-format
+-msgid "%i minute"
+-msgid_plural "%i minutes"
+-msgstr[0] "%i minute"
+-msgstr[1] "%i minutes"
++msgid "%i %s %i %s"
++msgstr "%i %s %i %s"
+ 
+-#: ../modules/power/power-module.c:148
+-#, c-format
+ msgid "%i hour"
+ msgid_plural "%i hours"
+ msgstr[0] "%i hour"
+ msgstr[1] "%i hours"
+ 
+-#. TRANSLATOR: "%i %s %i %s" are "%i hours %i minutes"
+-#. * Swap order with "%2$s %2$i %1$s %1$i if needed
+-#: ../modules/power/power-module.c:157
+-#, c-format
+-msgid "%i %s %i %s"
+-msgstr "%i %s %i %s"
++msgid "%i minute"
++msgid_plural "%i minutes"
++msgstr[0] "%i minute"
++msgstr[1] "%i minutes"
+ 
+-#: ../modules/power/power-module.c:158
+-msgid "hour"
+-msgid_plural "hours"
+-msgstr[0] "hour"
+-msgstr[1] "hours"
++msgid "%l:%M %p"
++msgstr "%l:%M %p"
+ 
+-#: ../modules/power/power-module.c:159
+-msgid "minute"
+-msgid_plural "minutes"
+-msgstr[0] "minute"
+-msgstr[1] "minutes"
++msgid "%s remaining"
++msgstr "%s remaining"
+ 
+-#: ../modules/power/power-module.c:180
+-#, c-format
+ msgid "%s until fully charged"
+ msgstr "%s until fully charged"
+ 
+-#: ../modules/power/power-module.c:186
+-#, c-format
+-msgid "Caution: %s remaining"
+-msgstr "Caution: %s remaining"
++msgid ":"
++msgstr ":"
+ 
+-#: ../modules/power/power-module.c:190
+-#, c-format
+-msgid "%s remaining"
+-msgstr "%s remaining"
++msgid "A security vulnerability has been detected."
++msgstr "A security vulnerability has been detected."
+ 
+-#: ../modules/power/power-module.c:194 ../modules/power/power-module.c:218
+-msgid "Fully charged"
+-msgstr "Fully charged"
++msgid "Application Launching Error"
++msgstr "Application Launching Error"
+ 
+-#: ../modules/power/power-module.c:197 ../modules/power/power-module.c:221
+-msgid "Empty"
+-msgstr "Empty"
++msgid "Back"
++msgstr "Backward"
++
++msgid "Caution: %s remaining"
++msgstr "Caution: %s remaining"
+ 
+-#: ../modules/power/power-module.c:211
+ msgid "Charging"
+ msgstr "Charging"
+ 
+-#: ../modules/power/power-module.c:215
+-msgid "Discharging"
+-msgstr "Discharging"
++msgid "Could not execute command"
++msgstr "Could not execute command"
+ 
+-#. 12-hour mode
+-#: ../modules/datetime/datetime-module.c:102
+-msgid "%l:%M %p"
+-msgstr "%l:%M %p"
++msgid "Could not launch '%s'"
++msgstr "Could not launch '%s'"
+ 
+-#. 12-hour mode
+-#: ../modules/datetime/datetime-module.c:114
+-msgid "%B %-d %Y   %l:%M:%S %p"
+-msgstr "%-d %B %Y   %l:%M:%S %p"
++msgid "Could not launch '%s' program"
++msgstr "Could not launch '%s' program."
+ 
+-#: ../modules/datetime/datetime-module.c:116
+-msgid "%B %-d %Y   %T"
+-msgstr "%B %-d %Y   %T"
++msgid "DateTime Settings"
++msgstr "DateTime Settings"
+ 
+-#: ../modules/security/security-module.c:95
+-msgid "Security Status Of Gooroom System"
+-msgstr "Security Status Of Gooroom System"
++msgid "Details"
++msgstr "Details"
+ 
+-#: ../modules/security/security-module.c:96
+-msgid "A security vulnerability has been detected."
+-msgstr "A security vulnerability has been detected."
++msgid "Discharging"
++msgstr "Discharging"
+ 
+-#: ../modules/security/security-module.c:107
+-#, c-format
+-msgid "Protecting OS"
+-msgstr "Protecting OS"
++msgid "Empty"
++msgstr "Empty"
+ 
+-#: ../modules/security/security-module.c:111
+-msgid "Protect executable files"
+-msgstr "Protect executable files"
++msgid "Fully charged"
++msgstr "Fully charged"
+ 
+-#: ../modules/security/security-module.c:115
+-msgid "Trusted Booting"
+-msgstr "Trusted Booting"
++msgid "Gooroom Integration Applet"
++msgstr "Gooroom Integration Applet"
+ 
+-#: ../modules/security/security-module.c:119
+-#, c-format
+-msgid "Resources Control"
+-msgstr "Resources Control"
++msgid "Gooroom Management Settings"
++msgstr "Gooroom Management Settings"
+ 
+-#: ../modules/security/security-module.c:269
+-msgid "Safety"
+-msgstr "Safety"
++msgid "Gooroom Security Status View"
++msgstr "Gooroom Security Status View"
+ 
+-#: ../modules/security/security-module.c:282
+-msgid "Vulnerable"
+-msgstr "Vulnerable"
++msgid "Gooroom Update is terminated"
++msgstr "Gooroom Update is terminated."
+ 
+-#: ../modules/security/security-module.c:640
+-msgid "Details"
+-msgstr "Details"
++msgid "Hibernate"
++msgstr "Hibernate"
+ 
+-#: ../modules/nimf/nimf-module.c:413
+ msgid "Input Method Not Running"
+ msgstr "Input Method Not Running"
+ 
+-#: ../modules/nimf/nimf-module.c:485
+ msgid "Input Method Settings"
+ msgstr "Input Method Settings"
+ 
+-#: ../modules/updater/updater-module.c:262
+-#: ../modules/updater/updater-module.c:276
+-#: ../modules/updater/updater-module.c:355
+-#: ../modules/updater/updater-module.c:430
+-msgid "Gooroom Update is terminated"
+-msgstr "Gooroom Update is terminated."
++msgid "Integration applet for GNOME panel"
++msgstr "Integration applet for GNOME panel"
+ 
+-#: ../src/gooroom-integration-applet.c:167
+-msgid "Application Launching Error"
+-msgstr "Application Launching Error"
++msgid "Keyboard"
++msgstr "Keyboard"
+ 
+-#: ../src/gooroom-integration-applet.c:280
+-msgid "Could not execute command"
+-msgstr "Could not execute command"
++msgid "Learn more about security status of Gooroom"
++msgstr "Learn more about security status of Gooroom."
+ 
+-#: ../src/gooroom-integration-applet.c:310
+-#, c-format
+-msgid "Could not launch '%s' program"
+-msgstr "Could not launch '%s' program."
++msgid "Log Out"
++msgstr "Log Out"
+ 
+-#: ../src/gooroom-integration-applet.c:312
+-#, c-format
+-msgid "Could not launch '%s'"
+-msgstr "Could not launch '%s'"
++msgid "Open Preferences"
++msgstr "Show Preferences"
+ 
+-#: ../src/gooroom-integration-module.c:33
+-#: ../data/kr.gooroom.IntegrationApplet.panel-applet.in.in.h:1
+-msgid "Gooroom Integration Applet"
+-msgstr "Gooroom Integration Applet"
++msgid "Power"
++msgstr "Power"
+ 
+-#: ../src/gooroom-integration-module.c:34
+-#: ../data/kr.gooroom.IntegrationApplet.panel-applet.in.in.h:2
+-msgid "Integration applet for GNOME panel"
+-msgstr "Integration applet for GNOME panel"
++msgid "Preferences"
++msgstr "Preferences"
+ 
+-#: ../src/popup-window.ui.h:1
+-msgid "Settings"
+-msgstr "Settings"
++msgid "Protect executable files"
++msgstr "Protect executable files"
+ 
+-#: ../src/popup-window.ui.h:2
+-msgid "Screen Lock"
+-msgstr "Screen Lock"
++msgid "Protecting OS"
++msgstr "Protecting OS"
+ 
+-#: ../src/popup-window.ui.h:3
+-msgid "Shut down Gooroom"
+-msgstr "Shut down Gooroom"
++msgid "Refresh"
++msgstr "Refresh"
+ 
+-#: ../src/popup-window.ui.h:4
+-msgid "Power"
+-msgstr "Power"
++msgid "Refresh update status of Gooroom"
++msgstr "Refresh update status of Gooroom"
+ 
+-#: ../src/popup-window.ui.h:5 ../modules/security/security-control.ui.h:1
+-msgid "Security Status"
+-msgstr "Security Status"
++msgid "Resources Control"
++msgstr "Resources Control"
+ 
+-#: ../src/popup-window.ui.h:6 ../modules/security/security-control.ui.h:2
+-msgid ":"
+-msgstr ":"
++msgid "Restart"
++msgstr "Restart"
+ 
+-#: ../src/popup-window.ui.h:8
+-msgid "Keyboard"
+-msgstr "Keyboard"
++msgid "Safety"
++msgstr "Safety"
+ 
+-#: ../src/popup-window.ui.h:9
+-msgid "Back"
+-msgstr "Backward"
++msgid "Screen Lock"
++msgstr "Screen Lock"
+ 
+-#: ../modules/security/security-control-menu.ui.h:1
+-msgid "Learn more about security status of Gooroom"
+-msgstr "Learn more about security status of Gooroom."
++msgid "Security Status"
++msgstr "Security Status"
+ 
+-#: ../modules/security/security-control-menu.ui.h:2
+-msgid "Gooroom Security Status View"
+-msgstr "Gooroom Security Status View"
++msgid "Security Status Of Gooroom System"
++msgstr "Security Status Of Gooroom System"
++
++msgid "Settings"
++msgstr "Settings"
+ 
+-#: ../modules/security/security-control-menu.ui.h:3
+ msgid "Settings for Gooroom management"
+ msgstr "Settings for gooroom management"
+ 
+-#: ../modules/security/security-control-menu.ui.h:4
+-msgid "Gooroom Management Settings"
+-msgstr "Gooroom Management Settings"
+-
+-#: ../modules/security/security-control-menu.ui.h:5
+-msgid "Take Safety Measures"
+-msgstr "Take Safety Messures"
++msgid "Show"
++msgstr "Show"
+ 
+-#: ../modules/datetime/datetime-control-menu.ui.h:1
+-msgid "DateTime Settings"
+-msgstr "DateTime Settings"
++msgid "Show Gooroom Update"
++msgstr "Show Gooroom Update"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:1
+-msgid "Log Out"
+-msgstr "Log Out"
++msgid "Shut Down"
++msgstr "Shut Down"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:2
+-msgid "Hibernate"
+-msgstr "Hibernate"
++msgid "Shut down Gooroom"
++msgstr "Shut down Gooroom"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:3
+ msgid "Suspend"
+ msgstr "Suspend"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:4
+-msgid "Restart"
+-msgstr "Restart"
+-
+-#: ../modules/endsession/endsession-control.ui.h:5
+-msgid "Shut Down"
+-msgstr "Shut Down"
+-
+-#: ../modules/updater/updater-control-menu.ui.h:1
+-msgid "Show Gooroom Update"
+-msgstr "Show Gooroom Update"
++msgid "Take Safety Measures"
++msgstr "Take Safety Messures"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:2
+-msgid "Show"
+-msgstr "Show"
++msgid "Trusted Booting"
++msgstr "Trusted Booting"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:3
+-msgid "Refresh update status of Gooroom"
+-msgstr "Refresh update status of Gooroom"
++msgid "Unknown"
++msgstr "Unknown"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:4
+-msgid "Refresh"
+-msgstr "Refresh"
++msgid "Unknown time"
++msgstr "Unknown time"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:5
+-msgid "Open Preferences"
+-msgstr "Show Preferences"
++msgid "Vulnerable"
++msgstr "Vulnerable"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:6
+-msgid "Preferences"
+-msgstr "Preferences"
++msgid ""
++"Working directory \"%s\" does not exist. It won't be used when spawning "
++"\"%s\"."
++msgstr ""
++"Working directory \"%s\" does not exist. It won't be used when spawning "
++"\"%s\"."
+ 
+-#~ msgid "%B %-d %Y   %l:%M %p"
+-#~ msgstr "%-d %B %Y   %l:%M %p"
++msgid "hour"
++msgid_plural "hours"
++msgstr[0] "hour"
++msgstr[1] "hours"
+ 
+-#~ msgid "%B %-d %Y   %R"
+-#~ msgstr "%B %-d %Y   %R"
++msgid "minute"
++msgid_plural "minutes"
++msgstr[0] "minute"
++msgstr[1] "minutes"
+diff --git a/po/ko.po b/po/ko.po
+index c09b2b9cc19d38eed5533b58d9bc83942aa9e16d..aa7147668131f681b1be4e3c9391016551b471c6 100644
+--- a/po/ko.po
++++ b/po/ko.po
+@@ -1,13 +1,7 @@
+-# Korean translations for gooroom-integration-applet package.
+-# Copyright (C) 2015-2019 THE gooroom-integration-applet'S COPYRIGHT HOLDER
+-# This file is distributed under the same license as the gooroom-integration-applet package.
+-#
+-#, fuzzy
+ msgid ""
+ msgstr ""
+ "Project-Id-Version: gooroom-integration-applet 0.1.0\n"
+ "Report-Msgid-Bugs-To: \n"
+-"POT-Creation-Date: 2021-11-16 16:08+0900\n"
+ "PO-Revision-Date: 2019-01-22 12:54+0900\n"
+ "Language-Team: Gooroom <gooroom@gooroom.kr>\n"
+ "Language: ko\n"
+@@ -16,296 +10,194 @@ msgstr ""
+ "Content-Transfer-Encoding: 8bit\n"
+ "Plural-Forms: nplurals=1; plural=0;\n"
+ 
+-#. print warning for user
+-#: ../common/common.c:319
+-#, c-format
+-msgid ""
+-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
+-"\"."
+-msgstr ""
+-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
+-"\"."
+-
+-#: ../modules/user/user-module.c:101 ../modules/security/security-module.c:202
+-#: ../modules/security/security-module.c:346 ../src/popup-window.ui.h:7
+-#: ../modules/security/security-control.ui.h:3
+-#: ../modules/updater/updater-control.ui.h:1
+-msgid "Unknown"
+-msgstr "알수없음"
++msgid "%B %-d %Y   %T"
++msgstr "%Y년 %B %-d일   %T"
+ 
+-#: ../modules/power/power-module.c:132
+-msgid "Unknown time"
+-msgstr "시간 알 수 없음"
++msgid "%B %-d %Y   %l:%M:%S %p"
++msgstr "%Y년 %B %-d일   %p %l:%M:%S"
+ 
+-#: ../modules/power/power-module.c:137
+-#, c-format
+-msgid "%i minute"
+-msgid_plural "%i minutes"
+-msgstr[0] "%i분"
+-msgstr[1] "%i분"
++msgid "%i %s %i %s"
++msgstr "%i%s %i%s"
+ 
+-#: ../modules/power/power-module.c:148
+-#, c-format
+ msgid "%i hour"
+ msgid_plural "%i hours"
+ msgstr[0] "%i시간"
+ msgstr[1] "%i시간"
+ 
+-#. TRANSLATOR: "%i %s %i %s" are "%i hours %i minutes"
+-#. * Swap order with "%2$s %2$i %1$s %1$i if needed
+-#: ../modules/power/power-module.c:157
+-#, c-format
+-msgid "%i %s %i %s"
+-msgstr "%i%s %i%s"
++msgid "%i minute"
++msgid_plural "%i minutes"
++msgstr[0] "%i분"
++msgstr[1] "%i분"
+ 
+-#: ../modules/power/power-module.c:158
+-msgid "hour"
+-msgid_plural "hours"
+-msgstr[0] "시간"
+-msgstr[1] "시간"
++msgid "%l:%M %p"
++msgstr "%p %l:%M"
+ 
+-#: ../modules/power/power-module.c:159
+-msgid "minute"
+-msgid_plural "minutes"
+-msgstr[0] "분"
+-msgstr[1] "분"
++msgid "%s remaining"
++msgstr "%s 남음"
+ 
+-#: ../modules/power/power-module.c:180
+-#, c-format
+ msgid "%s until fully charged"
+ msgstr "완전 충전까지 %s 남음"
+ 
+-#: ../modules/power/power-module.c:186
+-#, c-format
+-msgid "Caution: %s remaining"
+-msgstr "주의: %s 남음"
++msgid ":"
++msgstr ":"
+ 
+-#: ../modules/power/power-module.c:190
+-#, c-format
+-msgid "%s remaining"
+-msgstr "%s 남음"
++msgid "A security vulnerability has been detected."
++msgstr "보안위협이 탐지되었습니다."
+ 
+-#: ../modules/power/power-module.c:194 ../modules/power/power-module.c:218
+-msgid "Fully charged"
+-msgstr "완전 충전"
++msgid "Application Launching Error"
++msgstr "어플리케이션 실행 에러"
+ 
+-#: ../modules/power/power-module.c:197 ../modules/power/power-module.c:221
+-msgid "Empty"
+-msgstr "비었음"
++msgid "Back"
++msgstr "뒤로"
++
++msgid "Caution: %s remaining"
++msgstr "주의: %s 남음"
+ 
+-#: ../modules/power/power-module.c:211
+ msgid "Charging"
+ msgstr "충전 중"
+ 
+-#: ../modules/power/power-module.c:215
+-msgid "Discharging"
+-msgstr "방전 중"
+-
+-#. 12-hour mode
+-#: ../modules/datetime/datetime-module.c:102
+-msgid "%l:%M %p"
+-msgstr "%p %l:%M"
++msgid "Could not execute command"
++msgstr "명령을 실행할 수 없습니다."
+ 
+-#. 12-hour mode
+-#: ../modules/datetime/datetime-module.c:114
+-msgid "%B %-d %Y   %l:%M:%S %p"
+-msgstr "%Y년 %B %-d일   %p %l:%M:%S"
++msgid "Could not launch '%s'"
++msgstr "'%s'를 실행할 수 없습니다."
+ 
+-#: ../modules/datetime/datetime-module.c:116
+-msgid "%B %-d %Y   %T"
+-msgstr "%Y년 %B %-d일   %T"
++msgid "Could not launch '%s' program"
++msgstr "'%s' 프로그램을 실행할 수 없습니다."
+ 
+-#: ../modules/security/security-module.c:93
+-msgid "Security Status Of Gooroom System"
+-msgstr "구름 시스템 보안 상태"
++msgid "DateTime Settings"
++msgstr "날짜 및 시각 설정"
+ 
+-#: ../modules/security/security-module.c:94
+-msgid "A security vulnerability has been detected."
+-msgstr "보안위협이 탐지되었습니다."
++msgid "Details"
++msgstr "자세히 보기"
+ 
+-#: ../modules/security/security-module.c:105
+-#, c-format
+-msgid "Protecting OS"
+-msgstr "운영체제 보호"
++msgid "Discharging"
++msgstr "방전 중"
+ 
+-#: ../modules/security/security-module.c:109
+-msgid "Protect executable files"
+-msgstr "실행파일 검증"
++msgid "Empty"
++msgstr "비었음"
+ 
+-#: ../modules/security/security-module.c:113
+-msgid "Trusted Booting"
+-msgstr "신뢰부팅"
++msgid "Fully charged"
++msgstr "완전 충전"
+ 
+-#: ../modules/security/security-module.c:117
+-#, c-format
+-msgid "Resources Control"
+-msgstr "매체제어"
++msgid "Gooroom Integration Applet"
++msgstr "구름 통합 애플릿"
+ 
+-#: ../modules/security/security-module.c:267
+-msgid "Safety"
+-msgstr "안전"
++msgid "Gooroom Security Status Tool"
++msgstr "구름 보안상태 도구"
+ 
+-#: ../modules/security/security-module.c:280
+-msgid "Vulnerable"
+-msgstr "취약"
++msgid "Gooroom Update is terminated"
++msgstr "구름 업데이트가 종료되었습니다"
+ 
+-#: ../modules/security/security-module.c:628
+-msgid "Details"
+-msgstr "자세히 보기"
++msgid "Hibernate"
++msgstr "최대절전"
+ 
+-#: ../modules/nimf/nimf-module.c:413
+ msgid "Input Method Not Running"
+ msgstr "입력기 작동이 중지됨"
+ 
+-#: ../modules/nimf/nimf-module.c:485
+ msgid "Input Method Settings"
+ msgstr "입력기 설정"
+ 
+-#: ../modules/updater/updater-module.c:293
+-#: ../modules/updater/updater-module.c:307
+-#: ../modules/updater/updater-module.c:386
+-#: ../modules/updater/updater-module.c:461
+-msgid "Gooroom Update is terminated"
+-msgstr "구름 업데이트가 종료되었습니다"
+-
+-#: ../src/gooroom-integration-applet.c:167
+-msgid "Application Launching Error"
+-msgstr "어플리케이션 실행 에러"
+-
+-#: ../src/gooroom-integration-applet.c:280
+-msgid "Could not execute command"
+-msgstr "명령을 실행할 수 없습니다."
+-
+-#: ../src/gooroom-integration-applet.c:310
+-#, c-format
+-msgid "Could not launch '%s' program"
+-msgstr "'%s' 프로그램을 실행할 수 없습니다."
+-
+-#: ../src/gooroom-integration-applet.c:312
+-#, c-format
+-msgid "Could not launch '%s'"
+-msgstr "'%s'를 실행할 수 없습니다."
+-
+-#: ../src/gooroom-integration-module.c:33
+-#: ../data/kr.gooroom.IntegrationApplet.panel-applet.in.in.h:1
+-msgid "Gooroom Integration Applet"
+-msgstr "구름 통합 애플릿"
+-
+-#: ../src/gooroom-integration-module.c:34
+-#: ../data/kr.gooroom.IntegrationApplet.panel-applet.in.in.h:2
+ msgid "Integration applet for GNOME panel"
+ msgstr "GNOME 패널용 통합 애플릿"
+ 
+-#: ../src/popup-window.ui.h:1
+-msgid "Settings"
+-msgstr "설정"
++msgid "Keyboard"
++msgstr "키보드"
+ 
+-#: ../src/popup-window.ui.h:2
+-msgid "Screen Lock"
+-msgstr "화면잠금"
++msgid "Learn more about security status of Gooroom"
++msgstr "구름 보안상태를 자세히 봅니다"
+ 
+-#: ../src/popup-window.ui.h:3
+-msgid "Shut down Gooroom"
+-msgstr "구름 종료"
++msgid "Log Out"
++msgstr "로그아웃"
++
++msgid "Open Preferences"
++msgstr "설정 열기"
++
++msgid "Please quit Synaptic to control Update Manager."
++msgstr "시냅틱 패키지 관리자가 실행 중입니다."
+ 
+-#: ../src/popup-window.ui.h:4
+ msgid "Power"
+ msgstr "전원"
+ 
+-#: ../src/popup-window.ui.h:5 ../modules/security/security-control.ui.h:1
+-msgid "Security Status"
+-msgstr "보안 상태"
++msgid "Preferences"
++msgstr "설정"
+ 
+-#: ../src/popup-window.ui.h:6 ../modules/security/security-control.ui.h:2
+-msgid ":"
+-msgstr ":"
++msgid "Protect executable files"
++msgstr "실행파일 검증"
+ 
+-#: ../src/popup-window.ui.h:8
+-msgid "Keyboard"
+-msgstr "키보드"
++msgid "Protecting OS"
++msgstr "운영체제 보호"
+ 
+-#: ../src/popup-window.ui.h:9
+-msgid "Back"
+-msgstr "뒤로"
++msgid "Refresh"
++msgstr "새로고침"
+ 
+-#: ../modules/security/security-control-menu.ui.h:1
+-msgid "Learn more about security status of Gooroom"
+-msgstr "구름 보안상태를 자세히 봅니다"
++msgid "Refresh update status of Gooroom"
++msgstr "구름 업데이트의 상태를 새로고침 합니다"
+ 
+-#: ../modules/security/security-control-menu.ui.h:2
+-msgid "Gooroom Security Status Tool"
+-msgstr "구름 보안상태 도구"
++msgid "Resources Control"
++msgstr "매체제어"
+ 
+-#: ../modules/security/security-control-menu.ui.h:3
+-msgid "Take Safety Measures"
+-msgstr "안전 조치 실행"
++msgid "Restart"
++msgstr "시스템 재시작"
+ 
+-#: ../modules/datetime/datetime-control-menu.ui.h:1
+-msgid "DateTime Settings"
+-msgstr "날짜 및 시간 설정"
++msgid "Safety"
++msgstr "안전"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:1
+-msgid "Log Out"
+-msgstr "로그아웃"
++msgid "Screen Lock"
++msgstr "화면잠금"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:2
+-msgid "Hibernate"
+-msgstr "최대절전"
++msgid "Security Status"
++msgstr "보안 상태"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:3
+-msgid "Suspend"
+-msgstr "대기"
++msgid "Security Status Of Gooroom System"
++msgstr "구름 시스템 보안 상태"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:4
+-msgid "Restart"
+-msgstr "시스템 재시작"
++msgid "Settings"
++msgstr "설정"
+ 
+-#: ../modules/endsession/endsession-control.ui.h:5
+-msgid "Shut Down"
+-msgstr "시스템 종료"
++msgid "Show"
++msgstr "구름 업데이트 보이기"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:1
+ msgid "Show Gooroom Update"
+ msgstr "구름 업데이트를 자세히 봅니다"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:2
+-msgid "Show"
+-msgstr "구름 업데이트 보이기"
+-
+-#: ../modules/updater/updater-control-menu.ui.h:3
+-msgid "Refresh update status of Gooroom"
+-msgstr "구름 업데이트의 상태를 새로고침 합니다"
++msgid "Shut Down"
++msgstr "시스템 종료"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:4
+-msgid "Refresh"
+-msgstr "새로고침"
++msgid "Shut down Gooroom"
++msgstr "구름 종료"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:5
+-msgid "Open Preferences"
+-msgstr "설정 열기"
++msgid "Suspend"
++msgstr "대기"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:6
+-msgid "Preferences"
+-msgstr "설정"
++msgid "Take Safety Measures"
++msgstr "안전 조치 실행"
+ 
+-#: ../modules/updater/updater-control-menu.ui.h:7
+-msgid "Please quit Synaptic to control Update Manager."
+-msgstr "시냅틱 패키지 관리자가 실행 중입니다."
++msgid "Trusted Booting"
++msgstr "신뢰부팅"
+ 
+-#~ msgid "Settings for Gooroom management"
+-#~ msgstr "구름 관리를 위한 설정"
++msgid "Unknown"
++msgstr "알수없음"
+ 
+-#~ msgid "Gooroom Management Settings"
+-#~ msgstr "구름 관리 설정"
++msgid "Unknown time"
++msgstr "시간 알 수 없음"
+ 
+-#~ msgid "Gooroom Update was terminated abnormally"
+-#~ msgstr "구름 업데이트가 비정상적으로 종료되었습니다"
++msgid "Vulnerable"
++msgstr "취약"
+ 
+-#~ msgid "Update blocking function has been enabled"
+-#~ msgstr "업데이트 차단 기능이 활성화 되었습니다"
++msgid ""
++"Working directory \"%s\" does not exist. It won't be used when spawning "
++"\"%s\"."
++msgstr ""
++"Working directory \"%s\" does not exist. It won't be used when spawning "
++"\"%s\"."
+ 
+-#~ msgid "%B %-d %Y   %l:%M %p"
+-#~ msgstr "%Y년 %B %-d일   %p %l:%M"
++msgid "hour"
++msgid_plural "hours"
++msgstr[0] "시간"
++msgstr[1] "시간"
+ 
+-#~ msgid "%B %-d %Y   %R"
+-#~ msgstr "%Y년 %B %-d일   %R"
++msgid "minute"
++msgid_plural "minutes"
++msgstr[0] "분"
++msgstr[1] "분"
+diff --git a/src/gresource.xml b/src/gresource.xml
+index 0e758539d6f134b449042df98c28e0aea67ec067..db554bd459aadccbdefe29259ec40f320d1e9f9e 100644
+--- a/src/gresource.xml
++++ b/src/gresource.xml
+@@ -1,9 +1,11 @@
+-<?xml version="1.0" encoding="UTF-8"?>
++<?xml version='1.0' encoding='utf-8'?>
+ <gresources>
+   <gresource prefix="/kr/gooroom/IntegrationApplet/ui">
+     <file preprocess="xml-stripblanks">popup-window.ui</file>
++    <file alias="style1.css">vendor-recovered/style1.css</file>
++    <file alias="style2.css">vendor-recovered/style2.css</file>
+   </gresource>
+   <gresource prefix="/kr/gooroom/IntegrationApplet/ui">
+-	<file compressed="true" alias="style.css">../data/style.css</file>
++    <file compressed="true" alias="style.css">../data/style.css</file>
+   </gresource>
+-</gresources>
++</gresources>
+\ No newline at end of file
+diff --git a/src/popup-window.ui b/src/popup-window.ui
+index c0e6c45d2d1a9a9c71e1914fab523967f732880e..8e6b813d0d9c703d0b9aa67fdb14eb8195679eb3 100644
+--- a/src/popup-window.ui
++++ b/src/popup-window.ui
+@@ -31,10 +31,7 @@
+                 <property name="name">main-page</property>
+                 <property name="visible">True</property>
+                 <property name="can-focus">False</property>
+-                <property name="vexpand">True</property>
+-                <property name="border-width">0</property>
+                 <property name="orientation">vertical</property>
+-                <property name="spacing">5</property>
+                 <child>
+                   <object class="GtkBox" id="box_user">
+                     <property name="visible">True</property>
+@@ -53,6 +50,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+                 <child>
+                   <object class="GtkBox" id="box_middle">
+                     <property name="visible">True</property>
+@@ -100,13 +111,28 @@
+                   <packing>
+                     <property name="expand">False</property>
+                     <property name="fill">True</property>
+-                    <property name="position">1</property>
++                    <property name="position">2</property>
++                  </packing>
++                </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">3</property>
+                   </packing>
+                 </child>
+                 <child>
+                   <object class="GtkButtonBox" id="box_end">
+                     <property name="visible">True</property>
+                     <property name="can-focus">False</property>
++                    <property name="homogeneous">True</property>
+                     <property name="layout-style">center</property>
+                     <child>
+                       <object class="GtkButton" id="btn_settings">
+@@ -209,7 +235,7 @@
+                   <packing>
+                     <property name="expand">False</property>
+                     <property name="fill">True</property>
+-                    <property name="position">2</property>
++                    <property name="position">4</property>
+                   </packing>
+                 </child>
+               </object>
+@@ -272,6 +298,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+                 <child>
+                   <placeholder/>
+                 </child>
+@@ -385,6 +425,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+                 <child>
+                   <placeholder/>
+                 </child>
+@@ -452,6 +506,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+               </object>
+               <packing>
+                 <property name="name">nimf-page</property>
+@@ -517,6 +585,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+                 <child>
+                   <placeholder/>
+                 </child>
+@@ -587,6 +669,20 @@
+                     <property name="position">0</property>
+                   </packing>
+                 </child>
++                <child>
++                  <object class="GtkSeparator">
++                    <property name="visible">True</property>
++                    <property name="can-focus">False</property>
++                    <style>
++                      <class name="separator"/>
++                    </style>
++                  </object>
++                  <packing>
++                    <property name="expand">False</property>
++                    <property name="fill">True</property>
++                    <property name="position">1</property>
++                  </packing>
++                </child>
+               </object>
+               <packing>
+                 <property name="name">updater-page</property>
+diff --git a/src/vendor-recovered/style1.css b/src/vendor-recovered/style1.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..52b3b6f09984f22f052cc54c712070feb8d0e426
+--- /dev/null
++++ b/src/vendor-recovered/style1.css
+@@ -0,0 +1,205 @@
++* {
++  outline-color: transparent;
++/*  transition: none; */
++  text-shadow: none;
++/*  -gtk-icon-effect: none; */
++  -gtk-icon-shadow: none;
++}
++
++.flat.toggle {
++  color: #575D6D;
++}
++
++.separator {
++  margin: 20px 0px;
++  border-bottom: solid 1px rgba(179, 186, 221, 0.5);
++}
++
++.main-box {
++  background-color: rgba(240, 243, 249, 0.98);
++  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
++  border-radius: 16px;
++  padding: 24px 20px;
++  padding-bottom: 20px;
++  min-width: 340px;
++}
++
++.box-start {
++  background-color: rgba(240, 243, 249, 0.0);
++  min-height: 32px;
++  border-radius: 12px;
++  color: #575D6D;
++  padding: 0px; }
++.lbl-cleanmode {
++  min-height: 27px;
++  min-width: 72px;
++  border-radius: 17px;
++  background-color: #4D84DB;
++  color: #ffffff;
++  padding: 4px 12px;
++  font-weight: 400;
++}
++
++.box-middle {
++  background-color: rgba(240, 243, 249, 0.0);
++  border-radius: 12px;
++  color: #575D6D;
++  padding: 0px;
++}
++
++.box-end {
++  background-color: rgba(240, 243, 249, 0.0);
++  border-radius: 12px;
++  min-height: 44px;
++}.box-end button {
++    border: none;
++    color: #575D6D;
++    animation: none;
++    box-shadow: none;
++    background: transparent;
++	padding: 0px;
++}.box-end button:hover {
++    color: #3e6ddc;
++	padding: 0px;
++} .box-end button:active,
++  .box-end button:checked {
++    color: #000100; 
++} .box-end .btn-endsession,
++  .box-end .btn-endsession:hover {
++    color: #cb011a;
++} .box-end .btn-endsession:active,
++  .box-end .btn-endsession:checked {
++    color: #000100;
++}
++
++.module-box {
++  background-color: rgba(240, 243, 249, 0.0);
++  min-height: 36px;
++  padding: 5px;
++  border-radius: 6px;
++  border:none;
++  color: #575D6D;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++} .module-box .security-status-label {
++    color: rgba (0, 1, 0, 0.5);
++} .module-box:hover {
++    background: rgba(179, 186, 221, 0.2);
++    border-radius: 6px;
++    color: #575D6D;
++} .module-box:selected {
++    background: rgba(179, 186, 221, 0.3);
++    border-radius: 6px;
++    color: #575D6D;
++} .module-box:hover .go-next-page {
++    color: #575D6D;
++} .module-box:disabled {
++    color: rgba(0, 0, 0, 0.4);
++}
++
++.module-menu-box {
++  min-height: 36px;
++  border-radius: 8px;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++  color: #575D6D;
++  padding: 0px;
++  background: rgba(179, 186, 221, 0.0);
++} .module-menu-box button {
++    border-radius: 6px;
++    border:none;
++    padding: 10px;
++    color: #575D6D;
++} .module-menu-box button:hover {
++    background-color: rgba(179, 186, 221, 0.2);
++} .module-menu-box button:selected {
++    background-color: rgba(179, 186, 221, 0.3);
++    color: #575D6D;
++} .module-menu-box button:hover image {
++    color: #3e6ddc;
++} .module-menu-box .btn-shutdown image {
++    color: #cb011a; 
++} .module-menu-box .btn-shutdown:hover image {
++    color: #cb011a; 
++} .module-menu-box:disabled {
++    color: #000100;
++    opacity: 0.5; 
++}
++
++.module-menu-backward-box {
++  background-color: rgba(240, 243, 249, 0.0);
++  min-height: 36px;
++  border-radius: 8px;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++  color: #575D6D;
++  border:none;
++  padding: 0px;
++} .module-menu-backward-box:hover {
++    background-color: rgba(179, 186, 221, 0.2);
++}
++
++.rounded-icon-button {
++  min-width: 16px;
++  min-height: 16px;
++  padding: 5px;
++  color: #575D6D;;
++  border-radius: 15px;
++  border: hidden;
++  background-color: rgba(179, 186, 221, 0.0); 
++}.rounded-icon-button:hover {
++  background-color: rgba(179, 186, 221, 0.2); 
++}.rounded-icon-button:active {
++  background-color: rgba(179, 186, 221, 0.3); 
++}
++
++.circle-icon {
++  padding: 5px;
++  border-radius: 50%;
++  background-color: rgba(179, 186, 221, 0.0); 
++  color: #474B57;
++}
++
++.rounded-icon-style1 {
++  padding: 5px;
++  border-radius: 15px;
++  color: #575D6D;
++}
++
++.rounded-icon-style2 {
++  padding: 5px;
++  border-radius: 15px;
++  background-color: rgba(179, 186, 221, 0.0); 
++  color: #575D6D;
++}
++
++calendar {
++  border:none;
++  color: #575D6D;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 16px;
++  background-color: rgba(240, 243, 249, 0.98);
++} calendar.header, calendar.button {
++  color: #575D6D;
++} calendar:selected {
++    background: #008EFD;
++    border-radius: 4px;
++    color: #FFFFFF;
++} calendar:hover {
++	background: rgba(179, 186, 221, 0.2);
++    border-radius: 4px;
++} calendar.button:disabled {
++    color: rgba(179, 186, 221, 0.2);
++} calendar:indeterminate{
++    color: rgba(179, 186, 221, 0.7);
++} calendar.highlight {
++  color: #575D6D;
++}
+diff --git a/src/vendor-recovered/style2.css b/src/vendor-recovered/style2.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c8facf61e110cddd761999b1c110a7d0bd6a6cf
+--- /dev/null
++++ b/src/vendor-recovered/style2.css
+@@ -0,0 +1,206 @@
++* {
++  outline-color: transparent;
++/*  transition: none; */
++  text-shadow: none;
++/*  -gtk-icon-effect: none; */
++  -gtk-icon-shadow: none;
++}
++
++.flat.toggle {
++  color: #FFFFFF;
++}
++
++.separator {
++  margin: 20px 0px;
++  border-bottom: solid 1px rgba(255, 255, 255, 0.1);
++}
++
++.main-box {
++  background-color: rgba(43, 47, 64, 0.98);
++  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
++  border-radius: 16px;
++  padding: 24px 20px;
++  padding-bottom: 20px;
++  min-width: 340px;
++}
++
++.box-start {
++  background-color: rgba(43, 47, 64, 0.0);
++  min-height: 32px;
++  border-radius: 12px;
++  color: #ffffff;
++  padding: 0px; }
++.lbl-cleanmode {
++  min-height: 27px;
++  min-width: 72px;
++  border-radius: 17px;
++  background-color: #4D84DB;
++  color: #ffffff;
++  padding: 4px 12px;
++  font-weight: 400;
++}
++
++.box-middle {
++  background-color: rgba(43, 47, 64, 0.0);
++  border-radius: 12px;
++  color: #ffffff;
++  padding: 0px;
++}
++
++.box-end {
++  background-color: rgba(43, 47, 64, 0.0);
++  border-radius: 12px;
++  min-height: 44px;
++}.box-end button {
++    border: none;
++    animation: none;
++    box-shadow: none;
++    background: transparent;
++	padding: 0px;
++    color: #FFFFFF;
++}.box-end button:hover {
++    color: #3e6ddc;
++	padding: 0px;
++} .box-end button:active,
++  .box-end button:checked {
++    color: #000100; 
++} .box-end .btn-endsession,
++  .box-end .btn-endsession:hover {
++    color: #cb011a;
++} .box-end .btn-endsession:active,
++  .box-end .btn-endsession:checked {
++    color: #000100;
++}
++
++.module-box {
++  background-color: rgba(43, 47, 64, 0.0);
++  min-height: 36px;
++  padding: 5px;
++  border-radius: 6px;
++  border:none;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++  color: #FFFFFF;
++} .module-box .security-status-label {
++    color: rgba (0, 1, 0, 0.5);
++} .module-box:hover {
++    background: rgba(0, 142, 253, 0.2);
++    border-radius: 6px;
++    color: #FFFFFF;
++} .module-box:selected {
++    background: rgba(0, 142, 253, 0.3);
++    border-radius: 6px;
++    color: #FFFFFF;
++} .module-box:hover .go-next-page {
++    color: #FFFFFF;
++} .module-box:disabled {
++    color: rgba(255, 255, 255, 0.7);
++}
++
++.module-menu-box {
++  min-height: 36px;
++  border-radius: 8px;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++  padding: 0px;
++  background: rgba(0, 142, 253, 0.0);
++} .module-menu-box button {
++    border-radius: 6px;
++    border:none;
++    padding: 10px;
++    color: #FFFFFF;
++} .module-menu-box button:hover {
++    background-color: rgba(0, 142, 253, 0.2);
++    color: #ffffff;
++} .module-menu-box button:selected {
++    background-color: rgba(0, 142, 253, 0.3);
++    color: #ffffff;
++} .module-menu-box button:hover image {
++    color: #3e6ddc;
++} .module-menu-box .btn-shutdown image {
++    color: #cb011a; 
++} .module-menu-box .btn-shutdown:hover image {
++    color: #cb011a; 
++} .module-menu-box:disabled {
++    color: rgba(255, 255, 255, 0.7);
++}
++
++.module-menu-backward-box {
++  background-color: rgba(43, 47, 64, 0.0);
++  min-height: 36px;
++  border-radius: 8px;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 13px;
++  color: #FFFFFF;
++  border:none;
++  padding: 0px;
++} .module-menu-backward-box:hover {
++    background-color: rgba(0, 142, 253, 0.2);
++}
++
++.rounded-icon-button {
++  min-width: 16px;
++  min-height: 16px;
++  padding: 5px;
++  color: #FFFFFF;;
++  border-radius: 15px;
++  border: hidden;
++  background-color: rgba(43, 47, 64, 0.0);
++}.rounded-icon-button:hover {
++  background-color: rgba(0, 142, 253, 0.2); 
++}.rounded-icon-button:active {
++  background-color: rgba(0, 142, 253, 0.3); 
++}
++
++.circle-icon {
++  padding: 5px;
++  border-radius: 50%;
++  background-color: rgba(43, 47, 64, 0.0);
++  color: #FFFFFF;
++}
++
++.rounded-icon-style1 {
++  padding: 5px;
++  border-radius: 15px;
++  background-color: rgba(43, 47, 64, 0.0);
++  color: #FFFFFF;
++}
++
++.rounded-icon-style2 {
++  padding: 5px;
++  border-radius: 15px;
++  background-color: rgba(43, 47, 64, 0.0);
++  color: #FFFFFF;
++}
++
++calendar {
++  border:none;
++  color: #FFFFFF;
++  font-family: 'Noto Sans KR';
++  font-style: normal;
++  font-weight: 400;
++  font-size: 16px;
++  background-color: rgba(43, 47, 64, 0.0);
++} calendar.header, calendar.button {
++  color: #FFFFFF;
++} calendar:selected {
++    background: #008EFD;
++    border-radius: 4px;
++    color: #FFFFFF;
++} calendar:hover {
++	background: rgba(0, 142, 253, 0.2);
++    border-radius: 4px;
++    color: #FFFFFF;
++} calendar.button:disabled {
++    color: rgba(255, 255, 255, 0.7);
++} calendar:indeterminate{
++    color: rgba(255, 255, 255, 0.3);
++} calendar.highlight {
++    color: #FFFFFF;
++}

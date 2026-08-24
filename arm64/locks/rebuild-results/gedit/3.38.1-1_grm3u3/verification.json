@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "gedit",
+  "source_version": "3.38.1-1+grm3u3",
+  "repository_full_name": "gooroom/gedit",
+  "commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
+  "tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
+  "expected_native_binary_versions": {
+    "gedit": "3.38.1-1+grm3u3"
+  },
+  "produced_package_count": 3,
+  "packages": [
+    {
+      "filename": "gedit-dbgsym_3.38.1-1+grm3u3_arm64.deb",
+      "sha256": "2fa936016bab8821a89b9a98c798bca2349ad9d7c24304e70c966ba73a1482cf",
+      "size": 845120,
+      "package": "gedit-dbgsym",
+      "version": "3.38.1-1+grm3u3",
+      "architecture": "arm64",
+      "source_field": "gedit",
+      "parsed_source": "gedit",
+      "parsed_source_version": "3.38.1-1+grm3u3",
+      "expected_from_iso": false,
+      "payload_entry_count": 11,
+      "elf_machine_counts": {
+        "aarch64": 10
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "gedit-dev_3.38.1-1+grm3u3_arm64.deb",
+      "sha256": "e9fc7010f63d8dccbe6259493bac3e488784afbbd8143b0e7af0887caca3ecba",
+      "size": 77912,
+      "package": "gedit-dev",
+      "version": "3.38.1-1+grm3u3",
+      "architecture": "arm64",
+      "source_field": "gedit",
+      "parsed_source": "gedit",
+      "parsed_source_version": "3.38.1-1+grm3u3",
+      "expected_from_iso": false,
+      "payload_entry_count": 57,
+      "elf_machine_counts": {},
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "gedit_3.38.1-1+grm3u3_arm64.deb",
+      "sha256": "3e674c79e40255537366dbacd54ff3761ef6bde7f26489ba7312b97096cfbd1f",
+      "size": 354888,
+      "package": "gedit",
+      "version": "3.38.1-1+grm3u3",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "gedit",
+      "parsed_source_version": "3.38.1-1+grm3u3",
+      "expected_from_iso": true,
+      "payload_entry_count": 63,
+      "elf_machine_counts": {
+        "aarch64": 9
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "gedit",
+    "source_version": "3.38.1-1+grm3u3",
+    "repository": "gooroom/gedit",
+    "commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
+    "tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
+    "source_archive_sha256": "e1082609e6701a4b77f9a248d1e234ce0906081f8261945d74d68fb7a0d57640",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gedit"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "gedit",
+      "gedit-dbgsym",
+      "gedit-dev"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gedit",
+    "source_version": "3.38.1-1+grm3u3",
+    "repository": "gooroom/gedit",
+    "commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
+    "tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
+    "verified_commit_sha": "a332db1abb2605e89e81b7c88f9c958607581dc1",
+    "verified_tree_sha": "3d2f30d1e6a87b2de8123f59773c72af6d36b168",
+    "deterministic_source_archive_sha256": "e1082609e6701a4b77f9a248d1e234ce0906081f8261945d74d68fb7a0d57640"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}

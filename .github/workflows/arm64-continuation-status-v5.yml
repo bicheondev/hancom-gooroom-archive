@@ -1,0 +1,208 @@
+name: ARM64 continuation status v5
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-continuation-status-v5.yml'
+      - 'arm64/locks/new-reconstruction-pipeline-validation-v1/**'
+      - 'arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/**'
+      - 'arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v4/**'
+      - 'arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/**'
+      - 'arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/**'
+      - 'arm64/locks/linux-5.10.179-grm3u1-normalized-v2/**'
+      - 'arm64/requests/integration-applet-history-v5-arm64-build.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-continuation-status-v5
+  cancel-in-progress: true
+
+jobs:
+  summarize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out current ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Synthesize compact fail-closed status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/status
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import subprocess
+          from pathlib import Path
+          from typing import Any
+
+          root = Path('.')
+
+          def read(path: str) -> dict[str, Any] | None:
+              candidate = root / path
+              if not candidate.is_file():
+                  return None
+              return json.loads(candidate.read_text(encoding='utf-8'))
+
+          validation = read(
+              'arm64/locks/new-reconstruction-pipeline-validation-v1/latest/summary.json'
+          )
+          history = read(
+              'arm64/locks/gooroom-integration-applet-vendor-symbol-history-v1/latest/compact.json'
+          )
+          v4 = read(
+              'arm64/locks/gooroom-integration-applet-han3u3-vendor-reconstruction-v4/latest/summary.json'
+          )
+          v5 = read(
+              'arm64/locks/gooroom-integration-applet-han3u3-history-reconstruction-v5/latest/summary.json'
+          )
+          native = read(
+              'arm64/locks/gooroom-integration-applet-han3u3-arm64-build-v5/latest/package-promotion-authority.json'
+          )
+          kernel = read(
+              'arm64/locks/linux-5.10.179-grm3u1-normalized-v2/latest/summary.json'
+          )
+          request = read(
+              'arm64/requests/integration-applet-history-v5-arm64-build.json'
+          )
+
+          workflow = Path(
+              '.github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml'
+          )
+          workflow_text = workflow.read_text(encoding='utf-8') if workflow.exists() else ''
+
+          v4_closest = (v4 or {}).get('closest_candidate') or {}
+          v5_closest = (v5 or {}).get('closest_candidate') or {}
+          status = {
+              'schema': 1,
+              'branch': 'arm64-port',
+              'head_commit': subprocess.check_output(
+                  ['git', 'rev-parse', 'HEAD'], text=True
+              ).strip(),
+              'pipeline_validation': {
+                  'available': validation is not None,
+                  'passed': bool(validation and validation.get('status') == 'passed'),
+                  'summary': validation,
+              },
+              'integration_applet': {
+                  'cleanmode_candidate_present_in_v4': (
+                      'd170c900dab655bd5c6d8474064e445232d3f49c' in workflow_text
+                  ),
+                  'vendor_symbol_history_available': history is not None,
+                  'vendor_symbol_history': history,
+                  'v4_available': v4 is not None,
+                  'v4_candidate_count': (v4 or {}).get('candidate_count'),
+                  'v4_closest_label': v4_closest.get('candidate_label'),
+                  'v4_comparison_rank': v4_closest.get('comparison_rank'),
+                  'v5_available': v5 is not None,
+                  'v5_completed_candidate_count': (v5 or {}).get(
+                      'completed_candidate_count'
+                  ),
+                  'v5_closest_label': v5_closest.get('candidate_label'),
+                  'v5_closest_commit': v5_closest.get('candidate_commit_sha'),
+                  'v5_comparison_rank': v5_closest.get('comparison_rank_v5'),
+                  'source_semantically_verified': bool(
+                      v5 and v5.get('source_reconstruction_semantically_verified')
+                  ),
+                  'native_build_allowed': bool(
+                      v5 and v5.get('native_arm64_build_allowed')
+                  ),
+                  'native_build_request': request,
+                  'native_package_published': bool(
+                      native and native.get('status') == 'published'
+                  ),
+                  'native_package_authority': native,
+              },
+              'kernel': {
+                  'normalized_v2_available': kernel is not None,
+                  'config_difference_count': (kernel or {}).get(
+                      'config_difference_count'
+                  ),
+                  'module_counts': (kernel or {}).get('module_counts'),
+                  'module_classification_counts': (kernel or {}).get(
+                      'module_classification_counts'
+                  ),
+                  'module_path_set_identical': (kernel or {}).get(
+                      'module_path_set_identical'
+                  ),
+                  'all_common_modules_runtime_equivalent': (kernel or {}).get(
+                      'all_common_modules_runtime_equivalent'
+                  ),
+                  'debian_source_plus_vendor_config_is_candidate': (kernel or {}).get(
+                      'debian_source_plus_vendor_config_is_candidate'
+                  ),
+                  'native_arm64_build_allowed': bool(
+                      kernel and kernel.get('native_arm64_build_allowed')
+                  ),
+              },
+          }
+          status['final'] = {
+              'package_layer_ready': bool(
+                  status['integration_applet']['native_package_published']
+              ),
+              'kernel_ready': bool(status['kernel']['native_arm64_build_allowed']),
+              'rootfs_assembly_allowed': bool(
+                  status['integration_applet']['native_package_published']
+                  and status['kernel']['native_arm64_build_allowed']
+              ),
+              'iso_assembly_allowed': False,
+          }
+          output = Path('work/status/status.json')
+          output.write_text(
+              json.dumps(status, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          jq '.' work/status/status.json >> "$GITHUB_STEP_SUMMARY"
+          find work/status -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > work/status/FILE-INVENTORY.tsv
+          (
+            cd work/status
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload synthesized status
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: arm64-continuation-status-v5
+          path: work/status
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact continuation status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/status/continuation-v5/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/status/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Update ARM64 continuation v5 status'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1

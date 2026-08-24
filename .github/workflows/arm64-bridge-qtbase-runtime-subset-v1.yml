@@ -1,0 +1,393 @@
+name: ARM64 bridge verified qtbase runtime subset
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-bridge-qtbase-runtime-subset-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-bridge-qtbase-runtime-subset-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE: qtbase-opensource-src
+  VERSION: 5.15.2+dfsg-9+grm3u1
+  AUTHORITY: arm64/locks/qtbase-grm3u1-package-promotion/latest/package-promotion-authority.json
+  VERIFICATION: arm64/locks/qtbase-grm3u1-package-promotion/latest/verification-summary.json
+  LOCK_DIR: arm64/locks/qtbase-grm3u1-iso-package-bridge/latest
+
+jobs:
+  bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install repository tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev jq unzip
+
+      - name: Validate package-layer promotion authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s "$AUTHORITY"
+          test -s "$VERIFICATION"
+
+          jq -e --arg source "$SOURCE" --arg version "$VERSION" '
+            .schema == 2 and
+            .source == $source and
+            .source_version == $version and
+            .source_type == "verified-reconstructed-source-archive" and
+            .source_status == "verified-reconstructed-amd64-equivalent" and
+            .amd64_equivalence_verified == true and
+            .amd64_equivalent_package_count == 9 and
+            .amd64_equivalent_elf_count == 40 and
+            .amd64_fatal_difference_count == 0 and
+            .native_arm64_build_verified == true and
+            .arm64_foreign_payload_count == 0 and
+            .package_layer_promotion_allowed == true and
+            .iso_assembly_allowed == false and
+            .original_source_archive_recovered == false and
+            .selected_runtime_package_count == 9 and
+            ([.selected_runtime_packages[].package] | sort) ==
+              (["libqt5core5a", "libqt5dbus5", "libqt5gui5", "libqt5network5",
+                "libqt5printsupport5", "libqt5sql5", "libqt5test5",
+                "libqt5widgets5", "libqt5xml5"] | sort) and
+            all(.selected_runtime_packages[];
+              .architecture == "arm64" and
+              .source == $source and
+              .source_version == $version and
+              .version == $version and
+              (.sha256 | test("^[0-9a-f]{64}$")) and
+              (.size > 0)) and
+            (.promoted_artifact.artifact_id | tostring | test("^[0-9]+$")) and
+            .promoted_artifact.artifact_name == "qtbase-opensource-src-verified-runtime-arm64-v1" and
+            (.promoted_artifact.artifact_digest | test("^sha256:[0-9a-f]{64}$"))
+          ' "$AUTHORITY" >/dev/null
+
+          jq -e --arg source "$SOURCE" --arg version "$VERSION" '
+            .schema == 1 and
+            .source == $source and
+            .source_version == $version and
+            .target_architecture == "arm64" and
+            .verified == true and
+            .reconstructed_source_archive_verified == true and
+            .amd64_equivalence_verified == true and
+            .native_arm64_build_verified == true and
+            .foreign_payload_count == 0 and
+            .package_layer_promotion_allowed == true and
+            .iso_assembly_allowed == false and
+            .expected_package_count == 9 and
+            .compared_package_count == 9 and
+            (.verification_errors | length) == 0 and
+            (.wrong_architecture_executables | length) == 0 and
+            ([.deb_artifacts[].package] | sort) ==
+              (["libqt5core5a", "libqt5dbus5", "libqt5gui5", "libqt5network5",
+                "libqt5printsupport5", "libqt5sql5", "libqt5test5",
+                "libqt5widgets5", "libqt5xml5"] | sort)
+          ' "$VERIFICATION" >/dev/null
+
+      - name: Download promoted runtime artifact by locked identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/download work/unpacked work/repository
+          artifact_id="$(jq -r '.promoted_artifact.artifact_id' "$AUTHORITY")"
+          artifact_name="$(jq -r '.promoted_artifact.artifact_name' "$AUTHORITY")"
+          artifact_digest="$(jq -r '.promoted_artifact.artifact_digest' "$AUTHORITY")"
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+            > work/download/artifact-metadata.json
+          jq -e --arg id "$artifact_id" --arg name "$artifact_name" --arg digest "$artifact_digest" '
+            (.id | tostring) == $id and
+            .name == $name and
+            .expired == false and
+            ((.digest // $digest) == $digest)
+          ' work/download/artifact-metadata.json >/dev/null
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            > work/download/artifact.zip
+          test -s work/download/artifact.zip
+          unzip -q work/download/artifact.zip -d work/unpacked
+
+      - name: Verify exact package set, metadata, sizes and hashes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          authority_path = Path('arm64/locks/qtbase-grm3u1-package-promotion/latest/package-promotion-authority.json')
+          authority = json.loads(authority_path.read_text(encoding='utf-8'))
+          expected_rows = authority['selected_runtime_packages']
+          expected = {row['filename']: row for row in expected_rows}
+
+          debs = list(Path('work/unpacked').rglob('*.deb'))
+          by_name = {}
+          for deb in debs:
+              by_name.setdefault(deb.name, []).append(deb)
+
+          errors = []
+          if set(by_name) != set(expected):
+              errors.append({
+                  'kind': 'artifact-package-set-mismatch',
+                  'expected': sorted(expected),
+                  'actual': sorted(by_name),
+              })
+          duplicates = {name: [str(p) for p in paths] for name, paths in by_name.items() if len(paths) != 1}
+          if duplicates:
+              errors.append({'kind': 'duplicate-package-filenames', 'entries': duplicates})
+
+          def field(path: Path, name: str) -> str:
+              return subprocess.check_output(
+                  ['dpkg-deb', '-f', str(path), name], text=True
+              ).strip()
+
+          verified = []
+          pool = Path('work/repository/pool/main/q/qtbase-opensource-src')
+          pool.mkdir(parents=True, exist_ok=True)
+          for filename, row in sorted(expected.items()):
+              paths = by_name.get(filename, [])
+              if len(paths) != 1:
+                  continue
+              path = paths[0]
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              actual = {
+                  'filename': filename,
+                  'package': field(path, 'Package'),
+                  'version': field(path, 'Version'),
+                  'architecture': field(path, 'Architecture'),
+                  'source_field': field(path, 'Source'),
+                  'sha256': digest,
+                  'size': path.stat().st_size,
+              }
+              checks = {
+                  'package': actual['package'] == row['package'],
+                  'version': actual['version'] == row['version'],
+                  'architecture': actual['architecture'] == 'arm64' == row['architecture'],
+                  'source': actual['source_field'].split(' ', 1)[0] == row['source'],
+                  'sha256': actual['sha256'] == row['sha256'],
+                  'size': actual['size'] == row['size'],
+              }
+              actual['checks'] = checks
+              if not all(checks.values()):
+                  errors.append({'kind': 'package-verification-failed', 'expected': row, 'actual': actual})
+              else:
+                  shutil.copy2(path, pool / filename)
+              verified.append(actual)
+
+          report = {
+              'schema': 1,
+              'source': authority['source'],
+              'source_version': authority['source_version'],
+              'expected_package_count': len(expected),
+              'verified_package_count': sum(all(v['checks'].values()) for v in verified),
+              'errors': errors,
+              'packages': verified,
+          }
+          Path('work/package-verification.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          if errors or report['verified_package_count'] != 9:
+              raise SystemExit(json.dumps(report, indent=2, sort_keys=True))
+          PY
+
+      - name: Materialize bounded ARM64 APT repository
+        shell: bash
+        run: |
+          set -euxo pipefail
+          repo=work/repository
+          binary="$repo/dists/hancom-gooroom-3.3/main/binary-arm64"
+          mkdir -p "$binary"
+          (
+            cd "$repo"
+            dpkg-scanpackages --multiversion pool /dev/null \
+              > dists/hancom-gooroom-3.3/main/binary-arm64/Packages
+            gzip -n -9 -c dists/hancom-gooroom-3.3/main/binary-arm64/Packages \
+              > dists/hancom-gooroom-3.3/main/binary-arm64/Packages.gz
+            apt-ftparchive release dists/hancom-gooroom-3.3 \
+              > dists/hancom-gooroom-3.3/Release
+          )
+          test "$(grep -c '^Package:' "$binary/Packages")" -eq 9
+
+      - name: Seal scoped bridge authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$LOCK_DIR"
+          mkdir -p "$LOCK_DIR"
+          cp work/package-verification.json "$LOCK_DIR/"
+          cp work/download/artifact-metadata.json "$LOCK_DIR/"
+          cp work/repository/dists/hancom-gooroom-3.3/main/binary-arm64/Packages \
+            "$LOCK_DIR/Packages"
+          cp work/repository/dists/hancom-gooroom-3.3/Release "$LOCK_DIR/Release"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          authority_path = Path(os.environ['AUTHORITY'])
+          verification_path = Path(os.environ['VERIFICATION'])
+          lock_dir = Path(os.environ['LOCK_DIR'])
+          authority = json.loads(authority_path.read_text(encoding='utf-8'))
+          package_report = json.loads(Path('work/package-verification.json').read_text(encoding='utf-8'))
+          artifact_metadata = json.loads(Path('work/download/artifact-metadata.json').read_text(encoding='utf-8'))
+
+          def sha256(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          packages = []
+          expected_by_filename = {r['filename']: r for r in authority['selected_runtime_packages']}
+          for actual in package_report['packages']:
+              expected = expected_by_filename[actual['filename']]
+              packages.append({
+                  'package': actual['package'],
+                  'filename': actual['filename'],
+                  'version': actual['version'],
+                  'architecture': actual['architecture'],
+                  'sha256': actual['sha256'],
+                  'size': actual['size'],
+                  'source': expected['source'],
+                  'source_version': expected['source_version'],
+              })
+
+          bridge = {
+              'schema': 1,
+              'scope': 'qtbase-runtime-package-subset-only',
+              'source': authority['source'],
+              'source_version': authority['source_version'],
+              'target_architecture': 'arm64',
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'actions_run_id': os.environ['GITHUB_RUN_ID'],
+              'actions_run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'global_iso_safety_policy_changed': False,
+              'global_iso_assembly_allowed': False,
+              'original_source_archive_recovered': False,
+              'qtbase_runtime_subset_inclusion_allowed': True,
+              'final_package_repository_consumption_allowed': True,
+              'rootfs_consumption_allowed': True,
+              'reason': 'bounded package subset verified by exact vendor AMD64 equivalence, native ARM64 build, and zero foreign payload',
+              'required_invariants': {
+                  'amd64_equivalence_verified': True,
+                  'native_arm64_build_verified': True,
+                  'foreign_payload_count': 0,
+                  'verification_errors': 0,
+                  'package_layer_promotion_allowed': True,
+                  'exact_package_count': 9,
+              },
+              'upstream_authority': {
+                  'path': str(authority_path),
+                  'sha256': sha256(authority_path),
+                  'verification_path': str(verification_path),
+                  'verification_sha256': sha256(verification_path),
+                  'promotion_run_id': authority['promotion_run_id'],
+                  'artifact_id': str(authority['promoted_artifact']['artifact_id']),
+                  'artifact_name': authority['promoted_artifact']['artifact_name'],
+                  'artifact_digest': authority['promoted_artifact']['artifact_digest'],
+                  'api_artifact_digest': artifact_metadata.get('digest'),
+              },
+              'repository': {
+                  'suite': 'hancom-gooroom-3.3',
+                  'component': 'main',
+                  'architecture': 'arm64',
+                  'package_index_sha256': sha256(Path('work/repository/dists/hancom-gooroom-3.3/main/binary-arm64/Packages')),
+                  'release_sha256': sha256(Path('work/repository/dists/hancom-gooroom-3.3/Release')),
+              },
+              'package_count': len(packages),
+              'packages': sorted(packages, key=lambda row: row['package']),
+          }
+          if bridge['package_count'] != 9:
+              raise SystemExit('bridge must contain exactly nine packages')
+          (lock_dir / 'bridge-authority.json').write_text(
+              json.dumps(bridge, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          find "$LOCK_DIR" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$LOCK_DIR/FILE-INVENTORY.tsv"
+          (
+            cd "$LOCK_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .scope == "qtbase-runtime-package-subset-only" and
+            .global_iso_safety_policy_changed == false and
+            .global_iso_assembly_allowed == false and
+            .qtbase_runtime_subset_inclusion_allowed == true and
+            .final_package_repository_consumption_allowed == true and
+            .rootfs_consumption_allowed == true and
+            .package_count == 9 and
+            all(.packages[]; .architecture == "arm64")
+          ' "$LOCK_DIR/bridge-authority.json" >/dev/null
+
+      - name: Upload verified repository bridge
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-grm3u1-iso-package-bridge-${{ github.run_id }}
+          path: |
+            work/repository
+            ${{ env.LOCK_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact bridge authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK_DIR"
+          if git diff --cached --quiet; then
+            echo 'Scoped qtbase bridge authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Lock verified qtbase ARM64 runtime subset bridge'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch final package repository reconciliation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-merge-final-package-repository-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port

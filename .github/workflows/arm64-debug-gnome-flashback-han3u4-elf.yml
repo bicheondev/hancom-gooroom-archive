@@ -1,0 +1,262 @@
+name: ARM64 port - debug gnome-flashback han3u4 AMD64 ELF
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-debug-gnome-flashback-han3u4-elf.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-debug-gnome-flashback-han3u4-elf
+  cancel-in-progress: true
+
+env:
+  SOURCE: gnome-flashback
+  VERSION: 3.38.0-2+grm3u2+han3u4
+  BASE_REPOSITORY: hancomgooroom/gnome-flashback
+  BASE_COMMIT: df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7
+  BASE_TREE: a5961872b3538a33b1ece5c76d0cf67506c71e2b
+  PUBLIC_REPOSITORY: gooroom/gnome-flashback
+  PUBLIC_COMMIT: 68a47d769b0f15b84c532746ced1f8ae538ab545
+  PUBLIC_TREE: 830a852c6272843c4c23da7e80b3b3961d4aeb38
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out reconstruction implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install build and binary-analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev elfutils file git gzip jq libglib2.0-0 python3 xz-utils
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            arm64/scripts/verify_gnome_flashback_han3u4_amd64.py
+          bash -n arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+
+      - name: Download exact vendor packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/flashback-debug
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,target-debs,authority,equivalence,analysis}
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          for filename in \
+            'gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb' \
+            'gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb' \
+            'gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb'; do
+            mapfile -t matches < <(find "$root/vendor" -type f -name "$filename" -print)
+            test "${#matches[@]}" -eq 1
+            cp "${matches[0]}" "$root/target-debs/$filename"
+          done
+          echo '6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408  work/flashback-debug/target-debs/gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb' | sha256sum -c -
+          echo '5770961e60c68b25ea7a84ab14871635b450b79f25f9596c79edad67a34e4543  work/flashback-debug/target-debs/gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb' | sha256sum -c -
+          echo '3968b152293606e4626fbe3317913d6f57add08001c3a5a66abd71a8576abcf6  work/flashback-debug/target-debs/gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb' | sha256sum -c -
+
+      - name: Check out exact public source lineages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/flashback-debug
+          git clone --filter=blob:none --no-checkout "https://github.com/${BASE_REPOSITORY}.git" "$root/hancom-source"
+          git -C "$root/hancom-source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/hancom-source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          git clone --filter=blob:none --no-checkout "https://github.com/${PUBLIC_REPOSITORY}.git" "$root/gooroom-source"
+          git -C "$root/gooroom-source" fetch --depth=1 origin "$PUBLIC_COMMIT"
+          git -C "$root/gooroom-source" checkout --detach "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD)" = "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD^{tree})" = "$PUBLIC_TREE"
+
+      - name: Reconstruct and build candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/flashback-debug
+          python3 arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            --hancom-repository "$root/hancom-source" \
+            --gooroom-repository "$root/gooroom-source" \
+            --target-deb-dir "$root/target-debs" \
+            --output-dir "$root/authority"
+          (cd "$root/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+          sudo bash arm64/scripts/build_gnome_flashback_han3u4_chroot.sh \
+            amd64 "$root/authority/reconstructed-source.tar.gz" \
+            "$root/amd64-build" "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$root/amd64-build"
+          test -n "$(find "$root/amd64-build/debs" -type f -name '*.deb' -print -quit)"
+
+      - name: Run strict verifier without suppressing diagnostics
+        shell: bash
+        run: |
+          set -uo pipefail
+          root=work/flashback-debug
+          set +e
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_amd64.py \
+            --target-deb-dir "$root/target-debs" \
+            --candidate-deb-dir "$root/amd64-build/debs" \
+            --output-dir "$root/equivalence" \
+            > "$root/analysis/verifier.stdout" 2> "$root/analysis/verifier.stderr"
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$root/analysis/verifier.exit-code"
+          jq . "$root/equivalence/summary.json" > "$root/analysis/equivalence-summary.pretty.json"
+          jq . "$root/equivalence/differences.json" > "$root/analysis/equivalence-differences.pretty.json"
+
+      - name: Extract and normalize target and candidate ELF files
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/flashback-debug
+          mkdir -p "$root/analysis"/{target-root,candidate-root,candidate-debug,normalized,disassembly,sections}
+          target="$root/target-debs/gnome-flashback_${VERSION}_amd64.deb"
+          mapfile -t candidates < <(
+            for deb in "$root"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = gnome-flashback ]; then printf '%s\n' "$deb"; fi
+            done
+          )
+          test "${#candidates[@]}" -eq 1
+          candidate="${candidates[0]}"
+          mapfile -t debug_debs < <(
+            for deb in "$root"/amd64-build/debs/*.deb; do
+              if [ "$(dpkg-deb -f "$deb" Package)" = gnome-flashback-dbgsym ]; then printf '%s\n' "$deb"; fi
+            done
+          )
+          test "${#debug_debs[@]}" -eq 1
+          dpkg-deb -x "$target" "$root/analysis/target-root"
+          dpkg-deb -x "$candidate" "$root/analysis/candidate-root"
+          dpkg-deb -x "${debug_debs[0]}" "$root/analysis/candidate-debug"
+          target_elf="$root/analysis/target-root/usr/bin/gnome-flashback"
+          candidate_elf="$root/analysis/candidate-root/usr/bin/gnome-flashback"
+          cp "$target_elf" "$root/analysis/target-gnome-flashback"
+          cp "$candidate_elf" "$root/analysis/candidate-gnome-flashback"
+          cp "$target_elf" "$root/analysis/normalized/target"
+          cp "$candidate_elf" "$root/analysis/normalized/candidate"
+          for section in .note.gnu.build-id .gnu_debuglink .gnu_debugaltlink .comment; do
+            objcopy --remove-section "$section" "$root/analysis/normalized/target" || true
+            objcopy --remove-section "$section" "$root/analysis/normalized/candidate" || true
+          done
+          sha256sum "$root/analysis/target-gnome-flashback" "$root/analysis/candidate-gnome-flashback" "$root/analysis/normalized/target" "$root/analysis/normalized/candidate" > "$root/analysis/elf-sha256.txt"
+          cmp -l "$root/analysis/normalized/target" "$root/analysis/normalized/candidate" > "$root/analysis/normalized-cmp.txt" || true
+          cmp -l "$root/analysis/normalized/target" "$root/analysis/normalized/candidate" | head -2000 > "$root/analysis/normalized-cmp-first2000.txt" || true
+          readelf -SW "$target_elf" > "$root/analysis/sections/target-sections.txt"
+          readelf -SW "$candidate_elf" > "$root/analysis/sections/candidate-sections.txt"
+          readelf -lW "$target_elf" > "$root/analysis/sections/target-program-headers.txt"
+          readelf -lW "$candidate_elf" > "$root/analysis/sections/candidate-program-headers.txt"
+          readelf -dW "$target_elf" > "$root/analysis/sections/target-dynamic.txt"
+          readelf -dW "$candidate_elf" > "$root/analysis/sections/candidate-dynamic.txt"
+          nm -an "$target_elf" > "$root/analysis/sections/target-nm.txt" || true
+          nm -an "$candidate_elf" > "$root/analysis/sections/candidate-nm.txt" || true
+          objdump -drwC "$target_elf" > "$root/analysis/disassembly/target.txt"
+          objdump -drwC "$candidate_elf" > "$root/analysis/disassembly/candidate.txt"
+          diff -u "$root/analysis/disassembly/target.txt" "$root/analysis/disassembly/candidate.txt" > "$root/analysis/disassembly/diff.txt" || true
+          find "$root/analysis/candidate-debug" -type f -printf '%p\n' > "$root/analysis/debug-files.txt"
+          debug_file="$(find "$root/analysis/candidate-debug" -type f -path '*/.build-id/*/*.debug' -print -quit)"
+          test -n "$debug_file"
+          cp "$debug_file" "$root/analysis/candidate.debug"
+          readelf --debug-dump=decodedline "$debug_file" > "$root/analysis/candidate-decodedline.txt" || true
+          eu-readelf --debug-dump=info "$debug_file" > "$root/analysis/candidate-debug-info.txt" || true
+
+      - name: Map changed byte ranges to virtual addresses and source lines
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/flashback-debug
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re, subprocess
+
+          root = Path('work/flashback-debug/analysis')
+          target = root / 'normalized/target'
+          candidate = root / 'normalized/candidate'
+          a = target.read_bytes()
+          b = candidate.read_bytes()
+          if len(a) != len(b):
+              raise SystemExit(f'normalized length mismatch: {len(a)} != {len(b)}')
+          positions = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
+          ranges = []
+          if positions:
+              start = previous = positions[0]
+              for value in positions[1:]:
+                  if value == previous + 1:
+                      previous = value
+                  else:
+                      ranges.append([start, previous + 1])
+                      start = previous = value
+              ranges.append([start, previous + 1])
+
+          sections = []
+          text = subprocess.check_output(['readelf', '-SW', str(candidate)], text=True)
+          pattern = re.compile(r'^\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)')
+          for line in text.splitlines():
+              m = pattern.match(line)
+              if m:
+                  name, address, offset, size = m.groups()
+                  sections.append({
+                      'name': name,
+                      'address': int(address, 16),
+                      'offset': int(offset, 16),
+                      'size': int(size, 16),
+                  })
+
+          debug = root / 'candidate.debug'
+          rows = []
+          for start, end in ranges:
+              containing = next((s for s in sections if s['offset'] <= start < s['offset'] + s['size']), None)
+              row = {'file_start': start, 'file_end': end, 'size': end-start, 'section': None, 'vaddr': None, 'source': None}
+              if containing:
+                  vaddr = containing['address'] + start - containing['offset']
+                  row['section'] = containing['name']
+                  row['vaddr'] = hex(vaddr)
+                  result = subprocess.run(
+                      ['addr2line', '-afiC', '-e', str(debug), hex(vaddr)],
+                      text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
+                  )
+                  row['source'] = result.stdout.strip()
+              rows.append(row)
+          (root / 'changed-ranges.json').write_text(json.dumps(rows, indent=2) + '\n')
+          (root / 'changed-ranges.txt').write_text('\n\n'.join(json.dumps(r, indent=2) for r in rows) + '\n')
+          print(json.dumps({'different_bytes': len(positions), 'range_count': len(ranges), 'ranges': rows[:100]}, indent=2))
+          PY
+
+      - name: Upload complete ELF equivalence evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-elf-deep-diagnostics-${{ github.run_id }}
+          path: |
+            work/flashback-debug/analysis
+            work/flashback-debug/equivalence
+            work/flashback-debug/authority
+            work/flashback-debug/amd64-build/debs
+            work/flashback-debug/amd64-build/build.log
+            work/flashback-debug/amd64-build/debootstrap.log
+            work/flashback-debug/target-debs
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9

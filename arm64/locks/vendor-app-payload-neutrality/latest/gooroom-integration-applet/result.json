@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+  "package": "gooroom-integration-applet",
+  "version": "0.3.1+grm3u1+han3u3",
+  "source": "gooroom-integration-applet",
+  "source_version": "0.3.1+grm3u1+han3u3",
+  "selected_deb": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+  "selected_deb_size": 62392,
+  "selected_deb_sha256": "1771ded81658d0e4bcce730ab69d162a1e58327cdabf1918c341cfbd02f495a9",
+  "control_fields": {
+    "Package": "gooroom-integration-applet",
+    "Version": "0.3.1+grm3u1+han3u3",
+    "Architecture": "amd64",
+    "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+    "Installed-Size": "307",
+    "Depends": "dconf-gsettings-backend | gsettings-backend, libaccountsservice0 (>= 0.6.30), libc6 (>= 2.4), libcanberra-gtk3-0 (>= 0.25), libgdk-pixbuf-2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.44.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.38.0), libgtk-3-0 (>= 3.21.4), libjson-c5 (>= 0.15), libnimf1, libnotify4 (>= 0.7.0), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libstartup-notification0 (>= 0.4), libupower-glib3 (>= 0.99.8), libx11-6",
+    "Section": "gnome",
+    "Priority": "optional",
+    "Homepage": "http://gooroom.kr",
+    "Description": "Gooroom Integration Applet for the GNOME panel\nThe Gooroom Integration Applet is a applet for the GNOME panel which contains\na number of applet features(sound, battery, brightness, date & time...)."
+  },
+  "parsed_source": "gooroom-integration-applet",
+  "parsed_source_version": "0.3.1+grm3u1+han3u3",
+  "payload_scan": {
+    "native_payloads": [
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 211608,
+        "sha256": "974bd2d7ea87d69fa8603bf8ec1735316a5e245f7b69918df6da72f8ee00557b"
+      },
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 14584,
+        "sha256": "515aaf9b6b9989f2ae016b1bb57f407343fbdc486862a1d21059a02d8e41388d"
+      }
+    ],
+    "native_looking_suffixes": [],
+    "architecture_specific_paths": [
+      "/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules",
+      "/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-integration-applet.so",
+      "/usr/lib/x86_64-linux-gnu/nimf",
+      "/usr/lib/x86_64-linux-gnu/nimf/modules",
+      "/usr/lib/x86_64-linux-gnu/nimf/modules/services",
+      "/usr/lib/x86_64-linux-gnu/nimf/modules/services/libnimf-gooroom.so"
+    ],
+    "executable_scripts": [],
+    "python_files": []
+  },
+  "maintainer_script_audit": {
+    "scripts": [],
+    "architecture_references": []
+  },
+  "python_verification": {
+    "python_file_count": 0,
+    "compiled_count": 0,
+    "failures": []
+  },
+  "original_payload_manifest_sha256": "9474f312aacf666f5c8c5153fa082fb73e00fd0e476b839de755ebdbde17d82e",
+  "original_payload_entry_count": 67,
+  "repack_candidate": false,
+  "blocker_reasons": [
+    "native-payload-present",
+    "architecture-specific-path-present"
+  ],
+  "repacked": false,
+  "promotion_allowed": false,
+  "byte_identity_claimed_for_data_payload_only": false,
+  "original_source_recovered": false
+}

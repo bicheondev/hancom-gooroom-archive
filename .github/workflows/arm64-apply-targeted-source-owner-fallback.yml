@@ -1,0 +1,97 @@
+name: ARM64 port - apply user-aware source archaeology policy
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-apply-targeted-source-owner-fallback.yml'
+      - 'arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-apply-source-owner-fallback
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the exact archaeology implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply guarded user-owner and rate-limit fixes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/apply_targeted_source_archaeology_owner_fallback.py
+          python3 -m py_compile arm64/scripts/targeted_source_archaeology.py
+
+      - name: Prove organization success and user fallback behavior
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          path = Path('arm64/scripts/targeted_source_archaeology.py')
+          spec = importlib.util.spec_from_file_location('archaeology', path)
+          module = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(module)
+
+          calls = []
+          def fake_api(path, token):
+              calls.append(path)
+              if path.startswith('orgs/hancomgooroom/'):
+                  return None, {'status': 404}
+              if path.startswith('users/hancomgooroom/'):
+                  return [{'full_name': 'hancomgooroom/gnome-flashback'}], {'status': 200}
+              if path.startswith('orgs/gooroom/'):
+                  return [{'full_name': 'gooroom/gnome-flashback'}], {'status': 200}
+              raise AssertionError(path)
+
+          original = module.api
+          module.api = fake_api
+          try:
+              repositories, evidence = module.paginate_repositories('hancomgooroom', None)
+              assert repositories == ['hancomgooroom/gnome-flashback']
+              assert evidence[0]['account_kind'] == 'organization'
+              assert evidence[1]['account_kind'] == 'user'
+              assert any(path.startswith('users/hancomgooroom/') for path in calls)
+
+              calls.clear()
+              repositories, evidence = module.paginate_repositories('gooroom', None)
+              assert repositories == ['gooroom/gnome-flashback']
+              assert len(evidence) == 1
+              assert not any(path.startswith('users/gooroom/') for path in calls)
+          finally:
+              module.api = original
+          PY
+
+      - name: Commit the verified archaeology implementation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/targeted_source_archaeology.py
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Search user-owned Hancom mirrors during source archaeology'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

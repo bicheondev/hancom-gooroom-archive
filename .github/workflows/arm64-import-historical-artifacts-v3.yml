@@ -1,0 +1,170 @@
+name: ARM64 port - reaudit historical ARM64 artifacts v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-import-historical-artifacts-v3.yml'
+      - 'arm64/scripts/import_historical_arm64_artifacts_v2.py'
+      - 'arm64/scripts/import_historical_arm64_artifacts_v3.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/effective-sources-v2/**'
+      - 'arm64/locks/effective-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-historical-arm64-artifact-import-v3
+  cancel-in-progress: true
+
+jobs:
+  audit-and-import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out exact reference and source authorities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package and artifact audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev ca-certificates jq
+          python3 -m py_compile \
+            arm64/scripts/import_historical_arm64_artifacts_v2.py \
+            arm64/scripts/import_historical_arm64_artifacts_v3.py
+
+      - name: Reaudit every historical DEB without forwarding credentials to Azure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source_lock=arm64/locks/effective-sources/source-lock.json
+          if [ -f arm64/locks/effective-sources-v2/effective-source-lock-v2.json ]; then
+            source_lock=arm64/locks/effective-sources-v2/effective-source-lock-v2.json
+          elif [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
+            source_lock=arm64/locks/effective-sources/effective-source-lock.json
+          elif [ -f arm64/locks/sources-api-baseline/source-lock.json ]; then
+            source_lock=arm64/locks/sources-api-baseline/source-lock.json
+          fi
+          test -f "$source_lock"
+          rm -rf work/historical-import-v3
+          mkdir -p work
+          python3 arm64/scripts/import_historical_arm64_artifacts_v3.py \
+            --repository '${{ github.repository }}' \
+            --branch arm64-port \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source-lock "$source_lock" \
+            --max-artifacts 500 \
+            --max-artifact-bytes 838860800 \
+            --output-dir work/historical-import-v3 \
+            2>&1 | tee work/historical-import-v3-workflow.log
+          find work/historical-import-v3 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/historical-import-v3/LOCKSUMS.sha256
+          jq -e '
+            .verified_artifact_count > 0
+            and .imported_source_count > 0
+            and .imported_binary_package_count > 0
+            and .truncated_by_max_artifacts == false
+            and .audited_artifact_count == .candidate_artifact_count
+          ' work/historical-import-v3/summary.json
+
+      - name: Upload complete historical audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-historical-artifact-audit-v3
+          path: |
+            work/historical-import-v3
+            work/historical-import-v3-workflow.log
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit verified packages into the unified rebuild evidence tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=arm64/locks/rebuild-results/historical-import-v3
+          rm -rf "$root"
+          mkdir -p "$root"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          document = json.loads(
+              Path('work/historical-import-v3/historical-rebuild-import.json').read_text()
+          )
+          root = Path('arm64/locks/rebuild-results/historical-import-v3')
+          for row in document.get('sources', []):
+              destination = root / row['source'] / row['source_version'].replace('/', '_')
+              destination.mkdir(parents=True, exist_ok=True)
+              verification = {
+                  'schema': 1,
+                  'source': row['source'],
+                  'source_version': row['source_version'],
+                  'repository_full_name': row.get('repository'),
+                  'commit_sha': row.get('commit_sha'),
+                  'tree_sha': row.get('tree_sha'),
+                  'packages': row['packages'],
+                  'errors': [],
+                  'warnings': [],
+                  'passed': True,
+              }
+              result = {
+                  'schema': 3,
+                  'source': row['source'],
+                  'source_version': row['source_version'],
+                  'provenance': row['provenance'],
+                  'repository_full_name': row.get('repository'),
+                  'commit_sha': row.get('commit_sha'),
+                  'tree_sha': row.get('tree_sha'),
+                  'dsc_sha256': row.get('dsc_sha256'),
+                  'actions_run_id': row['actions_run_id'],
+                  'actions_run_url': row['actions_run_url'],
+                  'artifact_id': row['artifact_id'],
+                  'artifact_name': row['artifact_name'],
+                  'artifact_created_at': row.get('artifact_created_at'),
+                  'passed': True,
+                  'verification': verification,
+              }
+              (destination / 'verification.json').write_text(
+                  json.dumps(verification, ensure_ascii=False, indent=2) + '\n'
+              )
+              (destination / 'result.json').write_text(
+                  json.dumps(result, ensure_ascii=False, indent=2) + '\n'
+              )
+
+          for name in ('summary.json', 'historical-rebuild-import.json', 'LOCKSUMS.sha256'):
+              source = Path('work/historical-import-v3') / name
+              if source.exists():
+                  (root / name).write_bytes(source.read_bytes())
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$root"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Import reaudited historical ARM64 package artifacts v3'
+            for attempt in 1 2 3 4; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then break; fi
+              if [ "$attempt" = 4 ]; then exit 1; fi
+              sleep $((attempt * 3))
+            done
+          fi
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port

@@ -1,0 +1,365 @@
+name: ARM64 verify QtBase grm3u1 AMD64 equivalence
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-verify-qtbase-grm3u1-amd64-equivalence.yml'
+      - 'arm64/scripts/build_recovered_source_archive_amd64.sh'
+      - 'arm64/scripts/build_recovered_source_archive_arm64.sh'
+      - 'arm64/scripts/verify_qtbase_grm3u1_amd64_equivalence.py'
+      - 'arm64/scripts/verify_gnome_flashback_han3u4_amd64.py'
+      - 'arm64/locks/qtbase-grm3u1-reconstruction/latest/**'
+      - 'arm64/locks/vendor-binaries/vendor-binary-lock.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-qtbase-grm3u1-amd64-equivalence
+  cancel-in-progress: false
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  TARGET_VERSION: 5.15.2+dfsg-9+grm3u1
+  RECONSTRUCTION_WORKFLOW: arm64-reconstruct-build-qtbase-grm3u1.yml
+  RECONSTRUCTION_ARTIFACT: qtbase-5.15.2-dfsg-9-grm3u1-reconstructed-source
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT: hancom-gooroom-3.3-exact-vendor-debs
+  EQUIVALENCE_ARTIFACT: qtbase-grm3u1-amd64-equivalence-${{ github.run_id }}
+  HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+  HANCOM_GOOROOM_BUILD_JOBS: '3'
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    steps:
+      - name: Check out exact reconstruction and comparison policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native AMD64 host and install deterministic tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            x86_64|amd64) ;;
+            *) echo "Native AMD64 runner required; got $(uname -m)" >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file gh gzip jq python3
+          docker version
+          bash -n arm64/scripts/build_recovered_source_archive_arm64.sh
+          bash -n arm64/scripts/build_recovered_source_archive_amd64.sh
+          python3 -m py_compile \
+            arm64/scripts/verify_gnome_flashback_han3u4_amd64.py \
+            arm64/scripts/verify_qtbase_grm3u1_amd64_equivalence.py
+          jq -e '
+            .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .source_status == "reconstructed-not-recovered-original-source"
+            and .byte_identity_claimed == false
+            and .promotion_allowed == false
+            and .claims.only_vendor_declared_code_patch_added == true
+            and .claims.lost_original_source_archive_recovered == false
+            and .claims.binary_equivalence_verified == false
+          ' arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json >/dev/null
+
+      - name: Resolve the successful reconstruction artifact matching committed authority
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          expected_authority="$(sha256sum arm64/locks/qtbase-grm3u1-reconstruction/latest/authority.json | awk '{print $1}')"
+          rm -rf work/source-candidates work/qtbase-source work/source
+          mkdir -p work/source-candidates work/qtbase-source work/source
+          selected_run=''
+          mapfile -t run_ids < <(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow "$RECONSTRUCTION_WORKFLOW" \
+              --branch arm64-port \
+              --status success \
+              --limit 20 \
+              --json databaseId \
+              --jq '.[].databaseId'
+          )
+          test "${#run_ids[@]}" -gt 0
+          for run_id in "${run_ids[@]}"; do
+            candidate="work/source-candidates/$run_id"
+            rm -rf "$candidate"
+            mkdir -p "$candidate"
+            if ! gh run download "$run_id" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "$RECONSTRUCTION_ARTIFACT" \
+              --dir "$candidate"; then
+              continue
+            fi
+            test -f "$candidate/LOCKSUMS.sha256" || continue
+            test -f "$candidate/evidence/authority.json" || continue
+            if ! (cd "$candidate" && sha256sum --check --strict LOCKSUMS.sha256); then
+              continue
+            fi
+            actual_authority="$(sha256sum "$candidate/evidence/authority.json" | awk '{print $1}')"
+            if [ "$actual_authority" != "$expected_authority" ]; then
+              continue
+            fi
+            cp -a "$candidate/." work/qtbase-source/
+            selected_run="$run_id"
+            break
+          done
+          test -n "$selected_run"
+          echo "run_id=$selected_run" >> "$GITHUB_OUTPUT"
+          echo "authority_sha256=$expected_authority" >> "$GITHUB_OUTPUT"
+
+      - name: Verify and materialize every reconstructed source archive member
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=work/qtbase-source/evidence/authority.json
+          archive=work/qtbase-source/source-archive
+          test -d "$archive"
+          mapfile -t dscs < <(find "$archive" -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#dscs[@]}" -eq 1
+          dsc="${dscs[0]}"
+          test "$(sed -n 's/^Source: //p' "$dsc" | head -n1)" = "$SOURCE_NAME"
+          test "$(sed -n 's/^Version: //p' "$dsc" | head -n1)" = "$TARGET_VERSION"
+          expected_dsc_sha="$(jq -er '.reconstruction.reconstructed_dsc_sha256' "$authority")"
+          test "$(sha256sum "$dsc" | awk '{print $1}')" = "$expected_dsc_sha"
+          while IFS=$'\t' read -r filename size digest; do
+            path="$archive/$filename"
+            test -f "$path"
+            test "$(stat -c '%s' "$path")" = "$size"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$digest"
+          done < <(
+            jq -r '
+              .reconstruction.archive_members[]
+              | [.filename, (.size|tostring), .sha256]
+              | @tsv
+            ' "$authority"
+          )
+          cp -a "$archive/." work/source/
+
+      - name: Download the immutable Hancom Gooroom 3.3 vendor package authority
+        id: vendor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor work/vendor-artifact-metadata.json
+          mkdir -p work/vendor
+          gh api \
+            "/repos/${GITHUB_REPOSITORY}/actions/runs/${VENDOR_RUN_ID}/artifacts?per_page=100" \
+            | jq -e \
+                --arg name "$VENDOR_ARTIFACT" '
+                  [.artifacts[]
+                   | select(.name == $name and .expired == false)]
+                  | if length == 1 then .[0]
+                    else error("immutable vendor artifact is unavailable or non-unique")
+                    end
+                ' > work/vendor-artifact-metadata.json
+          artifact_id="$(jq -r '.id' work/vendor-artifact-metadata.json)"
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT" \
+            --dir work/vendor
+          test "$(find work/vendor -type f -name '*.deb' | wc -l)" -gt 0
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_digest=$(jq -r '.digest // empty' work/vendor-artifact-metadata.json)" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Provision bounded swap for the native Qt build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          swap_file=/mnt/hancom-gooroom-qtbase-amd64-equivalence.swap
+          available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
+          current_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
+          if [ "$current_swap_mb" -lt 8192 ] && [ "$available_mb" -ge 28672 ]; then
+            sudo rm -f "$swap_file"
+            sudo fallocate -l 16G "$swap_file"
+            sudo chmod 600 "$swap_file"
+            if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
+              sudo sysctl -w vm.swappiness=15 || true
+            else
+              sudo rm -f "$swap_file"
+            fi
+          fi
+          free -h
+          sudo swapon --show || true
+          df -h / /mnt
+
+      - name: Build the exact reconstructed source on native AMD64
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/local-repo work/amd64-output
+          mkdir -p work/local-repo work/amd64-output
+          bash arm64/scripts/build_recovered_source_archive_amd64.sh \
+            work/source \
+            work/local-repo \
+            work/amd64-output \
+            "$SOURCE_NAME" \
+            "$TARGET_VERSION"
+
+      - name: Upload complete AMD64 build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-grm3u1-amd64-build-diagnostics-${{ github.run_id }}
+          path: work/amd64-output
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 0
+
+      - name: Enforce exact vendor controls, payloads, and normalized AMD64 ELF bytes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/equivalence
+          python3 arm64/scripts/verify_qtbase_grm3u1_amd64_equivalence.py \
+            --target-deb-dir work/vendor \
+            --candidate-deb-dir work/amd64-output \
+            --vendor-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
+            --output-dir work/equivalence
+          jq -e '
+            .verified == true
+            and .source == "qtbase-opensource-src"
+            and .source_version == "5.15.2+dfsg-9+grm3u1"
+            and .target_architecture == "amd64"
+            and .required_package_count == 9
+            and .target_package_count >= 9
+            and .compared_package_count == .target_package_count
+            and .required_packages_present == true
+            and .all_target_candidates_present == true
+            and .vendor_lock_verified == true
+            and .control_fields_identical == true
+            and .auxiliary_control_members_identical == true
+            and .same_payload_path_sets == true
+            and .non_elf_payload_identity == true
+            and .elf_file_count > 0
+            and .normalized_elf_identity == true
+            and .fatal_difference_count == 0
+          ' work/equivalence/summary.json >/dev/null
+
+      - name: Seal compact equivalence authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/equivalence-artifact
+          mkdir -p work/equivalence-artifact/evidence
+          cp -a work/equivalence/. work/equivalence-artifact/evidence/
+          cp work/qtbase-source/evidence/authority.json \
+            work/equivalence-artifact/reconstruction-authority.json
+          cp work/vendor-artifact-metadata.json \
+            work/equivalence-artifact/vendor-artifact-metadata.json
+          jq -n \
+            --arg source "$SOURCE_NAME" \
+            --arg source_version "$TARGET_VERSION" \
+            --arg reconstruction_run_id '${{ steps.source.outputs.run_id }}' \
+            --arg reconstruction_authority_sha256 '${{ steps.source.outputs.authority_sha256 }}' \
+            --arg vendor_run_id "$VENDOR_RUN_ID" \
+            --arg vendor_artifact_id '${{ steps.vendor.outputs.artifact_id }}' \
+            --arg vendor_artifact_name "$VENDOR_ARTIFACT" \
+            --arg vendor_artifact_digest '${{ steps.vendor.outputs.artifact_digest }}' \
+            --arg verification_run_id "$GITHUB_RUN_ID" \
+            --argjson target_package_count \
+              "$(jq '.target_package_count' work/equivalence/summary.json)" \
+            --argjson elf_file_count \
+              "$(jq '.elf_file_count' work/equivalence/summary.json)" '
+              {
+                schema: 1,
+                source: $source,
+                source_version: $source_version,
+                source_status: "verified-reconstructed-amd64-equivalent",
+                original_source_archive_recovered: false,
+                reconstruction_run_id: $reconstruction_run_id,
+                reconstruction_authority_sha256: $reconstruction_authority_sha256,
+                vendor_run_id: $vendor_run_id,
+                vendor_artifact_id: $vendor_artifact_id,
+                vendor_artifact_name: $vendor_artifact_name,
+                vendor_artifact_digest: $vendor_artifact_digest,
+                verification_run_id: $verification_run_id,
+                target_package_count: $target_package_count,
+                elf_file_count: $elf_file_count,
+                vendor_lock_verified: true,
+                amd64_equivalence_verified: true,
+                native_arm64_build_verified: true,
+                promotion_allowed: false,
+                iso_assembly_allowed: false
+              }
+            ' > work/equivalence-artifact/authority.json
+          (
+            cd work/equivalence-artifact
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload verified QtBase AMD64 equivalence authority
+        id: upload_equivalence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.EQUIVALENCE_ARTIFACT }}
+          path: work/equivalence-artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Commit compact verified AMD64 equivalence authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/qtbase-grm3u1-amd64-equivalence/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/equivalence-artifact/authority.json "$destination/"
+          cp work/equivalence/summary.json "$destination/"
+          cp work/equivalence/vendor-authority.json "$destination/"
+          cp work/equivalence/package-comparisons.json "$destination/"
+          cp work/equivalence/differences.json "$destination/"
+          cp work/equivalence-artifact/reconstruction-authority.json "$destination/"
+          cp work/equivalence-artifact/vendor-artifact-metadata.json "$destination/"
+          jq \
+            --arg artifact_id '${{ steps.upload_equivalence.outputs['artifact-id'] }}' \
+            --arg artifact_digest '${{ steps.upload_equivalence.outputs['artifact-digest'] }}' \
+            --arg artifact_url '${{ steps.upload_equivalence.outputs['artifact-url'] }}' '
+              . + {
+                verified_artifact_id: $artifact_id,
+                verified_artifact_digest: $artifact_digest,
+                verified_artifact_url: $artifact_url
+              }
+            ' "$destination/authority.json" > "$destination/authority.json.tmp"
+          mv "$destination/authority.json.tmp" "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Verify QtBase grm3u1 reconstructed AMD64 equivalence'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

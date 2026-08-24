@@ -1,0 +1,350 @@
+name: ARM64 dispatch session manager dynsym v3 build once
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-session-manager-dynsym-v3-once.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-dispatch-session-manager-dynsym-v3-once
+  cancel-in-progress: false
+
+env:
+  BRANCH: arm64-port
+  TARGET_WORKFLOW: .github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml
+  TARGET_WORKFLOW_NAME: arm64-build-session-manager-han3u2-dynsym-v3.yml
+  SEMANTIC_AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-dynsym-v3/latest/authority.json
+  PACKAGE_AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-arm64-build/latest/package-promotion-authority.json
+  STATUS_DIR: arm64/status/gooroom-session-manager-han3u2-arm64-build-dispatch/latest
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Check out ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Require canonical ABI v3 authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$SEMANTIC_AUTHORITY"
+          jq -e '
+            .schema == 3 and
+            .package == "gooroom-session-manager" and
+            .version == "0.3.9+grm3u1+han3u2" and
+            .semantic_binary_equivalent_v3 == true and
+            .source_reconstruction_semantically_verified == true and
+            .arm64_build_allowed == true and
+            .package_layer_promotion_allowed == true and
+            .source_artifact.id == "9395357037" and
+            .source_artifact.expired == false
+          ' "$SEMANTIC_AUTHORITY" >/dev/null
+
+      - name: Record dispatcher start
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$STATUS_DIR"
+          jq -n \
+            --arg dispatcher_run_id "$GITHUB_RUN_ID" \
+            --arg dispatcher_run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg branch "$BRANCH" \
+            --arg target_workflow "$TARGET_WORKFLOW" \
+            --arg started_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              schema: 1,
+              state: "started",
+              dispatcher_run_id: $dispatcher_run_id,
+              dispatcher_run_attempt: $dispatcher_run_attempt,
+              branch: $branch,
+              target_workflow: $target_workflow,
+              started_at: $started_at
+            }' > "$STATUS_DIR/status.json"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$STATUS_DIR/status.json"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record session-manager dynsym v3 dispatcher start'
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin "$BRANCH" && git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Register manual dispatch on the target build
+        id: register
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+
+            python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = '  workflow_dispatch:\n'
+          if marker not in text:
+              anchor = 'on:\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit(f'expected exactly one on: anchor, found {text.count(anchor)}')
+              text = text.replace(anchor, anchor + marker, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+            if git diff --quiet -- "$TARGET_WORKFLOW"; then
+              echo "registered_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            git diff --check -- "$TARGET_WORKFLOW"
+            git add -- "$TARGET_WORKFLOW"
+            git commit -m 'ci(arm64): enable session-manager dynsym v3 dispatch'
+            if git push origin "HEAD:$BRANCH"; then
+              echo "registered_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Dispatch and watch native ARM64 build
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "$BRANCH"
+
+          before="$(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow "$TARGET_WORKFLOW_NAME" \
+              --branch "$BRANCH" \
+              --limit 1 \
+              --json databaseId \
+              | jq -r '.[0].databaseId // 0'
+          )"
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          dispatched=false
+          for attempt in $(seq 1 20); do
+            if gh workflow run "$TARGET_WORKFLOW_NAME" \
+                --repo "$GITHUB_REPOSITORY" \
+                --ref "$BRANCH"; then
+              dispatched=true
+              break
+            fi
+            sleep 3
+          done
+          test "$dispatched" = true
+
+          run_id=''
+          for attempt in $(seq 1 60); do
+            latest="$(
+              gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow "$TARGET_WORKFLOW_NAME" \
+                --branch "$BRANCH" \
+                --event workflow_dispatch \
+                --limit 20 \
+                --json databaseId,status,conclusion,createdAt,updatedAt,headSha,url \
+                | jq -c --arg before "$before" --arg started "$started" '
+                    [
+                      .[]
+                      | select((.databaseId | tostring) != $before)
+                      | select(.createdAt >= $started)
+                    ]
+                    | sort_by(.createdAt)
+                    | last // null
+                  '
+            )"
+            run_id="$(jq -r '.databaseId // empty' <<<"$latest")"
+            if [[ -n "$run_id" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+          mkdir -p work/session-manager-dynsym-v3-dispatch
+          printf '%s\n' "$run_id" \
+            > work/session-manager-dynsym-v3-dispatch/target-run-id.txt
+
+          set +e
+          gh run watch "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --interval 15 \
+            --exit-status
+          watch_rc=$?
+          set -e
+          printf '%s\n' "$watch_rc" \
+            > work/session-manager-dynsym-v3-dispatch/watch-exit-code.txt
+
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" \
+            > work/session-manager-dynsym-v3-dispatch/target-run.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            > work/session-manager-dynsym-v3-dispatch/target-jobs.json
+
+      - name: Seal dispatcher result
+        if: always()
+        env:
+          REGISTERED_SHA: ${{ steps.register.outputs.registered_sha }}
+          TARGET_RUN_ID: ${{ steps.target.outputs.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          mkdir -p "$STATUS_DIR"
+
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          work = Path('work/session-manager-dynsym-v3-dispatch')
+          status_dir = Path(os.environ['STATUS_DIR'])
+          authority_path = Path(os.environ['SEMANTIC_AUTHORITY'])
+          package_authority_path = Path(os.environ['PACKAGE_AUTHORITY'])
+
+          def load(path):
+              try:
+                  return json.loads(Path(path).read_text(encoding='utf-8'))
+              except (OSError, json.JSONDecodeError):
+                  return None
+
+          target_run = load(work / 'target-run.json')
+          jobs_payload = load(work / 'target-jobs.json') or {}
+          semantic = load(authority_path)
+          package_authority = load(package_authority_path)
+
+          failed_steps = []
+          for job in jobs_payload.get('jobs', []):
+              for step in job.get('steps') or []:
+                  if step.get('conclusion') == 'failure':
+                      failed_steps.append({
+                          'job_id': job.get('id'),
+                          'job': job.get('name'),
+                          'step_number': step.get('number'),
+                          'step': step.get('name'),
+                      })
+
+          promotion_allowed = bool(
+              package_authority
+              and package_authority.get('source') == 'gooroom-session-manager'
+              and package_authority.get('source_version') == '0.3.9+grm3u1+han3u2'
+              and package_authority.get('target_architecture') == 'arm64'
+              and package_authority.get('native_arm64_build_verified') is True
+              and package_authority.get('foreign_elf_count') == 0
+              and package_authority.get('package_layer_promotion_allowed') is True
+              and (package_authority.get('artifact') or {}).get('expired') is False
+          )
+
+          report = {
+              'schema': 1,
+              'state': 'completed',
+              'generated_at': datetime.now(timezone.utc).isoformat(),
+              'dispatcher_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'dispatcher_run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
+              'branch': os.environ['BRANCH'],
+              'branch_head_before_record': subprocess.check_output(
+                  ['git', 'rev-parse', 'HEAD'], text=True
+              ).strip(),
+              'registered_target_sha': os.environ.get('REGISTERED_SHA') or None,
+              'target_workflow': os.environ['TARGET_WORKFLOW'],
+              'target_run_id': os.environ.get('TARGET_RUN_ID') or None,
+              'target_run': {
+                  key: target_run.get(key)
+                  for key in (
+                      'id', 'name', 'path', 'event', 'status', 'conclusion',
+                      'head_branch', 'head_sha', 'run_attempt', 'created_at',
+                      'updated_at', 'html_url'
+                  )
+              } if target_run else None,
+              'failed_steps': failed_steps,
+              'semantic_authority': {
+                  'path': str(authority_path),
+                  'schema': semantic.get('schema'),
+                  'arm64_build_allowed': semantic.get('arm64_build_allowed'),
+                  'package_layer_promotion_allowed': semantic.get(
+                      'package_layer_promotion_allowed'
+                  ),
+                  'semantic_binary_equivalent_v3': semantic.get(
+                      'semantic_binary_equivalent_v3'
+                  ),
+              } if semantic else None,
+              'package_authority_path': str(package_authority_path),
+              'package_authority_present': package_authority is not None,
+              'package_layer_promotion_allowed': promotion_allowed,
+              'package_artifact': (
+                  package_authority.get('artifact') if package_authority else None
+              ),
+              'packages': (
+                  package_authority.get('packages') if package_authority else []
+              ),
+          }
+
+          status_dir.mkdir(parents=True, exist_ok=True)
+          (status_dir / 'status.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          (
+            cd "$STATUS_DIR"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$STATUS_DIR"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record session-manager dynsym v3 ARM64 build dispatch'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin "$BRANCH" && git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Enforce verified package authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .target_run.status == "completed" and
+            .target_run.conclusion == "success" and
+            .package_authority_present == true and
+            .package_layer_promotion_allowed == true
+          ' "$STATUS_DIR/status.json" >/dev/null

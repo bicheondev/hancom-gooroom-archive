@@ -1,0 +1,237 @@
+name: ARM64 port - diagnose final blocker runs v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-final-blocker-runs-v1.yml'
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Optional workflow run ID
+        required: false
+        type: string
+  workflow_run:
+    workflows:
+      - 'ARM64 port - recover linux 5.10.179 grm3u1 source v1'
+      - 'ARM64 port - deep diff final application blockers v2'
+      - 'ARM64 port - build linux 5.10.179 grm3u1 v1'
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-final-blocker-diagnosis-${{ github.event.workflow_run.id || inputs.run_id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out current authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve run and download metadata and logs
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=work/final-blocker-diagnosis
+          rm -rf "$root"
+          mkdir -p "$root/logs"
+          run_id=''
+          if [ "$EVENT_NAME" = workflow_run ] && [ -n "${EVENT_RUN_ID:-}" ]; then
+            run_id="$EVENT_RUN_ID"
+          elif [ -n "${INPUT_RUN_ID:-}" ]; then
+            run_id="$INPUT_RUN_ID"
+          else
+            run_id="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/runs?branch=arm64-port&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "ARM64 port - recover linux 5.10.179 grm3u1 source v1" or .name == "ARM64 port - deep diff final application blockers v2" or .name == "ARM64 port - build linux 5.10.179 grm3u1 v1") | select(.status == "completed")] | sort_by(.created_at) | reverse | first | .id')"
+          fi
+          test -n "$run_id"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$root/run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" > "$root/jobs.json"
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/logs" > "$root/logs.zip"
+          unzip -q "$root/logs.zip" -d "$root/logs"
+
+      - name: Build compact exact failure report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('work/final-blocker-diagnosis')
+          run = json.loads((root / 'run.json').read_text())
+          jobs_doc = json.loads((root / 'jobs.json').read_text())
+          jobs = jobs_doc.get('jobs', [])
+          ansi = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+          timestamp = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z\s*')
+          patterns = [re.compile(x, re.I) for x in (
+              r'##\[error\]', r'(^|\s)error:', r'(^|\s)fatal:',
+              r'process completed with exit code', r'no such file or directory',
+              r'unable to locate package', r'unmet build dependencies',
+              r'dependency problems', r'failed to', r'could not resolve',
+              r'not found', r'timed out', r'traceback', r'exception',
+          )]
+
+          def clean(value: str) -> str:
+              return timestamp.sub('', ansi.sub('', value)).rstrip()
+
+          errors = []
+          for path in sorted((root / 'logs').rglob('*')):
+              if not path.is_file():
+                  continue
+              lines = path.read_text(encoding='utf-8-sig', errors='replace').splitlines()
+              matches = []
+              for index, raw in enumerate(lines):
+                  line = clean(raw)
+                  if any(pattern.search(line) for pattern in patterns):
+                      matches.append({
+                          'line_number': index + 1,
+                          'line': line[:3000],
+                          'before': [clean(x)[:3000] for x in lines[max(0,index-2):index]],
+                          'after': [clean(x)[:3000] for x in lines[index+1:index+3]],
+                      })
+              if matches:
+                  errors.append({
+                      'log': path.relative_to(root / 'logs').as_posix(),
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                      'matches': matches[-160:],
+                  })
+
+          failed_jobs = []
+          for job in jobs:
+              if job.get('conclusion') not in {'failure','cancelled','timed_out','action_required'}:
+                  continue
+              failed_jobs.append({
+                  'id': job.get('id'),
+                  'name': job.get('name'),
+                  'conclusion': job.get('conclusion'),
+                  'failed_steps': [
+                      {'number': step.get('number'), 'name': step.get('name'), 'conclusion': step.get('conclusion')}
+                      for step in job.get('steps', [])
+                      if step.get('conclusion') in {'failure','cancelled','timed_out','action_required'}
+                  ],
+              })
+
+          authority = {
+              'schema': 1,
+              'run': {
+                  'id': run.get('id'),
+                  'name': run.get('name'),
+                  'workflow_id': run.get('workflow_id'),
+                  'run_number': run.get('run_number'),
+                  'event': run.get('event'),
+                  'status': run.get('status'),
+                  'conclusion': run.get('conclusion'),
+                  'head_branch': run.get('head_branch'),
+                  'head_sha': run.get('head_sha'),
+                  'created_at': run.get('created_at'),
+                  'updated_at': run.get('updated_at'),
+                  'html_url': run.get('html_url'),
+              },
+              'failed_jobs': failed_jobs,
+              'error_logs': errors,
+              'first_error': errors[0]['matches'][0]['line'] if errors and errors[0]['matches'] else None,
+              'promotion_allowed': False,
+              'iso_assembly_allowed': False,
+          }
+          (root / 'authority.json').write_text(json.dumps(authority, indent=2, sort_keys=True, ensure_ascii=False) + '\n')
+          summary = {
+              'schema': 1,
+              'run_id': authority['run']['id'],
+              'workflow_name': authority['run']['name'],
+              'conclusion': authority['run']['conclusion'],
+              'failed_jobs': [x['name'] for x in failed_jobs],
+              'failed_steps': [
+                  {'job': x['name'], 'steps': [s['name'] for s in x['failed_steps']]}
+                  for x in failed_jobs
+              ],
+              'first_error': authority['first_error'],
+              'matched_error_count': sum(len(x['matches']) for x in errors),
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + '\n')
+          PY
+          cat work/final-blocker-diagnosis/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal and upload diagnosis
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/final-blocker-diagnosis
+          find "$root" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$root/FILE-INVENTORY.tsv"
+          (
+            cd "$root"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete diagnosis
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: final-blocker-diagnosis-${{ steps.resolve.outputs.run_id }}
+          path: work/final-blocker-diagnosis
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 6
+
+      - name: Commit compact diagnosis authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/final-blocker-diagnosis
+          workflow_slug="$(jq -r '.run.name' "$source/authority.json" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g;s/^-+|-+$//g')"
+          run_id='${{ steps.resolve.outputs.run_id }}'
+          destination="arm64/status/final-blocker-runs/$workflow_slug"
+          mkdir -p "$destination/runs/$run_id"
+          cp "$source/authority.json" "$destination/runs/$run_id/"
+          cp "$source/summary.json" "$destination/runs/$run_id/"
+          rm -rf "$destination/latest"
+          mkdir -p "$destination/latest"
+          cp "$source/authority.json" "$destination/latest/"
+          cp "$source/summary.json" "$destination/latest/"
+          jq -n \
+            --arg run_id "$run_id" \
+            --arg artifact_name "final-blocker-diagnosis-$run_id" \
+            '{schema:1,run_id:$run_id,artifact_name:$artifact_name}' \
+            > "$destination/latest/artifact-lock.json"
+          (
+            cd "$destination/latest"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Lock final blocker workflow failure $run_id"
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1

@@ -1,0 +1,215 @@
+name: ARM64 port - diagnose reduced Gooroom Guide AMD64 ELF delta v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-diagnose-gooroom-guide-elf-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-guide-amd64-elf-diagnostics-v2
+  cancel-in-progress: true
+
+env:
+  SOURCE: gooroom-guide
+  VERSION: 0.5.3+grm3u1+han3u1
+  BASE_REPOSITORY: hancomgooroom/gooroom-guide
+  BASE_COMMIT: c788c29119d43bb97c554973f6dabbc41a9abe79
+  BASE_TREE: 0d4bb01b49c69e33208a47c0aff47545291ee646
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+  TARGET_FILENAME: gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb
+  TARGET_SIZE: '3620004'
+  TARGET_SHA256: 80b2fa518e934f79c624a9aafdd44add1524389b2b3b899f1a4ffcb7fdf99142
+
+jobs:
+  diagnose:
+    name: Preserve reduced exact AMD64 ELF delta
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out current reconstruction
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install build and ELF tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates debootstrap debian-archive-keyring \
+            diffutils dpkg-dev file git gzip jq python3 xz-utils
+          python3 -m py_compile arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          bash -n arm64/scripts/build_gooroom_guide_han3u1_chroot.sh
+
+      - name: Reconstruct and rebuild historical AMD64 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-v2
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,authority,output}
+
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$root/vendor-artifact-metadata.json"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" '
+              .id == $id and .name == $name and .digest == $digest
+              and .expired == false and .workflow_run.id == $run_id
+            ' "$root/vendor-artifact-metadata.json" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          mapfile -t targets < <(find "$root/vendor" -type f -name "$TARGET_FILENAME" -print)
+          test "${#targets[@]}" -eq 1
+          cp "${targets[0]}" "$root/target.deb"
+          test "$(stat -c '%s' "$root/target.deb")" = "$TARGET_SIZE"
+          echo "$TARGET_SHA256  $root/target.deb" | sha256sum --check --strict -
+
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$root/source"
+          git -C "$root/source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+          python3 arm64/scripts/reconstruct_gooroom_guide_han3u1.py \
+            --repository "$root/source" \
+            --target-deb "$root/target.deb" \
+            --output-dir "$root/authority"
+          (cd "$root/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+          sudo bash arm64/scripts/build_gooroom_guide_han3u1_chroot.sh \
+            amd64 "$root/authority/reconstructed-source.tar.gz" \
+            "$root/amd64-build" "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$root/amd64-build"
+          mapfile -t candidates < <(
+            for deb in "$root"/amd64-build/debs/*.deb; do
+              [ "$(dpkg-deb -f "$deb" Package)" = "$SOURCE" ] && printf '%s\n' "$deb"
+            done
+          )
+          test "${#candidates[@]}" -eq 1
+          cp "${candidates[0]}" "$root/candidate.deb"
+
+      - name: Produce exact section and function evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/guide-elf-v2
+          out="$root/output"
+          mkdir -p "$root"/{target-root,candidate-root} "$out"
+          dpkg-deb -x "$root/target.deb" "$root/target-root"
+          dpkg-deb -x "$root/candidate.deb" "$root/candidate-root"
+          cp "$root/target-root/usr/bin/gooroom-guide" "$out/target.elf"
+          cp "$root/candidate-root/usr/bin/gooroom-guide" "$out/candidate.elf"
+          cp "$out/target.elf" "$out/normalized-target.elf"
+          cp "$out/candidate.elf" "$out/normalized-candidate.elf"
+          for elf in "$out/normalized-target.elf" "$out/normalized-candidate.elf"; do
+            objcopy \
+              --remove-section=.note.gnu.build-id \
+              --remove-section=.gnu_debuglink \
+              --remove-section=.gnu_debugaltlink \
+              --remove-section=.comment \
+              "$elf" "$elf.tmp"
+            mv "$elf.tmp" "$elf"
+          done
+
+          for label in target candidate normalized-target normalized-candidate; do
+            elf="$out/$label.elf"
+            readelf -aW "$elf" > "$out/$label.readelf.txt"
+            readelf --debug-dump=frames-interp -W "$elf" > "$out/$label.frames.txt" || true
+            objdump -drwC -Mintel "$elf" > "$out/$label.disassembly.txt"
+            objdump -s "$elf" > "$out/$label.sections.txt"
+            nm -an "$elf" > "$out/$label.nm.txt"
+            strings -a -t x "$elf" > "$out/$label.strings.txt"
+          done
+          cmp -l "$out/normalized-target.elf" "$out/normalized-candidate.elf" \
+            > "$out/normalized-byte-differences.txt" || true
+          diff -u "$out/target.disassembly.txt" "$out/candidate.disassembly.txt" \
+            > "$out/disassembly.diff" || true
+          diff -u "$out/normalized-target.readelf.txt" "$out/normalized-candidate.readelf.txt" \
+            > "$out/readelf.diff" || true
+          diff -u "$out/normalized-target.frames.txt" "$out/normalized-candidate.frames.txt" \
+            > "$out/frames.diff" || true
+          diff -u "$out/normalized-target.strings.txt" "$out/normalized-candidate.strings.txt" \
+            > "$out/strings.diff" || true
+
+          python3 - "$out" <<'PY'
+          from __future__ import annotations
+          import hashlib, json, re, subprocess, sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          labels = ("normalized-target", "normalized-candidate")
+          result = {}
+          rx = re.compile(r"^\s*\[\s*\d+\]\s+(\S+)\s+\S+\s+[0-9a-fA-F]+\s+[0-9a-fA-F]+\s+([0-9a-fA-F]+)\s+")
+          for label in labels:
+              elf = out / f"{label}.elf"
+              rows = {}
+              section_dir = out / "sections" / label
+              section_dir.mkdir(parents=True, exist_ok=True)
+              listing = subprocess.run(["readelf", "-SW", str(elf)], check=True, text=True, stdout=subprocess.PIPE).stdout
+              for line in listing.splitlines():
+                  m = rx.match(line)
+                  if not m:
+                      continue
+                  name, declared = m.groups()
+                  safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).lstrip(".") or "unnamed"
+                  path = section_dir / f"{safe}.bin"
+                  p = subprocess.run(["objcopy", f"--dump-section={name}={path}", str(elf)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                  if p.returncode or not path.exists():
+                      continue
+                  data = path.read_bytes()
+                  rows[name] = {"size": len(data), "declared_size": int(declared, 16), "sha256": hashlib.sha256(data).hexdigest(), "file": path.relative_to(out).as_posix()}
+              result[label] = rows
+          comparison = []
+          left, right = result[labels[0]], result[labels[1]]
+          for name in sorted(set(left) | set(right)):
+              comparison.append({"section": name, "target": left.get(name), "candidate": right.get(name), "identical": left.get(name) == right.get(name)})
+          (out / "section-manifests.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          (out / "normalized-section-comparison.json").write_text(json.dumps(comparison, indent=2, sort_keys=True) + "\n")
+          PY
+
+          cp "$root/target.deb" "$out/"
+          cp "$root/candidate.deb" "$out/"
+          cp "$root/authority/reconstruction.patch" "$out/"
+          cp "$root/authority/reconstruction-lock.json" "$out/"
+          cp "$root/authority/reconstructed-source.tar.gz" "$out/"
+          cp "$root/amd64-build/build.log" "$out/"
+          cp "$root/amd64-build/debootstrap.log" "$out/"
+          (
+            cd "$out"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload reduced ELF diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-han3u1-amd64-elf-diagnostics-v2-${{ github.run_id }}
+          path: work/guide-elf-v2/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9

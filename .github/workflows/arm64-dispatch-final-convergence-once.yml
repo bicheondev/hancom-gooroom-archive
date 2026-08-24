@@ -1,0 +1,84 @@
+name: ARM64 one-shot dispatch final convergence
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-dispatch-final-convergence-once.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-dispatch-final-convergence-once
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Dispatch final convergence and resolve run identity
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow=arm64-final-convergence-v1.yml
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$workflow" \
+            --repo "${{ github.repository }}" \
+            --ref arm64-port
+
+          run_id=''
+          for attempt in $(seq 1 60); do
+            run_id="$(gh run list \
+              --repo "${{ github.repository }}" \
+              --workflow "$workflow" \
+              --branch arm64-port \
+              --event workflow_dispatch \
+              --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 3
+          done
+          test -n "$run_id"
+          gh run view "$run_id" \
+            --repo "${{ github.repository }}" \
+            --json databaseId,status,conclusion,url,createdAt,updatedAt,headSha,event \
+            > /tmp/final-convergence-run.json
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Commit dispatch identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          destination=arm64/status/final-convergence-dispatch/latest.json
+          mkdir -p "$(dirname "$destination")"
+          cp /tmp/final-convergence-run.json "$destination"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record final ARM64 convergence dispatch"
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1

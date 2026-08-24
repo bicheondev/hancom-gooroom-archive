@@ -1,0 +1,44 @@
+name: ARM64 port - kernel resolution authority bridge v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json'
+      - 'arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-kernel-resolution-authority-bridge-v1
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Dispatch the exact locked source run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json
+          test -f "$authority"
+          run_id="$(jq -r '.actions_run_id' "$authority")"
+          test -n "$run_id"
+          test "$run_id" != null
+          gh workflow run arm64-continue-after-linux-5.10.0-23-grm3u1-v1.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port \
+            -f source_run_id="$run_id"

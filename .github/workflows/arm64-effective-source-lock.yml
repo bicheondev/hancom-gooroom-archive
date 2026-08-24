@@ -1,0 +1,131 @@
+name: ARM64 port - enforce effective exact source lock
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-effective-source-lock.yml'
+      - 'arm64/scripts/merge_exact_source_locks.py'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/sources/**'
+      - 'arm64/locks/vendor-pool-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-effective-source-lock
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check exact source evidence inputs
+        id: inputs
+        run: |
+          set -euxo pipefail
+          ready=false
+          if [ -f arm64/locks/sources-api-baseline/source-lock.json ] \
+             && [ -f arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json ]; then
+            ready=true
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Merge every exact source authority
+        if: steps.inputs.outputs.ready == 'true'
+        id: merge
+        run: |
+          set -uxo pipefail
+          rm -rf work/effective-source-lock
+          git_args=(
+            --git-lock arm64/locks/sources-api-baseline/source-lock.json
+          )
+          if [ -f arm64/locks/sources/source-lock.json ]; then
+            git_args+=(--git-lock arm64/locks/sources/source-lock.json)
+          fi
+          set +e
+          python3 arm64/scripts/merge_exact_source_locks.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            "${git_args[@]}" \
+            --vendor-pool-lock arm64/locks/vendor-pool-sources/vendor-pool-source-lock.json \
+            --output-dir work/effective-source-lock
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/effective-source-lock -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/effective-source-lock/LOCKSUMS.sha256
+          cat work/effective-source-lock/effective-source-lock-summary.json
+
+      - name: Upload effective source lock evidence
+        if: steps.inputs.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-effective-source-lock
+          path: work/effective-source-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Record effective source lock
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/effective-sources
+          mkdir -p arm64/locks/effective-sources
+          cp -a work/effective-source-lock/. arm64/locks/effective-sources/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/effective-sources
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Enforce effective exact source lock for ARM64 build'
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port
+
+      - name: Refuse final release with unresolved ARM64 sources
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          jq . work/effective-source-lock/effective-source-lock-summary.json
+          # A partial package-build workflow may consume resolved entries, but
+          # the final ISO release remains forbidden until this gate is true.
+          test '${{ steps.merge.outputs.exit_code }}' = '0'
+          test "$(jq -r '.build_allowed' work/effective-source-lock/effective-source-lock-summary.json)" = true
+
+      - name: Dispatch exact source consumers explicitly
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/effective-source-lock/effective-source-lock.json ]; then
+            dispatch arm64-baseline-rebuild-evidence.yml
+            dispatch arm64-native-rebuild-backlog.yml -f limit=6
+            dispatch arm64-port-coverage.yml
+          fi

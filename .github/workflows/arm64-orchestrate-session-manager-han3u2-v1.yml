@@ -1,0 +1,102 @@
+name: ARM64 orchestrate session manager han3u2 v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-orchestrate-session-manager-han3u2-v1.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: arm64-orchestrate-session-manager-han3u2-v1
+  cancel-in-progress: false
+
+env:
+  ANALYSIS_WORKFLOW: arm64-analyze-session-manager-elf-delta-v2.yml
+  BUILD_WORKFLOW: arm64-build-session-manager-han3u2-arm64-v1.yml
+  SEMANTIC_AUTHORITY: arm64/locks/gooroom-session-manager-han3u2-elf-delta-v2/latest/semantic-authority.json
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Dispatch fresh ELF reconstruction analysis
+        id: analysis
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$ANALYSIS_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$ANALYSIS_WORKFLOW" --branch arm64-port \
+              --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Read semantic gate decision
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin arm64-port
+          git show "origin/arm64-port:$SEMANTIC_AUTHORITY" > semantic-authority.json
+          allowed="$(jq -r '.arm64_build_allowed and .package_layer_promotion_allowed' semantic-authority.json)"
+          test "$allowed" = true -o "$allowed" = false
+          echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
+          jq '.' semantic-authority.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build verified ARM64 package
+        if: steps.gate.outputs.allowed == 'true'
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run "$BUILD_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          run_id=''
+          for attempt in $(seq 1 45); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$BUILD_WORKFLOW" --branch arm64-port \
+              --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt \
+              | jq -r --arg started "$started" \
+                  '[.[] | select(.createdAt >= $started)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 4
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Record a non-promotable semantic result
+        if: steps.gate.outputs.allowed != 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo 'The reconstructed AMD64 ELF differs in allocated or normalized executable semantics.' \
+            >> "$GITHUB_STEP_SUMMARY"
+          echo 'ARM64 build was correctly not dispatched.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,715 @@
+name: ARM64 port - reconstruct, build, and promote gnome-flashback han3u4
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-reconstruct-build-promote-gnome-flashback-han3u4.yml'
+      - 'arm64/scripts/reconstruct_gnome_flashback_han3u4.py'
+      - 'arm64/scripts/build_gnome_flashback_han3u4_chroot.sh'
+      - 'arm64/scripts/verify_gnome_flashback_han3u4_amd64.py'
+      - 'arm64/scripts/verify_gnome_flashback_han3u4_arm64.py'
+      - 'arm64/scripts/promote_gnome_flashback_han3u4.py'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-reconstruct-build-promote-gnome-flashback-han3u4
+  cancel-in-progress: true
+
+env:
+  SOURCE: gnome-flashback
+  VERSION: 3.38.0-2+grm3u2+han3u4
+  BASE_REPOSITORY: hancomgooroom/gnome-flashback
+  BASE_COMMIT: df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7
+  BASE_TREE: a5961872b3538a33b1ece5c76d0cf67506c71e2b
+  PUBLIC_REPOSITORY: gooroom/gnome-flashback
+  PUBLIC_COMMIT: 68a47d769b0f15b84c532746ced1f8ae538ab545
+  PUBLIC_TREE: 830a852c6272843c4c23da7e80b3b3961d4aeb38
+  SNAPSHOT: 20230730T235959Z
+  VENDOR_RUN_ID: '31097604490'
+  VENDOR_RUN_SHA: f5199ad765b7bd080b4452ecf4bfde785beb35da
+  VENDOR_ARTIFACT_ID: '8966101210'
+  VENDOR_ARTIFACT_NAME: hancom-gooroom-3.3-exact-vendor-debs
+  VENDOR_ARTIFACT_DIGEST: sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823
+  SOURCE_ARTIFACT_NAME: gnome-flashback-han3u4-verified-source-v1
+  ARM64_ARTIFACT_NAME: gnome-flashback-han3u4-exact-arm64-v1
+
+jobs:
+  source-equivalence:
+    name: Reconstruct and verify the exact AMD64 source relationship
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out the exact reconstruction implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install deterministic source, Debian, ELF, and GResource tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git gzip jq libglib2.0-0 python3 xz-utils
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            arm64/scripts/verify_gnome_flashback_han3u4_amd64.py
+          bash -n arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+
+      - name: Download and revalidate the immutable vendor AMD64 authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-source
+          rm -rf "$root"
+          mkdir -p "$root"/{vendor,target-debs,authority,equivalence}
+          metadata="$root/vendor-artifact-metadata.json"
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+            ' "$metadata" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir "$root/vendor"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import shutil
+          import subprocess
+
+          root = Path('work/gnome-flashback-source')
+          authorities = {
+              'gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb': (
+                  'gnome-flashback', 'amd64', 436564,
+                  '6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408',
+              ),
+              'gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb': (
+                  'gnome-flashback-common', 'all', 99916,
+                  '5770961e60c68b25ea7a84ab14871635b450b79f25f9596c79edad67a34e4543',
+              ),
+              'gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb': (
+                  'gnome-session-flashback', 'all', 14508,
+                  '3968b152293606e4626fbe3317913d6f57add08001c3a5a66abd71a8576abcf6',
+              ),
+          }
+
+          def field(path: Path, name: str) -> str:
+              result = subprocess.run(
+                  ['dpkg-deb', '-f', str(path), name], text=True,
+                  stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False,
+              )
+              return result.stdout.strip() if result.returncode == 0 else ''
+
+          for filename, (package, architecture, size, expected_hash) in authorities.items():
+              matches = list((root / 'vendor').rglob(filename))
+              if len(matches) != 1:
+                  raise SystemExit(f'{filename}: expected one immutable vendor file, got {len(matches)}')
+              source = matches[0]
+              digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              if source.stat().st_size != size or digest != expected_hash:
+                  raise SystemExit(f'{filename}: immutable authority mismatch')
+              if field(source, 'Package') != package:
+                  raise SystemExit(f'{filename}: package mismatch')
+              if field(source, 'Version') != '3.38.0-2+grm3u2+han3u4':
+                  raise SystemExit(f'{filename}: version mismatch')
+              if field(source, 'Architecture') != architecture:
+                  raise SystemExit(f'{filename}: architecture mismatch')
+              declared_source = field(source, 'Source').split(' ', 1)[0] or package
+              if declared_source != 'gnome-flashback':
+                  raise SystemExit(f'{filename}: source mismatch: {declared_source}')
+              shutil.copy2(source, root / 'target-debs' / filename)
+          PY
+
+      - name: Check out the exact public Hancom and Gooroom lineages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-source
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${BASE_REPOSITORY}.git" "$root/hancom-source"
+          git -C "$root/hancom-source" fetch --depth=1 origin "$BASE_COMMIT"
+          git -C "$root/hancom-source" checkout --detach "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD)" = "$BASE_COMMIT"
+          test "$(git -C "$root/hancom-source" rev-parse HEAD^{tree})" = "$BASE_TREE"
+
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${PUBLIC_REPOSITORY}.git" "$root/gooroom-source"
+          git -C "$root/gooroom-source" fetch --depth=1 origin "$PUBLIC_COMMIT"
+          git -C "$root/gooroom-source" checkout --detach "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD)" = "$PUBLIC_COMMIT"
+          test "$(git -C "$root/gooroom-source" rev-parse HEAD^{tree})" = "$PUBLIC_TREE"
+
+      - name: Reconstruct the bounded han3u4 source candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-source
+          python3 arm64/scripts/reconstruct_gnome_flashback_han3u4.py \
+            --hancom-repository "$root/hancom-source" \
+            --gooroom-repository "$root/gooroom-source" \
+            --target-deb-dir "$root/target-debs" \
+            --output-dir "$root/authority"
+          jq -e '
+            .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .source_status == "candidate-reconstructed-git-tree"
+            and .base_source.commit_sha == "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7"
+            and .base_source.tree_sha == "a5961872b3538a33b1ece5c76d0cf67506c71e2b"
+            and .public_equivalent_source.commit_sha == "68a47d769b0f15b84c532746ced1f8ae538ab545"
+            and .public_equivalent_source.tree_sha == "830a852c6272843c4c23da7e80b3b3961d4aeb38"
+            and (.public_equivalent_source.patches | length) == 7
+            and (.target_binary_authority | length) == 3
+            and .embedded_resource_relationship.resource_count == 16
+            and .embedded_resource_relationship.all_other_resources_public_base_identical == true
+            and (.unique_reconstruction.changed_paths | length) == 5
+            and .claims.lost_original_source_archive_recovered == false
+            and .claims.reconstructed_source_claimed == true
+            and .claims.exact_shipped_embedded_css_used_as_source_input == true
+            and .claims.amd64_equivalence_verified == false
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' "$root/authority/reconstruction-lock.json" >/dev/null
+          (cd "$root/authority" && sha256sum --check --strict LOCKSUMS.sha256)
+
+      - name: Build the reconstructed source in a clean historical AMD64 rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-source
+          sudo bash arm64/scripts/build_gnome_flashback_han3u4_chroot.sh \
+            amd64 \
+            "$root/authority/reconstructed-source.tar.gz" \
+            "$root/amd64-build" \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" "$root/amd64-build"
+
+      - name: Enforce exact controls, payloads, and normalized AMD64 ELF bytes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/gnome-flashback-source
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_amd64.py \
+            --target-deb-dir "$root/target-debs" \
+            --candidate-deb-dir "$root/amd64-build/debs" \
+            --output-dir "$root/equivalence"
+          jq -e '
+            .verified == true
+            and .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .target_architecture == "amd64"
+            and .expected_binary_package_count == 3
+            and .compared_binary_package_count == 3
+            and .control_fields_identical == true
+            and .auxiliary_control_members_identical == true
+            and .same_payload_path_sets == true
+            and .non_elf_payload_identity == true
+            and .normalized_elf_identity == true
+            and .elf_file_count == 5
+            and .fatal_difference_count == 0
+          ' "$root/equivalence/summary.json" >/dev/null
+
+          cp "$root/equivalence/summary.json" \
+            "$root/authority/amd64-equivalence-summary.json"
+          cp "$root/equivalence/package-comparisons.json" \
+            "$root/authority/amd64-package-comparisons.json"
+          cp "$root/equivalence/differences.json" \
+            "$root/authority/amd64-differences.json"
+          cp -a "$root/equivalence/manifests" \
+            "$root/authority/amd64-manifests"
+          cp -a "$root/equivalence/comparisons" \
+            "$root/authority/amd64-comparisons"
+          cp "$root/vendor-artifact-metadata.json" \
+            "$root/authority/vendor-artifact-metadata.json"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+
+          root = Path('work/gnome-flashback-source')
+          packages = []
+          for deb in sorted((root / 'target-debs').glob('*.deb')):
+              def field(name: str) -> str:
+                  result = subprocess.run(
+                      ['dpkg-deb', '-f', str(deb), name], text=True,
+                      stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False,
+                  )
+                  return result.stdout.strip() if result.returncode == 0 else ''
+              package = field('Package')
+              source = field('Source').split(' ', 1)[0] or package
+              packages.append({
+                  'package': package,
+                  'source': source,
+                  'source_version': '3.38.0-2+grm3u2+han3u4',
+                  'version': field('Version'),
+                  'architecture': field('Architecture'),
+                  'filename': deb.name,
+                  'size': deb.stat().st_size,
+                  'sha256': hashlib.sha256(deb.read_bytes()).hexdigest(),
+              })
+          lock = {
+              'schema': 1,
+              'source': 'gnome-flashback',
+              'source_version': '3.38.0-2+grm3u2+han3u4',
+              'vendor_artifact': {
+                  'run_id': 31097604490,
+                  'run_sha': 'f5199ad765b7bd080b4452ecf4bfde785beb35da',
+                  'artifact_id': 8966101210,
+                  'artifact_name': 'hancom-gooroom-3.3-exact-vendor-debs',
+                  'artifact_digest': 'sha256:3fce3a5938ab278ec408ca23b0f8cf89f14823852a35f0b50308cd65e43fd823',
+              },
+              'packages': packages,
+          }
+          (root / 'authority' / 'target-binary-lock.json').write_text(
+              json.dumps(lock, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          rm -rf "$root/tree-lock"
+          mkdir -p "$root/tree-lock"
+          tar -xf "$root/authority/reconstructed-source.tar.gz" -C "$root/tree-lock"
+          git -C "$root/tree-lock" init -q
+          git -C "$root/tree-lock" add -f -A
+          tree_sha="$(git -C "$root/tree-lock" write-tree)"
+          test "${#tree_sha}" -eq 40
+          jq --arg tree "$tree_sha" '
+            .source_status = "verified-reconstructed-git-tree"
+            | .reconstruction = {
+                tree_sha: $tree,
+                archive_sha256: .archive.sha256,
+                archive_size: .archive.size,
+                changed_paths: .unique_reconstruction.changed_paths
+              }
+            | .claims.amd64_equivalence_verified = true
+            | .amd64_equivalence = {
+                passed: true,
+                policy: "exact-controls-paths-modes-symlinks-non-elf-and-normalized-elf-byte-identity",
+                summary: "amd64-equivalence-summary.json"
+              }
+          ' "$root/authority/reconstruction-lock.json" \
+            > "$root/authority/reconstruction-lock.tmp"
+          mv "$root/authority/reconstruction-lock.tmp" \
+            "$root/authority/reconstruction-lock.json"
+
+          rm -rf \
+            "$root/authority/target-roots" \
+            "$root/authority/resource-work" \
+            "$root/authority/before-unique" \
+            "$root/authority/after-unique"
+          (
+            cd "$root/authority"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .source_status == "verified-reconstructed-git-tree"
+            and (.reconstruction.tree_sha | length) == 40
+            and (.reconstruction.archive_sha256 | length) == 64
+            and .claims.amd64_equivalence_verified == true
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' "$root/authority/reconstruction-lock.json" >/dev/null
+          rm -rf \
+            "$root/vendor" "$root/target-debs" \
+            "$root/hancom-source" "$root/gooroom-source" \
+            "$root/tree-lock"
+
+      - name: Upload the verified reconstructed source authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/gnome-flashback-source/authority
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload AMD64 reconstruction diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-amd64-diagnostics-${{ github.run_id }}
+          path: |
+            work/gnome-flashback-source/equivalence
+            work/gnome-flashback-source/amd64-build/build.log
+            work/gnome-flashback-source/amd64-build/debootstrap.log
+            work/gnome-flashback-source/authority/reconstruction-lock.json
+            work/gnome-flashback-source/authority/reconstruction.patch
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+  arm64-build:
+    name: Build and verify the reconstructed tree natively on ARM64
+    needs: source-equivalence
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    outputs:
+      artifact_id: ${{ steps.upload.outputs['artifact-id'] }}
+    steps:
+      - name: Check out the exact native builder and verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download the verified reconstructed source authority
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/source-authority
+
+      - name: Verify native host, tools, and source authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl debootstrap debian-archive-keyring \
+            dpkg-dev file git jq python3 xz-utils
+          bash -n arm64/scripts/build_gnome_flashback_han3u4_chroot.sh
+          python3 -m py_compile arm64/scripts/verify_gnome_flashback_han3u4_arm64.py
+          (cd work/source-authority && sha256sum --check --strict LOCKSUMS.sha256)
+          archive_sha="$(jq -r '.reconstruction.archive_sha256' \
+            work/source-authority/reconstruction-lock.json)"
+          echo "$archive_sha  work/source-authority/reconstructed-source.tar.gz" \
+            | sha256sum --check --strict -
+          jq -e '
+            .source_status == "verified-reconstructed-git-tree"
+            and .claims.amd64_equivalence_verified == true
+            and .claims.native_arm64_build_verified == false
+            and .claims.promotion_allowed == false
+          ' work/source-authority/reconstruction-lock.json >/dev/null
+
+      - name: Re-download and revalidate the immutable AMD64 comparison authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/vendor work/target-debs
+          mkdir -p work/vendor work/target-debs
+          metadata=work/vendor-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${VENDOR_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$VENDOR_ARTIFACT_ID" \
+            --arg name "$VENDOR_ARTIFACT_NAME" \
+            --arg digest "$VENDOR_ARTIFACT_DIGEST" \
+            --argjson run_id "$VENDOR_RUN_ID" \
+            --arg run_sha "$VENDOR_RUN_SHA" '
+              .id == $id
+              and .name == $name
+              and .digest == $digest
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+            ' "$metadata" >/dev/null
+          gh run download "$VENDOR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$VENDOR_ARTIFACT_NAME" \
+            --dir work/vendor
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import shutil
+
+          authority = json.loads(
+              Path('work/source-authority/target-binary-lock.json').read_text(encoding='utf-8')
+          )
+          rows = authority.get('packages')
+          if not isinstance(rows, list) or len(rows) != 3:
+              raise SystemExit('target binary lock package set is invalid')
+          for row in rows:
+              filename = row['filename']
+              matches = list(Path('work/vendor').rglob(filename))
+              if len(matches) != 1:
+                  raise SystemExit(f'{filename}: expected one vendor match, got {len(matches)}')
+              source = matches[0]
+              if source.stat().st_size != int(row['size']):
+                  raise SystemExit(f'{filename}: size mismatch')
+              if hashlib.sha256(source.read_bytes()).hexdigest() != row['sha256']:
+                  raise SystemExit(f'{filename}: SHA-256 mismatch')
+              shutil.copy2(source, Path('work/target-debs') / filename)
+          PY
+
+      - name: Build in a clean native ARM64 historical rootfs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo bash arm64/scripts/build_gnome_flashback_han3u4_chroot.sh \
+            arm64 \
+            work/source-authority/reconstructed-source.tar.gz \
+            work/arm64-build \
+            "$SNAPSHOT"
+          sudo chown -R "$(id -u):$(id -g)" work/arm64-build
+
+      - name: Verify every ARM64 package, ELF, and architecture-neutral payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/arm64-verification work/arm64-artifact
+          python3 arm64/scripts/verify_gnome_flashback_han3u4_arm64.py \
+            --target-deb-dir work/target-debs \
+            --candidate-deb-dir work/arm64-build/debs \
+            --output-dir work/arm64-verification
+          jq -e '
+            .verified == true
+            and .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .target_architecture == "arm64"
+            and .expected_package_count == 3
+            and .compared_package_count == 3
+            and (.package_results | length) == 3
+            and all(.package_results[]; .verified == true)
+            and (.runtime_elf_checks | length) == 5
+            and all(.runtime_elf_checks[]; .verified == true)
+            and ([.runtime_elf_checks[] | select(.target_gresource_sha256 != null)] | length) == 1
+            and ([.runtime_elf_checks[] | select(.target_gresource_sha256 != null and .gresource_identity == true)] | length) == 1
+            and (.wrong_architecture_executables | length) == 0
+            and (.verification_errors | length) == 0
+          ' work/arm64-verification/verification-summary.json >/dev/null
+
+          mkdir -p work/arm64-artifact/debs
+          cp work/arm64-build/debs/*.deb work/arm64-artifact/debs/
+          cp work/arm64-verification/*.json work/arm64-artifact/
+          cp work/source-authority/reconstruction-lock.json work/arm64-artifact/
+          cp work/source-authority/amd64-equivalence-summary.json work/arm64-artifact/
+          tree_sha="$(jq -r '.reconstruction.tree_sha' work/source-authority/reconstruction-lock.json)"
+          archive_sha="$(jq -r '.reconstruction.archive_sha256' work/source-authority/reconstruction-lock.json)"
+          jq -n \
+            --arg tree "$tree_sha" \
+            --arg archive_sha "$archive_sha" \
+            --arg snapshot "$SNAPSHOT" '
+              {
+                schema: 2,
+                source: "gnome-flashback",
+                source_version: "3.38.0-2+grm3u2+han3u4",
+                repository: "hancomgooroom/gnome-flashback",
+                base_commit_sha: "df5e1ec84df0cbb1dc9c1ce4f8a7ed366cd50db7",
+                base_tree_sha: "a5961872b3538a33b1ece5c76d0cf67506c71e2b",
+                public_equivalent_repository: "gooroom/gnome-flashback",
+                public_equivalent_commit_sha: "68a47d769b0f15b84c532746ced1f8ae538ab545",
+                public_equivalent_tree_sha: "830a852c6272843c4c23da7e80b3b3961d4aeb38",
+                reconstructed_tree_sha: $tree,
+                source_archive_sha256: $archive_sha,
+                target_architecture: "arm64",
+                debian_snapshot: $snapshot,
+                build_mode: "native-arm64-clean-historical-rootfs",
+                source_authority: "exact-public-lineages-binary-constrained-unique-deltas-exact-gresource-and-normalized-amd64-elf"
+              }
+            ' > work/arm64-artifact/build-lock.json
+          (
+            cd work/arm64-artifact
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+
+      - name: Upload the verified native ARM64 packages
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARM64_ARTIFACT_NAME }}
+          path: work/arm64-artifact
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload native build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gnome-flashback-han3u4-arm64-diagnostics-${{ github.run_id }}
+          path: |
+            work/arm64-build/build.log
+            work/arm64-build/debootstrap.log
+            work/arm64-verification
+            work/arm64-artifact/verification-summary.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+  promote:
+    name: Persist the reconstructed source and verified ARM64 authority
+    needs: [source-equivalence, arm64-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install promotion prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          python3 -m py_compile arm64/scripts/promote_gnome_flashback_han3u4.py
+
+      - name: Download both verified authorities from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: gnome-flashback-han3u4-*-v1
+          path: work/promote
+
+      - name: Revalidate artifact contents and immutable ARM64 metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARM64_ARTIFACT_ID: ${{ needs.arm64-build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/promote/$SOURCE_ARTIFACT_NAME
+          arm=work/promote/$ARM64_ARTIFACT_NAME
+          test -d "$source"
+          test -d "$arm"
+          (cd "$source" && sha256sum --check --strict LOCKSUMS.sha256)
+          (cd "$arm" && sha256sum --check --strict SHA256SUMS)
+          test -n "$ARM64_ARTIFACT_ID"
+          metadata=work/promote/arm64-artifact-metadata.json
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARM64_ARTIFACT_ID}" \
+            -o "$metadata"
+          jq -e \
+            --argjson id "$ARM64_ARTIFACT_ID" \
+            --arg name "$ARM64_ARTIFACT_NAME" \
+            --argjson run_id "$GITHUB_RUN_ID" \
+            --arg run_sha "$GITHUB_SHA" '
+              .id == $id
+              and .name == $name
+              and .expired == false
+              and .workflow_run.id == $run_id
+              and .workflow_run.head_sha == $run_sha
+              and (.digest | startswith("sha256:"))
+            ' "$metadata" >/dev/null
+
+      - name: Generate and verify promotion records
+        env:
+          ARM64_ARTIFACT_ID: ${{ needs.arm64-build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/promote/$SOURCE_ARTIFACT_NAME
+          arm=work/promote/$ARM64_ARTIFACT_NAME
+          digest="$(jq -r '.digest' work/promote/arm64-artifact-metadata.json)"
+          python3 arm64/scripts/promote_gnome_flashback_han3u4.py \
+            --source-artifact "$source" \
+            --arm64-artifact "$arm" \
+            --repository-root . \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --artifact-name "$ARM64_ARTIFACT_NAME" \
+            --artifact-id "$ARM64_ARTIFACT_ID" \
+            --artifact-digest "$digest"
+          result=arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4/result.json
+          jq -e '
+            .schema == 4
+            and .source == "gnome-flashback"
+            and .source_version == "3.38.0-2+grm3u2+han3u4"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .passed == true
+            and .verification_passed == true
+            and .job_passed == true
+            and (.required_deb_artifacts | length) == 3
+            and .source_lock_evidence.original_source_archive_recovered == false
+            and .source_lock_evidence.embedded_resource_relationship.resource_count == 16
+            and .source_lock_evidence.amd64_equivalence.verified == true
+            and .verification_summary.verified == true
+            and (.verification_summary.runtime_elf_checks | length) == 5
+          ' "$result" >/dev/null
+          jq -e '
+            [.sources[]
+             | select(.source == "gnome-flashback"
+                      and .source_version == "3.38.0-2+grm3u2+han3u4"
+                      and .status == "resolved"
+                      and .selected.type == "reconstructed-git-tree"
+                      and .verification.passed == true
+                      and .verification.native_arm64_build_verified == true
+                      and .verification.exact_shipped_embedded_css_verified == true
+                      and .verification.arm64_embedded_gresource_identity_verified == true
+                      and .verification.original_source_archive_recovered == false)]
+            | length == 1
+          ' arm64/locks/reconstructed-sources/source-locks.json >/dev/null
+
+      - name: Commit the exact reconstruction and native ARM64 result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gnome-flashback/3.38.0-2_grm3u2_han3u4 \
+            arm64/locks/gnome-flashback-han3u4-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          if git diff --cached --quiet; then
+            echo 'gnome-flashback han3u4 promotion records are already current.'
+          else
+            git commit -m 'Promote verified gnome-flashback han3u4 ARM64 build'
+            pushed=false
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                pushed=true
+                break
+              fi
+              sleep $((attempt * 3))
+            done
+            test "$pushed" = true
+          fi
+
+      - name: Dispatch canonical source, rebuild, and package-pool consumers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" --ref arm64-port

@@ -1,0 +1,215 @@
+name: ARM64 port - record stage-0 v3 attempt
+
+on:
+  workflow_run:
+    workflows: ['ARM64 port - build and boot-test stage-0 live ISO v3']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Existing stage-0 v3 workflow run ID
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-stage0-v3-record
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.head_branch == 'arm64-port'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download the complete attempt artifact
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euxo pipefail
+          if [ "$EVENT_NAME" = workflow_run ]; then
+            run_id="$EVENT_RUN_ID"
+          else
+            run_id="$INPUT_RUN_ID"
+          fi
+          test -n "$run_id"
+          rm -rf work/stage0-v3-attempt
+          mkdir -p work/stage0-v3-attempt
+          gh run view "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,conclusion,status,headBranch,headSha,createdAt,updatedAt,url \
+            > work/stage0-v3-run.json
+          set +e
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-arm64-stage0-v3 \
+            --dir work/stage0-v3-attempt
+          download_rc=$?
+          set -e
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "download_rc=$download_rc" >> "$GITHUB_OUTPUT"
+
+      - name: Record bounded diagnostics and immutable metadata
+        env:
+          DOWNLOAD_RC: ${{ steps.metadata.outputs.download_rc }}
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/stage0-v3-attempt
+          mkdir -p arm64/locks/stage0-v3-attempt
+          cp work/stage0-v3-run.json \
+            arm64/locks/stage0-v3-attempt/workflow-run.json
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import re
+
+          source = Path('work/stage0-v3-attempt')
+          destination = Path('arm64/locks/stage0-v3-attempt')
+          run = json.loads(Path('work/stage0-v3-run.json').read_text(encoding='utf-8'))
+
+          wrapper_path = source / 'stage0-v3-wrapper-result.json'
+          build_path = source / 'stage0-build-result.json'
+          wrapper = (
+              json.loads(wrapper_path.read_text(encoding='utf-8'))
+              if wrapper_path.is_file()
+              else None
+          )
+          build = (
+              json.loads(build_path.read_text(encoding='utf-8'))
+              if build_path.is_file()
+              else None
+          )
+          qemu_path = source / 'qemu-stage0-boot.log'
+          qemu_lines = (
+              qemu_path.read_text(encoding='utf-8', errors='replace').splitlines()
+              if qemu_path.is_file()
+              else []
+          )
+          marker = any(
+              'HANCOM_GOOROOM_ARM64_STAGE0_READY' in line
+              for line in qemu_lines
+          )
+          error_pattern = re.compile(
+              r'(?:^E:|error|failed|failure|unable|missing|not found|'
+              r'no installation candidate|unmet depend|cannot|panic)',
+              re.IGNORECASE,
+          )
+          qemu_errors = [line[:1000] for line in qemu_lines if error_pattern.search(line)]
+
+          files = []
+          for path in sorted(source.rglob('*')):
+              if not path.is_file():
+                  continue
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              files.append({
+                  'path': str(path.relative_to(source)),
+                  'size': path.stat().st_size,
+                  'sha256': digest,
+              })
+
+          status = 'passed'
+          reasons = []
+          if run.get('conclusion') != 'success':
+              status = 'failed'
+              reasons.append(f"workflow conclusion={run.get('conclusion')}")
+          if int(os.environ['DOWNLOAD_RC']) != 0:
+              status = 'failed'
+              reasons.append('artifact download failed')
+          if not wrapper:
+              status = 'failed'
+              reasons.append('wrapper result missing')
+          elif wrapper.get('builder_exit_code') != 0:
+              status = 'failed'
+              reasons.append(
+                  f"builder exit code={wrapper.get('builder_exit_code')}"
+              )
+          if not build:
+              status = 'failed'
+              reasons.append('stage0 build result missing')
+          if not marker:
+              status = 'failed'
+              reasons.append('ARM64 UEFI readiness marker missing')
+
+          result = {
+              'schema': 'hancom-gooroom-arm64-stage0-v3-attempt-evidence',
+              'generated_at': datetime.now(timezone.utc).isoformat().replace(
+                  '+00:00', 'Z'
+              ),
+              'status': status,
+              'reasons': reasons,
+              'workflow_run': run,
+              'artifact_download_exit_code': int(os.environ['DOWNLOAD_RC']),
+              'wrapper_result': wrapper,
+              'build_result': build,
+              'uefi_readiness_marker_found': marker,
+              'qemu_error_lines': qemu_errors[-120:],
+              'qemu_log_tail': qemu_lines[-200:],
+              'artifact_files': files,
+          }
+          (destination / 'stage0-v3-attempt-summary.json').write_text(
+              json.dumps(result, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          if wrapper_path.is_file():
+              (destination / 'stage0-v3-wrapper-result.json').write_bytes(
+                  wrapper_path.read_bytes()
+              )
+          if build_path.is_file():
+              (destination / 'stage0-build-result.json').write_bytes(
+                  build_path.read_bytes()
+              )
+          for name in (
+              'stage0-debootstrap.log',
+              'stage0-chroot-install.stderr.log',
+              'stage0-v3-trace.stderr.log',
+          ):
+              path = source / name
+              if not path.is_file():
+                  continue
+              lines = path.read_text(
+                  encoding='utf-8', errors='replace'
+              ).splitlines()
+              (destination / f'{name}.tail').write_text(
+                  '\n'.join(lines[-300:]) + '\n',
+                  encoding='utf-8',
+              )
+          print(json.dumps(result, indent=2, ensure_ascii=False))
+          PY
+          find arm64/locks/stage0-v3-attempt -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > arm64/locks/stage0-v3-attempt/LOCKSUMS.sha256
+
+      - name: Commit the attempt before enforcing its result
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/stage0-v3-attempt
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Hancom Gooroom 3.3 ARM64 stage-0 v3 attempt'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce a boot-tested stage-0 result
+        run: |
+          set -euxo pipefail
+          test "$(jq -r '.status' arm64/locks/stage0-v3-attempt/stage0-v3-attempt-summary.json)" = passed

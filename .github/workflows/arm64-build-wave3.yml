@@ -1,0 +1,104 @@
+name: ARM64 port - build exact package wave 3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-wave3.yml'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_locked_arm64_build.sh'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-build-wave3
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        source:
+          - dpkg
+          - eog
+          - gedit
+          - gnome-bluetooth
+          - gnome-panel
+          - gnome-settings-daemon
+          - hancom-toolkit
+          - hancom-viewer-installer
+          - hancomgrm-adjustments-utils
+          - libnma
+          - lightdm
+          - metacity
+          - policykit-1
+          - synaptic
+          - yelp
+
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install verification tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git jq dpkg-dev ca-certificates file python3
+
+      - name: Build exact locked source for ARM64
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/verify_locked_arm64_build.sh
+          output="work/${SOURCE_NAME}-arm64"
+          rm -rf "$output"
+          arm64/scripts/run_locked_source_arm64.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            "$output"
+
+      - name: Verify source, version, architecture, and payload machine types
+        env:
+          HANCOM_GOOROOM_REFERENCE_JSON: ${{ github.workspace }}/arm64/locks/reference/amd64-reference.json
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          arm64/scripts/verify_locked_arm64_build.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            "work/${SOURCE_NAME}-arm64"
+
+      - name: Upload exact ARM64 DEBs and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.source }}-exact-arm64-wave3
+          path: work/${{ matrix.source }}-arm64
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9

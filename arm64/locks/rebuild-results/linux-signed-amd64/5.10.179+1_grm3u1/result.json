@@ -1,0 +1,66 @@
+{
+  "schema": 4,
+  "source": "linux-signed-amd64",
+  "source_version": "5.10.179+1+grm3u1",
+  "source_type": "architecture-replacement",
+  "authority_provenance": "exact-amd64-reference-plus-audited-config-only-arm64-replacement",
+  "actions_run_id": "31144342555",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31144342555",
+  "artifact_id": "8980920263",
+  "artifact_name": "hancom-gooroom-arm64-arch-replacements-31144342555",
+  "artifact_digest": "sha256:26f499deae5fd6304124610ecae7d67340490c4dd63378007222640a48192621",
+  "build_outcome": "success",
+  "build_exit_code": "0",
+  "verify_outcome": "success",
+  "required_native_packages": [
+    "linux-image-arm64"
+  ],
+  "reused_all_packages": [],
+  "job_passed": true,
+  "verification_passed": true,
+  "passed": true,
+  "replacement_policy": "config-only-explicit-architecture-replacement",
+  "reference_iso_sha256": "ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a",
+  "reference_package": {
+    "package": "linux-image-amd64",
+    "version": "5.10.179-1+grm3u1",
+    "architecture": "amd64",
+    "source": "linux-signed-amd64",
+    "source_version": "5.10.179+1+grm3u1"
+  },
+  "replacement_kernel_contract": {
+    "package": "linux-image-5.10.0-23-arm64",
+    "version": "5.10.179-1+grm3u1",
+    "dependency": "linux-image-5.10.0-23-arm64 (= 5.10.179-1+grm3u1)"
+  },
+  "deb_artifacts": [
+    {
+      "filename": "linux-image-arm64_5.10.179-1+grm3u1_arm64.deb",
+      "package": "linux-image-arm64",
+      "source": "hancom-gooroom-arm64-arch-replacements",
+      "version": "5.10.179-1+grm3u1",
+      "architecture": "arm64",
+      "size": 1098,
+      "sha256": "b8d081d1620e2140f690b8a12ed18141ea63d5ee2c9647f5c0c276cb274be55f",
+      "depends": "linux-image-5.10.0-23-arm64 (= 5.10.179-1+grm3u1)",
+      "executable_payload_count": 0
+    }
+  ],
+  "verification_summary": {
+    "schema": 1,
+    "reference_package_identity_verified": true,
+    "replacement_architecture_verified": true,
+    "replacement_dependency_verified": true,
+    "reference_iso_hash_embedded": true,
+    "executable_payload_count": 0,
+    "wrong_architecture_executable_count": 0,
+    "verified": true
+  },
+  "lock_evidence": {
+    "metadata_path": "arm64/locks/arch-replacements/architecture-replacements.json",
+    "metadata_sha256": "e228d10a5953e55cab7451a9a6225cc424fc5ce8b9d1e9d77437179f39d87902",
+    "artifact_lock_path": "arm64/locks/arch-replacements/artifact-lock.json"
+  },
+  "verification_errors": [],
+  "verification_warnings": []
+}

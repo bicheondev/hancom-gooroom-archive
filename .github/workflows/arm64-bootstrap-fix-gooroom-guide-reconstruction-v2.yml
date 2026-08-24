@@ -1,0 +1,70 @@
+name: ARM64 port - install exact gooroom-guide reconstruction fix v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-bootstrap-fix-gooroom-guide-reconstruction-v2.yml'
+      - '.github/bootstrap-assets/patch_gooroom_guide_reconstruction_v2.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-bootstrap-fix-gooroom-guide-reconstruction-v2
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the latest ARM64 evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply and validate only the permanent source-script change
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile \
+            .github/bootstrap-assets/patch_gooroom_guide_reconstruction_v2.py
+          python3 .github/bootstrap-assets/patch_gooroom_guide_reconstruction_v2.py
+          git restore --source=HEAD -- \
+            .github/workflows/arm64-reconstruct-build-promote-gooroom-guide-han3u1.yml
+          python3 -m py_compile \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          grep -Fq '"src/data/guide-window.ui"' \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          grep -Fq 'g_timeout_add (100, guide_window_present, self);' \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          grep -Fq 'TARGET_PIXBUF_CALL_BLOCK' \
+            arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          git diff --check
+
+      - name: Commit and push the source reconstruction fix
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- arm64/scripts/reconstruct_gooroom_guide_han3u1.py
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'Source reconstruction script is already current.'
+            exit 0
+          fi
+          git commit -m 'Recover exact gooroom-guide 3.3 runtime source changes'
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              pushed=true
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$pushed" = true

@@ -1,0 +1,475 @@
+name: ARM64 port - validate source candidates against exact AMD64 packages
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-validate-source-candidates-against-amd64.yml'
+      - 'arm64/scripts/prepare_reference_debs_for_candidates.py'
+      - 'arm64/scripts/compare_built_debs_to_reference.py'
+      - 'arm64/locks/recovered-source-bundles/latest/**'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-source-candidate-amd64-validation
+  cancel-in-progress: true
+
+env:
+  ISO_RELEASE: v3.3
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+  CANDIDATE_RELEASE: arm64-exact-source-candidates-v1
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_candidates: ${{ steps.matrix.outputs.has_candidates }}
+      has_light: ${{ steps.matrix.outputs.has_light }}
+      deferred: ${{ steps.matrix.outputs.deferred }}
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact-reference extraction tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates jq python3 xorriso
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_sources_from_reference_apt.py \
+            arm64/scripts/prepare_reference_debs_for_candidates.py \
+            arm64/scripts/compare_built_debs_to_reference.py
+
+      - name: Synchronize sealed source-bundle authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          path=arm64/locks/recovered-source-bundles/latest/summary.json
+          for attempt in $(seq 1 40); do
+            git fetch origin arm64-port
+            if git cat-file -e "origin/arm64-port:$path" 2>/dev/null; then
+              git checkout origin/arm64-port -- arm64/locks/recovered-source-bundles/latest
+              break
+            fi
+            sleep 15
+          done
+          test -f "$path"
+          (
+            cd arm64/locks/recovered-source-bundles/latest
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '.schema == 1 and .candidate_bundle_count >= 0' "$path" >/dev/null
+
+      - name: Generate lightweight comparison matrix
+        id: matrix
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path('arm64/locks/recovered-source-bundles/latest')
+          rows = json.loads((root / 'release-assets.json').read_text())
+          heavy_sources = {'linux', 'qtbase-opensource-src'}
+          include = []
+          deferred = []
+          for row in rows:
+              if row.get('category') != 'candidate':
+                  continue
+              item = {
+                  'source': row['source'],
+                  'version': row['version'],
+                  'asset_name': row['asset_name'],
+                  'bundle_sha256': row['bundle_sha256'],
+                  'asset_id': str(row['asset_id']),
+                  'artifact_key': re.sub(r'[^A-Za-z0-9._-]', '_', row['source'] + '-' + row['version']),
+              }
+              if row['source'] in heavy_sources:
+                  item['reason'] = 'deferred-heavy-reference-rebuild'
+                  deferred.append(item)
+              else:
+                  include.append(item)
+          matrix = {'include': include}
+          output = Path(os.environ['GITHUB_OUTPUT'])
+          with output.open('a', encoding='utf-8') as stream:
+              stream.write('matrix=' + json.dumps(matrix, separators=(',', ':')) + '\n')
+              stream.write('has_candidates=' + ('true' if include or deferred else 'false') + '\n')
+              stream.write('has_light=' + ('true' if include else 'false') + '\n')
+              stream.write('deferred=' + json.dumps(deferred, separators=(',', ':')) + '\n')
+          PY
+
+      - name: Download and verify locked reference ISO
+        if: steps.matrix.outputs.has_candidates == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/candidate-amd64-validation/{download,reference}
+          gh release download "$ISO_RELEASE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" \
+            --dir work/candidate-amd64-validation/download \
+            --clobber
+          iso=work/candidate-amd64-validation/download/$ISO_NAME
+          test "$(stat -c '%s' "$iso")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$iso" | sha256sum --check --strict
+
+      - name: Recover exact reference AMD64 DEBs
+        if: steps.matrix.outputs.has_candidates == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/prepare_reference_debs_for_candidates.py \
+            --reference-iso work/candidate-amd64-validation/download/$ISO_NAME \
+            --reference-evidence arm64/locks/reference-iso-source-residue/latest \
+            --bundle-authority arm64/locks/recovered-source-bundles/latest \
+            --output-dir work/candidate-amd64-validation/reference
+          jq -e '.schema == 1 and .candidate_source_count > 0' \
+            work/candidate-amd64-validation/reference/summary.json >/dev/null
+          (
+            cd work/candidate-amd64-validation/reference
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload exact reference DEBs once for the comparison matrix
+        if: steps.matrix.outputs.has_candidates == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-candidate-reference-debs
+          path: work/candidate-amd64-validation/reference
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+          compression-level: 1
+
+  compare:
+    needs: prepare
+    if: needs.prepare.outputs.has_light == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Check out comparison code and authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install host comparison tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev jq python3 tar zstd
+          docker version
+          python3 -m py_compile arm64/scripts/compare_built_debs_to_reference.py
+
+      - name: Download exact reference DEBs
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: hancom-gooroom-3.3-candidate-reference-debs
+          path: work/reference
+
+      - name: Verify reference artifact lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          (
+            cd work/reference
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Download and verify quarantined exact source bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET_NAME: ${{ matrix.asset_name }}
+          BUNDLE_SHA256: ${{ matrix.bundle_sha256 }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/candidate
+          gh release download "$CANDIDATE_RELEASE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ASSET_NAME" \
+            --dir work/candidate \
+            --clobber
+          printf '%s  %s\n' "$BUNDLE_SHA256" "work/candidate/$ASSET_NAME" \
+            | sha256sum --check --strict
+          mkdir -p work/candidate/source-files
+          tar --use-compress-program=unzstd -xf "work/candidate/$ASSET_NAME" \
+            -C work/candidate/source-files
+          (
+            cd work/candidate/source-files
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Rebuild exact candidate on Debian bullseye AMD64
+        id: build
+        env:
+          SOURCE_NAME: ${{ matrix.source }}
+          SOURCE_VERSION: ${{ matrix.version }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p work/build/out "work/results/${{ matrix.artifact_key }}"
+          set +e
+          docker run --rm --platform linux/amd64 \
+            -e SOURCE_NAME -e SOURCE_VERSION \
+            -v "$PWD/work:/work" \
+            debian:bullseye \
+            bash -lc '
+              set -euxo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              cat > /etc/apt/sources.list <<EOF
+          deb http://deb.debian.org/debian bullseye main contrib non-free
+          deb http://deb.debian.org/debian bullseye-updates main contrib non-free
+          deb http://security.debian.org/debian-security bullseye-security main contrib non-free
+          deb [trusted=yes] http://update.hancomgooroom.com/gooroom gooroom-3.0 main
+          deb [trusted=yes] http://update.hancomgooroom.com/hancom hancom-3.0 main
+          EOF
+              printf "Acquire::Check-Valid-Until \"false\";\nAcquire::Retries \"3\";\n" \
+                > /etc/apt/apt.conf.d/99reference-build
+              apt-get update -o APT::Update::Error-Mode=any || true
+              apt-get install -y --no-install-recommends \
+                build-essential ca-certificates debhelper devscripts dpkg-dev equivs fakeroot \
+                git pkg-config python3
+              cd /work/candidate/source-files
+              dsc="$(find . -maxdepth 1 -type f -name "*.dsc" -print -quit)"
+              test -n "$dsc"
+              rm -rf /work/build/source
+              dpkg-source --no-check -x "$dsc" /work/build/source
+              cd /work/build/source
+              mk-build-deps --install --remove \
+                --tool "apt-get -y --no-install-recommends" debian/control
+              export DEB_BUILD_OPTIONS="nocheck parallel=2"
+              export DEB_BUILD_PROFILES="nocheck"
+              dpkg-buildpackage -b -uc -us -j2
+              find /work/build -maxdepth 1 -type f -name "*.deb" -exec cp -v {} /work/build/out/ \;
+            ' > "work/results/${{ matrix.artifact_key }}/build.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "work/results/${{ matrix.artifact_key }}/build.exit-code"
+          echo "returncode=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Compare rebuilt packages with exact references
+        env:
+          SOURCE_NAME: ${{ matrix.source }}
+          SOURCE_VERSION: ${{ matrix.version }}
+          BUILD_RC: ${{ steps.build.outputs.returncode }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          result="work/results/${{ matrix.artifact_key }}"
+          if [ "$BUILD_RC" != 0 ]; then
+            jq -n \
+              --arg source "$SOURCE_NAME" \
+              --arg version "$SOURCE_VERSION" \
+              --argjson build_returncode "$BUILD_RC" '
+                {
+                  schema: 1,
+                  policy: "all-exact-reference-binary-packages-must-match-extracted-data-and-control-trees",
+                  source: $source,
+                  version: $version,
+                  build_returncode: $build_returncode,
+                  reference_package_count: 0,
+                  exact_package_match_count: 0,
+                  all_reference_packages_match: false,
+                  promotion_allowed: false,
+                  status: "candidate-build-failed"
+                }
+              ' > "$result/summary.json"
+            printf '[]\n' > "$result/package-results.json"
+          else
+            python3 arm64/scripts/compare_built_debs_to_reference.py \
+              --source "$SOURCE_NAME" \
+              --version "$SOURCE_VERSION" \
+              --reference-manifest work/reference/sources.json \
+              --reference-root work/reference \
+              --built-root work/build/out \
+              --output-dir "$result"
+          fi
+          cp work/build/out/*.deb "$result/" 2>/dev/null || true
+          find "$result" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$result/FILE-INVENTORY.tsv"
+          (
+            cd "$result"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload candidate comparison evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-compare-${{ matrix.artifact_key }}
+          path: work/results/${{ matrix.artifact_key }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+          compression-level: 1
+
+  aggregate:
+    needs: [prepare, compare]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download lightweight comparison evidence
+        if: needs.prepare.outputs.has_light == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: candidate-compare-*
+          path: work/candidate-comparisons/input
+          merge-multiple: false
+
+      - name: Aggregate fail-closed reconstruction authority
+        env:
+          DEFERRED_JSON: ${{ needs.prepare.outputs.deferred }}
+          HAS_LIGHT: ${{ needs.prepare.outputs.has_light }}
+          COMPARE_RESULT: ${{ needs.compare.result }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          output=work/candidate-comparisons/output
+          rm -rf "$output"
+          mkdir -p "$output/results"
+          if [ -d work/candidate-comparisons/input ]; then
+            cp -a work/candidate-comparisons/input/. "$output/results/"
+          fi
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          from pathlib import Path
+
+          output = Path('work/candidate-comparisons/output')
+          results = []
+          for path in sorted((output / 'results').rglob('summary.json')):
+              row = json.loads(path.read_text())
+              row['evidence_path'] = str(path.relative_to(output))
+              results.append(row)
+          deferred = json.loads(os.environ.get('DEFERRED_JSON') or '[]')
+          authorized = [row for row in results if row.get('promotion_allowed')]
+          failed = [row for row in results if not row.get('promotion_allowed')]
+          summary = {
+              'schema': 1,
+              'policy': 'exact-amd64-reference-deb-extracted-data-and-control-tree-comparison',
+              'light_candidate_count': len(results),
+              'deferred_heavy_candidate_count': len(deferred),
+              'authorized_candidate_count': len(authorized),
+              'failed_or_different_candidate_count': len(failed),
+              'authorized_sources': [row['source'] for row in authorized],
+              'deferred_sources': [row['source'] for row in deferred],
+              'automatic_bundle_promotion_performed': False,
+              'matrix_job_result': os.environ.get('COMPARE_RESULT', ''),
+          }
+          (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          (output / 'results.json').write_text(json.dumps(results, indent=2) + '\n')
+          (output / 'deferred-heavy.json').write_text(json.dumps(deferred, indent=2) + '\n')
+          lines = [
+              '# Exact source-candidate AMD64 comparison',
+              '',
+              f"- Lightweight candidates compared: **{len(results)}**",
+              f"- Authorized by exact extracted-package match: **{len(authorized)}**",
+              f"- Failed or different: **{len(failed)}**",
+              f"- Heavy candidates deferred: **{len(deferred)}**",
+              '',
+              '| Source | Version | Result | Promotion |',
+              '|---|---|---|---:|',
+          ]
+          for row in results:
+              lines.append(
+                  f"| `{row.get('source','')}` | `{row.get('version','')}` | "
+                  f"{row.get('status', 'exact-match' if row.get('promotion_allowed') else 'not-authorized')} | "
+                  f"{'yes' if row.get('promotion_allowed') else 'no'} |"
+              )
+          for row in deferred:
+              lines.append(
+                  f"| `{row['source']}` | `{row['version']}` | deferred-heavy-reference-rebuild | no |"
+              )
+          lines.append('')
+          (output / 'SUMMARY.md').write_text('\n'.join(lines))
+          PY
+          cat "$output/SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+          find "$output" -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > "$output/FILE-INVENTORY.tsv"
+          (
+            cd "$output"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload aggregate comparison authority
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-source-candidate-amd64-comparisons
+          path: work/candidate-comparisons/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 1
+
+      - name: Commit compact candidate-comparison authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/candidate-comparisons/output
+          destination=arm64/locks/source-candidate-amd64-comparisons/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          for file in \
+            SUMMARY.md summary.json results.json deferred-heavy.json \
+            FILE-INVENTORY.tsv LOCKSUMS.sha256; do
+            cp "$source/$file" "$destination/$file"
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Candidate comparison authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Compare exact source candidates with AMD64 references'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

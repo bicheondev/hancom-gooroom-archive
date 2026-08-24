@@ -1,0 +1,376 @@
+diff --git a/debian/changelog b/debian/changelog
+index 016cce4ffc1aee0eec867c3fe81645679cee8f68..4515e0552b6f0785ebbb1ff9bf2e1f6ffdd4a484 100644
+--- a/debian/changelog
++++ b/debian/changelog
+@@ -1,3 +1,32 @@
++gnome-flashback (3.38.0-2+grm3u2+han3u4) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [cc88eff1] Change the color of the desktop icon label to white
++
++  [ heejun.jang ]
++  * [1bf11751] 단말에 터미널 데스크톱 파일이 없거나, 사용자가 터미널 실행권한이 없는 경우 바탕화면 우클릭 시 터미널 열기 메뉴가 노출되지 않도록 수정
++  * [7af5a94e] [최보연]어플리케이션 런처에서 데스크톱 파일 드래그 시 바탕화면에 생성되도록 수정
++  * [6b37d402] 바탕화면에 파일 아이콘 생성 시점을 파일 변경 완료 시점으로 변경
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 28 Jul 2023 10:08:37 +0900
++
++gnome-flashback (3.38.0-2+grm3u2+han3u3) unstable; urgency=medium
++
++  [ boyeon.choi ]
++  * [7f8a9b22] [HGOOROOM-397] Make Hangul key Disable
++  * [aa9dfb89] [HGOOROOM-197] Make it online when the screensaver starts
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Jun 2023 19:05:02 +0900
++
++gnome-flashback (3.38.0-2+grm3u2+han3u2) unstable; urgency=medium
++
++  [ heejun.jang ]
++  * [99da2574] [HGOOROOM-415] 바탕화면 새폴더 이름 허용범위 초과시 생성 버튼 비활성화 바탕화면 새폴더 이름이 "/"하나만 있는 경우 노출되는 메시지 업데이트
++  * [a38d3e6b] [HGOOROOM-386] 바탕화면에서 새폴더 생성 다이얼로그 생성 시 아이콘이 독바에 노출되지 않도록 변경
++  * [ef9a0790] [HGOOROOM-412]바탕화면 우측클릭 후 노출되는 아이콘 배치 방식 메뉴 제거
++
++ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 03 Feb 2023 18:26:38 +0900
++
+ gnome-flashback (3.38.0-2+grm3u2+han3u1) unstable; urgency=medium
+ 
+   [ heejun.jang ]
+diff --git a/debian/patches/series b/debian/patches/series
+index 8f96c1f5542d2fed84845176cb267f01eba6bcef..af41e7e7808cbbf7f2e236284e1ac81083a24f43 100644
+--- a/debian/patches/series
++++ b/debian/patches/series
+@@ -15,3 +15,11 @@ gooroom-13-restrict-Korean-input-when-entering-password.patch
+ gooroom-14-initialize-variable-called-current_mode.patch
+ gooroom-15-updated-monitors-xml-system-wide-helper-check-input-file.patch
+ gooroom-16-changed-screensaver-logo-image-of-Hancom-Gooroom.patch
++gooroom-16-update-desktop-new-folder-message.patch
++gooroom-17-update-desktop-new-folder-length-limit.patch
++gooroom-18-remove-new-folder-dialog-taskbar-icon.patch
++gooroom-19-remove-open-terminal-menu-when-termianl-desktop-app-not-exist.patch
++gooroom-20-create-an-application-shortcut-icon-on-the-desktop.patch
++gooroom-21-update-open-terminal-menu-when-user-do-not-have-exec-permission.patch
++gooroom-22-change-create-file-logic-when-file-change-done.patch
++hancom-17-reconstructed-final-3.3-deltas.patch
+
+# NEW FILE debian/patches/gooroom-16-update-desktop-new-folder-message.patch SHA256 c998a383a67a8b25f51af2f30f749f2a07c566452eb7ca6e8e768210db3e15d4
+diff --git a/gnome-flashback/libdesktop/gf-icon-view.c b/gnome-flashback/libdesktop/gf-icon-view.c
+index e117f6b..0ebcc7a 100644
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -3247,10 +3247,13 @@ gf_icon_view_validate_new_name (GfIconView  *self,
+       name = gf_icon_get_name (GF_ICON (info->icon));
+       if (g_strcmp0 (name, text) == 0)
+         {
+-          if (is_dir)
+-            *message = g_strdup (_("A folder with that name already exists."));
+-          else
+-            *message = g_strdup (_("A file with that name already exists."));
++          if (g_strstr_len (text, -1, "/") == NULL)
++            {
++              if (is_dir)
++                *message = g_strdup (_("A folder with that name already exists."));
++              else
++                *message = g_strdup (_("A file with that name already exists."));
++            }
+ 
+           valid = FALSE;
+           break;
+
+# NEW FILE debian/patches/gooroom-17-update-desktop-new-folder-length-limit.patch SHA256 cad8fe4d17468a7e3598323f7ef7a8c7be310e9720d4424d79251aa7d30abf33
+diff --git a/gnome-flashback/libdesktop/gf-icon-view.c b/gnome-flashback/libdesktop/gf-icon-view.c
+index 0ebcc7a..4aed04f 100644
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -34,6 +34,8 @@
+ #include "gf-utils.h"
+ #include "gf-workarea-watcher.h"
+ 
++#define MAX_NAME_LENGTH 144
++
+ typedef struct
+ {
+   GtkWidget *icon;
+@@ -3237,6 +3239,16 @@ gf_icon_view_validate_new_name (GfIconView  *self,
+       valid = FALSE;
+     }
+ 
++  else if (strlen(text) > MAX_NAME_LENGTH - 1)
++    {
++      if (is_dir)
++        *message = g_strdup (_("A folder name is too long."));
++      else
++        *message = g_strdup (_("A file name is too long."));
++
++      valid = FALSE;
++    }
++
+   for (l = self->icons; l != NULL; l = l->next)
+     {
+       GfIconInfo *info;
+
+# NEW FILE debian/patches/gooroom-18-remove-new-folder-dialog-taskbar-icon.patch SHA256 d844d1ecd00284c4055c11d53d0b34948748c04c6301d0ac1c3b217e6d4ef078
+diff --git a/gnome-flashback/libdesktop/gf-create-folder-dialog.c b/gnome-flashback/libdesktop/gf-create-folder-dialog.c
+index 6584ec2..7d091e1 100644
+--- a/gnome-flashback/libdesktop/gf-create-folder-dialog.c
++++ b/gnome-flashback/libdesktop/gf-create-folder-dialog.c
+@@ -183,6 +183,7 @@ gf_create_folder_dialog_class_init (GfCreateFolderDialogClass *self_class)
+ static void
+ gf_create_folder_dialog_init (GfCreateFolderDialog *self)
+ {
++  gtk_window_set_skip_taskbar_hint (GTK_WINDOW (self), TRUE);
+   setup_header_bar (self);
+   setup_content_area (self);
+ }
+
+# NEW FILE debian/patches/gooroom-19-remove-open-terminal-menu-when-termianl-desktop-app-not-exist.patch SHA256 515c1a09ed19e6edd725c21c46fa9c2ffd73a099ddf0a867a5fb736326f706d3
+diff --git a/gnome-flashback/libdesktop/gf-icon-view.c b/gnome-flashback/libdesktop/gf-icon-view.c
+index b22602c..b7e46e7 100644
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -1313,6 +1313,7 @@ create_popup_menu (GfIconView *self)
+   GtkWidget *popup_menu;
+   GtkStyleContext *context;
+   GtkWidget *item;
++  GDesktopAppInfo *app_info;
+ 
+   popup_menu = gtk_menu_new ();
+ 
+@@ -1363,17 +1364,21 @@ create_popup_menu (GfIconView *self)
+                     G_CALLBACK (display_settings_cb),
+                     self);
+ 
+-  item = gtk_separator_menu_item_new ();
+-  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+-  gtk_widget_show (item);
+-
+-  item = gtk_menu_item_new_with_label (_("Open Terminal"));
+-  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+-  gtk_widget_show (item);
+-
+-  g_signal_connect (item, "activate",
+-                    G_CALLBACK (open_terminal_cb),
+-                    self);
++  app_info = g_desktop_app_info_new ("org.gnome.Terminal.desktop");
++
++  if (app_info != NULL) {
++    item = gtk_separator_menu_item_new ();
++    gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
++    gtk_widget_show (item);
++   
++    item = gtk_menu_item_new_with_label (_("Open Terminal"));
++    gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
++    gtk_widget_show (item);
++   
++    g_signal_connect (item, "activate",
++                      G_CALLBACK (open_terminal_cb),
++                      self);
++  }
+ 
+   return popup_menu;
+ }
+
+# NEW FILE debian/patches/gooroom-20-create-an-application-shortcut-icon-on-the-desktop.patch SHA256 aedd5ef15f084ad967e1e9e789c0901a2043a2caedf7eef14e607f5f3a563b3d
+diff --git a/gnome-flashback/libdesktop/Makefile.am b/gnome-flashback/libdesktop/Makefile.am
+index 1c7a695..d3dd6ae 100644
+--- a/gnome-flashback/libdesktop/Makefile.am
++++ b/gnome-flashback/libdesktop/Makefile.am
+@@ -8,6 +8,7 @@ libdesktop_la_CPPFLAGS = \
+ 	-DG_LOG_DOMAIN=\"desktop\" \
+ 	-DG_LOG_USE_STRUCTURED=1 \
+ 	-DGNOME_DESKTOP_USE_UNSTABLE_API \
++	-DAPP_LAUNCHER_FILE=\"/usr/share/applications/\" \
+ 	-I$(top_builddir)/gnome-flashback/libcommon \
+ 	-I$(top_builddir)/gnome-flashback/libdesktop \
+ 	-I$(top_srcdir)/gnome-flashback \
+diff --git a/gnome-flashback/libdesktop/gf-monitor-view.c b/gnome-flashback/libdesktop/gf-monitor-view.c
+index bdf76a1..5629c33 100644
+--- a/gnome-flashback/libdesktop/gf-monitor-view.c
++++ b/gnome-flashback/libdesktop/gf-monitor-view.c
+@@ -607,11 +607,19 @@ drag_data_received_cb (GtkWidget        *widget,
+ 
+                   uris = get_uris_from_gnome_icon_list (self, selection_data);
+ 
+-                  move_to_desktop (self, uris, time);
++				  if (g_strrstr (uris[0], APP_LAUNCHER_FILE) != 0)
++				    {
++						copy_to_desktop (self, uris, time);
++						success = TRUE;
++				    }
++				  else
++				    {
++						move_to_desktop (self, uris, time);
++						success = TRUE;
++						delete = TRUE;
++				    }
+                   g_strfreev (uris);
+ 
+-                  success = TRUE;
+-                  delete = TRUE;
+                 }
+             }
+           else if (action == GDK_ACTION_COPY)
+
+# NEW FILE debian/patches/gooroom-21-update-open-terminal-menu-when-user-do-not-have-exec-permission.patch SHA256 1b98b4ebadde6ac446b155dca52b99aabf166f0f8830a0b3ac0d86f4f3d021df
+diff --git a/gnome-flashback/libdesktop/gf-icon-view.c b/gnome-flashback/libdesktop/gf-icon-view.c
+index b7e46e7..1f987e8 100644
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -20,6 +20,7 @@
+ 
+ #include <gdk/gdkx.h>
+ #include <glib/gi18n.h>
++#include <glib/gstdio.h>
+ 
+ #include "dbus/gf-file-manager-gen.h"
+ #include "dbus/gf-nautilus2-gen.h"
+@@ -1366,7 +1367,7 @@ create_popup_menu (GfIconView *self)
+ 
+   app_info = g_desktop_app_info_new ("org.gnome.Terminal.desktop");
+ 
+-  if (app_info != NULL) {
++  if (app_info != NULL && g_access ("/usr/bin/gnome-terminal", X_OK) >= 0) {
+     item = gtk_separator_menu_item_new ();
+     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+     gtk_widget_show (item);
+
+# NEW FILE debian/patches/gooroom-22-change-create-file-logic-when-file-change-done.patch SHA256 55aca8b1f5d88135a3931392009fd5fd5f4f54f5839eb1e4f52c2315d785fc22
+diff --git a/gnome-flashback/libdesktop/gf-icon-view.c b/gnome-flashback/libdesktop/gf-icon-view.c
+index 1f987e8..56020ba 100644
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -864,6 +864,7 @@ desktop_changed_cb (GFileMonitor      *monitor,
+         break;
+ 
+       case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
++        file_created (self, file);
+         break;
+ 
+       case G_FILE_MONITOR_EVENT_DELETED:
+@@ -871,7 +872,6 @@ desktop_changed_cb (GFileMonitor      *monitor,
+         break;
+ 
+       case G_FILE_MONITOR_EVENT_CREATED:
+-        file_created (self, file);
+         break;
+ 
+       case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
+
+# NEW FILE debian/patches/hancom-17-reconstructed-final-3.3-deltas.patch SHA256 8e4fbdcc077217780bccb65983ba8c3c9f9e1cba638257eb99212ca6a8ffb760
+--- a/data/theme/common.css
++++ b/data/theme/common.css
+@@ -62,6 +62,8 @@
+ gf-icon label {
+   border-radius: 3px;
+   padding: 2px;
++  color:  #ffffff;
++  opacity 90%
+ }
+ 
+ gf-icon:hover image {
+--- a/gnome-flashback/libdesktop/gf-icon-view.c
++++ b/gnome-flashback/libdesktop/gf-icon-view.c
+@@ -1335,7 +1335,7 @@
+ 
+   item = gtk_menu_item_new_with_label (_("Placement"));
+   gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);
+-  gtk_widget_show (item);
++
+ 
+   append_placement_submenu (self, item);
+ 
+--- a/gnome-flashback/libdesktop/gf-monitor-view.c
++++ b/gnome-flashback/libdesktop/gf-monitor-view.c
+@@ -1017,7 +1017,6 @@
+ 
+   return GTK_WIDGET_CLASS (gf_monitor_view_parent_class)->draw (widget, cr);
+ }
+-
+ static void
+ gf_monitor_view_get_property (GObject    *object,
+                               guint       property_id,
+--- a/gnome-flashback/libscreensaver/gf-panel-bottom.c
++++ b/gnome-flashback/libscreensaver/gf-panel-bottom.c
+@@ -21,6 +21,7 @@
+ #include <libgnome-desktop/gnome-wall-clock.h>
+ 
+ #define LOGOUT_COMMAND  "/usr/bin/gnome-session-quit --force"
++#define ONLINE_COMMAND  "/usr/bin/nm-online"
+ 
+ 
+ struct _GfPanelBottom
+@@ -34,6 +35,24 @@
+ };
+ 
+ G_DEFINE_TYPE (GfPanelBottom, gf_panel_bottom, GTK_TYPE_BOX)
++
++static gboolean
++network_online (GfPanelBottom *self)
++{
++    char   **argv  = NULL;
++    GError  *error = NULL;
++    gboolean res;
++
++    res = g_shell_parse_argv (ONLINE_COMMAND, NULL, &argv, &error);
++
++    if (!res) {
++        g_warning ("Could not parse online command: %s", error->message);
++        g_error_free (error);
++        return FALSE;
++    }
++
++    return TRUE;
++}
+ 
+ static gboolean
+ button_press (GtkButton     *button,
+@@ -131,6 +150,8 @@
+                       G_CALLBACK (clock_changed_cb),
+                       self);
+ 
++    network_online (self);
++
+     left_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+     gtk_box_pack_start (GTK_BOX (self), left_hbox, FALSE, FALSE, 0);
+     gtk_widget_show (left_hbox);
+--- a/gnome-flashback/libscreensaver/gf-unlock-dialog.c
++++ b/gnome-flashback/libscreensaver/gf-unlock-dialog.c
+@@ -296,6 +296,15 @@
+   gtk_widget_set_visible (self->auth_switch_button, enabled);
+ }
+ #endif
++
++
++
++
++
++
++
++
++
+ 
+ static void
+ dm_seat_ready_cb (GObject      *object,
+@@ -720,6 +729,14 @@
+ }
+ 
+ static gint
++hangul_key_press_event_cb (GtkWidget   *widget,
++                           GdkEventKey *event,
++                           gpointer    *data)
++{
++  return event->keyval == GDK_KEY_Hangul;
++}
++
++static gint
+ key_press_event_cb (GtkWidget   *widget,
+                     GdkEventKey *event,
+                     gpointer    *data)
+@@ -776,6 +793,8 @@
+                       G_CALLBACK (prompt_entry_button_press_event_cb),NULL);
+   g_signal_connect (self->auth_prompt_entry, "popup-menu",
+                       G_CALLBACK (prompt_entry_popup_event_cb),NULL);
++  g_signal_connect (self->auth_prompt_entry, "key_press_event",
++                      G_CALLBACK (hangul_key_press_event_cb),NULL);
+   g_signal_connect (self->auth_unlock_button, "clicked",
+                       G_CALLBACK (unlock_button_clicked_cb), self);
+   g_signal_connect (self, "key_press_event", G_CALLBACK (key_press_event_cb), self);

@@ -1,0 +1,112 @@
+name: ARM64 locate session manager dynsym v3 build once
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-locate-session-manager-dynsym-v3-once.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-locate-session-manager-dynsym-v3-once
+  cancel-in-progress: false
+
+env:
+  BRANCH: arm64-port
+  TRIGGER_SHA: 372b551881c969ddf0566115873cdcfc8bb13908
+  TARGET_WORKFLOW_NAME: arm64-build-session-manager-han3u2-dynsym-v3.yml
+  STATUS_DIR: arm64/status/gooroom-session-manager-han3u2-arm64-build-locator/retry-2/latest
+
+jobs:
+  locate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Locate target run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          run='null'
+          run_id=''
+          for attempt in $(seq 1 120); do
+            payload="$(
+              gh api \
+                "/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW_NAME}/runs?branch=${BRANCH}&event=push&per_page=100"
+            )"
+            run="$(
+              jq -c --arg trigger "$TRIGGER_SHA" '
+                [
+                  .workflow_runs[]
+                  | select(.head_sha == $trigger)
+                  | select(.path == ".github/workflows/arm64-build-session-manager-han3u2-dynsym-v3.yml")
+                ]
+                | sort_by(.id)
+                | last // null
+              ' <<<"$payload"
+            )"
+            run_id="$(jq -r '.id // empty' <<<"$run")"
+            [[ -z "$run_id" ]] || break
+            sleep 5
+          done
+          test -n "$run_id"
+
+          mkdir -p "$STATUS_DIR"
+          jq -n \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg locator_run_id "$GITHUB_RUN_ID" \
+            --arg trigger_sha "$TRIGGER_SHA" \
+            --argjson target_run "$run" \
+            '{
+              schema: 1,
+              generated_at: $generated_at,
+              locator_run_id: $locator_run_id,
+              trigger_sha: $trigger_sha,
+              target_run: {
+                id: $target_run.id,
+                name: $target_run.name,
+                path: $target_run.path,
+                event: $target_run.event,
+                status: $target_run.status,
+                conclusion: $target_run.conclusion,
+                head_branch: $target_run.head_branch,
+                head_sha: $target_run.head_sha,
+                run_attempt: $target_run.run_attempt,
+                created_at: $target_run.created_at,
+                updated_at: $target_run.updated_at,
+                html_url: $target_run.html_url
+              }
+            }' > "$STATUS_DIR/status.json"
+
+      - name: Commit locator record
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (
+            cd "$STATUS_DIR"
+            sha256sum status.json > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$STATUS_DIR"
+          git commit -m 'Record verifier-fixed session-manager target run ID'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if git pull --rebase origin "$BRANCH" && git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1

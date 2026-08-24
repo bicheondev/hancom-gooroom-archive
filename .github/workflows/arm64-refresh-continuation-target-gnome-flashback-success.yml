@@ -1,0 +1,164 @@
+name: ARM64 refresh - retarget continuation to verified gnome-flashback run
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-refresh-continuation-target-gnome-flashback-success.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-refresh-continuation-target-gnome-flashback-success
+  cancel-in-progress: true
+
+env:
+  OLD_RUN_ID: '31930851075'
+  NEW_RUN_ID: '31940464529'
+  OLD_HEAD_SHA: f24dc7f2a771e68b2c2084615ad9a7d73bd1c32e
+  NEW_HEAD_SHA: ab94cf9f3e1f78088f284f1d8300ee0dfd90da8b
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install validation tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-yaml
+
+      - name: Retarget every continuation identity lock
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          old_run = os.environ['OLD_RUN_ID']
+          new_run = os.environ['NEW_RUN_ID']
+          old_sha = os.environ['OLD_HEAD_SHA']
+          new_sha = os.environ['NEW_HEAD_SHA']
+          paths = [
+              Path('.github/workflows/arm64-continue-after-gnome-flashback.yml'),
+              Path('.github/workflows/arm64-bootstrap-continuation-router.yml'),
+              Path('.github/workflows/arm64-record-selected-continuation-run.yml'),
+              Path('.github/workflows/arm64-stage0-000-iso-safety-gate.yml'),
+          ]
+          total_run = 0
+          total_sha = 0
+          changed = []
+          for path in paths:
+              if not path.is_file():
+                  raise SystemExit(f'missing continuation workflow: {path}')
+              text = path.read_text(encoding='utf-8')
+              run_count = text.count(old_run)
+              sha_count = text.count(old_sha)
+              total_run += run_count
+              total_sha += sha_count
+              updated = text.replace(old_run, new_run).replace(old_sha, new_sha)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.append(str(path))
+          if total_run == 0 and total_sha == 0:
+              current = '\n'.join(path.read_text(encoding='utf-8') for path in paths)
+              if new_run not in current or new_sha not in current:
+                  raise SystemExit('continuation workflows contain neither the old nor new locked target')
+          print({
+              'old_run_replacements': total_run,
+              'old_sha_replacements': total_sha,
+              'changed_paths': changed,
+          })
+          PY
+
+      - name: Validate all refreshed workflows
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          paths = [
+              Path('.github/workflows/arm64-continue-after-gnome-flashback.yml'),
+              Path('.github/workflows/arm64-bootstrap-continuation-router.yml'),
+              Path('.github/workflows/arm64-record-selected-continuation-run.yml'),
+              Path('.github/workflows/arm64-stage0-000-iso-safety-gate.yml'),
+          ]
+          for path in paths:
+              value = yaml.safe_load(path.read_text(encoding='utf-8'))
+              if not isinstance(value, dict) or 'jobs' not in value:
+                  raise SystemExit(f'{path}: invalid workflow document')
+          PY
+          grep -R --fixed-strings "$NEW_RUN_ID" \
+            .github/workflows/arm64-continue-after-gnome-flashback.yml \
+            .github/workflows/arm64-record-selected-continuation-run.yml \
+            .github/workflows/arm64-stage0-000-iso-safety-gate.yml
+          grep -R --fixed-strings "$NEW_HEAD_SHA" \
+            .github/workflows/arm64-continue-after-gnome-flashback.yml \
+            .github/workflows/arm64-stage0-000-iso-safety-gate.yml
+          if grep -R --fixed-strings "$OLD_RUN_ID" \
+            .github/workflows/arm64-continue-after-gnome-flashback.yml \
+            .github/workflows/arm64-bootstrap-continuation-router.yml \
+            .github/workflows/arm64-record-selected-continuation-run.yml \
+            .github/workflows/arm64-stage0-000-iso-safety-gate.yml; then
+            exit 1
+          fi
+          if grep -R --fixed-strings "$OLD_HEAD_SHA" \
+            .github/workflows/arm64-continue-after-gnome-flashback.yml \
+            .github/workflows/arm64-bootstrap-continuation-router.yml \
+            .github/workflows/arm64-record-selected-continuation-run.yml \
+            .github/workflows/arm64-stage0-000-iso-safety-gate.yml; then
+            exit 1
+          fi
+
+      - name: Commit the refreshed target locks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            .github/workflows/arm64-continue-after-gnome-flashback.yml \
+            .github/workflows/arm64-bootstrap-continuation-router.yml \
+            .github/workflows/arm64-record-selected-continuation-run.yml \
+            .github/workflows/arm64-stage0-000-iso-safety-gate.yml
+          if git diff --cached --quiet; then
+            echo 'Continuation target locks are already current.'
+          else
+            git diff --cached --check
+            git commit -m 'Retarget ARM64 continuation to verified gnome-flashback run'
+            pushed=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              git fetch origin arm64-port
+              git rebase origin/arm64-port
+              if git push origin HEAD:arm64-port; then
+                pushed=1
+                break
+              fi
+              sleep $((attempt * 3))
+            done
+            test "$pushed" = 1
+          fi
+
+      - name: Dispatch the refreshed continuation bootstrap
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-bootstrap-continuation-router.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port

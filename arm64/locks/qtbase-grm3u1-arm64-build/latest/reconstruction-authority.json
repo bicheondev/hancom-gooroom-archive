@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "policy": "exact-vendor-changelog-plus-signed-debian-base-plus-single-official-cve-patch",
+  "source": "qtbase-opensource-src",
+  "source_version": "5.15.2+dfsg-9+grm3u1",
+  "source_status": "reconstructed-not-recovered-original-source",
+  "build_mode": "signed-debian-base-with-vendor-declared-single-patch-reconstruction",
+  "byte_identity_claimed": false,
+  "promotion_allowed": false,
+  "base_authority": {
+    "source": "qtbase-opensource-src",
+    "version": "5.15.2+dfsg-9",
+    "dsc": "qtbase-opensource-src_5.15.2+dfsg-9.dsc",
+    "dsc_sha256": "1e4ac2d15fc265fa255eb16d5785ea535cb1467660a012c8454002fc418dcfe5",
+    "members": [
+      {
+        "filename": "qtbase-opensource-src_5.15.2+dfsg-9.debian.tar.xz",
+        "size": 259748,
+        "sha256": "fcfe6bae9da7f95463fe9cc1c3c1455928f195eb8c625eb498450d283a43a7a8",
+        "expected": {
+          "filename": "qtbase-opensource-src_5.15.2+dfsg-9.debian.tar.xz",
+          "size": 259748,
+          "md5": "623faabb0737d9b839d747ffe58b4fd1",
+          "sha1": "1b5043d0792e06083dd9e46e65b78c379ac367b6",
+          "sha256": "fcfe6bae9da7f95463fe9cc1c3c1455928f195eb8c625eb498450d283a43a7a8"
+        }
+      },
+      {
+        "filename": "qtbase-opensource-src_5.15.2+dfsg.orig.tar.xz",
+        "size": 48055144,
+        "sha256": "9ed5e0ab96a04daec5383a5e642d0308ca8246359a4c857a73a5c58d806237bb",
+        "expected": {
+          "filename": "qtbase-opensource-src_5.15.2+dfsg.orig.tar.xz",
+          "size": 48055144,
+          "md5": "c0e684ed6ee9d24e4509d64ceb9764cf",
+          "sha1": "130e02045fc0817e521a5e979e5c4791ea32bb2b",
+          "sha256": "9ed5e0ab96a04daec5383a5e642d0308ca8246359a4c857a73a5c58d806237bb"
+        }
+      }
+    ]
+  },
+  "security_patch_authority": {
+    "source": "qtbase-opensource-src",
+    "version": "5.15.2+dfsg-9+deb11u1",
+    "dsc": "qtbase-opensource-src_5.15.2+dfsg-9+deb11u1.dsc",
+    "dsc_sha256": "c0a433401e556ecc90f4aac049cd95a054b3ba736f325039edc367c76b3d8eb1",
+    "patch": {
+      "filename": "CVE-2022-25255.diff",
+      "size": 4796,
+      "sha256": "794a875557e8a7e35331f811cf8c62a6e790d984a310e9247c32ef607c8e64be",
+      "paths": [
+        "src/corelib/io/qprocess_unix.cpp",
+        "tests/auto/widgets/kernel/qapplication/tst_qapplication.cpp"
+      ],
+      "required_semantics_verified": true
+    }
+  },
+  "vendor_binary_authority": {
+    "package": "libqt5core5a",
+    "version": "5.15.2+dfsg-9+grm3u1",
+    "architecture": "amd64",
+    "filename": "libqt5core5a_5.15.2+dfsg-9+grm3u1_amd64.deb",
+    "size": 1822120,
+    "sha256": "0a13e1424746b9be4d9b69d8af42437d6a1b4263c23b924659e9de8316a7b797",
+    "changelog_top_entries": [
+      {
+        "source": "qtbase-opensource-src",
+        "version": "5.15.2+dfsg-9+grm3u1",
+        "suite": "unstable",
+        "body": [
+          "",
+          "  * UNRELEASED",
+          "",
+          " -- Gooroom Autobuilder <jenkins@gooroom.kr>  Mon, 01 May 2023 11:37:48 +0900",
+          ""
+        ],
+        "text": "qtbase-opensource-src (5.15.2+dfsg-9+grm3u1) unstable; urgency=medium\n\n  * UNRELEASED\n\n -- Gooroom Autobuilder <jenkins@gooroom.kr>  Mon, 01 May 2023 11:37:48 +0900\n"
+      },
+      {
+        "source": "qtbase-opensource-src",
+        "version": "5.15.2+dfsg-9+grm3u1",
+        "suite": "unstable",
+        "body": [
+          "",
+          "  [ seolhee.sun ]",
+          "  * [b90b36aa] CVE-2022-25255 patch",
+          "",
+          " -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 28 Apr 2023 16:18:47 +0900",
+          ""
+        ],
+        "text": "qtbase-opensource-src (5.15.2+dfsg-9+grm3u1) unstable; urgency=medium\n\n  [ seolhee.sun ]\n  * [b90b36aa] CVE-2022-25255 patch\n\n -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 28 Apr 2023 16:18:47 +0900\n"
+      },
+      {
+        "source": "qtbase-opensource-src",
+        "version": "5.15.2+dfsg-9",
+        "suite": "unstable",
+        "body": [
+          "",
+          "  * Revert adding fix-misplacement-of-placeholder-text-in-QLineEdit.diff.",
+          "    Unfortunately it causes a regression (see QTBUG-94824).",
+          "",
+          " -- Dmitry Shachnev <mitya57@debian.org>  Fri, 02 Jul 2021 18:58:04 +0300",
+          ""
+        ],
+        "text": "qtbase-opensource-src (5.15.2+dfsg-9) unstable; urgency=medium\n\n  * Revert adding fix-misplacement-of-placeholder-text-in-QLineEdit.diff.\n    Unfortunately it causes a regression (see QTBUG-94824).\n\n -- Dmitry Shachnev <mitya57@debian.org>  Fri, 02 Jul 2021 18:58:04 +0300\n"
+      }
+    ],
+    "declared_code_change_commit": "b90b36aa",
+    "declared_code_change": "CVE-2022-25255 patch"
+  },
+  "reconstruction": {
+    "patch_series_base_sha256": "cd1b2649ef1365c0a6057ffcc7e01bde59bc96a3d30fc6381b640ff9313cfe3d",
+    "patch_series_final_sha256": "69dd4300df91ee1f4f6524796e389d487cd947472025d929ad9495034ff1427e",
+    "final_applied_patch": "CVE-2022-25255.diff",
+    "applied_patch_count": 18,
+    "source_tree_manifest_sha256": "a1e7255812863928d939d3625a52d48d1b9cb5c980d8273da4cc382c8dec2814",
+    "source_tree_manifest_entry_count": 25469,
+    "reconstructed_dsc": "qtbase-opensource-src_5.15.2+dfsg-9+grm3u1.dsc",
+    "reconstructed_dsc_sha256": "9fda2d887f257801d9d99a3a000130ec1b90a93c76cc4e129009ecf747a6c9c8",
+    "archive_members": [
+      {
+        "filename": "qtbase-opensource-src_5.15.2+dfsg-9+grm3u1.debian.tar.xz",
+        "size": 261056,
+        "sha256": "415e2bb465a4461449eab1f7ac1049d36cc4640ed5d296f238e4cf92d4b6de1b"
+      },
+      {
+        "filename": "qtbase-opensource-src_5.15.2+dfsg-9+grm3u1.dsc",
+        "size": 4595,
+        "sha256": "9fda2d887f257801d9d99a3a000130ec1b90a93c76cc4e129009ecf747a6c9c8"
+      },
+      {
+        "filename": "qtbase-opensource-src_5.15.2+dfsg.orig.tar.xz",
+        "size": 48055144,
+        "sha256": "9ed5e0ab96a04daec5383a5e642d0308ca8246359a4c857a73a5c58d806237bb"
+      }
+    ],
+    "round_trip_verified": true
+  },
+  "claims": {
+    "exact_package_name_and_version": true,
+    "exact_vendor_changelog_preserved": true,
+    "base_source_is_signed_debian_5_15_2_dfsg_9": true,
+    "only_vendor_declared_code_patch_added": true,
+    "cve_patch_semantics_verified": true,
+    "lost_original_source_archive_recovered": false,
+    "binary_equivalence_verified": false,
+    "native_arm64_build_verified": false
+  }
+}

@@ -1,0 +1,136 @@
+name: ARM64 port - audit XSM binary against published source
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-xsm-source-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-xsm-source-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PACKAGE_REPOSITORY: gooroom/gooroom-libsecurity-extensions
+      PACKAGE_COMMIT: 4990bab95ae1dcaa29f38836da83edfa0969ed73
+      PUBLISHED_REPOSITORY: ultract/X.org-Security-Module
+      PUBLISHED_COMMIT: fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7
+    steps:
+      - name: Check out audit workflow
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Install binary analysis tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils file git jq python3
+
+      - name: Fetch and verify both immutable Git commits
+        run: |
+          set -euxo pipefail
+          mkdir -p work/package work/published work/audit
+          git -C work/package init --quiet
+          git -C work/package remote add origin "https://github.com/${PACKAGE_REPOSITORY}.git"
+          git -C work/package fetch --quiet --force --no-tags --depth=1 origin "$PACKAGE_COMMIT"
+          test "$(git -C work/package rev-parse FETCH_HEAD)" = "$PACKAGE_COMMIT"
+          git -C work/package checkout --quiet --detach FETCH_HEAD
+
+          git -C work/published init --quiet
+          git -C work/published remote add origin "https://github.com/${PUBLISHED_REPOSITORY}.git"
+          git -C work/published fetch --quiet --force --no-tags --depth=1 origin "$PUBLISHED_COMMIT"
+          test "$(git -C work/published rev-parse FETCH_HEAD)" = "$PUBLISHED_COMMIT"
+          git -C work/published checkout --quiet --detach FETCH_HEAD
+
+      - name: Record binary identity, ELF ABI, disassembly, strings, and source literals
+        run: |
+          set -euxo pipefail
+          binary=work/package/lib/xsm.so
+          cp "$binary" work/audit/original-xsm-amd64.so
+          file "$binary" | tee work/audit/file.txt
+          sha256sum "$binary" | tee work/audit/SHA256SUMS
+          readelf -a -W "$binary" > work/audit/readelf-all.txt
+          readelf -h -d -s -n "$binary" > work/audit/readelf.txt
+          objdump -p "$binary" > work/audit/objdump-private-headers.txt
+          objdump -drwC -Mintel "$binary" > work/audit/objdump-disassembly-intel.txt
+          nm -D -n "$binary" > work/audit/dynamic-symbols.txt
+          strings -a -n 4 "$binary" | LC_ALL=C sort -u > work/audit/xsm-binary-strings.txt
+          strings -a -t x -n 4 "$binary" > work/audit/xsm-binary-strings-offsets.txt
+          cp work/published/xsm.c work/audit/published-xsm.c
+          sha256sum work/published/xsm.c >> work/audit/SHA256SUMS
+
+          python3 - <<'PY'
+          import ast
+          import json
+          import re
+          from pathlib import Path
+
+          source = Path('work/published/xsm.c').read_text(encoding='utf-8')
+          binary_strings = set(Path('work/audit/xsm-binary-strings.txt').read_text(
+              encoding='utf-8', errors='replace').splitlines())
+
+          literals = set()
+          for token in re.findall(r'"(?:\\.|[^"\\])*"', source):
+              try:
+                  value = ast.literal_eval(token)
+              except (SyntaxError, ValueError):
+                  continue
+              if isinstance(value, str) and len(value) >= 4:
+                  literals.add(value)
+
+          interesting = sorted(
+              value
+              for value in binary_strings
+              if any(
+                  key in value.lower()
+                  for key in (
+                      'gnome', 'flashback', 'terminal', 'json', 'xsm', 'policy',
+                      'vmware', 'cinnamon', 'xfce', 'clipboard', 'screen',
+                      '/usr/', '.so'
+                  )
+              )
+          )
+          missing_from_published_literals = sorted(
+              value for value in interesting if value not in literals
+          )
+          report = {
+              'schema': 2,
+              'package_repository': 'gooroom/gooroom-libsecurity-extensions',
+              'package_commit': '4990bab95ae1dcaa29f38836da83edfa0969ed73',
+              'published_repository': 'ultract/X.org-Security-Module',
+              'published_commit': 'fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7',
+              'original_binary_included': True,
+              'full_disassembly_included': True,
+              'interesting_binary_strings': interesting,
+              'interesting_strings_absent_from_published_source_literals':
+                  missing_from_published_literals,
+          }
+          Path('work/audit/source-delta.json').write_text(
+              json.dumps(report, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8')
+          PY
+          find work/audit -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/audit/ALL-SHA256SUMS
+          cat work/audit/source-delta.json
+
+      - name: Upload immutable XSM audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-xsm-source-audit
+          path: work/audit
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9

@@ -1,0 +1,259 @@
+name: ARM64 port - bounded exact source recovery v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-exact-source-archives-v2.yml'
+      - 'arm64/scripts/recover_exact_source_archives.py'
+      - 'arm64/scripts/recover_exact_source_archives_v2.py'
+      - 'arm64/locks/reference-iso-source-residue/latest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-source-archive-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 140
+    steps:
+      - name: Check out current ARM64 authority and recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install recovery dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl file jq lz4 python3 util-linux xz-utils zstd
+
+      - name: Lock the reference ISO residue authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          reference=arm64/locks/reference-iso-source-residue/latest
+          test -d "$reference"
+          test -f "$reference/summary.json"
+          test -f "$reference/LOCKSUMS.sha256"
+          (
+            cd "$reference"
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          jq -e '
+            .schema == 1
+            and .iso.verified == true
+            and .target_count == 7
+            and .exact_source_index_target_count == 0
+            and .exact_source_archive_target_count == 0
+            and .exact_version_residue_only_target_count == 7
+            and .promotion_allowed == false
+          ' "$reference/summary.json" >/dev/null
+
+      - name: Run bounded exact-source recovery and retain diagnostics
+        id: recovery
+        shell: bash
+        run: |
+          set -uox pipefail
+          base=work/exact-source-recovery-v2
+          rm -rf "$base"
+          mkdir -p "$base"/{evidence,archives}
+
+          set +e
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_source_archives.py \
+            arm64/scripts/recover_exact_source_archives_v2.py \
+            > "$base/evidence/python-compile.log" 2>&1
+          compile_rc=$?
+
+          recovery_rc=125
+          if [ "$compile_rc" -eq 0 ]; then
+            timeout --signal=TERM --kill-after=90s 110m \
+              python3 arm64/scripts/recover_exact_source_archives_v2.py \
+                --reference-evidence arm64/locks/reference-iso-source-residue/latest \
+                --evidence-dir "$base/evidence" \
+                --archive-dir "$base/archives" \
+              > "$base/evidence/recovery.stdout.log" \
+              2> "$base/evidence/recovery.stderr.log"
+            recovery_rc=$?
+          fi
+          set -e
+
+          jq -n \
+            --argjson compile_rc "$compile_rc" \
+            --argjson recovery_rc "$recovery_rc" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
+              {
+                schema: 1,
+                compile_exit_code: $compile_rc,
+                recovery_exit_code: $recovery_rc,
+                workflow_run_id: $workflow_run_id,
+                workflow_run_attempt: $workflow_run_attempt,
+                head_sha: $head_sha,
+                generated_at: $generated_at
+              }
+            ' > "$base/evidence/runner-status.json"
+
+          if [ ! -f "$base/evidence/summary.json" ]; then
+            stderr_tail="$(tail -c 12000 "$base/evidence/recovery.stderr.log" 2>/dev/null || true)"
+            compile_tail="$(tail -c 12000 "$base/evidence/python-compile.log" 2>/dev/null || true)"
+            jq -n \
+              --argjson compile_rc "$compile_rc" \
+              --argjson recovery_rc "$recovery_rc" \
+              --arg compile_tail "$compile_tail" \
+              --arg stderr_tail "$stderr_tail" '
+                {
+                  schema: 2,
+                  policy: "exact-source-recovery-runner-failure-v2",
+                  target_count: 7,
+                  repository_candidate_count: 0,
+                  exact_source_stanza_target_count: 0,
+                  exact_source_archive_recovered_count: 0,
+                  unresolved_count: 7,
+                  network_attempt_count: 0,
+                  wayback_cdx_query_count: 0,
+                  recovered_archive_bytes: 0,
+                  source_recovery_ready: false,
+                  all_targets_recovered: false,
+                  promotion_allowed: false,
+                  runner_failed: true,
+                  compile_exit_code: $compile_rc,
+                  recovery_exit_code: $recovery_rc,
+                  compile_log_tail: $compile_tail,
+                  stderr_log_tail: $stderr_tail
+                }
+              ' > "$base/evidence/summary.json"
+            {
+              printf 'source\tversion\tstatus\tsource_stanza_candidates\tcandidate_attempts\treason\n'
+              printf 'runner\tn/a\tfailed\t0\t0\tcompile_rc=%s recovery_rc=%s\n' \
+                "$compile_rc" "$recovery_rc"
+            } > "$base/evidence/targets.tsv"
+          fi
+
+          jq -e '
+            .schema == 2
+            and .target_count == 7
+            and .promotion_allowed == false
+            and (.exact_source_archive_recovered_count + .unresolved_count == 7)
+          ' "$base/evidence/summary.json" >/dev/null
+
+          echo "compile_rc=$compile_rc" >> "$GITHUB_OUTPUT"
+          echo "recovery_rc=$recovery_rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Seal compact recovery evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/exact-source-recovery-v2/evidence
+          test -d "$evidence"
+          test -f "$evidence/summary.json"
+          (
+            cd "$evidence"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          du -sh "$evidence"
+          find "$evidence" -type f -printf '%P\t%s\n' | LC_ALL=C sort
+
+      - name: Write exact-source recovery report
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=work/exact-source-recovery-v2/evidence/summary.json
+          targets=work/exact-source-recovery-v2/evidence/targets.tsv
+          runner=work/exact-source-recovery-v2/evidence/runner-status.json
+          {
+            echo '## Bounded exact-source recovery v2'
+            echo
+            echo '| Metric | Value |'
+            echo '|---|---:|'
+            echo "| Compile exit | $(jq -r '.compile_exit_code' "$runner") |"
+            echo "| Recovery exit | $(jq -r '.recovery_exit_code' "$runner") |"
+            echo "| Targets | $(jq -r '.target_count' "$summary") |"
+            echo "| Exact Sources-stanza targets | $(jq -r '.exact_source_stanza_target_count' "$summary") |"
+            echo "| Fully recovered exact archives | $(jq -r '.exact_source_archive_recovered_count' "$summary") |"
+            echo "| Unresolved | $(jq -r '.unresolved_count' "$summary") |"
+            echo "| Network attempts | $(jq -r '.network_attempt_count' "$summary") |"
+            echo "| Wayback CDX queries | $(jq -r '.wayback_cdx_query_count' "$summary") |"
+            echo "| Recovered bytes | $(jq -r '.recovered_archive_bytes' "$summary") |"
+            echo
+            echo '```text'
+            column -ts $'\t' "$targets" || cat "$targets"
+            echo '```'
+            echo
+            echo '> This pass is evidentiary only. promotion_allowed remains false until a separate verifier accepts the recovered source set.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compact v2 recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-exact-source-recovery-v2-evidence
+          path: work/exact-source-recovery-v2/evidence
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Upload verified recovered source members
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-recovered-exact-source-archives-v2
+          path: work/exact-source-recovery-v2/archives
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Commit immutable v2 recovery evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/exact-source-recovery-v2/evidence
+          destination=arm64/locks/exact-source-recovery-v2/latest
+          test -f "$source/summary.json"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Bounded exact-source recovery evidence is already current.'
+            exit 0
+          fi
+          git commit -m 'Record bounded exact source recovery evidence v2'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce runner health after evidence is committed
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test "${{ steps.recovery.outputs.compile_rc }}" = 0
+          test "${{ steps.recovery.outputs.recovery_rc }}" = 0

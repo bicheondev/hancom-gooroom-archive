@@ -1,0 +1,374 @@
+Package: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Architecture: amd64
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 1737
+Depends: gnome-flashback-common (= 3.38.0-2+grm3u2+han3u4), nautilus (>= 3.37.1.1), libasound2 (>= 1.0.16), libatk1.0-0 (>= 1.12.4), libc6 (>= 2.29), libcairo2 (>= 1.14.0), libcanberra-gtk3-0 (>= 0.25), libcanberra0 (>= 0.2), libgdk-pixbuf-2.0-0 (>= 2.32.2), libglib2.0-0 (>= 2.57.2), libgnome-bluetooth13 (>= 3.12.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.37.0), libgtk-3-0 (>= 3.22.0), libibus-1.0-5 (>= 1.5.2), libpam0g (>= 0.99.7.1), libpango-1.0-0 (>= 1.44.6), libpangocairo-1.0-0 (>= 1.14.0), libpolkit-agent-1-0 (>= 0.99), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libsystemd0, libupower-glib3 (>= 0.99.0), libx11-6 (>= 2:1.2.99.901), libx11-xcb1 (>= 2:1.7.2), libxcb-randr0 (>= 1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxkbfile1 (>= 1:1.1.0), libxrandr2 (>= 2:1.5.0), libxxf86vm1
+Recommends: dbus, gnome-settings-daemon (>= 3.33.90), libpam-gnome-keyring
+Suggests: gnome-power-manager
+Provides: notification-daemon, polkit-1-auth-agent
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Priority: optional
+Section: gnome
+Filename: pool/main/g/gnome-flashback/gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb
+Size: 436564
+SHA256: 6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408
+SHA1: 58e659b75389337f97453535c6f79f951d605116
+MD5sum: e344d3618611e1dc2813ca44a8e568ee
+Description: helper application for the GNOME Flashback session
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package provides a helper application for the GNOME Flashback
+ desktop session. This application:
+  - provides the Logout, Reboot and Shutdown dialogs;
+  - provides the Sound, Bluetooth and Power tray applets;
+  - implements screenshot and screencast functionality;
+  - implements input source switching functionality;
+  - draws desktop background and icons;
+  - implements other functionality which was previously handled by
+    gnome-settings-daemon.
+
+Package: gnome-flashback-common
+Source: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Architecture: all
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 692
+Depends: dconf-gsettings-backend | gsettings-backend
+Breaks: libglib2.0-bin (<< 2.57.2)
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Priority: optional
+Section: gnome
+Filename: pool/main/g/gnome-flashback/gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 99916
+SHA256: 5770961e60c68b25ea7a84ab14871635b450b79f25f9596c79edad67a34e4543
+SHA1: b92f490749b38c1b281e7a4d632d9ddacf673def
+MD5sum: 8e02d58f53630ab447e0b504ef2ed616
+Description: GNOME Flashback helper application - common data files
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package contains translations and data files for the GNOME
+ Flashback application.
+
+Package: gnome-flashback-dbgsym
+Source: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 2202
+Depends: gnome-flashback (= 3.38.0-2+grm3u2+han3u4)
+Priority: optional
+Section: debug
+Filename: pool/main/g/gnome-flashback/gnome-flashback-dbgsym_3.38.0-2+grm3u2+han3u4_amd64.deb
+Size: 1749996
+SHA256: ae1c169946ecd700ef8cf76eb8d8f17cc328e899430a14823a72a0b444f89209
+SHA1: 25ff89a727a175ea927336060bf2e9f13461b463
+MD5sum: 4eb564c168bc8f1f2b4e3a73a246ea95
+Description: debug symbols for gnome-flashback
+Build-Ids: 3a21deda6047bd182dfc38df5b4707611b4920a5 87f02f69332a131bef8054010986ff654dbb8dea a3ed11fafdfe77d9e63e96b9cd8758d83ff4e8ec e8b3d83ba1fea80bdd1f5e3911364b4342b18ada f5e490ac125e3349084f50c51b3ed5c39fe19ec5
+
+Package: gnome-session-flashback
+Source: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Architecture: all
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 54
+Depends: gnome-flashback (>= 3.36.3), gnome-panel (>= 3.14), gnome-session-bin (>= 3.33.92), gnome-session-common, gnome-settings-daemon (>= 3.33.90), metacity (>= 1:3.30.1), dconf-gsettings-backend | gsettings-backend
+Recommends: gnome-power-manager
+Suggests: desktop-base, gnome-keyring, gnome-user-docs
+Breaks: gnome-flashback-common (<< 3.35.2-1~)
+Replaces: gnome-flashback-common (<< 3.35.2-1~)
+Provides: x-session-manager
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Priority: optional
+Section: gnome
+Filename: pool/main/g/gnome-flashback/gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 14508
+SHA256: 3968b152293606e4626fbe3317913d6f57add08001c3a5a66abd71a8576abcf6
+SHA1: 9a8e24c364b33878275056f39da7bec9981e8f3c
+MD5sum: 28b1897c9cc6f676416fdcf8e4c50418
+Description: traditional desktop session based on GNOME technologies
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ The key parts of GNOME Flashback are the GNOME Panel and the Metacity
+ window manager. All other components, such as the file manager, the
+ settings center, and the various applications, come from mainstream
+ GNOME.
+ .
+ GNOME Flashback has lower hardware requirements than GNOME Shell, and
+ consumes less memory.
+ .
+ This package provides the required components for the GNOME Flashback
+ session. It can be started from a display manager such as GDM.
+
+Package: gnome-flashback-common
+Architecture: all
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Source: gnome-flashback
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 692
+Depends: dconf-gsettings-backend | gsettings-backend
+Breaks: libglib2.0-bin (<< 2.57.2)
+Filename: pool/main/g/gnome-flashback/gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 99916
+MD5sum: 8e02d58f53630ab447e0b504ef2ed616
+SHA1: b92f490749b38c1b281e7a4d632d9ddacf673def
+SHA256: 5770961e60c68b25ea7a84ab14871635b450b79f25f9596c79edad67a34e4543
+SHA512: 441cdce3706363c689a715abc0fec404fd5711a03e5bacb78372e5d1ebf229de7fed48fa2ae601295aea94b9b5b173ebbf555d8e57609cb644837c4f810a9a0c
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: GNOME Flashback helper application - common data files
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package contains translations and data files for the GNOME
+ Flashback application.
+
+Package: gnome-flashback
+Architecture: amd64
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 1737
+Provides: notification-daemon, polkit-1-auth-agent
+Depends: gnome-flashback-common (= 3.38.0-2+grm3u2+han3u4), nautilus (>= 3.37.1.1), libasound2 (>= 1.0.16), libatk1.0-0 (>= 1.12.4), libc6 (>= 2.29), libcairo2 (>= 1.14.0), libcanberra-gtk3-0 (>= 0.25), libcanberra0 (>= 0.2), libgdk-pixbuf-2.0-0 (>= 2.32.2), libglib2.0-0 (>= 2.57.2), libgnome-bluetooth13 (>= 3.12.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.37.0), libgtk-3-0 (>= 3.22.0), libibus-1.0-5 (>= 1.5.2), libpam0g (>= 0.99.7.1), libpango-1.0-0 (>= 1.44.6), libpangocairo-1.0-0 (>= 1.14.0), libpolkit-agent-1-0 (>= 0.99), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libsystemd0, libupower-glib3 (>= 0.99.0), libx11-6 (>= 2:1.2.99.901), libx11-xcb1 (>= 2:1.7.2), libxcb-randr0 (>= 1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxkbfile1 (>= 1:1.1.0), libxrandr2 (>= 2:1.5.0), libxxf86vm1
+Recommends: dbus, gnome-settings-daemon (>= 3.33.90), libpam-gnome-keyring
+Suggests: gnome-power-manager
+Filename: pool/main/g/gnome-flashback/gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb
+Size: 436564
+MD5sum: e344d3618611e1dc2813ca44a8e568ee
+SHA1: 58e659b75389337f97453535c6f79f951d605116
+SHA256: 6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408
+SHA512: 2e9620fbf3460ab62fb8efdd714200d7c73078ce287cadd9ab89e3617b966b6918c6ed7e4c3a3426cc4e5bd1de081c3232fddf0d9bb2db63ccb401778a77a5cf
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: helper application for the GNOME Flashback session
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package provides a helper application for the GNOME Flashback
+ desktop session. This application:
+  - provides the Logout, Reboot and Shutdown dialogs;
+  - provides the Sound, Bluetooth and Power tray applets;
+  - implements screenshot and screencast functionality;
+  - implements input source switching functionality;
+  - draws desktop background and icons;
+  - implements other functionality which was previously handled by
+    gnome-settings-daemon.
+
+Package: gnome-session-flashback
+Architecture: all
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Source: gnome-flashback
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 54
+Provides: x-session-manager
+Depends: gnome-flashback (>= 3.36.3), gnome-panel (>= 3.14), gnome-session-bin (>= 3.33.92), gnome-session-common, gnome-settings-daemon (>= 3.33.90), metacity (>= 1:3.30.1), dconf-gsettings-backend | gsettings-backend
+Recommends: gnome-power-manager
+Suggests: desktop-base, gnome-keyring, gnome-user-docs
+Breaks: gnome-flashback-common (<< 3.35.2-1~)
+Replaces: gnome-flashback-common (<< 3.35.2-1~)
+Filename: pool/main/g/gnome-flashback/gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 14508
+MD5sum: 28b1897c9cc6f676416fdcf8e4c50418
+SHA1: 9a8e24c364b33878275056f39da7bec9981e8f3c
+SHA256: 3968b152293606e4626fbe3317913d6f57add08001c3a5a66abd71a8576abcf6
+SHA512: 6a4255eca437096636b2ebf753479ea8238a320c36b09e1664f04340729115387aa55f48d9c913e7b812098386aa3c7c4b997fe3f8d067b2e8673b69729ed56a
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: traditional desktop session based on GNOME technologies
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ The key parts of GNOME Flashback are the GNOME Panel and the Metacity
+ window manager. All other components, such as the file manager, the
+ settings center, and the various applications, come from mainstream
+ GNOME.
+ .
+ GNOME Flashback has lower hardware requirements than GNOME Shell, and
+ consumes less memory.
+ .
+ This package provides the required components for the GNOME Flashback
+ session. It can be started from a display manager such as GDM.
+
+Package: gnome-flashback-common
+Architecture: all
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Source: gnome-flashback
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 692
+Depends: dconf-gsettings-backend | gsettings-backend
+Breaks: libglib2.0-bin (<< 2.57.2)
+Filename: pool/main/g/gnome-flashback/gnome-flashback-common_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 99916
+MD5sum: 8e02d58f53630ab447e0b504ef2ed616
+SHA1: b92f490749b38c1b281e7a4d632d9ddacf673def
+SHA256: 5770961e60c68b25ea7a84ab14871635b450b79f25f9596c79edad67a34e4543
+SHA512: 441cdce3706363c689a715abc0fec404fd5711a03e5bacb78372e5d1ebf229de7fed48fa2ae601295aea94b9b5b173ebbf555d8e57609cb644837c4f810a9a0c
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: GNOME Flashback helper application - common data files
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package contains translations and data files for the GNOME
+ Flashback application.
+
+Package: gnome-flashback
+Architecture: amd64
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 1737
+Provides: notification-daemon, polkit-1-auth-agent
+Depends: gnome-flashback-common (= 3.38.0-2+grm3u2+han3u4), nautilus (>= 3.37.1.1), libasound2 (>= 1.0.16), libatk1.0-0 (>= 1.12.4), libc6 (>= 2.29), libcairo2 (>= 1.14.0), libcanberra-gtk3-0 (>= 0.25), libcanberra0 (>= 0.2), libgdk-pixbuf-2.0-0 (>= 2.32.2), libglib2.0-0 (>= 2.57.2), libgnome-bluetooth13 (>= 3.12.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.37.0), libgtk-3-0 (>= 3.22.0), libibus-1.0-5 (>= 1.5.2), libpam0g (>= 0.99.7.1), libpango-1.0-0 (>= 1.44.6), libpangocairo-1.0-0 (>= 1.14.0), libpolkit-agent-1-0 (>= 0.99), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libsystemd0, libupower-glib3 (>= 0.99.0), libx11-6 (>= 2:1.2.99.901), libx11-xcb1 (>= 2:1.7.2), libxcb-randr0 (>= 1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxkbfile1 (>= 1:1.1.0), libxrandr2 (>= 2:1.5.0), libxxf86vm1
+Recommends: dbus, gnome-settings-daemon (>= 3.33.90), libpam-gnome-keyring
+Suggests: gnome-power-manager
+Filename: pool/main/g/gnome-flashback/gnome-flashback_3.38.0-2+grm3u2+han3u4_amd64.deb
+Size: 436564
+MD5sum: e344d3618611e1dc2813ca44a8e568ee
+SHA1: 58e659b75389337f97453535c6f79f951d605116
+SHA256: 6c62fea3341f7c208448250d9eaa2b467df99abdbad53bc236f089fad9741408
+SHA512: 2e9620fbf3460ab62fb8efdd714200d7c73078ce287cadd9ab89e3617b966b6918c6ed7e4c3a3426cc4e5bd1de081c3232fddf0d9bb2db63ccb401778a77a5cf
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: helper application for the GNOME Flashback session
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package provides a helper application for the GNOME Flashback
+ desktop session. This application:
+  - provides the Logout, Reboot and Shutdown dialogs;
+  - provides the Sound, Bluetooth and Power tray applets;
+  - implements screenshot and screencast functionality;
+  - implements input source switching functionality;
+  - draws desktop background and icons;
+  - implements other functionality which was previously handled by
+    gnome-settings-daemon.
+
+Package: gnome-session-flashback
+Architecture: all
+Version: 3.38.0-2+grm3u2+han3u4
+Priority: optional
+Section: gnome
+Source: gnome-flashback
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Installed-Size: 54
+Provides: x-session-manager
+Depends: gnome-flashback (>= 3.36.3), gnome-panel (>= 3.14), gnome-session-bin (>= 3.33.92), gnome-session-common, gnome-settings-daemon (>= 3.33.90), metacity (>= 1:3.30.1), dconf-gsettings-backend | gsettings-backend
+Recommends: gnome-power-manager
+Suggests: desktop-base, gnome-keyring, gnome-user-docs
+Breaks: gnome-flashback-common (<< 3.35.2-1~)
+Replaces: gnome-flashback-common (<< 3.35.2-1~)
+Filename: pool/main/g/gnome-flashback/gnome-session-flashback_3.38.0-2+grm3u2+han3u4_all.deb
+Size: 14508
+MD5sum: 28b1897c9cc6f676416fdcf8e4c50418
+SHA1: 9a8e24c364b33878275056f39da7bec9981e8f3c
+SHA256: 3968b152293606e4626fbe3317913d6f57add08001c3a5a66abd71a8576abcf6
+SHA512: 6a4255eca437096636b2ebf753479ea8238a320c36b09e1664f04340729115387aa55f48d9c913e7b812098386aa3c7c4b997fe3f8d067b2e8673b69729ed56a
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+Description: traditional desktop session based on GNOME technologies
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ The key parts of GNOME Flashback are the GNOME Panel and the Metacity
+ window manager. All other components, such as the file manager, the
+ settings center, and the various applications, come from mainstream
+ GNOME.
+ .
+ GNOME Flashback has lower hardware requirements than GNOME Shell, and
+ consumes less memory.
+ .
+ This package provides the required components for the GNOME Flashback
+ session. It can be started from a display manager such as GDM.
+
+Package: gnome-flashback
+Status: install ok installed
+Priority: optional
+Section: gnome
+Installed-Size: 1737
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Version: 3.38.0-2+grm3u2+han3u4
+Provides: notification-daemon, polkit-1-auth-agent
+Depends: gnome-flashback-common (= 3.38.0-2+grm3u2+han3u4), nautilus (>= 3.37.1.1), libasound2 (>= 1.0.16), libatk1.0-0 (>= 1.12.4), libc6 (>= 2.29), libcairo2 (>= 1.14.0), libcanberra-gtk3-0 (>= 0.25), libcanberra0 (>= 0.2), libgdk-pixbuf-2.0-0 (>= 2.32.2), libglib2.0-0 (>= 2.57.2), libgnome-bluetooth13 (>= 3.12.0), libgnome-desktop-3-19 (>= 3.17.92), libgnome-panel0 (>= 3.37.0), libgtk-3-0 (>= 3.22.0), libibus-1.0-5 (>= 1.5.2), libpam0g (>= 0.99.7.1), libpango-1.0-0 (>= 1.44.6), libpangocairo-1.0-0 (>= 1.14.0), libpolkit-agent-1-0 (>= 0.99), libpolkit-gobject-1-0 (>= 0.99), libpulse-mainloop-glib0 (>= 0.99.1), libpulse0 (>= 0.99.1), libsystemd0, libupower-glib3 (>= 0.99.0), libx11-6 (>= 2:1.2.99.901), libx11-xcb1 (>= 2:1.7.2), libxcb-randr0 (>= 1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxkbfile1 (>= 1:1.1.0), libxrandr2 (>= 2:1.5.0), libxxf86vm1
+Recommends: dbus, gnome-settings-daemon (>= 3.33.90), libpam-gnome-keyring
+Suggests: gnome-power-manager
+Conffiles:
+ /etc/pam.d/gnome-flashback 462e85630fe98d616fa11a836b711183
+Description: helper application for the GNOME Flashback session
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package provides a helper application for the GNOME Flashback
+ desktop session. This application:
+  - provides the Logout, Reboot and Shutdown dialogs;
+  - provides the Sound, Bluetooth and Power tray applets;
+  - implements screenshot and screencast functionality;
+  - implements input source switching functionality;
+  - draws desktop background and icons;
+  - implements other functionality which was previously handled by
+    gnome-settings-daemon.
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+
+Package: gnome-flashback-common
+Status: install ok installed
+Priority: optional
+Section: gnome
+Installed-Size: 692
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Architecture: all
+Source: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Depends: dconf-gsettings-backend | gsettings-backend
+Breaks: libglib2.0-bin (<< 2.57.2)
+Conffiles:
+ /etc/xdg/menus/gnome-flashback-applications.menu 77a155887c291c1ba482c08795bd22c4
+Description: GNOME Flashback helper application - common data files
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ This package contains translations and data files for the GNOME
+ Flashback application.
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback
+
+Package: gnome-session-flashback
+Status: install ok installed
+Priority: optional
+Section: gnome
+Installed-Size: 54
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Architecture: all
+Source: gnome-flashback
+Version: 3.38.0-2+grm3u2+han3u4
+Replaces: gnome-flashback-common (<< 3.35.2-1~)
+Provides: x-session-manager
+Depends: gnome-flashback (>= 3.36.3), gnome-panel (>= 3.14), gnome-session-bin (>= 3.33.92), gnome-session-common, gnome-settings-daemon (>= 3.33.90), metacity (>= 1:3.30.1), dconf-gsettings-backend | gsettings-backend
+Recommends: gnome-power-manager
+Suggests: desktop-base, gnome-keyring, gnome-user-docs
+Breaks: gnome-flashback-common (<< 3.35.2-1~)
+Conffiles:
+ /etc/xdg/autostart/gnome-flashback-clipboard.desktop dfa5b5a5eb1a17808b7704c2ae31f5ee
+ /etc/xdg/autostart/gnome-flashback-nm-applet.desktop 1ba9eb799a6e23696adfda8df13889af
+Description: traditional desktop session based on GNOME technologies
+ GNOME Flashback continues the traditional desktop interface which was used
+ in GNOME 2.x, but using modern GNOME technologies.
+ .
+ The key parts of GNOME Flashback are the GNOME Panel and the Metacity
+ window manager. All other components, such as the file manager, the
+ settings center, and the various applications, come from mainstream
+ GNOME.
+ .
+ GNOME Flashback has lower hardware requirements than GNOME Shell, and
+ consumes less memory.
+ .
+ This package provides the required components for the GNOME Flashback
+ session. It can be started from a display manager such as GDM.
+Homepage: https://wiki.gnome.org/Projects/GnomeFlashback

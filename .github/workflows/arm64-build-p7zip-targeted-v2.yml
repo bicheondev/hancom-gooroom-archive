@@ -1,0 +1,158 @@
+name: ARM64 port - rebuild exact p7zip with full binary docs
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-p7zip-targeted-v2.yml'
+      - 'arm64/scripts/run_p7zip_full_binary_arm64.sh'
+      - 'arm64/scripts/build_locked_source_arm64.sh'
+      - 'arm64/scripts/verify_arm64_rebuild.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-p7zip-full-binary-arm64
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: p7zip
+  SOURCE_VERSION: 16.02+dfsg-8+grm3u1
+  ARTIFACT_NAME: arm64-rebuild-p7zip-16.02-dfsg-8-grm3u1-full
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact source lock and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 host and install audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          docker version
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git jq python3 dpkg-dev ca-certificates file
+          python3 -m py_compile arm64/scripts/verify_arm64_rebuild.py
+          chmod 0755 \
+            arm64/scripts/build_locked_source_arm64.sh \
+            arm64/scripts/run_p7zip_full_binary_arm64.sh
+
+      - name: Build the exact p7zip source in full binary mode
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/p7zip-arm64
+          mkdir -p work/p7zip-arm64
+          arm64/scripts/run_p7zip_full_binary_arm64.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            work/p7zip-arm64 \
+            2>&1 | tee work/p7zip-arm64/workflow-build.log
+
+      - name: Verify exact version, Git tree, ARM64 payloads, and package set
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_arm64_rebuild.py \
+            --lock arm64/locks/effective-sources/effective-source-lock.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source "$SOURCE_NAME" \
+            --source-version "$SOURCE_VERSION" \
+            --directory work/p7zip-arm64 \
+            --output work/p7zip-arm64/verification.json
+          jq -e '
+            .passed == true
+            and .source == "p7zip"
+            and .source_version == "16.02+dfsg-8+grm3u1"
+            and .x86_payloads == []
+            and .missing_expected_packages == []
+          ' work/p7zip-arm64/verification.json
+          jq -e '
+            .build_mode == "native-arm64-historical-chroot-full-binary-with-docs"
+          ' work/p7zip-arm64/build-lock.json
+
+      - name: Write persistent exact rebuild evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          jq -n \
+            --arg source "$SOURCE_NAME" \
+            --arg source_version "$SOURCE_VERSION" \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name "$ARTIFACT_NAME" \
+            --slurpfile verification work/p7zip-arm64/verification.json \
+            '{
+              schema: 2,
+              source: $source,
+              source_version: $source_version,
+              provenance: "github-exact-commit",
+              repository_full_name: $verification[0].repository_full_name,
+              commit_sha: $verification[0].commit_sha,
+              tree_sha: $verification[0].tree_sha,
+              actions_run_id: $actions_run_id,
+              actions_run_url: $actions_run_url,
+              artifact_name: $artifact_name,
+              passed: $verification[0].passed,
+              verification: $verification[0]
+            }' > work/p7zip-arm64/result.json
+          find work/p7zip-arm64 -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/p7zip-arm64/SHA256SUMS
+
+      - name: Upload exact p7zip ARM64 binaries and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: work/p7zip-arm64
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact successful rebuild evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination="arm64/locks/rebuild-results/$SOURCE_NAME/$SOURCE_VERSION"
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/p7zip-arm64/result.json "$destination/"
+          cp work/p7zip-arm64/verification.json "$destination/"
+          cp work/p7zip-arm64/build-lock.json "$destination/"
+          cp work/p7zip-arm64/source-lock-evidence.json "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record exact p7zip ARM64 full-binary rebuild'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              gh workflow run arm64-index-rebuild-results-v2.yml \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

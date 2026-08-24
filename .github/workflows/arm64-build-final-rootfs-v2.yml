@@ -1,0 +1,190 @@
+name: ARM64 port - build final exact ARM64 rootfs v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-final-rootfs-v2.yml'
+      - 'arm64/scripts/build_final_arm64_rootfs_v2.sh'
+      - 'arm64/scripts/verify_final_arm64_rootfs_v2.py'
+      - 'arm64/locks/final-package-repository-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: hancom-gooroom-33-final-rootfs-v2
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out final package authority and rootfs tools
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check final package repository gate
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          summary=arm64/locks/final-package-repository-v2/summary.json
+          authority=arm64/locks/final-package-repository-v2/final-package-authority.json
+          artifact_lock=arm64/locks/final-package-repository-v2/artifact-lock.json
+          if [ -f "$summary" ] && [ -f "$authority" ] && [ -f "$artifact_lock" ]; then
+            if jq -e '.final_repository_ready == true and .blocker_count == 0' "$summary" >/dev/null; then
+              ready=true
+            fi
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if [ "$ready" = true ]; then
+            echo "run_id=$(jq -r '.actions_run_id' "$artifact_lock")" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$(jq -r '.artifact_name' "$artifact_lock")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify native ARM64 host and install rootfs tools
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in aarch64|arm64) ;; *) exit 1 ;; esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap debian-archive-keyring ca-certificates \
+            python3 jq dpkg-dev file rsync \
+            squashfs-tools zstd
+          bash -n arm64/scripts/build_final_arm64_rootfs_v2.sh
+          python3 -m py_compile arm64/scripts/verify_final_arm64_rootfs_v2.py
+          chmod +x arm64/scripts/build_final_arm64_rootfs_v2.sh
+          gh --version
+
+      - name: Download final package repository by locked artifact identity
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/final-repository-artifact
+          mkdir -p work/final-repository-artifact
+          gh run download '${{ steps.gate.outputs.run_id }}' \
+            --repo '${{ github.repository }}' \
+            --name '${{ steps.gate.outputs.artifact_name }}' \
+            --dir work/final-repository-artifact
+          mapfile -t indexes < <(find work/final-repository-artifact -type f -name Packages | sort)
+          test "${#indexes[@]}" = 1
+          dirname "${indexes[0]}" > work/final-repository-path.txt
+          artifact_authority="$(find work/final-repository-artifact -type f -path '*/final-package-evidence/final-package-authority.json' -print -quit)"
+          test -n "$artifact_authority"
+          cmp "$artifact_authority" \
+            arm64/locks/final-package-repository-v2/final-package-authority.json
+
+      - name: Build one native ARM64 exact-version package transaction
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        env:
+          HANCOM_GOOROOM_SNAPSHOT_BASE: 20230730T235959Z
+          HANCOM_GOOROOM_SNAPSHOT_UPDATES: 20240331T235959Z
+        run: |
+          set -o pipefail
+          rm -rf work/final-rootfs work/final-rootfs-evidence
+          mkdir -p work/final-rootfs-evidence
+          sudo -E arm64/scripts/build_final_arm64_rootfs_v2.sh \
+            "$(cat work/final-repository-path.txt)" \
+            arm64/locks/final-package-repository-v2/final-package-authority.json \
+            work/final-rootfs \
+            work/final-rootfs-evidence \
+            2>&1 | tee work/final-rootfs-evidence/workflow-rootfs-build.log
+          sudo chown -R "$(id -u):$(id -g)" \
+            work/final-rootfs work/final-rootfs-evidence
+
+      - name: Verify package authority, architecture additions, kernel, and ELF
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_final_arm64_rootfs_v2.py \
+            --rootfs work/final-rootfs \
+            --authority arm64/locks/final-package-repository-v2/final-package-authority.json \
+            --output work/final-rootfs-evidence/verification.json
+          jq -e '
+            .summary.passed == true
+            and .summary.x86_elf_count == 0
+            and .summary.foreign_elf_count == 0
+            and .summary.forbidden_extra_count == 0
+          ' work/final-rootfs-evidence/verification.json
+
+      - name: Create deterministic rootfs images and artifact identity
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo mksquashfs work/final-rootfs \
+            work/final-rootfs-evidence/filesystem.squashfs \
+            -noappend -comp xz -b 1M -Xdict-size 100% \
+            -all-root -all-time 0 -mkfs-time 0 \
+            -processors "$(nproc)"
+          sudo chown "$(id -u):$(id -g)" \
+            work/final-rootfs-evidence/filesystem.squashfs
+          sudo tar \
+            --sort=name --mtime='@0' --numeric-owner --owner=0 --group=0 \
+            --xattrs --acls --selinux \
+            -C work/final-rootfs -cf - . \
+            | zstd -19 -T0 -o work/final-rootfs-evidence/rootfs.tar.zst
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-final-rootfs-v2' \
+            --arg source_repository_run '${{ steps.gate.outputs.run_id }}' \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,source_package_repository_run:$source_repository_run}' \
+            > work/final-rootfs-evidence/artifact-lock.json
+          find work/final-rootfs-evidence -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/final-rootfs-evidence/SHA256SUMS
+          stat -c '%n\t%s' \
+            work/final-rootfs-evidence/filesystem.squashfs \
+            work/final-rootfs-evidence/rootfs.tar.zst \
+            > work/final-rootfs-evidence/image-sizes.tsv
+
+      - name: Upload verified final ARM64 rootfs
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-final-rootfs-v2
+          path: work/final-rootfs-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact final rootfs provenance
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/final-rootfs-v2
+          mkdir -p arm64/locks/final-rootfs-v2
+          for name in \
+            verification.json rootfs-build.json artifact-lock.json \
+            final-package-authority.json input-locks.sha256 \
+            SHA256SUMS image-sizes.tsv; do
+            cp "work/final-rootfs-evidence/$name" \
+              arm64/locks/final-rootfs-v2/
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/final-rootfs-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Lock verified final Hancom Gooroom ARM64 rootfs v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1

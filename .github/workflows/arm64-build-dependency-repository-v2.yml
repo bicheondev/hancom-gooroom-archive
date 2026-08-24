@@ -1,0 +1,201 @@
+name: ARM64 port - materialize exact build dependency repository v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-dependency-repository-v2.yml'
+      - 'arm64/scripts/materialize_build_dependency_repo_v2.py'
+      - 'arm64/scripts/resolve_rebuild_artifact_names.py'
+      - 'arm64/scripts/test_resolve_rebuild_artifact_names.py'
+      - 'arm64/scripts/test_materialize_build_dependency_repo_v2.py'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/rebuild-result-index-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-build-dependency-repository-v2
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out binary authorities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check prerequisites
+        id: inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          if [ -f arm64/locks/vendor-binaries/vendor-binary-lock.json ] \
+             && [ -f arm64/locks/rebuild-result-index-v2/verified-binary-packages.json ]; then
+            ready=true
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Install and test APT repository tools
+        if: steps.inputs.outputs.ready == 'true'
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev apt-utils ca-certificates jq
+          python3 -m py_compile \
+            arm64/scripts/materialize_build_dependency_repo_v2.py \
+            arm64/scripts/resolve_rebuild_artifact_names.py \
+            arm64/scripts/test_resolve_rebuild_artifact_names.py \
+            arm64/scripts/test_materialize_build_dependency_repo_v2.py
+          python3 arm64/scripts/test_resolve_rebuild_artifact_names.py
+          python3 arm64/scripts/test_materialize_build_dependency_repo_v2.py
+          gh --version
+
+      - name: Resolve immutable artifact identities and materialize packages
+        if: steps.inputs.outputs.ready == 'true'
+        id: materialize
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/build-dependency-repository work/build-dependency-evidence
+          mkdir -p work/build-dependency-repository work/build-dependency-evidence
+          python3 arm64/scripts/resolve_rebuild_artifact_names.py \
+            --input arm64/locks/rebuild-result-index-v2/verified-binary-packages.json \
+            --output work/resolved-rebuild-packages.json \
+            --evidence work/build-dependency-evidence/artifact-name-resolution.json \
+            --github-repository '${{ github.repository }}'
+          jq -e '
+            .schema == 2
+            and .group_count > 0
+            and .rewritten_group_count >= 0
+            and .locked_member_verified_group_count >= 1
+            and .policy == "exact-or-unique-source-qualified-or-locked-member-byte-verified-artifact-resolution"
+          ' work/build-dependency-evidence/artifact-name-resolution.json >/dev/null
+          set +e
+          python3 arm64/scripts/materialize_build_dependency_repo_v2.py \
+            --vendor-lock arm64/locks/vendor-binaries/vendor-binary-lock.json \
+            --rebuild-packages work/resolved-rebuild-packages.json \
+            --github-repository '${{ github.repository }}' \
+            --repository-dir work/build-dependency-repository \
+            --output-dir work/build-dependency-evidence \
+            --workers 8
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/build-dependency-repository work/build-dependency-evidence \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/build-dependency-evidence/LOCKSUMS.sha256
+          cat work/build-dependency-evidence/summary.json
+
+      - name: Upload exact local build dependency repository
+        if: steps.inputs.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-build-dependency-repository-v2
+          path: |
+            work/build-dependency-repository
+            work/build-dependency-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit artifact identity and repository manifest
+        if: steps.inputs.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/build-dependency-repository-v2
+          mkdir -p arm64/locks/build-dependency-repository-v2
+          cp work/build-dependency-evidence/summary.json \
+            arm64/locks/build-dependency-repository-v2/
+          cp work/build-dependency-evidence/build-dependency-repository.json \
+            arm64/locks/build-dependency-repository-v2/
+          cp work/build-dependency-evidence/failures.json \
+            arm64/locks/build-dependency-repository-v2/
+          cp work/build-dependency-evidence/artifact-name-resolution.json \
+            arm64/locks/build-dependency-repository-v2/
+          cp work/build-dependency-evidence/LOCKSUMS.sha256 \
+            arm64/locks/build-dependency-repository-v2/
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-build-dependency-repository-v2' \
+            '{schema:2,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,artifact_name_resolution:"artifact-name-resolution.json"}' \
+            > arm64/locks/build-dependency-repository-v2/artifact-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/build-dependency-repository-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Lock exact ARM64 build dependency repository v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce a complete verified dependency repository
+        if: steps.inputs.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.materialize.outputs.exit_code }}' = '0'
+          jq -e '
+            .repository_ready == true
+            and .failure_count == 0
+            and .ambiguous_count == 0
+            and .vendor_precedence_shadowed_rebuild_count >= 2
+            and (
+              .rebuilt_candidate_count_before_vendor_precedence
+              == (.rebuilt_candidate_count + .vendor_precedence_shadowed_rebuild_count)
+            )
+          ' work/build-dependency-evidence/summary.json
+          jq -e '
+            .rewritten_group_count
+              == ([.groups[] | select(.resolution != "exact")] | length)
+            and .locked_member_verified_group_count
+              == ([.groups[] | select(.locked_member_bytes_verified == true)] | length)
+            and .locked_member_verified_group_count == 1
+            and (
+              [.groups[] | select(.locked_member_bytes_verified == true)][0]
+              | .declared_artifact_name == "0.3.1_grm3u1_han3u2"
+              and .resolved_artifact_name == "gooroom-greeter-han3u2-exact-arm64-v2"
+              and .resolved_artifact_id == "9013024069"
+              and .resolution == "verified-member-bytes-source-qualified"
+            )
+            and all(
+              .groups[] | select(.resolution != "exact");
+              (.declared_artifact_name != .resolved_artifact_name)
+              and (.resolved_artifact_id | type == "string" and length > 0)
+              and (.resolved_artifact_digest | test("^sha256:[0-9a-f]{64}$"))
+            )
+          ' work/build-dependency-evidence/artifact-name-resolution.json
+
+      - name: Dispatch the final package repository merge explicitly
+        if: success() && steps.inputs.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if gh workflow run arm64-merge-final-package-repository-v2.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

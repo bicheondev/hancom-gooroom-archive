@@ -1,0 +1,199 @@
+name: ARM64 port - prioritized resolve and build exact QtBase v3
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-qtbase-resolve-build-v3.yml'
+      - 'arm64/scripts/targeted_source_archaeology.py'
+      - 'arm64/scripts/targeted_source_archaeology_v2.py'
+      - 'arm64/scripts/promote_targeted_source_lock.py'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v4.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/scripts/validate_arm64_source_outputs_v4.py'
+      - 'arm64/scripts/summarize_arm64_build_wave.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-prioritized-qtbase-v3
+  cancel-in-progress: true
+
+env:
+  SOURCE_NAME: qtbase-opensource-src
+  SOURCE_VERSION: 5.15.2+dfsg-9+grm3u1
+
+jobs:
+  resolve-build-record:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Verify native ARM64 host and install verification tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Resolve one immutable exact QtBase Git tree
+        id: resolve
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/qtbase-v3
+          mkdir -p work/qtbase-v3/resolution work/qtbase-v3/build
+          python3 arm64/scripts/targeted_source_archaeology_v2.py \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-dir work/qtbase-v3/resolution \
+            --maximum-repositories 40
+          test -f work/qtbase-v3/resolution/targeted-source-lock.json
+          test "$(jq -r '.status' \
+            work/qtbase-v3/resolution/targeted-source-lock.json)" = resolved
+
+      - name: Promote the exact Git record into a temporary effective lock
+        id: promote
+        if: steps.resolve.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euxo pipefail
+          mkdir -p work/qtbase-v3/promoted
+          python3 arm64/scripts/promote_targeted_source_lock.py \
+            --effective-lock arm64/locks/effective-sources/effective-source-lock.json \
+            --targeted-lock work/qtbase-v3/resolution/targeted-source-lock.json \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-lock work/qtbase-v3/promoted/effective-source-lock.json \
+            --evidence work/qtbase-v3/promoted/promotion.json
+
+      - name: Build and validate exact QtBase ARM64 packages
+        id: native_build
+        if: steps.promote.outcome == 'success'
+        continue-on-error: true
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v4.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py \
+            arm64/scripts/validate_arm64_source_outputs_v4.py
+          arm64/scripts/run_locked_source_arm64_v4.sh \
+            work/qtbase-v3/promoted/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            work/qtbase-v3/build
+          jq -e '.status == "passed"' \
+            work/qtbase-v3/build/arm64-source-output-validation-v4.json
+          find work/qtbase-v3/build -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > work/qtbase-v3/build/SHA256SUMS
+
+      - name: Preserve a source marker when native validation was not reached
+        if: always()
+        run: |
+          set -euxo pipefail
+          mkdir -p work/qtbase-v3/build
+          if [ ! -f work/qtbase-v3/build/source-name.txt ]; then
+            printf '%s\n' "$SOURCE_NAME" > work/qtbase-v3/build/source-name.txt
+          fi
+          printf 'resolve=%s\npromote=%s\nnative_build=%s\n' \
+            '${{ steps.resolve.outcome }}' \
+            '${{ steps.promote.outcome }}' \
+            '${{ steps.native_build.outcome }}' \
+            > work/qtbase-v3/build/phase-outcomes.txt
+
+      - name: Summarize the complete resolution and build attempt
+        if: always()
+        run: |
+          set -uxo pipefail
+          mkdir -p work/qtbase-v3/evidence
+          set +e
+          python3 arm64/scripts/summarize_arm64_build_wave.py \
+            --artifacts-root work/qtbase-v3 \
+            --output-dir work/qtbase-v3/evidence \
+            --schema hancom-gooroom-arm64-qtbase-resolve-build-v3-evidence \
+            --expected-source "$SOURCE_NAME" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$GITHUB_SHA" \
+            --head-branch "$GITHUB_REF_NAME" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --repository "$GITHUB_REPOSITORY" \
+            --server-url "$GITHUB_SERVER_URL" \
+            --download-status success
+          summary_rc=$?
+          set -e
+          echo "$summary_rc" > work/qtbase-v3/evidence/summarizer.exit-code
+          for path in \
+            work/qtbase-v3/resolution/targeted-source-lock.json \
+            work/qtbase-v3/resolution/targeted-source-archaeology.json \
+            work/qtbase-v3/promoted/promotion.json; do
+            if [ -f "$path" ]; then
+              cp "$path" work/qtbase-v3/evidence/
+            fi
+          done
+          find work/qtbase-v3/evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/qtbase-v3/evidence/LOCKSUMS.sha256
+          jq . work/qtbase-v3/evidence/summary.json
+
+      - name: Upload source search packages and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-opensource-src-resolve-build-v3
+          path: work/qtbase-v3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit all evidence before enforcing the result
+        if: always()
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/build-qtbase-v3
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/qtbase-v3/evidence/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record prioritized exact QtBase ARM64 attempt v3'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Enforce exact source resolution and native ARM64 output
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.resolve.outcome }}' = success
+          test '${{ steps.promote.outcome }}' = success
+          test '${{ steps.native_build.outcome }}' = success
+          test "$(jq -r '.status' work/qtbase-v3/evidence/summary.json)" = passed

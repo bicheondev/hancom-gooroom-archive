@@ -1,0 +1,45 @@
+{
+  "deb_artifacts": [
+    {
+      "architecture": "arm64",
+      "filename": "gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_arm64.deb",
+      "package": "gooroom-greeter-dbgsym",
+      "sha256": "4fca8036db3d9b20f0db0789b72b99049dad4319b9dd67153c1f5549d2405d47",
+      "size": 128924,
+      "version": "0.3.1+grm3u1+han3u2"
+    },
+    {
+      "architecture": "arm64",
+      "filename": "gooroom-greeter_0.3.1+grm3u1+han3u2_arm64.deb",
+      "package": "gooroom-greeter",
+      "sha256": "0f1af609c783f5d30ce7a81436ae19896566b1eeba7331073932d5462b33079a",
+      "size": 280080,
+      "version": "0.3.1+grm3u1+han3u2"
+    }
+  ],
+  "elf_payloads": [
+    {
+      "file": "ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter *empty*, BuildID[sha1]=06355c891bcf2eb842dfabb60b8db92eb0971385, for GNU/Linux 3.7.0, with debug_info, not stripped",
+      "machine_header": "ELF Header:\n  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Shared object file)\n  Machine:                           AArch64\n  Version:                           0x1\n  Entry point address:               0x88f8\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          150632 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         9\n  Size of section headers:           64 (bytes)\n  Number of section headers:         36\n  Section header string table index: 35\nreadelf: Error: Unable to find program interpreter name",
+      "package": "gooroom-greeter-dbgsym",
+      "path": "usr/lib/debug/.build-id/06/355c891bcf2eb842dfabb60b8db92eb0971385.debug",
+      "sha256": "b1a12d3556ef723913130418d93e50f0d8ad6945bb2e94b86bd58f8b35df36f9",
+      "size": 152936
+    },
+    {
+      "file": "ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=06355c891bcf2eb842dfabb60b8db92eb0971385, for GNU/Linux 3.7.0, stripped",
+      "machine_header": "ELF Header:\n  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Position-Independent Executable file)\n  Machine:                           AArch64\n  Version:                           0x1\n  Entry point address:               0x88f8\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          147864 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         9\n  Size of section headers:           64 (bytes)\n  Number of section headers:         27\n  Section header string table index: 26",
+      "package": "gooroom-greeter",
+      "path": "usr/sbin/gooroom-greeter",
+      "sha256": "750224555264884d86752baca39c9b9f4471d8f8189e78a46ac9b897380a7149",
+      "size": 149592
+    }
+  ],
+  "main_package_count": 1,
+  "schema": 1,
+  "source": "gooroom-greeter",
+  "source_version": "0.3.1+grm3u1+han3u2",
+  "target_architecture": "arm64",
+  "verified": true,
+  "wrong_architecture_executables": []
+}

@@ -1,0 +1,478 @@
+name: ARM64 port - analyze libsecurity XSM history
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-analyze-libsecurity-xsm-history.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-analyze-libsecurity-xsm-history
+  cancel-in-progress: false
+
+env:
+  PACKAGING_REPOSITORY: gooroom/gooroom-libsecurity-extensions
+  PACKAGING_COMMIT: 4990bab95ae1dcaa29f38836da83edfa0969ed73
+  PACKAGING_TREE: e1dce97d3cd69331047c01940b2593a0eaf2307a
+  FINAL_XSM_COMMIT: 40d69bd620b022aa4ecb6f7d968c87e7f8df5a28
+  FINAL_XSM_BLOB: 416fbb7260c30d5075b1da6dd32aa8d81ef4a49f
+  IMPLEMENTATION_REPOSITORY: ultract/X.org-Security-Module
+  IMPLEMENTATION_COMMIT: fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7
+  IMPLEMENTATION_TREE: aef0ff9c73f625763b3822c7cfa7179799f26637
+  DEBIAN_SNAPSHOT: 20230730T235959Z
+  BULLSEYE_ARM64_IMAGE: arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e
+
+jobs:
+  analyze-binary-history:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out evidence repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Install deterministic binary analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils file git jq python3 ca-certificates
+
+      - name: Extract every committed XSM binary and adjacent differences
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$PWD/work/xsm-history"
+          evidence="$root/evidence"
+          rm -rf "$root"
+          mkdir -p \
+            "$root/repositories" \
+            "$evidence/binaries" \
+            "$evidence/headers" \
+            "$evidence/symbols" \
+            "$evidence/disassembly" \
+            "$evidence/strings" \
+            "$evidence/focused" \
+            "$evidence/transitions"
+
+          git clone --no-tags \
+            "https://github.com/${PACKAGING_REPOSITORY}.git" \
+            "$root/repositories/packaging"
+          git -C "$root/repositories/packaging" fetch --no-tags origin \
+            "$PACKAGING_COMMIT"
+          test "$(git -C "$root/repositories/packaging" rev-parse FETCH_HEAD)" = \
+            "$PACKAGING_COMMIT"
+          test "$(git -C "$root/repositories/packaging" show -s --format=%T "$PACKAGING_COMMIT")" = \
+            "$PACKAGING_TREE"
+          test "$(git -C "$root/repositories/packaging" rev-parse "$FINAL_XSM_COMMIT:lib/xsm.so")" = \
+            "$FINAL_XSM_BLOB"
+
+          git clone --no-tags \
+            "https://github.com/${IMPLEMENTATION_REPOSITORY}.git" \
+            "$root/repositories/implementation"
+          git -C "$root/repositories/implementation" fetch --no-tags origin \
+            "$IMPLEMENTATION_COMMIT"
+          test "$(git -C "$root/repositories/implementation" rev-parse FETCH_HEAD)" = \
+            "$IMPLEMENTATION_COMMIT"
+          test "$(git -C "$root/repositories/implementation" show -s --format=%T "$IMPLEMENTATION_COMMIT")" = \
+            "$IMPLEMENTATION_TREE"
+
+          git -C "$root/repositories/packaging" \
+            log --reverse --format='%H' "$PACKAGING_COMMIT" -- lib/xsm.so \
+            > "$evidence/commit-order.txt"
+          test -s "$evidence/commit-order.txt"
+          test "$(tail -n 1 "$evidence/commit-order.txt")" = "$FINAL_XSM_COMMIT"
+
+          : > "$evidence/manifest.jsonl"
+          while IFS= read -r commit; do
+            binary="$evidence/binaries/${commit}.so"
+            git -C "$root/repositories/packaging" \
+              show "${commit}:lib/xsm.so" > "$binary"
+            blob="$(git -C "$root/repositories/packaging" rev-parse "${commit}:lib/xsm.so")"
+            parent="$(git -C "$root/repositories/packaging" show -s --format=%P "$commit" | awk '{print $1}')"
+            subject="$(git -C "$root/repositories/packaging" show -s --format=%s "$commit")"
+            authored="$(git -C "$root/repositories/packaging" show -s --format=%aI "$commit")"
+            tree="$(git -C "$root/repositories/packaging" show -s --format=%T "$commit")"
+            digest="$(sha256sum "$binary" | awk '{print $1}')"
+            size="$(stat -c '%s' "$binary")"
+            description="$(file -b "$binary")"
+            machine="$(readelf -h "$binary" | awk -F: '/Machine:/{sub(/^[[:space:]]+/,"",$2); print $2}')"
+
+            file "$binary" > "$evidence/headers/${commit}.file.txt"
+            readelf -hW "$binary" > "$evidence/headers/${commit}.readelf.txt"
+            readelf -WsW "$binary" > "$evidence/symbols/${commit}.txt"
+            objdump -drwC "$binary" > "$evidence/disassembly/${commit}.txt"
+            strings -a -n 4 "$binary" | LC_ALL=C sort -u \
+              > "$evidence/strings/${commit}.txt"
+            grep -Eai \
+              'gnome|flashback|terminal|cinnamon|xfce|json|x86_64|aarch64|libjson|whitelist|screen|clipboard|session|at-spi' \
+              "$evidence/strings/${commit}.txt" \
+              > "$evidence/focused/${commit}.txt" || true
+
+            jq -cn \
+              --arg commit "$commit" \
+              --arg parent "$parent" \
+              --arg tree "$tree" \
+              --arg blob "$blob" \
+              --arg subject "$subject" \
+              --arg authored_at "$authored" \
+              --arg sha256 "$digest" \
+              --argjson size "$size" \
+              --arg file "$description" \
+              --arg machine "$machine" \
+              '{commit:$commit,parent:$parent,tree:$tree,blob:$blob,subject:$subject,authored_at:$authored_at,sha256:$sha256,size:$size,file:$file,machine:$machine}' \
+              >> "$evidence/manifest.jsonl"
+          done < "$evidence/commit-order.txt"
+
+          jq -s '.' "$evidence/manifest.jsonl" > "$evidence/manifest.json"
+
+          EVIDENCE_ROOT="$evidence" python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(os.environ['EVIDENCE_ROOT'])
+          rows = json.loads((root / 'manifest.json').read_text())
+          pattern = re.compile(
+              r'gnome|flashback|terminal|cinnamon|xfce|json|x86_64|aarch64|'
+              r'libjson|whitelist|screen|clipboard|session|at-spi',
+              re.IGNORECASE,
+          )
+          transitions = []
+          for before, after in zip(rows, rows[1:]):
+              before_strings = set(
+                  (root / 'strings' / f"{before['commit']}.txt").read_text(
+                      errors='replace'
+                  ).splitlines()
+              )
+              after_strings = set(
+                  (root / 'strings' / f"{after['commit']}.txt").read_text(
+                      errors='replace'
+                  ).splitlines()
+              )
+              added = sorted(after_strings - before_strings)
+              removed = sorted(before_strings - after_strings)
+              stem = f"{before['commit'][:12]}__{after['commit'][:12]}"
+              (root / 'transitions' / f'{stem}.added.txt').write_text(
+                  '\n'.join(added) + ('\n' if added else '')
+              )
+              (root / 'transitions' / f'{stem}.removed.txt').write_text(
+                  '\n'.join(removed) + ('\n' if removed else '')
+              )
+              transitions.append(
+                  {
+                      'before': before['commit'],
+                      'after': after['commit'],
+                      'subject': after['subject'],
+                      'before_blob': before['blob'],
+                      'after_blob': after['blob'],
+                      'added_string_count': len(added),
+                      'removed_string_count': len(removed),
+                      'relevant_added_strings': [
+                          value for value in added if pattern.search(value)
+                      ],
+                      'relevant_removed_strings': [
+                          value for value in removed if pattern.search(value)
+                      ],
+                  }
+              )
+          (root / 'transitions.json').write_text(
+              json.dumps(transitions, indent=2) + '\n'
+          )
+          PY
+
+          implementation_xsm="$root/repositories/implementation/xsm.c"
+          test -f "$implementation_xsm"
+          jq -n \
+            --arg packaging_repository "$PACKAGING_REPOSITORY" \
+            --arg packaging_commit "$PACKAGING_COMMIT" \
+            --arg packaging_tree "$PACKAGING_TREE" \
+            --arg final_xsm_commit "$FINAL_XSM_COMMIT" \
+            --arg final_xsm_blob "$FINAL_XSM_BLOB" \
+            --arg implementation_repository "$IMPLEMENTATION_REPOSITORY" \
+            --arg implementation_commit "$IMPLEMENTATION_COMMIT" \
+            --arg implementation_tree "$IMPLEMENTATION_TREE" \
+            --arg implementation_xsm_sha256 "$(sha256sum "$implementation_xsm" | awk '{print $1}')" \
+            '{schema:1,packaging:{repository:$packaging_repository,commit:$packaging_commit,tree:$packaging_tree,final_xsm_commit:$final_xsm_commit,final_xsm_blob:$final_xsm_blob},implementation:{repository:$implementation_repository,commit:$implementation_commit,tree:$implementation_tree,xsm_c_sha256:$implementation_xsm_sha256}}' \
+            > "$evidence/source-provenance.json"
+
+          (
+            cd "$evidence"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+
+      - name: Upload complete binary history evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libsecurity-xsm-history-analysis
+          path: work/xsm-history/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  probe-arm64-compilation:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - name: Check out evidence repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Verify native ARM64 host and Docker
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'native ARM64 runner required' >&2; exit 1 ;;
+          esac
+          docker info --format 'architecture={{.Architecture}} os={{.OSType}}'
+
+      - name: Compile the public implementation in the locked Bullseye environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$PWD/work/xsm-arm64-probe"
+          evidence="$root/evidence"
+          rm -rf "$root"
+          mkdir -p "$root/source" "$evidence"
+          git clone --no-tags \
+            "https://github.com/${IMPLEMENTATION_REPOSITORY}.git" \
+            "$root/source/repository"
+          git -C "$root/source/repository" checkout --detach \
+            "$IMPLEMENTATION_COMMIT"
+          test "$(git -C "$root/source/repository" rev-parse HEAD)" = \
+            "$IMPLEMENTATION_COMMIT"
+          test "$(git -C "$root/source/repository" show -s --format=%T HEAD)" = \
+            "$IMPLEMENTATION_TREE"
+
+          set +e
+          docker run --rm \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e SNAPSHOT="$DEBIAN_SNAPSHOT" \
+            -v "$root/source/repository:/source:ro" \
+            -v "$evidence:/out" \
+            "$BULLSEYE_ARM64_IMAGE" \
+            bash -lc '
+              set -u
+              rm -f /etc/apt/sources.list.d/*
+              cat > /etc/apt/sources.list <<EOF
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/${SNAPSHOT} bullseye main contrib non-free
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/${SNAPSHOT} bullseye-security main
+          EOF
+              set +e
+              apt-get -o Acquire::Check-Valid-Until=false update \
+                > /out/apt-update.stdout.log 2> /out/apt-update.stderr.log
+              apt_update_exit=$?
+              printf "%s\n" "$apt_update_exit" > /out/apt-update.exit-code
+              if [ "$apt_update_exit" -ne 0 ]; then
+                exit "$apt_update_exit"
+              fi
+              apt-get install -y --no-install-recommends \
+                build-essential pkg-config xserver-xorg-dev \
+                libjson-c-dev libnotify-dev libdbus-1-dev libsystemd-dev \
+                binutils file ca-certificates \
+                > /out/apt-install.stdout.log 2> /out/apt-install.stderr.log
+              apt_install_exit=$?
+              printf "%s\n" "$apt_install_exit" > /out/apt-install.exit-code
+              if [ "$apt_install_exit" -ne 0 ]; then
+                exit "$apt_install_exit"
+              fi
+              set -e
+
+              cp -a /source /build
+              cd /build
+              dpkg-query -W -f="\${Package}\t\${Version}\t\${Architecture}\n" \
+                | LC_ALL=C sort > /out/build-environment-packages.tsv
+              uname -a > /out/uname.txt
+              gcc --version > /out/gcc-version.txt
+              pkg-config --modversion xorg-server dbus-1 libnotify json-c \
+                > /out/pkg-config-versions.txt
+
+              set +e
+              XDG_CURRENT_DESKTOP=GNOME bash -x ./build.sh \
+                > /out/original-build.stdout.log \
+                2> /out/original-build.stderr.log
+              original_exit=$?
+              printf "%s\n" "$original_exit" > /out/original-build.exit-code
+              if [ -f xsm.so ]; then
+                cp xsm.so /out/xsm-original-build.so
+              fi
+
+              rm -f xsm.so
+              gcc $(pkg-config --cflags xorg-server dbus-1 libnotify json-c) \
+                -DXACE -D_XSERVER64 -DX_REGISTRY_REQUEST \
+                -DX_REGISTRY_RESOURCE -DCOMPOSITE \
+                xsm.c -o xsm.so -shared -ldl -fPIC \
+                $(pkg-config --libs xorg-server dbus-1 libnotify json-c) \
+                > /out/corrected-build.stdout.log \
+                2> /out/corrected-build.stderr.log
+              corrected_exit=$?
+              printf "%s\n" "$corrected_exit" > /out/corrected-build.exit-code
+              set -e
+              if [ -f xsm.so ]; then
+                cp xsm.so /out/xsm-corrected-build.so
+                file xsm.so > /out/xsm-corrected-build.file.txt
+                readelf -hW xsm.so > /out/xsm-corrected-build.readelf.txt
+                readelf -WsW xsm.so > /out/xsm-corrected-build.symbols.txt
+                strings -a -n 4 xsm.so | LC_ALL=C sort -u \
+                  > /out/xsm-corrected-build.strings.txt
+              fi
+            ' > "$evidence/container.stdout.log" \
+              2> "$evidence/container.stderr.log"
+          container_exit=$?
+          set -e
+          printf '%s\n' "$container_exit" > "$evidence/container.exit-code"
+
+          EVIDENCE_ROOT="$evidence" python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ['EVIDENCE_ROOT'])
+          def number(name: str):
+              path = root / name
+              if not path.exists():
+                  return None
+              value = path.read_text().strip()
+              return int(value) if value else None
+
+          summary = {
+              'schema': 2,
+              'implementation_repository': 'ultract/X.org-Security-Module',
+              'implementation_commit': 'fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7',
+              'implementation_tree': 'aef0ff9c73f625763b3822c7cfa7179799f26637',
+              'debian_snapshot': '20230730T235959Z',
+              'bootstrap_image': 'arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e',
+              'container_exit_code': number('container.exit-code'),
+              'apt_update_exit_code': number('apt-update.exit-code'),
+              'apt_install_exit_code': number('apt-install.exit-code'),
+              'original_build_exit_code': number('original-build.exit-code'),
+              'corrected_build_exit_code': number('corrected-build.exit-code'),
+              'original_binary_present': (root / 'xsm-original-build.so').exists(),
+              'corrected_binary_present': (root / 'xsm-corrected-build.so').exists(),
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          print(json.dumps(summary, indent=2))
+          PY
+
+          (
+            cd "$evidence"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+
+      - name: Upload ARM64 compilation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: libsecurity-xsm-arm64-compilation-probe
+          path: work/xsm-arm64-probe/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  commit-evidence:
+    needs: [analyze-binary-history, probe-arm64-compilation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download evidence from this exact run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/xsm-evidence-download
+          mkdir -p work/xsm-evidence-download/history work/xsm-evidence-download/compile
+          gh run download "$GITHUB_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name libsecurity-xsm-history-analysis \
+            --dir work/xsm-evidence-download/history
+          gh run download "$GITHUB_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name libsecurity-xsm-arm64-compilation-probe \
+            --dir work/xsm-evidence-download/compile
+
+      - name: Commit compact immutable analysis authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          target="arm64/locks/libsecurity-xsm-analysis/runs/${GITHUB_RUN_ID}"
+          latest="arm64/locks/libsecurity-xsm-analysis/latest"
+          rm -rf "$target" "$latest"
+          mkdir -p "$target" "$latest"
+
+          cp work/xsm-evidence-download/history/manifest.json "$target/"
+          cp work/xsm-evidence-download/history/transitions.json "$target/"
+          cp work/xsm-evidence-download/history/source-provenance.json "$target/"
+          cp -a work/xsm-evidence-download/history/focused "$target/"
+          cp work/xsm-evidence-download/compile/summary.json "$target/compile-summary.json"
+          for file in \
+            apt-update.exit-code apt-update.stderr.log \
+            apt-install.exit-code apt-install.stderr.log \
+            original-build.exit-code original-build.stderr.log \
+            corrected-build.exit-code corrected-build.stderr.log \
+            xsm-corrected-build.file.txt xsm-corrected-build.readelf.txt; do
+            if [ -f "work/xsm-evidence-download/compile/$file" ]; then
+              cp "work/xsm-evidence-download/compile/$file" "$target/"
+            fi
+          done
+
+          jq -n \
+            --argjson workflow_run_id "$GITHUB_RUN_ID" \
+            --arg workflow_commit "$GITHUB_SHA" \
+            --arg packaging_repository "$PACKAGING_REPOSITORY" \
+            --arg packaging_commit "$PACKAGING_COMMIT" \
+            --arg packaging_tree "$PACKAGING_TREE" \
+            --arg final_xsm_commit "$FINAL_XSM_COMMIT" \
+            --arg final_xsm_blob "$FINAL_XSM_BLOB" \
+            --arg implementation_repository "$IMPLEMENTATION_REPOSITORY" \
+            --arg implementation_commit "$IMPLEMENTATION_COMMIT" \
+            --arg implementation_tree "$IMPLEMENTATION_TREE" \
+            '{schema:2,workflow_run_id:$workflow_run_id,workflow_commit:$workflow_commit,packaging:{repository:$packaging_repository,commit:$packaging_commit,tree:$packaging_tree,final_xsm_commit:$final_xsm_commit,final_xsm_blob:$final_xsm_blob},implementation:{repository:$implementation_repository,commit:$implementation_commit,tree:$implementation_tree}}' \
+            > "$target/authority.json"
+
+          (
+            cd "$target"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
+          cp -a "$target/." "$latest/"
+          (
+            cd "$latest"
+            sha256sum --check SHA256SUMS
+          )
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/libsecurity-xsm-analysis
+          git commit -m 'Record XSM binary history and ARM64 build probe'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

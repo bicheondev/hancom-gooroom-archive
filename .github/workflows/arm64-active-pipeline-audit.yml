@@ -1,0 +1,94 @@
+name: ARM64 port - audit active v2 pipeline graph
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/**'
+      - 'arm64/scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-active-pipeline-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the complete active branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install workflow parser
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 python3-yaml jq
+          python3 -m py_compile arm64/scripts/audit_active_arm64_pipeline.py
+
+      - name: Audit workflow graph without losing diagnostics
+        id: audit
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/active-pipeline-audit
+          set +e
+          python3 arm64/scripts/audit_active_arm64_pipeline.py \
+            --repository-root . \
+            --output-dir work/active-pipeline-audit
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/active-pipeline-audit -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/active-pipeline-audit/LOCKSUMS.sha256
+          cat work/active-pipeline-audit/summary.json
+
+      - name: Upload active pipeline inventory and errors
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-active-pipeline-audit
+          path: work/active-pipeline-audit
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit the current active pipeline inventory
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/audit/active-pipeline
+          mkdir -p arm64/audit/active-pipeline
+          cp -a work/active-pipeline-audit/. arm64/audit/active-pipeline/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/audit/active-pipeline
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record active ARM64 v2 pipeline graph'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce one clean active v2 path
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.audit.outputs.exit_code }}' = '0'
+          jq -e '.passed == true' work/active-pipeline-audit/summary.json

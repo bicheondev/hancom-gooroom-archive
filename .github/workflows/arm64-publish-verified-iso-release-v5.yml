@@ -1,0 +1,220 @@
+name: ARM64 publish locked verified fresh ISO release v5
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-publish-verified-iso-release-v5.yml'
+      - 'arm64/locks/final-iso-controller-v5/latest/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-publish-verified-iso-release-stable
+  cancel-in-progress: true
+
+env:
+  TARGET_BRANCH: arm64-port
+  CONTROLLER_LOCK: arm64/locks/final-iso-controller-v5/latest/artifact-lock.json
+  CONTROLLER_VERIFICATION: arm64/locks/final-iso-controller-v5/latest/verification.json
+  RELEASE_TAG: v3.3-arm64-preview.1
+  RELEASE_TITLE: Hancom Gooroom 3.3 ARM64 Preview 1
+  ISO_NAME: Hancom-Gooroom-3.3-arm64.hybrid.iso
+  RELEASE_LOCK_DIR: arm64/locks/verified-iso-release-v5/latest
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Gate on immutable verified fresh ISO lock
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          if [ -f "$CONTROLLER_LOCK" ] && [ -f "$CONTROLLER_VERIFICATION" ]; then
+            if jq -e '.schema == 5 and .iso_sha256 != "" and .actions_run_id != ""' \
+              "$CONTROLLER_LOCK" >/dev/null \
+              && jq -e '.schema == 5 and .static_iso_verification_passed == true' \
+              "$CONTROLLER_VERIFICATION" >/dev/null; then
+              ready=true
+            fi
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if [ "$ready" = true ]; then
+            echo "run_id=$(jq -r '.actions_run_id' "$CONTROLLER_LOCK")" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$(jq -r '.artifact_name' "$CONTROLLER_LOCK")" >> "$GITHUB_OUTPUT"
+            echo "expected_sha=$(jq -r '.iso_sha256' "$CONTROLLER_LOCK")" >> "$GITHUB_OUTPUT"
+          else
+            echo 'Verified fresh ISO lock is not available; registration run exits without publishing.'
+          fi
+
+      - name: Download locked controller artifact
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_RUN_ID: ${{ steps.gate.outputs.run_id }}
+          CONTROLLER_ARTIFACT: ${{ steps.gate.outputs.artifact_name }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work
+          mkdir -p work/controller work/release
+          gh run download "$CONTROLLER_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$CONTROLLER_ARTIFACT" \
+            --dir work/controller
+          find work/controller -type f -printf '%P\t%s\n' | LC_ALL=C sort \
+            > work/controller/FILE-INVENTORY.tsv
+          mapfile -t isos < <(find work/controller -type f -name '*.iso' | LC_ALL=C sort)
+          test "${#isos[@]}" -eq 1
+          cp "${isos[0]}" "work/release/$ISO_NAME"
+          verification="$(find work/controller -type f -name verification.json -print -quit)"
+          provenance="$(find work/controller -type f -name provenance.json -print -quit)"
+          test -n "$verification"
+          test -n "$provenance"
+          cp "$verification" work/release/verification.json
+          cp "$provenance" work/release/provenance.json
+
+      - name: Revalidate locked hash, size, and fresh-build authority
+        if: steps.gate.outputs.ready == 'true'
+        id: verify
+        shell: bash
+        run: |
+          set -euxo pipefail
+          iso="work/release/$ISO_NAME"
+          lock_sha='${{ steps.gate.outputs.expected_sha }}'
+          report_sha="$(jq -r '.iso_sha256' work/release/verification.json)"
+          report_size="$(jq -r '.iso_size' work/release/verification.json)"
+          jq -e '.schema == 5 and .static_iso_verification_passed == true' \
+            work/release/verification.json >/dev/null
+          jq -e '.schema == 5 and .verified == true and .mode == "fresh-deterministic-build"' \
+            work/release/provenance.json >/dev/null
+          actual_sha="$(sha256sum "$iso" | awk '{print $1}')"
+          actual_size="$(stat -c %s "$iso")"
+          test "$actual_sha" = "$lock_sha"
+          test "$actual_sha" = "$report_sha"
+          test "$actual_size" = "$report_size"
+          printf '%s  %s\n' "$actual_sha" "$ISO_NAME" \
+            > "work/release/$ISO_NAME.sha256"
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg filename "$ISO_NAME" \
+            --arg sha256 "$actual_sha" \
+            --argjson size "$actual_size" \
+            --arg controller_run_id '${{ steps.gate.outputs.run_id }}' \
+            '{schema:5,release_tag:$tag,filename:$filename,sha256:$sha256,size:$size,
+              controller_run_id:$controller_run_id,verified:true}' \
+            > work/release/release-manifest.json
+          echo "sha256=$actual_sha" >> "$GITHUB_OUTPUT"
+          echo "size=$actual_size" >> "$GITHUB_OUTPUT"
+
+      - name: Publish durable GitHub prerelease assets
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > work/release/RELEASE-NOTES.md <<EOF
+          # Hancom Gooroom 3.3 ARM64 Preview 1
+
+          A pre-release AArch64 UEFI live image generated by a fresh run of the
+          locked Hancom Gooroom 3.3 ARM64 package, rootfs, and ISO pipeline.
+
+          Static release gate:
+
+          - /EFI/BOOT/BOOTAA64.EFI present
+          - /EFI/BOOT/BOOTX64.EFI absent
+          - SquashFS extracted and audited
+          - installed amd64/i386 package count: 0
+          - x86-64/i386 ELF count: 0
+          - SHA-256: ${{ steps.verify.outputs.sha256 }}
+          - Size: ${{ steps.verify.outputs.size }} bytes
+
+          Dynamic UTM boot, graphics, installer, and post-install behavior remain
+          to be tested on Apple Silicon hardware.
+          EOF
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "$RELEASE_TITLE" --prerelease \
+              --notes-file work/release/RELEASE-NOTES.md
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET_BRANCH" --title "$RELEASE_TITLE" --prerelease \
+              --notes-file work/release/RELEASE-NOTES.md
+          fi
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            "work/release/$ISO_NAME" \
+            "work/release/$ISO_NAME.sha256" \
+            work/release/verification.json \
+            work/release/provenance.json \
+            work/release/release-manifest.json
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,isPrerelease,url,assets \
+            > work/release/published-release.json
+          jq -e --arg name "$ISO_NAME" \
+            '.isPrerelease == true and any(.assets[]; .name == $name and .size > 0)' \
+            work/release/published-release.json >/dev/null
+
+      - name: Upload release evidence artifact
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-verified-release-v5
+          path: work/release
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit durable release lock
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin "$TARGET_BRANCH"
+          git reset --hard origin/"$TARGET_BRANCH"
+          rm -rf "$RELEASE_LOCK_DIR"
+          mkdir -p "$RELEASE_LOCK_DIR"
+          cp work/release/release-manifest.json "$RELEASE_LOCK_DIR/"
+          cp work/release/published-release.json "$RELEASE_LOCK_DIR/"
+          cp work/release/verification.json "$RELEASE_LOCK_DIR/"
+          cp work/release/provenance.json "$RELEASE_LOCK_DIR/"
+          jq -n \
+            --arg actions_run_id "$GITHUB_RUN_ID" \
+            --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg controller_run_id '${{ steps.gate.outputs.run_id }}' \
+            --arg release_tag "$RELEASE_TAG" \
+            --arg iso_filename "$ISO_NAME" \
+            --arg iso_sha256 '${{ steps.verify.outputs.sha256 }}' \
+            '{schema:5,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,
+              controller_run_id:$controller_run_id,release_tag:$release_tag,
+              iso_filename:$iso_filename,iso_sha256:$iso_sha256,published:true}' \
+            > "$RELEASE_LOCK_DIR/release-lock.json"
+          find "$RELEASE_LOCK_DIR" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$RELEASE_LOCK_DIR/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RELEASE_LOCK_DIR"
+          git commit -m 'Lock published Hancom Gooroom 3.3 ARM64 fresh preview release v5'
+          pushed=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            if git push origin HEAD:"$TARGET_BRANCH"; then
+              pushed=true
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = true

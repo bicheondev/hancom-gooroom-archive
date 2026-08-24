@@ -1,0 +1,54 @@
+name: ARM64 probe exact nimf amd64 build dependencies v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-probe-nimf-amd64-builddeps-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+      - name: Download and verify exact AMD64 nimf build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          version='2023.06.30+grm3u1'
+          base='https://update.hancomgooroom.com/gooroom/pool/main/n/nimf'
+          out=arm64/locks/nimf-amd64-builddeps-v1/latest
+          work=work/nimf-amd64-builddeps-v1
+          rm -rf "$out" "$work"
+          mkdir -p "$out" "$work"
+          : > "$work/packages.ndjson"
+          for package in libnimf1 nimf-dev; do
+            file="${package}_${version}_amd64.deb"
+            url="$base/$file"
+            curl --fail --show-error --location --retry 5 --retry-delay 2 --retry-all-errors "$url" -o "$work/$file"
+            test "$(dpkg-deb -f "$work/$file" Package)" = "$package"
+            test "$(dpkg-deb -f "$work/$file" Version)" = "$version"
+            test "$(dpkg-deb -f "$work/$file" Architecture)" = amd64
+            jq -n -c --arg package "$package" --arg version "$version" --arg file "$file" --arg url "$url" --arg sha256 "$(sha256sum "$work/$file" | awk '{print $1}')" --argjson size "$(stat -c %s "$work/$file")" '{package:$package,version:$version,architecture:"amd64",filename:$file,url:$url,sha256:$sha256,size:$size}' >> "$work/packages.ndjson"
+          done
+          jq -s '{schema:1,source:"nimf",source_version:"2023.06.30+grm3u1",source_repository:"gooroom/nimf",source_commit:"583ad8b183db06a84c6b85a80fe132583566909d",source_tree:"a2e3017b4c00e92a1cab8fe803e2e88f07d5d74d",packages:.}' "$work/packages.ndjson" > "$out/authority.json"
+          cp "$work"/*.deb "$out/"
+          (cd "$out" && sha256sum *.deb authority.json > LOCKSUMS.sha256 && sha256sum -c LOCKSUMS.sha256)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$out"
+          git commit -m 'Lock exact AMD64 nimf build dependencies'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1

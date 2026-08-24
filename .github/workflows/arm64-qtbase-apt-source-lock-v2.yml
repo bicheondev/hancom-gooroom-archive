@@ -1,0 +1,114 @@
+name: ARM64 port - recover exact QtBase source from APT v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-qtbase-apt-source-lock-v2.yml'
+      - 'arm64/scripts/resolve_source_apt.py'
+      - 'arm64/scripts/resolve_source_apt_fast.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/sources-api-baseline/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-qtbase-apt-source-lock
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out immutable port evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install source verification tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev jq python3 xz-utils bzip2
+          python3 -m py_compile \
+            arm64/scripts/resolve_source_apt.py \
+            arm64/scripts/resolve_source_apt_fast.py
+
+      - name: Restrict the target to the exact AMD64 QtBase revision
+        run: |
+          set -euxo pipefail
+          rm -rf work/qtbase-source-v2
+          mkdir -p work/qtbase-source-v2/result
+          jq '
+            .sources |= map(
+              select(
+                .source == "qtbase-opensource-src"
+                and .source_version == "5.15.2+dfsg-9+grm3u1"
+              )
+            )
+          ' arm64/locks/sources-api-baseline/source-lock.json \
+            > work/qtbase-source-v2/seed.json
+          test "$(jq '.sources | length' work/qtbase-source-v2/seed.json)" = 1
+
+      - name: Probe recorded APT Sources indexes with bounded latency
+        run: |
+          set -euxo pipefail
+          PYTHONPATH=arm64/scripts \
+          python3 arm64/scripts/resolve_source_apt_fast.py \
+            --seed-lock work/qtbase-source-v2/seed.json \
+            --evidence arm64/locks .github/workflows arm64/scripts \
+            --output-dir work/qtbase-source-v2/result \
+            --max-indexes 40
+          jq . work/qtbase-source-v2/result/apt-source-lock-summary.json
+          find work/qtbase-source-v2/result -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/qtbase-source-v2/result/LOCKSUMS.sha256
+          sha256sum --check work/qtbase-source-v2/result/LOCKSUMS.sha256
+
+      - name: Upload exact source files and verification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qtbase-5.15.2-grm3u1-source-lock-v2
+          path: work/qtbase-source-v2/result
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit only a fully direct and exact source lock
+        run: |
+          set -euxo pipefail
+          resolved="$(jq -r '.resolved_count' \
+            work/qtbase-source-v2/result/apt-source-lock-summary.json)"
+          if [ "$resolved" = 0 ]; then
+            exit 0
+          fi
+          test "$resolved" = 1
+          test "$(jq -r '.sources[0].status' \
+            work/qtbase-source-v2/result/apt-source-lock.json)" = resolved
+          rm -rf arm64/locks/qtbase-apt-source
+          mkdir -p arm64/locks/qtbase-apt-source
+          jq '
+            walk(
+              if type == "object" then del(.local_path, .dsc)
+              else .
+              end
+            )
+          ' work/qtbase-source-v2/result/apt-source-lock.json \
+            > arm64/locks/qtbase-apt-source/apt-source-lock.json
+          cp work/qtbase-source-v2/result/apt-source-lock-summary.json \
+            arm64/locks/qtbase-apt-source/
+          sha256sum arm64/locks/qtbase-apt-source/* | sort -k2 \
+            > arm64/locks/qtbase-apt-source/LOCKSUMS.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/qtbase-apt-source
+          git commit -m 'Lock exact QtBase 5.15.2+dfsg-9+grm3u1 source payload' || exit 0
+          git pull --rebase origin arm64-port
+          git push origin HEAD:arm64-port

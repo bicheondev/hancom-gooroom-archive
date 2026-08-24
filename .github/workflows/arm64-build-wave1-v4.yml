@@ -1,0 +1,185 @@
+name: ARM64 port - build and record exact package wave 1 v4
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-build-wave1-v4.yml'
+      - 'arm64/scripts/build_locked_source_arm64_v2.sh'
+      - 'arm64/scripts/run_locked_source_arm64.sh'
+      - 'arm64/scripts/run_locked_source_arm64_v4.sh'
+      - 'arm64/scripts/validate_arm64_source_outputs_v3.py'
+      - 'arm64/scripts/validate_arm64_source_outputs_v4.py'
+      - 'arm64/scripts/summarize_arm64_build_wave.py'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-wave1-v4
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - accountsservice
+          - file-roller
+          - celluloid
+          - cups-pk-helper
+          - mousetweaks
+          - gnome-screenshot
+          - p7zip
+
+    steps:
+      - name: Check out exact locks and builders
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install verification tools
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'This job must run on native ARM64.' >&2; exit 1 ;;
+          esac
+          docker version
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev file git jq python3
+
+      - name: Build and validate the exact locked source
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+          SOURCE_NAME: ${{ matrix.source }}
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/build_locked_source_arm64_v2.sh \
+            arm64/scripts/run_locked_source_arm64.sh \
+            arm64/scripts/run_locked_source_arm64_v4.sh \
+            arm64/scripts/validate_arm64_source_outputs_v3.py \
+            arm64/scripts/validate_arm64_source_outputs_v4.py
+          output="work/${SOURCE_NAME}-arm64-wave1-v4"
+          rm -rf "$output"
+          arm64/scripts/run_locked_source_arm64_v4.sh \
+            arm64/locks/effective-sources/effective-source-lock.json \
+            "$SOURCE_NAME" \
+            "$output"
+          jq -e '.status == "passed"' \
+            "$output/arm64-source-output-validation-v4.json"
+          find "$output" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > "$output/SHA256SUMS"
+          test -s "$output/SHA256SUMS"
+
+      - name: Upload exact ARM64 packages and complete diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ matrix.source }}-exact-arm64-wave1-v4
+          path: work/${{ matrix.source }}-arm64-wave1-v4
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+  record:
+    name: Record complete wave evidence
+    needs: build
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download all artifacts from this workflow run
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: '*-exact-arm64-wave1-v4'
+          path: work/wave1-v4-artifacts
+
+      - name: Build a fail-closed same-run summary
+        env:
+          DOWNLOAD_OUTCOME: ${{ steps.download.outcome }}
+        run: |
+          set -uxo pipefail
+          rm -rf work/wave1-v4-evidence
+          mkdir -p work/wave1-v4-evidence work/wave1-v4-artifacts
+          set +e
+          python3 arm64/scripts/summarize_arm64_build_wave.py \
+            --artifacts-root work/wave1-v4-artifacts \
+            --output-dir work/wave1-v4-evidence \
+            --schema hancom-gooroom-arm64-build-wave1-v4-evidence \
+            --expected-source accountsservice \
+            --expected-source file-roller \
+            --expected-source celluloid \
+            --expected-source cups-pk-helper \
+            --expected-source mousetweaks \
+            --expected-source gnome-screenshot \
+            --expected-source p7zip \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$GITHUB_SHA" \
+            --head-branch "$GITHUB_REF_NAME" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --repository "$GITHUB_REPOSITORY" \
+            --server-url "$GITHUB_SERVER_URL" \
+            --download-status "$DOWNLOAD_OUTCOME"
+          summary_rc=$?
+          set -e
+          echo "$summary_rc" > work/wave1-v4-evidence/summarizer.exit-code
+          find work/wave1-v4-evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/wave1-v4-evidence/LOCKSUMS.sha256
+          jq . work/wave1-v4-evidence/summary.json
+
+      - name: Commit the evidence before enforcing the result
+        run: |
+          set -euxo pipefail
+          git pull --rebase origin arm64-port
+          destination=arm64/locks/build-wave1-v4
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/wave1-v4-evidence/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record exact ARM64 package wave 1 v4 evidence'
+            git pull --rebase origin arm64-port
+            git push origin HEAD:arm64-port
+          fi
+
+      - name: Upload consolidated wave evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-arm64-wave1-v4-evidence
+          path: work/wave1-v4-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce a complete passing wave
+        run: |
+          set -euxo pipefail
+          test '${{ needs.build.result }}' = success
+          test "$(jq -r '.status' work/wave1-v4-evidence/summary.json)" = passed

@@ -1,0 +1,238 @@
+name: ARM64 port - recover exact sources from signed Sources indexes v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-from-signed-sources-index-v1.yml'
+      - 'arm64/scripts/recover_from_signed_sources_index_v1.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-signed-sources-index-recovery-v1
+  cancel-in-progress: true
+
+env:
+  ISO_RELEASE: v3.3
+  ISO_NAME: Hancom-Gooroom-3.3-amd64.hybrid.iso
+  ISO_SIZE: '1566277632'
+  ISO_SHA256: ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out exact source authority and recovery code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install ISO, signature, and Debian source tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates dpkg-dev gpgv gzip jq python3 \
+            squashfs-tools xorriso
+          python3 -m py_compile arm64/scripts/recover_from_signed_sources_index_v1.py
+          test "$(jq 'length' arm64/status/source-blockers.json)" = 7
+
+      - name: Download and lock the exact Hancom Gooroom 3.3 reference ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/signed-sources-index
+          rm -rf "$base"
+          mkdir -p "$base"/{download,iso-root,input/keyrings,recovery,vault}
+          gh release download "$ISO_RELEASE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ISO_NAME" \
+            --dir "$base/download" \
+            --clobber
+          iso="$base/download/$ISO_NAME"
+          test -f "$iso"
+          test "$(stat -c '%s' "$iso")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$iso" | sha256sum --check --strict
+          sha256sum "$iso" > "$base/input/reference-iso.sha256"
+
+      - name: Extract ISO-preserved signed release files and archive keyrings
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/signed-sources-index
+          iso="$base/download/$ISO_NAME"
+          iso_root="$base/iso-root"
+          xorriso -osirrox on -indev "$iso" -extract / "$iso_root" \
+            > "$base/input/xorriso.log" 2>&1
+          squashfs="$(find "$iso_root" -type f -name filesystem.squashfs -print -quit)"
+          test -n "$squashfs"
+          sha256sum "$squashfs" > "$base/input/filesystem.squashfs.sha256"
+
+          unsquashfs -cat "$squashfs" \
+            var/lib/apt/lists/update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease \
+            > "$base/input/gooroom-3.0.InRelease"
+          unsquashfs -cat "$squashfs" \
+            var/lib/apt/lists/update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease \
+            > "$base/input/hancom-3.0.InRelease"
+
+          unsquashfs -f -d "$base/keyring-root" "$squashfs" \
+            etc/apt/trusted.gpg.d > "$base/input/unsquashfs-keyrings.log" 2>&1
+          find "$base/keyring-root/etc/apt/trusted.gpg.d" -type f -name '*.gpg' -print0 \
+            | while IFS= read -r -d '' keyring; do
+                cp "$keyring" "$base/input/keyrings/$(basename "$keyring")"
+              done
+          test "$(find "$base/input/keyrings" -type f -name '*.gpg' | wc -l)" -gt 0
+
+          cmp "$base/input/gooroom-3.0.InRelease" \
+            arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_gooroom_dists_gooroom-3.0_InRelease.txt
+          cmp "$base/input/hancom-3.0.InRelease" \
+            arm64/locks/reference-iso-source-residue/latest/selected-text/rootfs___var__lib__apt__lists__update.hancomgooroom.com_hancom_dists_hancom-3.0_InRelease.txt
+
+          find "$base/input" -type f ! -name INPUTSUMS.sha256 -print0 \
+            | LC_ALL=C sort -z | xargs -0 sha256sum > "$base/input/INPUTSUMS.sha256"
+
+      - name: Recover all seven exact source blockers through signed Sources indexes
+        id: recover
+        shell: bash
+        run: |
+          set -uxo pipefail
+          base=work/signed-sources-index
+          keyrings=()
+          while IFS= read -r keyring; do
+            keyrings+=(--keyring "$keyring")
+          done < <(find "$base/input/keyrings" -type f -name '*.gpg' | LC_ALL=C sort)
+          test "${#keyrings[@]}" -gt 0
+
+          gooroom_spec="$(jq -cn \
+            --arg repository gooroom \
+            --arg suite gooroom-3.0 \
+            --arg base_url https://update.hancomgooroom.com/gooroom \
+            --arg inrelease "$base/input/gooroom-3.0.InRelease" \
+            '{repository:$repository,suite:$suite,base_url:$base_url,inrelease:$inrelease}')"
+          hancom_spec="$(jq -cn \
+            --arg repository hancom \
+            --arg suite hancom-3.0 \
+            --arg base_url https://update.hancomgooroom.com/hancom \
+            --arg inrelease "$base/input/hancom-3.0.InRelease" \
+            '{repository:$repository,suite:$suite,base_url:$base_url,inrelease:$inrelease}')"
+
+          rm -rf "$base/recovery" "$base/vault"
+          mkdir -p "$base/recovery" "$base/vault"
+          set +e
+          python3 arm64/scripts/recover_from_signed_sources_index_v1.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --targets arm64/status/source-blockers.json \
+            --repository-spec "$gooroom_spec" \
+            --repository-spec "$hancom_spec" \
+            "${keyrings[@]}" \
+            --component-workers 4 \
+            --output-dir "$base/recovery" \
+            --vault-dir "$base/vault" \
+            2>&1 | tee "$base/recovery-workflow.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          test -f "$base/recovery/summary.json"
+          test -f "$base/recovery/apt-source-fallback-lock.json"
+          cat "$base/recovery/summary.json"
+
+      - name: Seal compact authority and source-vault evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base=work/signed-sources-index
+          if [ -d "$base/recovery" ]; then
+            jq -n \
+              --arg run_id "$GITHUB_RUN_ID" \
+              --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+              --arg repository "$GITHUB_REPOSITORY" \
+              --arg head_sha "$GITHUB_SHA" \
+              '{schema:1,run_id:$run_id,run_attempt:$run_attempt,repository:$repository,head_sha:$head_sha}' \
+              > "$base/recovery/workflow-run.json"
+            (
+              cd "$base/recovery"
+              find . -type f ! -name LOCKSUMS.sha256 -print0 \
+                | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+              sha256sum --check --strict LOCKSUMS.sha256
+            )
+          fi
+          if [ -f "$base/vault/SOURCEFILES.sha256" ]; then
+            (cd "$base/vault" && sha256sum --check --strict SOURCEFILES.sha256)
+          fi
+          du -sh "$base/recovery" "$base/vault" || true
+
+      - name: Upload compact signed-index recovery authority
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-signed-sources-index-recovery-v1
+          path: |
+            work/signed-sources-index/recovery
+            work/signed-sources-index/recovery-workflow.log
+            work/signed-sources-index/input
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Upload exact recovered source-file vault
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-exact-source-vault-v1
+          path: work/signed-sources-index/vault
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+
+      - name: Commit the compact exact APT source authority
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source=work/signed-sources-index/recovery
+          test -f "$source/apt-source-fallback-lock.json"
+          destination=arm64/locks/apt-source-fallback-v2
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source/." "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            echo 'Signed Sources-index authority is already current.'
+            exit 0
+          fi
+          git commit -m 'Recover exact sources through signed vendor Sources indexes'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce complete exact recovery after preserving evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.recover.outputs.exit_code }}' = '0'
+          jq -e '
+            .target_count == 7
+            and .resolved_count == 7
+            and .unresolved_count == 0
+            and .ambiguous_count == 0
+            and .usable_repository_count >= 1
+            and .all_blocking_sources_recovered == true
+            and .version_text_alone_allowed == false
+          ' work/signed-sources-index/recovery/summary.json >/dev/null

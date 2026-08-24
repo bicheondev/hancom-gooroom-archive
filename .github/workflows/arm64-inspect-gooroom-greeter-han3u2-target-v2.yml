@@ -1,0 +1,277 @@
+name: ARM64 port - inspect exact Gooroom greeter han3u2 target v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-inspect-gooroom-greeter-han3u2-target-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-inspect-greeter-han3u2-target-v2
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    env:
+      OUTPUT: work/gooroom-greeter-han3u2-target-inspection-v2
+      TARGET_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter_0.3.1+grm3u1+han3u2_amd64.deb
+      TARGET_SHA256: 61189d72a44e030a7e5658dc9d470a6c52579ab7994deef2f705c34cd0084836
+      TARGET_SIZE: '282940'
+      DEBUG_URL: https://update.hancomgooroom.com/hancom/pool/main/g/gooroom-greeter/gooroom-greeter-dbgsym_0.3.1+grm3u1+han3u2_amd64.deb
+      DEBUG_SHA256: 2d883d730eeb0e38d27828fe873d928fca9ef7d44020e5a775e41ca514964237
+      DEBUG_SIZE: '129604'
+
+    steps:
+      - name: Check out evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package and DWARF inspection tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gzip jq python3
+
+      - name: Download and verify exact target packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf "$OUTPUT"
+          mkdir -p "$OUTPUT/downloads" "$OUTPUT/root" "$OUTPUT/debug-root" "$OUTPUT/compact"
+          curl --fail --show-error --location --retry 6 --retry-delay 2 --retry-all-errors \
+            "$TARGET_URL" -o "$OUTPUT/downloads/target.deb"
+          curl --fail --show-error --location --retry 6 --retry-delay 2 --retry-all-errors \
+            "$DEBUG_URL" -o "$OUTPUT/downloads/target-dbgsym.deb"
+          test "$(stat -c '%s' "$OUTPUT/downloads/target.deb")" = "$TARGET_SIZE"
+          test "$(stat -c '%s' "$OUTPUT/downloads/target-dbgsym.deb")" = "$DEBUG_SIZE"
+          echo "$TARGET_SHA256  $OUTPUT/downloads/target.deb" | sha256sum --check -
+          echo "$DEBUG_SHA256  $OUTPUT/downloads/target-dbgsym.deb" | sha256sum --check -
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Package)" = gooroom-greeter
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Version)" = '0.3.1+grm3u1+han3u2'
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target.deb" Architecture)" = amd64
+          test "$(dpkg-deb -f "$OUTPUT/downloads/target-dbgsym.deb" Version)" = '0.3.1+grm3u1+han3u2'
+
+      - name: Extract and inspect all payload evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          compact="$OUTPUT/compact"
+          dpkg-deb -x "$OUTPUT/downloads/target.deb" "$OUTPUT/root"
+          dpkg-deb -x "$OUTPUT/downloads/target-dbgsym.deb" "$OUTPUT/debug-root"
+          dpkg-deb -f "$OUTPUT/downloads/target.deb" > "$compact/control.txt"
+          dpkg-deb -f "$OUTPUT/downloads/target-dbgsym.deb" > "$compact/debug-control.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target.deb" > "$compact/file-list.txt"
+          dpkg-deb -c "$OUTPUT/downloads/target-dbgsym.deb" > "$compact/debug-file-list.txt"
+          ar tv "$OUTPUT/downloads/target.deb" > "$compact/ar-members.txt"
+          ar tv "$OUTPUT/downloads/target-dbgsym.deb" > "$compact/debug-ar-members.txt"
+
+          python3 - "$OUTPUT" <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import os
+          import stat
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          root = output / 'root'
+          debug_root = output / 'debug-root'
+          compact = output / 'compact'
+
+          def sha(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          rows = []
+          elf_paths = []
+          for path in sorted(root.rglob('*')):
+              rel = path.relative_to(root).as_posix()
+              st = path.lstat()
+              entry = {
+                  'path': rel,
+                  'mode': f'{stat.S_IMODE(st.st_mode):04o}',
+                  'size': st.st_size,
+              }
+              if path.is_symlink():
+                  entry.update(type='symlink', target=os.readlink(path))
+              elif path.is_dir():
+                  entry.update(type='directory')
+              elif path.is_file():
+                  is_elf = path.read_bytes()[:4] == b'\x7fELF'
+                  entry.update(type='file', sha256=sha(path), elf=is_elf)
+                  if is_elf:
+                      elf_paths.append(path)
+              else:
+                  entry.update(type='other')
+              rows.append(entry)
+          (compact / 'payload-manifest.json').write_text(
+              json.dumps(rows, indent=2, sort_keys=True) + '\n'
+          )
+          with (compact / 'payload-manifest.tsv').open('w') as stream:
+              stream.write('path\ttype\tmode\tsize\tsha256\telf\ttarget\n')
+              for row in rows:
+                  stream.write('\t'.join([
+                      row['path'], row['type'], row['mode'], str(row['size']),
+                      row.get('sha256', ''), str(row.get('elf', False)).lower(),
+                      row.get('target', ''),
+                  ]) + '\n')
+
+          evidence = []
+          for binary in elf_paths:
+              rel = binary.relative_to(root).as_posix()
+              commands = {
+                  'file': ['file', '-b', str(binary)],
+                  'elf_header': ['readelf', '-hW', str(binary)],
+                  'notes': ['readelf', '-nW', str(binary)],
+                  'dynamic': ['readelf', '-dW', str(binary)],
+                  'symbols': ['readelf', '-WsW', str(binary)],
+                  'strings': ['strings', '-a', str(binary)],
+              }
+              item = {'path': rel, 'sha256': sha(binary), 'commands': {}}
+              for name, command in commands.items():
+                  result = subprocess.run(command, text=True, stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT, check=False)
+                  item['commands'][name] = {
+                      'exit_code': result.returncode,
+                      'sha256': hashlib.sha256(result.stdout.encode()).hexdigest(),
+                      'text': result.stdout,
+                  }
+              evidence.append(item)
+          (compact / 'elf-evidence.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n'
+          )
+
+          dwarf = []
+          for path in sorted(debug_root.rglob('*')):
+              if not path.is_file() or path.read_bytes()[:4] != b'\x7fELF':
+                  continue
+              command = ['readelf', '--debug-dump=info', '--wide', str(path)]
+              result = subprocess.run(command, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, check=False)
+              selected = [line for line in result.stdout.splitlines()
+                          if any(key in line for key in (
+                              'DW_AT_name', 'DW_AT_comp_dir', 'DW_AT_producer',
+                              'DW_AT_language'))]
+              dwarf.append({
+                  'path': path.relative_to(debug_root).as_posix(),
+                  'size': path.stat().st_size,
+                  'sha256': sha(path),
+                  'selected_debug_info': selected,
+              })
+          (compact / 'dwarf-source-evidence.json').write_text(
+              json.dumps(dwarf, indent=2, sort_keys=True) + '\n'
+          )
+
+          changelogs = []
+          for path in sorted(root.rglob('*changelog*')):
+              if not path.is_file():
+                  continue
+              raw = path.read_bytes()
+              try:
+                  import gzip
+                  text = gzip.decompress(raw).decode('utf-8', errors='replace') \
+                      if path.name.endswith('.gz') else raw.decode('utf-8', errors='replace')
+              except OSError:
+                  text = raw.decode('utf-8', errors='replace')
+              changelogs.append({
+                  'path': path.relative_to(root).as_posix(),
+                  'raw_sha256': hashlib.sha256(raw).hexdigest(),
+                  'text_sha256': hashlib.sha256(text.encode()).hexdigest(),
+                  'contains_han3u2': '0.3.1+grm3u1+han3u2' in text,
+                  'text': text,
+              })
+          (compact / 'changelog-evidence.json').write_text(
+              json.dumps(changelogs, indent=2, sort_keys=True,
+                         ensure_ascii=False) + '\n'
+          )
+          PY
+
+          jq -n \
+            --arg target_url "$TARGET_URL" \
+            --arg target_sha256 "$TARGET_SHA256" \
+            --argjson target_size "$TARGET_SIZE" \
+            --arg debug_url "$DEBUG_URL" \
+            --arg debug_sha256 "$DEBUG_SHA256" \
+            --argjson debug_size "$DEBUG_SIZE" '
+              {
+                schema: 2,
+                target: {
+                  package: "gooroom-greeter",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $target_url,
+                  size: $target_size,
+                  sha256: $target_sha256
+                },
+                debug_symbols: {
+                  package: "gooroom-greeter-dbgsym",
+                  version: "0.3.1+grm3u1+han3u2",
+                  architecture: "amd64",
+                  url: $debug_url,
+                  size: $debug_size,
+                  sha256: $debug_sha256
+                }
+              }
+            ' > "$compact/target-lock.json"
+
+          (
+            cd "$compact"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check LOCKSUMS.sha256
+          )
+          jq . "$compact/target-lock.json"
+          jq '.[] | {path, sha256, build_id: .commands.notes.text}' \
+            "$compact/elf-evidence.json"
+          jq '.[] | {path, contains_han3u2, text}' "$compact/changelog-evidence.json"
+
+      - name: Upload exact target inspection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-greeter-han3u2-target-inspection-v2
+          path: ${{ env.OUTPUT }}/compact
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit target inspection authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source="$OUTPUT/compact"
+          destination=arm64/locks/gooroom-greeter-han3u2-target-inspection/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a "$source"/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record exact gooroom-greeter han3u2 target inspection'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

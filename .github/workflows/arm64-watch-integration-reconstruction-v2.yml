@@ -1,0 +1,50 @@
+name: ARM64 watch integration reconstruction v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-watch-integration-reconstruction-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+      - name: Find and wait for reconstruction run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow=arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+          trigger_sha=a7f4e1c582b63251c89fa5321d1b015dbf3cda2a
+          run_id=''
+          for attempt in $(seq 1 60); do
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" --branch arm64-port --limit 50 --json databaseId,headSha,createdAt | jq -r --arg sha "$trigger_sha" '[.[] | select(.headSha == $sha)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            [[ -z "$run_id" ]] || break
+            sleep 5
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 || true
+          mkdir -p arm64/status/integration-reconstruction-v2
+          gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json databaseId,status,conclusion,url,createdAt,updatedAt,headSha,event > arm64/status/integration-reconstruction-v2/latest.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/integration-reconstruction-v2/latest.json
+          git commit -m 'Record integration reconstruction v2 run' || exit 0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1

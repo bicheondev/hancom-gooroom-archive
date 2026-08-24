@@ -1,0 +1,212 @@
+name: ARM64 port - continue after linux 5.10.0-23 grm3u1 v1
+
+on:
+  workflow_run:
+    workflows: ['ARM64 port - resolve linux 5.10.0-23 grm3u1 v1']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Kernel-resolution Actions run ID
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-0-23-grm3u1-continuation-v1
+  cancel-in-progress: false
+
+env:
+  PACKAGE: linux-image-5.10.0-23-arm64
+  VERSION: 5.10.179-1+grm3u1
+  FILENAME: linux-image-5.10.0-23-arm64_5.10.179-1+grm3u1_arm64.deb
+  ARTIFACT_NAME: linux-image-5.10.0-23-arm64-5.10.179-1-grm3u1-v1
+  RELEASE_TAG: v3.3-arm64-packages
+
+jobs:
+  promote-and-continue:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.head_branch == 'arm64-port'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Resolve source run ID
+        id: source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ '${{ github.event_name }}' = workflow_run ]; then
+            run_id='${{ github.event.workflow_run.id }}'
+          else
+            run_id='${{ inputs.source_run_id }}'
+          fi
+          if [ -z "$run_id" ]; then
+            run_id="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/arm64-resolve-linux-5.10.0-23-grm3u1-v1.yml/runs?branch=arm64-port&per_page=20" \
+              --jq '.workflow_runs[] | select(.status == "completed") | .id' \
+              | head -1)"
+          fi
+          test -n "$run_id"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Check out current ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Read fail-closed kernel authority
+        id: authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          authority=arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/authority.json
+          summary=arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest/summary.json
+          test -f "$authority"
+          test -f "$summary"
+          locked_run="$(jq -r '.actions_run_id' "$authority")"
+          test "$locked_run" = '${{ steps.source.outputs.run_id }}'
+          allowed="$(jq -r '.promotion_allowed // false' "$authority")"
+          resolution="$(jq -r '.resolution // "unknown"' "$summary")"
+          printf 'promotion_allowed=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+          printf 'resolution=%s\n' "$resolution" >> "$GITHUB_OUTPUT"
+
+      - name: Download verified kernel artifact
+        if: steps.authority.outputs.promotion_allowed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id='${{ steps.source.outputs.run_id }}'
+          artifact_id="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name == "'"$ARTIFACT_NAME"'") | .id' \
+            | head -1)"
+          test -n "$artifact_id"
+          mkdir -p work/kernel-promotion/artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > work/kernel-promotion/artifact.zip
+          unzip -q work/kernel-promotion/artifact.zip \
+            -d work/kernel-promotion/artifact
+          deb="$(find work/kernel-promotion/artifact -type f -name "$FILENAME" -print -quit)"
+          test -n "$deb"
+          test "$(dpkg-deb -f "$deb" Package)" = "$PACKAGE"
+          test "$(dpkg-deb -f "$deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$deb" Architecture)" = arm64
+          mkdir -p work/kernel-promotion/release
+          cp "$deb" "work/kernel-promotion/release/$FILENAME"
+          sha256sum "work/kernel-promotion/release/$FILENAME" \
+            > work/kernel-promotion/release/SHA256SUMS
+          printf '%s\n' "$artifact_id" > work/kernel-promotion/source-artifact-id.txt
+
+      - name: Permanently publish the verified package to the ARM64 package release
+        if: steps.authority.outputs.promotion_allowed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title 'Hancom Gooroom 3.3 ARM64 package pool' \
+              --notes 'Verified ARM64 package artifacts for the Hancom Gooroom 3.3 port.'
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "work/kernel-promotion/release/$FILENAME#$FILENAME" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          release_json=work/kernel-promotion/release-api.json
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$release_json"
+          jq -e --arg name "$FILENAME" \
+            '.assets[] | select(.name == $name)' "$release_json" >/dev/null
+
+      - name: Commit permanent kernel release authority
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/linux-5.10.0-23-arm64-grm3u1-resolution-v1/latest
+          mkdir -p "$destination"
+          promoted='${{ steps.authority.outputs.promotion_allowed }}'
+          if [ "$promoted" = true ] && [ -f work/kernel-promotion/release-api.json ]; then
+            asset="$(jq --arg name "$FILENAME" '.assets[] | select(.name == $name)' \
+              work/kernel-promotion/release-api.json)"
+            jq -n \
+              --arg package "$PACKAGE" \
+              --arg version "$VERSION" \
+              --arg filename "$FILENAME" \
+              --arg release_tag "$RELEASE_TAG" \
+              --arg source_run_id '${{ steps.source.outputs.run_id }}' \
+              --arg source_artifact_id "$(cat work/kernel-promotion/source-artifact-id.txt)" \
+              --arg sha256 "$(sha256sum "work/kernel-promotion/release/$FILENAME" | awk '{print $1}')" \
+              --argjson asset "$asset" '
+                {schema:1,status:"published",package:$package,version:$version,
+                 filename:$filename,release_tag:$release_tag,
+                 source_actions_run_id:$source_run_id,
+                 source_artifact_id:$source_artifact_id,sha256:$sha256,
+                 release_asset:{id:$asset.id,name:$asset.name,size:$asset.size,
+                                state:$asset.state,browser_download_url:$asset.browser_download_url},
+                 final_repository_recalculation_requested:true,
+                 iso_assembly_allowed:false}
+              ' > "$destination/release-promotion.json"
+          else
+            jq -n \
+              --arg source_run_id '${{ steps.source.outputs.run_id }}' \
+              --arg resolution '${{ steps.authority.outputs.resolution }}' '
+                {schema:1,status:"not-published",source_actions_run_id:$source_run_id,
+                 resolution:$resolution,reason:"kernel-promotion-authority-was-not-positive",
+                 final_repository_recalculation_requested:false,
+                 iso_assembly_allowed:false}
+              ' > "$destination/release-promotion.json"
+          fi
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record linux 5.10.0-23 ARM64 release promotion'
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                break
+              fi
+              test "$attempt" -lt 6
+              sleep $((attempt * 3))
+            done
+          fi
+
+      - name: Request package-index and final-pool recalculation
+        if: steps.authority.outputs.promotion_allowed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          workflows=(
+            arm64-index-rebuild-results-v2.yml
+            arm64-recover-exact-package-pool.yml
+            arm64-summarize-recovered-package-blockers.yml
+            arm64-port-coverage-v2.yml
+            arm64-ci-state-snapshot.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            if gh workflow view "$workflow" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref arm64-port
+              sleep 3
+            fi
+          done

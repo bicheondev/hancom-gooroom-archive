@@ -1,0 +1,214 @@
+name: ARM64 port - lint and audit pipeline
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/**'
+      - 'arm64/scripts/**'
+      - 'arm64/*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-pipeline-lint
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the complete port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install static analysis tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 python3-yaml shellcheck jq
+
+      - name: Run all checks without losing diagnostics
+        id: checks
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf work/pipeline-lint
+          mkdir -p work/pipeline-lint
+
+          run_check() {
+            local name="$1"
+            shift
+            set +e
+            "$@" >"work/pipeline-lint/${name}.log" 2>&1
+            local rc=$?
+            set -e
+            printf '%s\t%s\n' "$name" "$rc" >> work/pipeline-lint/status.tsv
+          }
+
+          : > work/pipeline-lint/status.tsv
+          run_check python-compile \
+            python3 -m compileall -q arm64/scripts
+
+          cat > work/pipeline-lint/bash-syntax.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          while IFS= read -r -d '' path; do
+            bash -n "$path"
+          done < <(find arm64/scripts -type f -name '*.sh' -print0 | sort -z)
+          EOF
+          chmod +x work/pipeline-lint/bash-syntax.sh
+          run_check bash-syntax work/pipeline-lint/bash-syntax.sh
+
+          cat > work/pipeline-lint/shellcheck.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          mapfile -d '' files < <(find arm64/scripts -type f -name '*.sh' -print0 | sort -z)
+          if [ "${#files[@]}" -gt 0 ]; then
+            shellcheck --severity=error "${files[@]}"
+          fi
+          EOF
+          chmod +x work/pipeline-lint/shellcheck.sh
+          run_check shellcheck work/pipeline-lint/shellcheck.sh
+
+          cat > work/pipeline-lint/yaml-json.py <<'PY'
+          from pathlib import Path
+          import json, sys, yaml
+          errors = []
+          workflows = {}
+          for path in sorted(Path('.github/workflows').glob('*.yml')):
+              try:
+                  value = yaml.safe_load(path.read_text(encoding='utf-8'))
+                  if not isinstance(value, dict):
+                      raise TypeError('workflow top level is not a mapping')
+                  name = value.get('name')
+                  if not isinstance(name, str) or not name.strip():
+                      raise ValueError('workflow has no nonempty name')
+                  workflows.setdefault(name, []).append(str(path))
+                  jobs = value.get('jobs')
+                  if not isinstance(jobs, dict) or not jobs:
+                      raise ValueError('workflow has no jobs')
+              except Exception as exc:
+                  errors.append(f'{path}: {type(exc).__name__}: {exc}')
+          for name, paths in workflows.items():
+              if len(paths) > 1:
+                  errors.append(f'duplicate workflow name {name!r}: {paths}')
+          for path in sorted(Path('arm64').rglob('*.json')):
+              try:
+                  json.loads(path.read_text(encoding='utf-8'))
+              except Exception as exc:
+                  errors.append(f'{path}: {type(exc).__name__}: {exc}')
+          if errors:
+              print('\n'.join(errors))
+              sys.exit(1)
+          print(f'parsed {len(workflows)} workflows and all arm64 JSON files')
+          PY
+          run_check yaml-json python3 work/pipeline-lint/yaml-json.py
+
+          cat > work/pipeline-lint/static-invariants.py <<'PY'
+          from pathlib import Path
+          import re, sys
+          errors = []
+          for path in sorted(Path('arm64/scripts').iterdir()):
+              if not path.is_file():
+                  continue
+              data = path.read_bytes()
+              if b'\r\n' in data:
+                  errors.append(f'{path}: CRLF line endings')
+              if data.startswith(b'#!') and not data.endswith(b'\n'):
+                  errors.append(f'{path}: no final newline')
+          for path in sorted(Path('.github/workflows').glob('*.yml')):
+              text = path.read_text(encoding='utf-8')
+              if '\t' in text:
+                  errors.append(f'{path}: tab character in YAML')
+              for match in re.finditer(r'uses:\s*actions/checkout@([^\s]+)', text):
+                  ref = match.group(1)
+                  if not re.fullmatch(r'[0-9a-f]{40}', ref):
+                      errors.append(f'{path}: checkout action is not SHA pinned: {ref}')
+              for match in re.finditer(r'uses:\s*actions/upload-artifact@([^\s]+)', text):
+                  ref = match.group(1)
+                  if not re.fullmatch(r'[0-9a-f]{40}', ref):
+                      errors.append(f'{path}: upload-artifact is not SHA pinned: {ref}')
+          if errors:
+              print('\n'.join(errors))
+              sys.exit(1)
+          print('static invariants passed')
+          PY
+          run_check static-invariants python3 work/pipeline-lint/static-invariants.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          statuses = []
+          for line in Path('work/pipeline-lint/status.tsv').read_text().splitlines():
+              name, raw = line.split('\t')
+              statuses.append({'name': name, 'exit_code': int(raw), 'passed': raw == '0'})
+          result = {
+              'schema': 1,
+              'checks': statuses,
+              'passed': all(item['passed'] for item in statuses),
+              'failed_checks': [item['name'] for item in statuses if not item['passed']],
+          }
+          Path('work/pipeline-lint/summary.json').write_text(
+              json.dumps(result, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(result, indent=2))
+          PY
+
+          find work/pipeline-lint -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/pipeline-lint/LOCKSUMS.sha256
+          echo "passed=$(jq -r '.passed' work/pipeline-lint/summary.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload complete lint evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-pipeline-lint
+          path: work/pipeline-lint
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact lint report before enforcing it
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p arm64/audit/pipeline-lint
+          cp work/pipeline-lint/summary.json arm64/audit/pipeline-lint/
+          cp work/pipeline-lint/status.tsv arm64/audit/pipeline-lint/
+          cp work/pipeline-lint/LOCKSUMS.sha256 arm64/audit/pipeline-lint/
+          for log in work/pipeline-lint/*.log; do
+            [ -e "$log" ] || continue
+            tail -n 300 "$log" > "arm64/audit/pipeline-lint/$(basename "$log")"
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/audit/pipeline-lint
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record ARM64 pipeline lint audit'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce clean pipeline syntax and invariants
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.checks.outputs.passed }}' = true
+          jq -e '.passed == true' work/pipeline-lint/summary.json

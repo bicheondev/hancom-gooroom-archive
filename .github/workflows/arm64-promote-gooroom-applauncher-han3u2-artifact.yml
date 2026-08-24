@@ -1,0 +1,307 @@
+name: ARM64 port - promote verified Gooroom applauncher han3u2 artifact
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-promote-gooroom-applauncher-han3u2-artifact.yml'
+      - 'arm64/scripts/promote_gooroom_applauncher_han3u2.py'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-promote-applauncher-han3u2-artifact
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: '31251842558'
+  SOURCE_RUN_SHA: 183f2c3660a052c11eeee502a6376ff192fbece9
+  SOURCE_ARTIFACT_ID: '9020244055'
+  SOURCE_ARTIFACT_NAME: gooroom-applauncher-han3u2-source-lineage-31251842558
+  SOURCE_ARTIFACT_DIGEST: sha256:0fca7ce9c9ee09ea4c4f137aa525c2a1f8fd55b480e96e866d6afd94998b6d71
+  ARM64_RUN_ID: '31268447673'
+  ARM64_RUN_SHA: 248e3e9799375ab735da47d15299bca6bfa1d959
+  ARM64_ARTIFACT_ID: '9024895138'
+  ARM64_ARTIFACT_NAME: gooroom-applauncher-han3u2-exact-arm64-v1
+  ARM64_ARTIFACT_DIGEST: sha256:fc46684b4799d882d0d13cca83d987e6d8336492255be2e05b473145bc609870
+
+jobs:
+  promote:
+    name: Restore hidden payload and persist immutable source and ARM64 evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install promotion prerequisites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git jq python3
+          python3 -m py_compile arm64/scripts/promote_gooroom_applauncher_han3u2.py
+
+      - name: Download the successful strict AMD64 source-verification artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: work/promote/source
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download the already verified native ARM64 artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.ARM64_ARTIFACT_NAME }}
+          path: work/promote/arm64
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ARM64_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Revalidate both immutable artifact authorities
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          for side in source arm64; do
+            case "$side" in
+              source)
+                artifact_id="$SOURCE_ARTIFACT_ID"
+                artifact_name="$SOURCE_ARTIFACT_NAME"
+                artifact_digest="$SOURCE_ARTIFACT_DIGEST"
+                run_id="$SOURCE_RUN_ID"
+                run_sha="$SOURCE_RUN_SHA"
+                ;;
+              arm64)
+                artifact_id="$ARM64_ARTIFACT_ID"
+                artifact_name="$ARM64_ARTIFACT_NAME"
+                artifact_digest="$ARM64_ARTIFACT_DIGEST"
+                run_id="$ARM64_RUN_ID"
+                run_sha="$ARM64_RUN_SHA"
+                ;;
+            esac
+            metadata="work/promote/${side}-artifact-metadata.json"
+            curl --fail --silent --show-error --location \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+              -o "$metadata"
+            jq -e \
+              --argjson id "$artifact_id" \
+              --arg name "$artifact_name" \
+              --arg digest "$artifact_digest" \
+              --argjson run_id "$run_id" \
+              --arg run_sha "$run_sha" '
+                .id == $id
+                and .name == $name
+                and .digest == $digest
+                and .expired == false
+                and .workflow_run.id == $run_id
+                and .workflow_run.head_sha == $run_sha
+              ' "$metadata" >/dev/null
+          done
+
+      - name: Restore upload-artifact-excluded debug build-id payload
+        shell: bash
+        run: |
+          set -euxo pipefail
+          arm=work/promote/arm64
+          dbgsym="$(find "$arm/debs" -maxdepth 1 -type f \
+            -name 'gooroom-applauncher-applet-dbgsym_*_arm64.deb' -print -quit)"
+          test -n "$dbgsym"
+          debug_root="$arm/extracted/gooroom-applauncher-applet-dbgsym"
+          mkdir -p "$debug_root"
+          dpkg-deb -x "$dbgsym" "$debug_root"
+
+          mapfile -t missing < <(
+            cd "$arm"
+            awk '{line=$0; sub(/^[[:xdigit:]]+[[:space:]]+\*?/, "", line); if (line != "" && !system("test -e \"" line "\"")) next; print line}' SHA256SUMS
+          )
+          test "${#missing[@]}" -eq 0
+          (cd "$arm" && sha256sum --check SHA256SUMS)
+
+      - name: Generate and verify promotion records
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/promote_gooroom_applauncher_han3u2.py \
+            --source-artifact work/promote/source \
+            --arm64-artifact work/promote/arm64 \
+            --repository-root . \
+            --run-id "$ARM64_RUN_ID" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${ARM64_RUN_ID}" \
+            --arm64-artifact-id "$ARM64_ARTIFACT_ID" \
+            --arm64-artifact-name "$ARM64_ARTIFACT_NAME" \
+            --arm64-artifact-digest "$ARM64_ARTIFACT_DIGEST"
+
+          result=arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/result.json
+          python3 - "$result" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          source = "gooroom-applauncher-applet"
+          version = "0.4.0+grm3u1+han3u2"
+          path = Path(sys.argv[1])
+          document = json.loads(path.read_text(encoding="utf-8"))
+
+          def normalize(value, label):
+              if not isinstance(value, list) or not value:
+                  raise SystemExit(f"{label} must be a non-empty array")
+              rows = []
+              for index, raw in enumerate(value):
+                  if not isinstance(raw, dict):
+                      raise SystemExit(f"{label}[{index}] must be an object")
+                  row = dict(raw)
+                  if row.get("source") != source:
+                      raise SystemExit(f"{label}[{index}] source mismatch")
+                  if row.get("version") != version:
+                      raise SystemExit(f"{label}[{index}] binary version mismatch")
+                  if row.get("architecture") != "arm64":
+                      raise SystemExit(f"{label}[{index}] architecture mismatch")
+                  current = row.get("source_version")
+                  if current not in (None, version):
+                      raise SystemExit(f"{label}[{index}] source-version mismatch")
+                  row["source_version"] = version
+                  rows.append(row)
+              return sorted(
+                  rows,
+                  key=lambda row: (
+                      row["package"],
+                      row["version"],
+                      row["architecture"],
+                      row["filename"],
+                      row["sha256"],
+                  ),
+              )
+
+          document["deb_artifacts"] = normalize(
+              document.get("deb_artifacts"), "deb_artifacts"
+          )
+          summary = document.get("verification_summary")
+          if not isinstance(summary, dict):
+              raise SystemExit("verification_summary must be an object")
+          summary["deb_artifacts"] = normalize(
+              summary.get("deb_artifacts"),
+              "verification_summary.deb_artifacts",
+          )
+
+          fields = (
+              "package",
+              "version",
+              "architecture",
+              "filename",
+              "sha256",
+              "size",
+              "source",
+              "source_version",
+          )
+          top = {tuple(row[field] for field in fields) for row in document["deb_artifacts"]}
+          nested = {
+              tuple(row[field] for field in fields)
+              for row in summary["deb_artifacts"]
+          }
+          if top != nested:
+              raise SystemExit("top-level and nested DEB evidence disagree")
+
+          path.write_text(
+              json.dumps(document, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          checksum_path = path.parent / "SHA256SUMS"
+          checksum_rows = []
+          for candidate in sorted(path.parent.rglob("*")):
+              if candidate.is_file() and candidate.name != checksum_path.name:
+                  digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+                  checksum_rows.append(
+                      f"{digest}  {candidate.relative_to(path.parent).as_posix()}\n"
+                  )
+          checksum_path.write_text("".join(checksum_rows), encoding="utf-8")
+          PY
+
+          jq -e '
+            .passed == true
+            and .verification_passed == true
+            and .source == "gooroom-applauncher-applet"
+            and .source_version == "0.4.0+grm3u1+han3u2"
+            and .source_type == "verified-reconstructed-git-tree"
+            and .tree_sha == "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29"
+            and .artifact_id == "9024895138"
+            and .artifact_digest == "sha256:fc46684b4799d882d0d13cca83d987e6d8336492255be2e05b473145bc609870"
+            and (.deb_artifacts | length > 0)
+            and all(.deb_artifacts[];
+              .source == "gooroom-applauncher-applet"
+              and .source_version == "0.4.0+grm3u1+han3u2"
+              and .version == "0.4.0+grm3u1+han3u2"
+              and .architecture == "arm64")
+            and all(.verification_summary.deb_artifacts[];
+              .source == "gooroom-applauncher-applet"
+              and .source_version == "0.4.0+grm3u1+han3u2"
+              and .version == "0.4.0+grm3u1+han3u2"
+              and .architecture == "arm64")
+          ' "$result" >/dev/null
+          (cd "$(dirname "$result")" && sha256sum --check SHA256SUMS)
+          jq -e '
+            [.sources[]
+             | select(.source == "gooroom-applauncher-applet"
+                      and .source_version == "0.4.0+grm3u1+han3u2"
+                      and .status == "resolved"
+                      and .selected.type == "reconstructed-git-tree"
+                      and .selected.tree_sha == "9b0cacfee8fb3118e4c497e590e2a310d8bc5c29"
+                      and .verification.passed == true
+                      and .verification.native_arm64_build_verified == true)]
+            | length == 1
+          ' arm64/locks/reconstructed-sources/source-locks.json >/dev/null
+
+      - name: Commit exact source, ARM64 result, and evidence locks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/locks/rebuild-results/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2 \
+            arm64/locks/gooroom-applauncher-han3u2-reconstruction/latest \
+            arm64/locks/reconstructed-sources/source-locks.json
+          if git diff --cached --quiet; then
+            echo 'Applauncher promotion records are already current.'
+          else
+            git commit -m 'Promote verified gooroom-applauncher han3u2 ARM64 build'
+            pushed=false
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin arm64-port
+              if git push origin HEAD:arm64-port; then
+                pushed=true
+                break
+              fi
+              sleep $((attempt * 3))
+            done
+            test "$pushed" = true
+          fi
+
+      - name: Dispatch canonical consumers and refresh the rebuild index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-recover-exact-package-pool.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port
+          gh workflow run arm64-index-rebuild-results-v2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref arm64-port

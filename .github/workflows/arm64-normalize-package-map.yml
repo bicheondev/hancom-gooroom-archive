@@ -1,0 +1,119 @@
+name: ARM64 port - normalize exact package map
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-normalize-package-map.yml'
+      - 'arm64/scripts/normalize_debian_arm64_map.py'
+      - 'arm64/scripts/normalize_debian_arm64_map_v2.py'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/debian-arm64/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-normalized-package-map
+  cancel-in-progress: true
+
+jobs:
+  normalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out reference and mapping locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Normalize every ISO package disposition
+        id: normalize
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/normalized-package-map
+          set +e
+          python3 arm64/scripts/normalize_debian_arm64_map_v2.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --map-dir arm64/locks/debian-arm64 \
+            --output-dir work/normalized-package-map
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/normalized-package-map -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/normalized-package-map/LOCKSUMS.sha256
+          cat work/normalized-package-map/summary.json
+
+      - name: Upload normalized map and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-normalized-package-map
+          path: work/normalized-package-map
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit normalized map or exact failure evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/package-plan
+          mkdir -p arm64/locks/package-plan
+          cp -a work/normalized-package-map/. arm64/locks/package-plan/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/package-plan
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Normalize Hancom Gooroom ARM64 package dispositions'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce complete unambiguous package mapping
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.normalize.outputs.exit_code }}' = '0'
+          jq -e '.complete == true' work/normalized-package-map/summary.json
+
+      - name: Dispatch repository materialization and acquisition planning
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/normalized-package-map/summary.json ] \
+             && jq -e '.complete == true' work/normalized-package-map/summary.json >/dev/null; then
+            dispatch arm64-materialize-debian-reference-repo-v2.yml
+            dispatch arm64-package-acquisition-plan-v2.yml
+          fi

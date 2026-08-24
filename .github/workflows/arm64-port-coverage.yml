@@ -1,0 +1,180 @@
+name: ARM64 port - report exact package-layer coverage
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-port-coverage.yml'
+      - 'arm64/scripts/report_arm64_port_coverage.py'
+      - 'arm64/scripts/merge_reconstructed_source_locks.py'
+      - 'arm64/scripts/resolve_verified_source_recovery_blockers.py'
+      - 'arm64/rebuild-batches.json'
+      - 'arm64/source-recovery-blockers.json'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/sources-api-baseline/**'
+      - 'arm64/locks/effective-sources/**'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/locks/reconstructed-sources/**'
+      - 'arm64/locks/rebuild-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-port-coverage
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact locks and accumulated build evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Generate package-layer readiness report
+        shell: bash
+        run: |
+          set -euxo pipefail
+          base_lock=arm64/locks/sources-api-baseline/source-lock.json
+          if [ -f arm64/locks/effective-sources/effective-source-lock.json ]; then
+            base_lock=arm64/locks/effective-sources/effective-source-lock.json
+          fi
+          if [ -f arm64/locks/effective-sources-v3/effective-source-lock.json ]; then
+            base_lock=arm64/locks/effective-sources-v3/effective-source-lock.json
+          fi
+          test -f "$base_lock"
+          test -f arm64/source-recovery-blockers.json
+
+          rm -rf \
+            work/port-coverage \
+            work/effective-source-lock.json \
+            work/source-recovery-blockers.filtered.json
+          mkdir -p work/port-coverage
+          lock="$base_lock"
+          reconstructed=arm64/locks/reconstructed-sources/source-locks.json
+          if [ -f "$reconstructed" ]; then
+            python3 arm64/scripts/merge_reconstructed_source_locks.py \
+              --base-lock "$base_lock" \
+              --reconstructed-locks "$reconstructed" \
+              --output work/effective-source-lock.json
+            lock=work/effective-source-lock.json
+          fi
+
+          python3 arm64/scripts/resolve_verified_source_recovery_blockers.py \
+            --blockers arm64/source-recovery-blockers.json \
+            --rebuild-results arm64/locks/rebuild-results \
+            --output work/source-recovery-blockers.filtered.json \
+            --resolutions-output work/port-coverage/source-recovery-resolutions.json
+          jq -e '
+            .original_blocker_count >= .blocker_count
+            and .resolved_count == (.resolved | length)
+            and .blocker_count == (.sources | length)
+          ' work/source-recovery-blockers.filtered.json >/dev/null
+          jq -e '
+            .remaining_blocker_count >= 0
+            and .resolved_count == (.resolutions | length)
+          ' work/port-coverage/source-recovery-resolutions.json >/dev/null
+
+          python3 arm64/scripts/report_arm64_port_coverage.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --source-lock "$lock" \
+            --rebuild-plan arm64/rebuild-batches.json \
+            --rebuild-results arm64/locks/rebuild-results \
+            --source-recovery-blockers work/source-recovery-blockers.filtered.json \
+            --output-dir work/port-coverage
+          find work/port-coverage -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/port-coverage/LOCKSUMS.sha256
+
+          {
+            echo '## Hancom Gooroom 3.3 ARM64 package-layer coverage'
+            echo
+            echo "- Source authority: \`$lock\`"
+            echo "- Base authority: \`$base_lock\`"
+            echo '- Source-recovery gate: strict persisted ARM64 reconstruction verification'
+            echo
+            echo '```json'
+            cat work/port-coverage/summary.json
+            echo '```'
+            echo
+            echo '### Resolved source-recovery gates'
+            echo '```json'
+            cat work/port-coverage/source-recovery-resolutions.json
+            echo '```'
+            echo
+            echo '### Source recovery required'
+            echo '```json'
+            cat work/port-coverage/source-recovery-required.json
+            echo '```'
+            echo
+            echo '### Source blockers'
+            echo '```json'
+            cat work/port-coverage/source-blockers.json
+            echo '```'
+            echo
+            echo '### Build blockers'
+            echo '```json'
+            cat work/port-coverage/build-blockers.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete coverage evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-port-coverage
+          path: work/port-coverage
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit current package-layer status without deleting sibling audits
+        shell: bash
+        run: |
+          set -euxo pipefail
+          coverage_dir=arm64/status/coverage
+          rm -rf "$coverage_dir"
+          mkdir -p "$coverage_dir" arm64/status
+          cp -a work/port-coverage/. "$coverage_dir/"
+
+          for name in \
+            summary.json \
+            coverage.json \
+            coverage.tsv \
+            source-blockers.json \
+            build-blockers.json \
+            source-recovery-required.json \
+            source-recovery-resolutions.json \
+            LOCKSUMS.sha256; do
+            cp "work/port-coverage/$name" "arm64/status/$name"
+          done
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A \
+            "$coverage_dir" \
+            arm64/status/summary.json \
+            arm64/status/coverage.json \
+            arm64/status/coverage.tsv \
+            arm64/status/source-blockers.json \
+            arm64/status/build-blockers.json \
+            arm64/status/source-recovery-required.json \
+            arm64/status/source-recovery-resolutions.json \
+            arm64/status/LOCKSUMS.sha256
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Update Hancom Gooroom ARM64 package-layer coverage'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

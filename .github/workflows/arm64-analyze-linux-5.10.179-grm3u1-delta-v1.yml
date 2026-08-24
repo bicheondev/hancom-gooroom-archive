@@ -1,0 +1,342 @@
+name: ARM64 analyze - linux 5.10.179 grm3u1 binary delta v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-linux-5-10-179-grm3u1-delta-v1
+  cancel-in-progress: false
+
+env:
+  VENDOR_PACKAGE: linux-image-5.10.0-23-amd64
+  BASE_VERSION: 5.10.179-1
+  TARGET_VERSION: 5.10.179-1+grm3u1
+  VENDOR_FILENAME: linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+  VENDOR_URL: https://update.hancomgooroom.com/gooroom/pool/main/l/linux/linux-image-5.10.0-23-amd64_5.10.179-1+grm3u1_amd64.deb
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install exact-package analysis tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl dpkg-dev jq python3
+          python3 -m py_compile arm64/scripts/download_debian_snapshot_binary_v1.py
+
+      - name: Recover exact vendor and Debian AMD64 packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          root=work/linux-5.10.179-grm3u1-delta-v1
+          rm -rf "$root"
+          mkdir -p "$root"/{downloads,vendor,debian,output}
+          curl --location --fail --silent --show-error \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --output "$root/downloads/vendor.deb" "$VENDOR_URL"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Package)" = "$VENDOR_PACKAGE"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Version)" = "$TARGET_VERSION"
+          test "$(dpkg-deb -f "$root/downloads/vendor.deb" Architecture)" = amd64
+          python3 arm64/scripts/download_debian_snapshot_binary_v1.py \
+            --package "$VENDOR_PACKAGE" \
+            --version "$BASE_VERSION" \
+            --architecture amd64 \
+            --output "$root/downloads/debian.deb" \
+            --metadata-output "$root/output/debian-snapshot.json"
+          dpkg-deb -x "$root/downloads/vendor.deb" "$root/vendor"
+          dpkg-deb -x "$root/downloads/debian.deb" "$root/debian"
+          sha256sum "$root/downloads/vendor.deb" "$root/downloads/debian.deb" \
+            > "$root/output/input-debs.sha256"
+
+      - name: Classify Kconfig and module-signature-normalized differences
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import difflib
+          import hashlib
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          root = Path('work/linux-5.10.179-grm3u1-delta-v1')
+          output = root / 'output'
+          vendor = root / 'vendor'
+          debian = root / 'debian'
+          abi = '5.10.0-23-amd64'
+          config_relative = Path('boot') / f'config-{abi}'
+          module_relative = Path('lib/modules') / abi
+          marker = b'~Module signature appended~\n'
+
+          def sha256_bytes(payload: bytes) -> str:
+              return hashlib.sha256(payload).hexdigest()
+
+          def parse_config(text: str) -> dict[str, str]:
+              values: dict[str, str] = {}
+              for line in text.splitlines():
+                  if line.startswith('CONFIG_') and '=' in line:
+                      key, value = line.split('=', 1)
+                      values[key] = value
+                  elif line.startswith('# CONFIG_') and line.endswith(' is not set'):
+                      values[line[2:-len(' is not set')]] = 'n'
+              return values
+
+          vendor_config_text = (vendor / config_relative).read_text(encoding='utf-8', errors='replace')
+          debian_config_text = (debian / config_relative).read_text(encoding='utf-8', errors='replace')
+          vendor_config = parse_config(vendor_config_text)
+          debian_config = parse_config(debian_config_text)
+          config_rows = []
+          transitions = Counter()
+          for symbol in sorted(set(vendor_config) | set(debian_config)):
+              vendor_value = vendor_config.get(symbol)
+              debian_value = debian_config.get(symbol)
+              if vendor_value == debian_value:
+                  continue
+              transition = f'{debian_value!s}->{vendor_value!s}'
+              transitions[transition] += 1
+              config_rows.append({
+                  'symbol': symbol,
+                  'debian': debian_value,
+                  'vendor': vendor_value,
+                  'transition': transition,
+              })
+          config_document = {
+              'schema': 1,
+              'difference_count': len(config_rows),
+              'transition_counts': dict(sorted(transitions.items())),
+              'differences': config_rows,
+          }
+          (output / 'config-diff.json').write_text(
+              json.dumps(config_document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (output / 'config.diff').write_text(
+              ''.join(difflib.unified_diff(
+                  debian_config_text.splitlines(keepends=True),
+                  vendor_config_text.splitlines(keepends=True),
+                  fromfile='debian/config-5.10.0-23-amd64',
+                  tofile='hancom-gooroom/config-5.10.0-23-amd64',
+              )),
+              encoding='utf-8',
+          )
+
+          def strip_signature(payload: bytes):
+              if not payload.endswith(marker):
+                  return payload, {'present': False}
+              marker_offset = len(payload) - len(marker)
+              structure_offset = marker_offset - 12
+              if structure_offset < 0:
+                  raise RuntimeError('incomplete module signature structure')
+              structure = payload[structure_offset:marker_offset]
+              signer_length = structure[3]
+              key_id_length = structure[4]
+              signature_length = int.from_bytes(structure[8:12], 'big')
+              trailer_length = signer_length + key_id_length + signature_length + 12 + len(marker)
+              unsigned_length = len(payload) - trailer_length
+              if unsigned_length < 0:
+                  raise RuntimeError('module signature trailer exceeds module size')
+              return payload[:unsigned_length], {
+                  'present': True,
+                  'algorithm': structure[0],
+                  'hash_algorithm': structure[1],
+                  'identifier_type': structure[2],
+                  'signer_length': signer_length,
+                  'key_id_length': key_id_length,
+                  'signature_length': signature_length,
+                  'trailer_length': trailer_length,
+              }
+
+          def modules(base: Path):
+              module_root = base / module_relative
+              return {
+                  path.relative_to(module_root).as_posix(): path
+                  for path in sorted(module_root.rglob('*.ko'))
+                  if path.is_file() and not path.is_symlink()
+              }
+
+          vendor_modules = modules(vendor)
+          debian_modules = modules(debian)
+          common = sorted(set(vendor_modules) & set(debian_modules))
+          vendor_only = sorted(set(vendor_modules) - set(debian_modules))
+          debian_only = sorted(set(debian_modules) - set(vendor_modules))
+          classifications = Counter()
+          signatures = Counter()
+          unsigned_differences = []
+          signature_only_samples = []
+          for relative in common:
+              vendor_payload = vendor_modules[relative].read_bytes()
+              debian_payload = debian_modules[relative].read_bytes()
+              vendor_unsigned, vendor_signature = strip_signature(vendor_payload)
+              debian_unsigned, debian_signature = strip_signature(debian_payload)
+              signatures[f"vendor:{'signed' if vendor_signature['present'] else 'unsigned'}"] += 1
+              signatures[f"debian:{'signed' if debian_signature['present'] else 'unsigned'}"] += 1
+              if vendor_payload == debian_payload:
+                  classification = 'raw-identical'
+              elif vendor_unsigned == debian_unsigned:
+                  classification = 'signature-only'
+              else:
+                  classification = 'unsigned-content-different'
+              classifications[classification] += 1
+              record = {
+                  'path': relative,
+                  'classification': classification,
+                  'vendor': {
+                      'size': len(vendor_payload),
+                      'unsigned_size': len(vendor_unsigned),
+                      'unsigned_sha256': sha256_bytes(vendor_unsigned),
+                      'signature': vendor_signature,
+                  },
+                  'debian': {
+                      'size': len(debian_payload),
+                      'unsigned_size': len(debian_unsigned),
+                      'unsigned_sha256': sha256_bytes(debian_unsigned),
+                      'signature': debian_signature,
+                  },
+              }
+              if classification == 'unsigned-content-different':
+                  unsigned_differences.append(record)
+              elif classification == 'signature-only' and len(signature_only_samples) < 50:
+                  signature_only_samples.append(record)
+
+          metadata = []
+          for name in ('modules.builtin', 'modules.builtin.modinfo', 'modules.order'):
+              vendor_path = vendor / module_relative / name
+              debian_path = debian / module_relative / name
+              def file_record(path: Path):
+                  if not path.is_file():
+                      return None
+                  payload = path.read_bytes()
+                  return {'size': len(payload), 'sha256': sha256_bytes(payload)}
+              vendor_record = file_record(vendor_path)
+              debian_record = file_record(debian_path)
+              metadata.append({
+                  'path': (module_relative / name).as_posix(),
+                  'vendor': vendor_record,
+                  'debian': debian_record,
+                  'identical': vendor_record == debian_record,
+              })
+
+          module_document = {
+              'schema': 1,
+              'vendor_module_count': len(vendor_modules),
+              'debian_module_count': len(debian_modules),
+              'common_module_count': len(common),
+              'vendor_only_count': len(vendor_only),
+              'debian_only_count': len(debian_only),
+              'vendor_only': vendor_only,
+              'debian_only': debian_only,
+              'classification_counts': dict(sorted(classifications.items())),
+              'signature_counts': dict(sorted(signatures.items())),
+              'unsigned_content_difference_count': len(unsigned_differences),
+              'all_common_modules_equivalent_after_signature_removal': not unsigned_differences,
+              'signature_only_samples': signature_only_samples,
+              'unsigned_content_difference_samples': unsigned_differences[:250],
+              'unsigned_content_difference_paths': [row['path'] for row in unsigned_differences],
+              'module_metadata_files': metadata,
+          }
+          (output / 'module-delta.json').write_text(
+              json.dumps(module_document, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          summary = {
+              'schema': 1,
+              'source': 'linux',
+              'base_version': '5.10.179-1',
+              'vendor_version': '5.10.179-1+grm3u1',
+              'analysis_policy': 'exact-amd64-kconfig-and-module-signature-normalized-binary-delta',
+              'config_difference_count': len(config_rows),
+              'config_transition_counts': dict(sorted(transitions.items())),
+              'module_counts': {
+                  'vendor': len(vendor_modules),
+                  'debian': len(debian_modules),
+                  'common': len(common),
+                  'vendor_only': len(vendor_only),
+                  'debian_only': len(debian_only),
+                  'unsigned_content_different': len(unsigned_differences),
+              },
+              'module_classification_counts': dict(sorted(classifications.items())),
+              'all_common_modules_equivalent_after_signature_removal': not unsigned_differences,
+              'source_equivalence_proven': False,
+              'arm64_build_allowed': False,
+              'package_promotion_allowed': False,
+              'iso_assembly_allowed': False,
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+          jq -e '.schema == 1 and .config_difference_count >= 1' \
+            work/linux-5.10.179-grm3u1-delta-v1/output/summary.json >/dev/null
+          (
+            cd work/linux-5.10.179-grm3u1-delta-v1/output
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload complete Linux delta evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-5.10.179-grm3u1-delta-v1-${{ github.run_id }}
+          path: work/linux-5.10.179-grm3u1-delta-v1/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact delta authority and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/linux-5.10.179-grm3u1-delta-v1/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/linux-5.10.179-grm3u1-delta-v1/output/. "$destination/"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{schema:1,actions_run_id:$run_id,actions_run_url:$run_url,
+              source_equivalence_proven:false,arm64_build_allowed:false,
+              package_promotion_allowed:false,iso_assembly_allowed:false}' \
+            > "$destination/authority.json"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git rm .github/workflows/arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+          git diff --cached --check
+          git commit -m 'Record linux 5.10.179 grm3u1 normalized delta'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1

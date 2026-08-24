@@ -1,0 +1,99 @@
+name: ARM64 port - exact authority and phase coverage v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-port-coverage-v2.yml'
+      - 'arm64/scripts/summarize_arm64_port_coverage_v2.py'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/locks/rebuild-results/**'
+      - 'arm64/locks/rebuild-release/**'
+      - 'arm64/locks/acquisition-plan/**'
+      - 'arm64/locks/rootfs/**'
+      - 'arm64/locks/iso/**'
+      - 'arm64/locks/installed-system/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-port-coverage
+  cancel-in-progress: true
+
+jobs:
+  summarize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out all exact authority and phase locks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Summarize only currently valid exact-authority results
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/coverage-v2
+          arguments=(
+            --reference arm64/locks/reference/amd64-reference.json
+            --source-lock arm64/locks/effective-sources-v3/effective-source-lock.json
+            --results-dir arm64/locks/rebuild-results
+            --normalized-map arm64/locks/debian-arm64/normalized-package-map.json
+            --rebuild-release-lock arm64/locks/rebuild-release/rebuild-release-lock.json
+            --acquisition-plan arm64/locks/acquisition-plan/package-acquisition-plan.json
+            --output-dir work/coverage-v2
+          )
+          [ -f arm64/locks/rootfs/verification.json ] \
+            && arguments+=(--rootfs-verification arm64/locks/rootfs/verification.json)
+          [ -f arm64/locks/iso/release-lock.json ] \
+            && arguments+=(--iso-release-lock arm64/locks/iso/release-lock.json)
+          [ -f arm64/locks/installed-system/release-lock.json ] \
+            && arguments+=(--installed-release-lock arm64/locks/installed-system/release-lock.json)
+          python3 arm64/scripts/summarize_arm64_port_coverage_v2.py \
+            "${arguments[@]}"
+          find work/coverage-v2 -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/coverage-v2/LOCKSUMS.sha256
+          {
+            echo '## Hancom Gooroom 3.3 ARM64 exact-authority coverage'
+            echo
+            echo '```json'
+            cat work/coverage-v2/summary.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete phase and blocker coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-coverage-v2-${{ github.run_id }}
+          path: work/coverage-v2
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit non-inflated coverage status
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/status/coverage-v2
+          mkdir -p arm64/status/coverage-v2
+          cp -a work/coverage-v2/. arm64/status/coverage-v2/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/status/coverage-v2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Update exact-authority ARM64 phase coverage v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

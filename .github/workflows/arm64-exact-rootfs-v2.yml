@@ -1,0 +1,270 @@
+name: ARM64 port - build exact verified rootfs v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-exact-rootfs-v2.yml'
+      - 'arm64/scripts/materialize_package_acquisition_plan_v2.py'
+      - 'arm64/scripts/build_exact_arm64_rootfs.sh'
+      - 'arm64/scripts/verify_arm64_rootfs.py'
+      - 'arm64/locks/acquisition-plan/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-exact-rootfs
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
+      blocker_count: ${{ steps.gate.outputs.blocker_count }}
+    steps:
+      - name: Check out exact acquisition state
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Require one exact acquisition route per package
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          summary=arm64/locks/acquisition-plan/summary.json
+          ready=false
+          blocker_count=-1
+          if [ -f "$summary" ]; then
+            ready="$(jq -r '.ready_for_fetch == true' "$summary")"
+            blocker_count="$(jq -r '.blocker_count // -1' "$summary")"
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "blocker_count=$blocker_count" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Exact ARM64 rootfs gate'
+            echo
+            echo "- Ready: \`$ready\`"
+            echo "- Acquisition blockers: \`$blocker_count\`"
+            if [ -f "$summary" ]; then
+              echo
+              echo '```json'
+              cat "$summary"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  materialize:
+    needs: gate
+    if: needs.gate.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact package plan and materializer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Install package repository tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 dpkg-dev apt-utils ca-certificates gzip jq
+          gh --version
+
+      - name: Download and verify every exact package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/materialization work/package-repository
+          mkdir -p work/materialization work/package-repository
+          python3 arm64/scripts/materialize_package_acquisition_plan_v2.py \
+            --plan arm64/locks/acquisition-plan/package-acquisition-plan.json \
+            --output-dir work/materialization \
+            --repository-dir work/package-repository \
+            --github-repository '${{ github.repository }}' \
+            --workers 8
+          find work/materialization work/package-repository \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/materialization/LOCKSUMS.sha256
+          jq -e '.repository_ready == true and .blocked_count == 0' \
+            work/materialization/summary.json
+
+      - name: Upload exact local package repository
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-exact-package-repository
+          path: |
+            work/materialization
+            work/package-repository
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  rootfs:
+    needs: [gate, materialize]
+    if: needs.gate.outputs.ready == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    steps:
+      - name: Check out rootfs builder and verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download exact local package repository
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: hancom-gooroom-3.3-arm64-exact-package-repository
+          path: work/packages
+
+      - name: Install native ARM64 image tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mmdebstrap debootstrap debian-archive-keyring \
+            python3 jq rsync dpkg-dev file \
+            squashfs-tools zstd ca-certificates
+          python3 -m py_compile arm64/scripts/verify_arm64_rootfs.py
+          chmod +x arm64/scripts/build_exact_arm64_rootfs.sh
+
+      - name: Build dated exact ARM64 package-layer rootfs
+        env:
+          HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/rootfs work/rootfs-evidence
+          mkdir -p work/rootfs-evidence
+          sudo -E arm64/scripts/build_exact_arm64_rootfs.sh \
+            work/packages/package-repository \
+            work/packages/materialization/materialization.json \
+            work/rootfs \
+            work/rootfs-evidence \
+            2>&1 | tee work/rootfs-evidence/workflow-rootfs-build.log
+          sudo chown -R "$(id -u):$(id -g)" work/rootfs work/rootfs-evidence
+
+      - name: Verify exact dpkg set, kernel, and machine code
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/verify_arm64_rootfs.py \
+            --rootfs work/rootfs \
+            --materialization work/packages/materialization/materialization.json \
+            --output work/rootfs-evidence/verification.json
+          jq -e '.summary.passed == true' work/rootfs-evidence/verification.json
+          cp work/packages/materialization/materialization.json \
+            work/rootfs-evidence/materialization.json
+          jq -n \
+            --arg run_id '${{ github.run_id }}' \
+            --arg run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-exact-rootfs' \
+            --arg head_sha '${{ github.sha }}' \
+            '{
+              schema: 1,
+              actions_run_id: $run_id,
+              actions_run_url: $run_url,
+              artifact_name: $artifact_name,
+              head_sha: $head_sha
+            }' > work/rootfs-evidence/artifact-lock.json
+
+      - name: Produce deterministic package-layer images
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo mksquashfs work/rootfs \
+            work/rootfs-evidence/filesystem.squashfs \
+            -noappend -comp xz -b 1M -Xdict-size 100% \
+            -all-root -all-time 0 -mkfs-time 0 \
+            -processors "$(nproc)"
+          sudo chown "$(id -u):$(id -g)" \
+            work/rootfs-evidence/filesystem.squashfs
+          sudo tar \
+            --sort=name --mtime='@0' --numeric-owner --owner=0 --group=0 \
+            --xattrs --acls --selinux \
+            -C work/rootfs -cf - . \
+            | zstd -19 -T0 -o work/rootfs-evidence/rootfs.tar.zst
+          find work/rootfs-evidence -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/rootfs-evidence/SHA256SUMS
+          stat -c '%n\t%s' work/rootfs-evidence/filesystem.squashfs \
+            work/rootfs-evidence/rootfs.tar.zst \
+            > work/rootfs-evidence/image-sizes.tsv
+
+      - name: Upload verified ARM64 package-layer rootfs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-exact-rootfs
+          path: work/rootfs-evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact rootfs lock evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/rootfs
+          mkdir -p arm64/locks/rootfs
+          cp work/rootfs-evidence/verification.json arm64/locks/rootfs/
+          cp work/rootfs-evidence/rootfs-build.json arm64/locks/rootfs/
+          cp work/rootfs-evidence/SHA256SUMS arm64/locks/rootfs/
+          cp work/rootfs-evidence/image-sizes.tsv arm64/locks/rootfs/
+          cp work/rootfs-evidence/materialization.json arm64/locks/rootfs/
+          cp work/rootfs-evidence/artifact-lock.json arm64/locks/rootfs/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/rootfs
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock exact verified Hancom Gooroom ARM64 rootfs'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Dispatch final ISO construction explicitly after rootfs lock
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          jq -e '.summary.passed == true' work/rootfs-evidence/verification.json
+          test -f work/rootfs-evidence/artifact-lock.json
+          dispatch arm64-final-live-iso.yml

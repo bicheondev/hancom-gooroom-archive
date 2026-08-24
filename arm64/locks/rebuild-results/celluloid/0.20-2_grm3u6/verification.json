@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "celluloid",
+  "source_version": "0.20-2+grm3u6",
+  "repository_full_name": "gooroom/celluloid",
+  "commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
+  "tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
+  "expected_native_binary_versions": {
+    "celluloid": "0.20-2+grm3u6"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "celluloid-dbgsym_0.20-2+grm3u6_arm64.deb",
+      "sha256": "75c0562a78494db8568d65acfdea99321cb66858398610a363aec546b183bb65",
+      "size": 354764,
+      "package": "celluloid-dbgsym",
+      "version": "0.20-2+grm3u6",
+      "architecture": "arm64",
+      "source_field": "celluloid",
+      "parsed_source": "celluloid",
+      "parsed_source_version": "0.20-2+grm3u6",
+      "expected_from_iso": false,
+      "payload_entry_count": 2,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "celluloid_0.20-2+grm3u6_arm64.deb",
+      "sha256": "8dbb6443e6e101d7394d2458fcf9b3ae3e505cb36b2859224b4c96b4bbc117e9",
+      "size": 205184,
+      "package": "celluloid",
+      "version": "0.20-2+grm3u6",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "celluloid",
+      "parsed_source_version": "0.20-2+grm3u6",
+      "expected_from_iso": true,
+      "payload_entry_count": 40,
+      "elf_machine_counts": {
+        "aarch64": 1
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "celluloid",
+    "source_version": "0.20-2+grm3u6",
+    "repository": "gooroom/celluloid",
+    "commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
+    "tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
+    "source_archive_sha256": "15c1b98d2c21277077afb375c1b5ec6d239daa342625c09c10bf88e4fcd8b3c3",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "celluloid"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "celluloid",
+      "celluloid-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "celluloid",
+    "source_version": "0.20-2+grm3u6",
+    "repository": "gooroom/celluloid",
+    "commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
+    "tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
+    "verified_commit_sha": "cdd3121116796e31e0538e6c12c16d8b8f070b31",
+    "verified_tree_sha": "23fece2fc9e01cc75e10884e0206f3fd09982804",
+    "deterministic_source_archive_sha256": "15c1b98d2c21277077afb375c1b5ec6d239daa342625c09c10bf88e4fcd8b3c3"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}

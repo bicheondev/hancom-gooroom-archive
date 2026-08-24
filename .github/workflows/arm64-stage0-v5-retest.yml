@@ -1,0 +1,242 @@
+name: ARM64 port - retest the exact stage-0 v5 ISO
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-stage0-v5-retest.yml'
+      - 'arm64/scripts/boot_test_arm64_uefi_iso.sh'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-arm64-stage0-v5-retest
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: '31118124384'
+  SOURCE_ARTIFACT: hancom-gooroom-3.3-arm64-stage0-v5
+  ISO_NAME: Hancom-Gooroom-3.3-arm64-stage0-v5.iso
+  ISO_SIZE: '898713600'
+  ISO_SHA256: 2956e79abde2416d370a41e3262b6395d186c99916dec8a1f79ff923a8e7138b
+  MARKER: HANCOM_GOOROOM_ARM64_STAGE0_READY
+  RELEASE_TAG: v3.3-arm64-stage0-v5
+
+jobs:
+  retest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out the current boot gate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install AArch64 UEFI, QEMU, and its EFI virtio ROM
+        run: |
+          set -euxo pipefail
+          test "$(uname -m)" = x86_64
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            jq qemu-efi-aarch64 qemu-system-arm ipxe-qemu
+          gh --version
+          qemu-system-aarch64 --version
+          rom="$(find /usr/share/qemu /usr/lib/ipxe/qemu \
+            -type f -name efi-virtio.rom -print -quit 2>/dev/null)"
+          test -n "$rom"
+          printf '%s\n' "$rom" > /tmp/efi-virtio-rom-path.txt
+
+      - name: Download and prove the exact previously assembled ISO
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf work/source work/evidence
+          mkdir -p work/source work/evidence
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir work/source
+          iso="$(find work/source -type f -name "$ISO_NAME" -print -quit)"
+          test -n "$iso"
+          test "$(stat -c '%s' "$iso")" = "$ISO_SIZE"
+          printf '%s  %s\n' "$ISO_SHA256" "$iso" \
+            | sha256sum --check --strict
+          cp "$iso" "work/$ISO_NAME"
+          printf '%s  %s\n' "$ISO_SHA256" "$ISO_NAME" \
+            > "work/$ISO_NAME.sha256"
+          cp /tmp/efi-virtio-rom-path.txt work/evidence/
+          jq -n \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --arg source_artifact "$SOURCE_ARTIFACT" \
+            --arg iso "$ISO_NAME" \
+            --arg sha256 "$ISO_SHA256" \
+            --argjson size "$ISO_SIZE" \
+            '{
+              schema: 1,
+              source_run_id: $source_run_id,
+              source_artifact: $source_artifact,
+              iso: $iso,
+              size: $size,
+              sha256: $sha256,
+              exact_source_artifact_verified: true
+            }' > work/evidence/source-iso-lock.json
+
+      - name: Boot the exact ISO through AArch64 UEFI
+        id: boot
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          chmod +x arm64/scripts/boot_test_arm64_uefi_iso.sh
+          set +e
+          arm64/scripts/boot_test_arm64_uefi_iso.sh \
+            "work/$ISO_NAME" \
+            work/evidence/qemu-stage0-v5-retest.log \
+            "$MARKER" \
+            1200 \
+            4096 \
+            4 \
+            2>&1 | tee work/evidence/workflow-boot-test.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Write the immutable boot result even after failure
+        if: always()
+        run: |
+          set -euxo pipefail
+          marker_found=false
+          if [ -f work/evidence/qemu-stage0-v5-retest.log ] \
+             && grep -Fq "$MARKER" work/evidence/qemu-stage0-v5-retest.log; then
+            marker_found=true
+          fi
+          jq -n \
+            --arg marker "$MARKER" \
+            --arg iso "$ISO_NAME" \
+            --arg sha256 "$ISO_SHA256" \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --arg actions_run_id "$GITHUB_RUN_ID" \
+            --arg actions_run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg boot_outcome '${{ steps.boot.outcome }}' \
+            --arg boot_exit_code '${{ steps.boot.outputs.exit_code }}' \
+            --argjson marker_found "$marker_found" \
+            '{
+              schema: 2,
+              status: (if $marker_found then "passed" else "failed" end),
+              architecture: "arm64",
+              firmware: "AArch64 UEFI",
+              machine: "QEMU virt via TCG",
+              iso: $iso,
+              iso_sha256: $sha256,
+              readiness_marker: $marker,
+              readiness_marker_found: $marker_found,
+              boot_step_outcome: $boot_outcome,
+              boot_exit_code: $boot_exit_code,
+              source_run_id: $source_run_id,
+              actions_run_id: $actions_run_id,
+              actions_run_url: $actions_run_url,
+              passed: $marker_found
+            }' > work/evidence/qemu-boot-result.json
+          for path in \
+            work/evidence/qemu-stage0-v5-retest.log \
+            work/evidence/workflow-boot-test.log; do
+            [ -f "$path" ] || continue
+            tail -n 500 "$path" > "$path.tail"
+          done
+          find work/evidence -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/evidence/LOCKSUMS.sha256
+          cat work/evidence/qemu-boot-result.json
+
+      - name: Upload compact success or failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-stage0-v5-retest-evidence
+          path: work/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Publish only the boot-tested stage-0 ISO as a prerelease
+        if: steps.boot.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          jq -e '.passed == true' work/evidence/qemu-boot-result.json
+          cat > work/stage0-release-notes.md <<'EOF'
+          Hancom Gooroom 3.3 ARM64 stage-0 bring-up image.
+
+          This is not the final parity release. It is the exact stage-0 ISO from
+          Actions run 31118124384, verified by size and SHA-256 and then booted
+          through AArch64 UEFI/QEMU until the readiness marker was observed.
+          EOF
+          if ! gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target arm64-port \
+              --prerelease \
+              --title 'Hancom Gooroom 3.3 ARM64 stage-0 v5' \
+              --notes-file work/stage0-release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber \
+            "work/$ISO_NAME" \
+            "work/$ISO_NAME.sha256" \
+            work/evidence/qemu-boot-result.json \
+            work/evidence/LOCKSUMS.sha256
+
+      - name: Record the boot-tested stage-0 release lock
+        if: steps.boot.outcome == 'success'
+        run: |
+          set -euxo pipefail
+          target=arm64/locks/stage0-v5-retest
+          rm -rf "$target"
+          mkdir -p "$target"
+          cp work/evidence/source-iso-lock.json "$target/"
+          cp work/evidence/qemu-boot-result.json "$target/"
+          cp work/evidence/LOCKSUMS.sha256 "$target/"
+          jq -n \
+            --arg release_tag "$RELEASE_TAG" \
+            --arg iso "$ISO_NAME" \
+            --arg sha256 "$ISO_SHA256" \
+            --arg actions_run_id "$GITHUB_RUN_ID" \
+            '{
+              schema: 1,
+              release_tag: $release_tag,
+              iso_asset: $iso,
+              iso_sha256: $sha256,
+              actions_run_id: $actions_run_id,
+              qemu_uefi_booted: true,
+              release_status: "stage0-bring-up-not-final"
+            }' > "$target/release-lock.json"
+          sha256sum "$target"/*.json | sort -k2 > "$target/LOCKSUMS.sha256"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          git commit -m 'Lock QEMU-booted Hancom Gooroom ARM64 stage-0 v5'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce observed ARM64 readiness after preserving evidence
+        if: always()
+        run: |
+          set -euxo pipefail
+          test '${{ steps.boot.outcome }}' = success
+          jq -e '.passed == true and .readiness_marker_found == true' \
+            work/evidence/qemu-boot-result.json

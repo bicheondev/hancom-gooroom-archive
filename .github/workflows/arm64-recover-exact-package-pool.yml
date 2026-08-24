@@ -1,0 +1,340 @@
+name: ARM64 port - recover exact package pool from artifacts
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-recover-exact-package-pool.yml'
+      - '.github/workflows/arm64-build-arch-replacements.yml'
+      - 'arm64/scripts/recover_exact_arm64_package_pool.py'
+      - 'arm64/scripts/recover_exact_arm64_package_pool_v2.py'
+      - 'arm64/locks/arch-replacements/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-recover-exact-package-pool
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out immutable AMD64 reference and recovery auditor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install package and archive inspection tools
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 jq unzip dpkg-dev file ca-certificates
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_arm64_package_pool.py \
+            arm64/scripts/recover_exact_arm64_package_pool_v2.py
+          gh --version
+
+      - name: Select existing artifacts likely to contain ARM64 packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/artifacts work/candidates work/recovery
+
+          # gh emits one JSON document per page. Slurp those documents into a
+          # single JSON array before Python parses them.
+          gh api --paginate \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            | jq -s '.' \
+            > work/artifacts/pages.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          pages = json.loads(Path('work/artifacts/pages.json').read_text())
+          if isinstance(pages, dict):
+              pages = [pages]
+
+          artifacts = []
+          for page in pages:
+              artifacts.extend(page.get('artifacts', []))
+
+          positive = (
+              'arm64', 'aarch64', 'package', 'rebuild', 'reference',
+              'historical', 'vendor', 'debian', 'p7zip', 'accountsservice',
+              'wave', 'repo', 'arch-replacements',
+          )
+          package_evidence = (
+              'package', 'rebuild', 'repo', 'reference', 'historical',
+              'vendor', 'p7zip', 'accountsservice', 'wave',
+              'arch-replacements',
+          )
+          large_non_package = ('iso', 'rootfs')
+          selected = []
+
+          for artifact in artifacts:
+              if artifact.get('expired'):
+                  continue
+              name = (artifact.get('name') or '').lower()
+              size = int(artifact.get('size_in_bytes') or 0)
+              if size < 1024:
+                  continue
+              if name.startswith('recovered-exact-arm64-package-pool-'):
+                  continue
+              if not any(token in name for token in positive):
+                  continue
+              if not any(token in name for token in package_evidence):
+                  continue
+              if (
+                  any(token in name for token in large_non_package)
+                  and not any(
+                      token in name
+                      for token in ('package', 'rebuild', 'repo', 'arch-replacements')
+                  )
+              ):
+                  continue
+              selected.append({
+                  'id': artifact['id'],
+                  'name': artifact.get('name'),
+                  'size_in_bytes': size,
+                  'created_at': artifact.get('created_at'),
+                  'workflow_run': artifact.get('workflow_run'),
+              })
+
+          # Artifact names are normally stable across retries. Retain only the
+          # newest non-expired copy of each exact name to avoid downloading
+          # duplicate multi-hundred-megabyte repositories.
+          selected.sort(
+              key=lambda row: (row.get('created_at') or '', row['id']),
+              reverse=True,
+          )
+          deduplicated = []
+          seen_names = set()
+          for row in selected:
+              name = row.get('name') or f"artifact-{row['id']}"
+              if name in seen_names:
+                  continue
+              seen_names.add(name)
+              deduplicated.append(row)
+          selected = deduplicated
+
+          Path('work/artifacts/selected.json').write_text(
+              json.dumps(selected, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'page_count': len(pages),
+              'repository_artifact_count': len(artifacts),
+              'selected_count': len(selected),
+              'selected_bytes': sum(row['size_in_bytes'] for row in selected),
+          }, indent=2))
+          PY
+
+      - name: Stream artifacts and retain only unique DEB files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : > work/artifacts/extraction-records.jsonl
+
+          jq -c '.[]' work/artifacts/selected.json | while IFS= read -r row; do
+            id="$(jq -r '.id' <<<"$row")"
+            name="$(jq -r '.name' <<<"$row")"
+            safe="$(printf '%s' "$name" | tr -cs 'A-Za-z0-9._-' '_')"
+            archive="work/artifacts/${id}-${safe}.zip"
+
+            set +e
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" \
+              > "$archive"
+            download_rc=$?
+            set -e
+            if [ "$download_rc" -ne 0 ]; then
+              rm -f "$archive"
+              jq -cn --argjson id "$id" --arg name "$name" \
+                '{artifact_id:$id,name:$name,status:"download-failed"}' \
+                >> work/artifacts/extraction-records.jsonl
+              continue
+            fi
+
+            python3 - "$archive" "$id" "$name" <<'PY'
+          import hashlib
+          import json
+          import sys
+          import zipfile
+          from pathlib import Path
+
+          archive = Path(sys.argv[1])
+          artifact_id = sys.argv[2]
+          artifact_name = sys.argv[3]
+          output = Path('work/candidates')
+          output.mkdir(exist_ok=True)
+          record = {
+              'artifact_id': artifact_id,
+              'name': artifact_name,
+              'zip_size': archive.stat().st_size,
+              'deb_members': 0,
+              'saved': 0,
+              'duplicate_members': 0,
+              'errors': [],
+          }
+          try:
+              with zipfile.ZipFile(archive) as bundle:
+                  for member in bundle.infolist():
+                      if member.is_dir() or not member.filename.lower().endswith('.deb'):
+                          continue
+                      record['deb_members'] += 1
+                      with bundle.open(member) as source:
+                          data = source.read()
+                      digest = hashlib.sha256(data).hexdigest()
+                      destination = output / f'{digest}-{Path(member.filename).name}'
+                      if destination.exists():
+                          record['duplicate_members'] += 1
+                      else:
+                          destination.write_bytes(data)
+                          record['saved'] += 1
+          except Exception as error:
+              record['errors'].append(f'{type(error).__name__}: {error}')
+          with Path('work/artifacts/extraction-records.jsonl').open('a') as handle:
+              handle.write(json.dumps(record) + '\n')
+          PY
+            rm -f "$archive"
+          done
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows = [
+              json.loads(line)
+              for line in Path('work/artifacts/extraction-records.jsonl')
+              .read_text()
+              .splitlines()
+              if line.strip()
+          ]
+          Path('work/artifacts/extraction-records.json').write_text(
+              json.dumps(rows, indent=2) + '\n'
+          )
+          print(json.dumps({
+              'artifact_records': len(rows),
+              'download_failures': sum(
+                  row.get('status') == 'download-failed' for row in rows
+              ),
+              'archive_errors': sum(bool(row.get('errors')) for row in rows),
+              'candidate_debs': len(list(Path('work/candidates').glob('*.deb'))),
+          }, indent=2))
+          PY
+
+      - name: Audit exact package coverage and build repository if complete
+        id: audit
+        shell: bash
+        run: |
+          set -uxo pipefail
+          mkdir -p work/package-repository work/recovery
+          set +e
+          python3 arm64/scripts/recover_exact_arm64_package_pool_v2.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --candidate-dir work/candidates \
+            --repository-dir work/package-repository \
+            --output-dir work/recovery
+          rc=$?
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/recovery work/package-repository \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            > work/recovery/LOCKSUMS.sha256
+          cat work/recovery/summary.json
+
+      - name: Upload recovered repository or exact blocker inventory
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovered-exact-arm64-package-pool-${{ github.run_id }}
+          path: |
+            work/recovery
+            work/package-repository
+            work/artifacts/selected.json
+            work/artifacts/extraction-records.json
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit compact recovery coverage
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          required=(
+            work/recovery/summary.json
+            work/recovery/blockers.json
+            work/recovery/coverage.tsv
+            work/recovery/LOCKSUMS.sha256
+            work/artifacts/selected.json
+            work/artifacts/extraction-records.json
+          )
+          for path in "${required[@]}"; do
+            if [ ! -f "$path" ]; then
+              echo "Recovery evidence is incomplete; not committing a false lock: $path" >&2
+              exit 0
+            fi
+          done
+
+          destination="arm64/locks/recovered-package-pool/${GITHUB_RUN_ID}"
+          mkdir -p "$destination"
+          cp work/recovery/summary.json "$destination/"
+          cp work/recovery/blockers.json "$destination/"
+          cp work/recovery/coverage.tsv "$destination/"
+          cp work/recovery/LOCKSUMS.sha256 "$destination/"
+          cp work/artifacts/selected.json "$destination/artifacts.json"
+          cp work/artifacts/extraction-records.json "$destination/"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Audit recovered exact ARM64 package pool ${GITHUB_RUN_ID}"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Refresh compact blocker authority
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ -f work/recovery/summary.json ] \
+             && jq -e '.blocker_count > 0' work/recovery/summary.json >/dev/null; then
+            gh workflow run arm64-summarize-recovered-package-blockers.yml \
+              --repo '${{ github.repository }}' \
+              --ref arm64-port
+          fi
+
+      - name: Enforce completeness without inventing missing packages
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/recovery/summary.json
+          jq . work/recovery/summary.json
+          test '${{ steps.audit.outputs.exit_code }}' = '0'
+          jq -e '.repository_ready == true and .blocker_count == 0' \
+            work/recovery/summary.json

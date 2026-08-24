@@ -1,0 +1,110 @@
+name: ARM64 port - exhaustive exact Git source history lock
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-source-lock-exhaustive.yml'
+      - 'arm64/scripts/resolve_source_git.py'
+      - 'arm64/scripts/resolve_source_git_public.py'
+      - 'arm64/scripts/resolve_source_git_parallel.py'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-source-lock-exhaustive
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out reference identities and resolvers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Scan deep public history for exact changelog identities
+        id: resolve
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work/source-lock-exhaustive work/source-probes-exhaustive
+          set +e
+          python3 arm64/scripts/resolve_source_git_parallel.py \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --output-dir work/source-lock-exhaustive \
+            --work-dir work/source-probes-exhaustive \
+            --max-depth 100000 \
+            --workers 4 \
+            2>&1 | tee work/source-lock-exhaustive-workflow.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/source-lock-exhaustive -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/source-lock-exhaustive/LOCKSUMS.sha256
+          cat work/source-lock-exhaustive/source-lock-summary.json
+
+      - name: Upload deep source resolution and unresolved evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-exhaustive-source-lock-${{ github.run_id }}
+          path: |
+            work/source-lock-exhaustive
+            work/source-lock-exhaustive-workflow.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit exhaustive exact Git source locks
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/sources-exhaustive
+          mkdir -p arm64/locks/sources-exhaustive
+          cp -a work/source-lock-exhaustive/. arm64/locks/sources-exhaustive/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/sources-exhaustive
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Lock exhaustive exact public Git source history'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 4))
+          done
+          exit 1
+
+      - name: Merge all exact Git and signed DSC authorities
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh workflow run arm64-source-authority-v5.yml \
+            --repo '${{ github.repository }}' \
+            --ref arm64-port
+
+      - name: Preserve unresolved native source conclusion after saving evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.resolve.outputs.exit_code }}' = '0'

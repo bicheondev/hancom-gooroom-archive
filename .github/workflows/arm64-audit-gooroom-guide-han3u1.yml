@@ -1,0 +1,363 @@
+name: ARM64 port - audit exact Hancom Gooroom guide payload
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-audit-gooroom-guide-han3u1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-audit-gooroom-guide-han3u1
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      SOURCE_RECOVERY_RUN_ID: '31268916749'
+      SOURCE_RECOVERY_ARTIFACT: recovered-exact-arm64-package-pool-31268916749
+      TARGET_SOURCE: gooroom-guide
+      TARGET_VERSION: 0.5.3+grm3u1+han3u1
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Install deterministic audit tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates dpkg-dev file git jq python3
+
+      - name: Download the exact recovered package pool and isolate the target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/gooroom-guide-audit
+          mkdir -p work/gooroom-guide-audit/{download,target,rootfs,control,evidence,git}
+          gh run download "$SOURCE_RECOVERY_RUN_ID" \
+            --repo '${{ github.repository }}' \
+            --name "$SOURCE_RECOVERY_ARTIFACT" \
+            --dir work/gooroom-guide-audit/download
+          target="$(find work/gooroom-guide-audit/download -type f \
+            -name '*gooroom-guide_0.5.3+grm3u1+han3u1_amd64.deb' \
+            -print -quit)"
+          test -n "$target"
+          cp "$target" work/gooroom-guide-audit/target/
+          target_copy="work/gooroom-guide-audit/target/$(basename "$target")"
+          sha256sum "$target_copy" > work/gooroom-guide-audit/evidence/target-deb.sha256
+          dpkg-deb -x "$target_copy" work/gooroom-guide-audit/rootfs
+          dpkg-deb -e "$target_copy" work/gooroom-guide-audit/control
+          dpkg-deb -f "$target_copy" \
+            Package Version Architecture Source Installed-Size Depends Recommends \
+            > work/gooroom-guide-audit/evidence/control-fields.txt
+          rm -rf work/gooroom-guide-audit/download
+
+      - name: Recover packaged changelog and static payload evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/gooroom-guide-audit/evidence
+          rootfs=work/gooroom-guide-audit/rootfs
+          find "$rootfs/usr/share/doc" -type f -name 'changelog*.gz' -print0 2>/dev/null \
+            | while IFS= read -r -d '' path; do
+                name="$(basename "$path" .gz)"
+                gzip -cd "$path" > "$evidence/packaged-${name}.txt"
+              done
+          find "$rootfs/usr/share/doc" -type f -name 'copyright' -print0 2>/dev/null \
+            | while IFS= read -r -d '' path; do
+                cp "$path" "$evidence/packaged-copyright.txt"
+              done
+          find "$rootfs" -type f -print0 \
+            | sort -z \
+            | xargs -0 file \
+            > "$evidence/file-report.txt"
+          grep -E 'ELF|PE32|Mach-O' "$evidence/file-report.txt" \
+            > "$evidence/native-payload-report.txt" || true
+
+      - name: Mirror all plausible public source histories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          clone_root=work/gooroom-guide-audit/git
+          while IFS='|' read -r key url; do
+            set +e
+            git clone --mirror "$url" "$clone_root/$key.git" \
+              > "$clone_root/$key.clone.stdout" \
+              2> "$clone_root/$key.clone.stderr"
+            rc=$?
+            set -e
+            printf '%s\n' "$rc" > "$clone_root/$key.clone.exit-code"
+          done <<'EOF'
+          hancomgooroom|https://github.com/hancomgooroom/gooroom-guide.git
+          hancom-io|https://github.com/hancom-io/gooroom-guide.git
+          gooroom|https://github.com/gooroom/gooroom-guide.git
+          EOF
+
+      - name: Match every packaged file against every Git object
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import gzip
+          import hashlib
+          import json
+          import os
+          import re
+          import stat
+          import subprocess
+          from collections import defaultdict
+          from pathlib import Path
+
+          base = Path('work/gooroom-guide-audit')
+          rootfs = base / 'rootfs'
+          control = base / 'control'
+          evidence = base / 'evidence'
+          git_root = base / 'git'
+          target_version = os.environ['TARGET_VERSION']
+
+          def run(args: list[str], *, check: bool = False) -> subprocess.CompletedProcess[str]:
+              return subprocess.run(
+                  args, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                  check=check,
+              )
+
+          def sha256(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def git_blob_sha(path: Path) -> str:
+              data = path.read_bytes()
+              header = f'blob {len(data)}\0'.encode()
+              return hashlib.sha1(header + data).hexdigest()
+
+          repositories: dict[str, Path] = {}
+          object_paths: dict[str, dict[str, list[str]]] = {}
+          refs: dict[str, list[dict[str, str]]] = {}
+          version_searches: dict[str, dict[str, object]] = {}
+
+          for repo in sorted(git_root.glob('*.git')):
+              key = repo.name[:-4]
+              repositories[key] = repo
+              mapping: dict[str, list[str]] = defaultdict(list)
+              objects = run(['git', f'--git-dir={repo}', 'rev-list', '--objects', '--all'])
+              for line in objects.stdout.splitlines():
+                  sha, _, path = line.partition(' ')
+                  if path:
+                      mapping[sha].append(path)
+              object_paths[key] = dict(mapping)
+
+              ref_result = run([
+                  'git', f'--git-dir={repo}', 'for-each-ref',
+                  '--format=%(refname)\t%(objectname)',
+                  'refs/heads', 'refs/tags',
+              ])
+              repo_refs: list[dict[str, str]] = []
+              for line in ref_result.stdout.splitlines():
+                  ref, _, commit = line.partition('\t')
+                  changelog = run([
+                      'git', f'--git-dir={repo}', 'show',
+                      f'{commit}:debian/changelog',
+                  ])
+                  head = changelog.stdout.splitlines()[0] if changelog.returncode == 0 and changelog.stdout else ''
+                  repo_refs.append({'ref': ref, 'commit': commit, 'changelog_head': head})
+              refs[key] = repo_refs
+
+              search = run([
+                  'git', f'--git-dir={repo}', 'log', '--all',
+                  '--format=%H%x09%ct%x09%s', '-S', target_version,
+                  '--', 'debian/changelog',
+              ])
+              version_searches[key] = {
+                  'exit_code': search.returncode,
+                  'hits': search.stdout.splitlines(),
+                  'stderr': search.stderr[-4000:],
+              }
+
+          rows: list[dict[str, object]] = []
+          regular_file_count = 0
+          matched_any_count = 0
+          matched_all_count = 0
+          unmatched_paths: list[str] = []
+          native_payloads: list[dict[str, object]] = []
+
+          for path in sorted(rootfs.rglob('*')):
+              rel = '/' + path.relative_to(rootfs).as_posix()
+              mode = path.lstat().st_mode
+              if stat.S_ISLNK(mode):
+                  rows.append({
+                      'path': rel,
+                      'type': 'symlink',
+                      'size': 0,
+                      'sha256': '',
+                      'git_blob_sha1': '',
+                      'symlink_target': os.readlink(path),
+                      'matches': {},
+                  })
+                  continue
+              if not stat.S_ISREG(mode):
+                  continue
+              regular_file_count += 1
+              digest = sha256(path)
+              blob = git_blob_sha(path)
+              matches = {
+                  key: object_paths.get(key, {}).get(blob, [])
+                  for key in sorted(repositories)
+              }
+              matched_repos = [key for key, paths in matches.items() if paths]
+              if matched_repos:
+                  matched_any_count += 1
+              else:
+                  unmatched_paths.append(rel)
+              if repositories and len(matched_repos) == len(repositories):
+                  matched_all_count += 1
+
+              data_head = path.read_bytes()[:64]
+              if data_head.startswith(b'\x7fELF') or data_head.startswith(b'MZ'):
+                  info = run(['file', '-b', str(path)]).stdout.strip()
+                  native_payloads.append({
+                      'path': rel,
+                      'file': info,
+                      'sha256': digest,
+                  })
+
+              rows.append({
+                  'path': rel,
+                  'type': 'file',
+                  'size': path.stat().st_size,
+                  'sha256': digest,
+                  'git_blob_sha1': blob,
+                  'symlink_target': '',
+                  'matches': matches,
+              })
+
+          changelogs: dict[str, str] = {}
+          for path in sorted(evidence.glob('packaged-changelog*.txt')):
+              changelogs[path.name] = path.read_text(encoding='utf-8', errors='replace')
+
+          control_text = (control / 'control').read_text(encoding='utf-8', errors='replace')
+          fields: dict[str, str] = {}
+          current = None
+          for line in control_text.splitlines():
+              if line.startswith((' ', '\t')) and current:
+                  fields[current] += '\n' + line.strip()
+              elif ':' in line:
+                  current, value = line.split(':', 1)
+                  fields[current] = value.strip()
+
+          summary = {
+              'schema': 1,
+              'policy': 'exact-amd64-payload-versus-all-public-git-objects',
+              'source': os.environ['TARGET_SOURCE'],
+              'source_version': target_version,
+              'package': fields.get('Package'),
+              'package_version': fields.get('Version'),
+              'architecture': fields.get('Architecture'),
+              'source_field': fields.get('Source'),
+              'regular_file_count': regular_file_count,
+              'matched_in_any_repository_count': matched_any_count,
+              'matched_in_all_repositories_count': matched_all_count,
+              'unmatched_file_count': len(unmatched_paths),
+              'native_payload_count': len(native_payloads),
+              'repositories_cloned': sorted(repositories),
+              'repository_clone_failures': sorted(
+                  path.name.removesuffix('.clone.exit-code')
+                  for path in git_root.glob('*.clone.exit-code')
+                  if path.read_text().strip() != '0'
+              ),
+              'exact_version_history_hit_count': sum(
+                  len(value['hits']) for value in version_searches.values()
+              ),
+              'packaged_changelog_files': sorted(changelogs),
+          }
+
+          (evidence / 'summary.json').write_text(
+              json.dumps(summary, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (evidence / 'payload-manifest.json').write_text(
+              json.dumps(rows, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (evidence / 'unmatched-paths.json').write_text(
+              json.dumps(unmatched_paths, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (evidence / 'native-payloads.json').write_text(
+              json.dumps(native_payloads, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (evidence / 'repository-refs.json').write_text(
+              json.dumps(refs, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (evidence / 'exact-version-history-search.json').write_text(
+              json.dumps(version_searches, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, indent=2, ensure_ascii=False))
+          PY
+          jq -e \
+            '.source == "gooroom-guide" and
+             .source_version == "0.5.3+grm3u1+han3u1" and
+             .package_version == "0.5.3+grm3u1+han3u1" and
+             .architecture == "amd64"' \
+            work/gooroom-guide-audit/evidence/summary.json
+
+      - name: Seal and upload compact evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          evidence=work/gooroom-guide-audit/evidence
+          find "$evidence" -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > "$evidence/LOCKSUMS.sha256"
+
+      - name: Upload the exact package and source-history audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-guide-0.5.3-grm3u1-han3u1-payload-audit
+          path: work/gooroom-guide-audit/evidence
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit immutable compact audit evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/gooroom-guide-han3u1-audit/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/gooroom-guide-audit/evidence/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Audit exact Hancom Gooroom guide payload history'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

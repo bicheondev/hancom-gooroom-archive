@@ -1,0 +1,61 @@
+{
+  "schema": 3,
+  "policy": "binary-history-constrained-source-reconstruction",
+  "source_status": "reconstructed-not-recovered-original-source",
+  "byte_identity_claimed": false,
+  "published_source": {
+    "repository": "ultract/X.org-Security-Module",
+    "commit": "fb0a3de9cab9b9f5b89aabd7943a5b5f13f37ab7",
+    "tree": "aef0ff9c73f625763b3822c7cfa7179799f26637",
+    "xsm_c_sha256": "6ba6fbf4468d0b7f72a15483c43226ffcf686a0cde95998a8bd117aad91d0ddb"
+  },
+  "exact_packaging": {
+    "repository": "gooroom/gooroom-libsecurity-extensions",
+    "commit": "4990bab95ae1dcaa29f38836da83edfa0969ed73",
+    "tree": "e1dce97d3cd69331047c01940b2593a0eaf2307a",
+    "source_version": "0.1.7+grm3u1"
+  },
+  "final_amd64_binary_evidence": {
+    "commit": "40d69bd620b022aa4ecb6f7d968c87e7f8df5a28",
+    "blob": "416fbb7260c30d5075b1da6dd32aa8d81ef4a49f",
+    "sha256": "d28c255bb00061b0df60f977e9c022a01e8d98e957b1cbcd145aaa3940aa37c8",
+    "size": 27072
+  },
+  "reconstructed_semantics": [
+    "GRAC D-Bus deny notification",
+    "GRAC journal identifier and GRMCODE field",
+    "user-policy then default-policy precedence",
+    "screen_capture controls screenshot, screencast and Xrecord together",
+    "runtime json-c symbol resolution",
+    "final 0.1.7 whitelist additions"
+  ],
+  "architecture_adaptations": [
+    {
+      "final_amd64_literal": "/usr/lib/x86_64-linux-gnu/libjson-c.so.5",
+      "arm64_literal": "/usr/lib/aarch64-linux-gnu/libjson-c.so.5",
+      "reason": "Debian multiarch runtime path; no version substitution"
+    }
+  ],
+  "preserved_core_function_sha256": {
+    "XsmResource": "0d577ccb49aa917dc038055f0fd7be8e31a08767d49858f04c8153d9d80cd708",
+    "XsmExtension": "2e13c7d23ec8385ea54b42875b08dd91e8fe3fd695de30fe22d10e88a00cc6d1",
+    "XsmSelection": "45cccfa7f3d7672f5e66263b975b8ca3e6d43c5f005acb51c7d05a1a2f14bef1"
+  },
+  "required_semantic_literals": [
+    "/etc/gooroom/grac.d/user.rules",
+    "/etc/gooroom/grac.d/default.rules",
+    "/usr/lib/aarch64-linux-gnu/libjson-c.so.5",
+    "grac_noti_forward",
+    "kr.gooroom.GRACDEVD",
+    "/kr/gooroom/GRACDEVD",
+    "GRAC-EXT",
+    "screen_capture",
+    "/usr/libexec/at-spi2-registryd",
+    "/usr/bin/gnome-flashback",
+    "/usr/libexec/gnome-terminal-server",
+    "040019:비인가된 행위(스크린캡쳐)가 탐지되어 차단하였습니다",
+    "040020:비인가된 행위(클립보드)가 탐지되어 차단하였습니다"
+  ],
+  "generator_sha256": "963b95e674f7ef884684574f6606626592364fcfcf85217568287325040478f0",
+  "output_source_sha256": "dacc73ed4e734895608a4e8144096c3e9c6e09d9610fd06cbfbcc6544bb15067"
+}

@@ -1,0 +1,69 @@
+name: ARM64 add cleanmode candidate to integration v4 once
+
+'on':
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arm64-add-cleanmode-candidate-to-integration-v4-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out active ARM64 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Add exact public cleanmode commit to v4 matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = '          - label: cleanmode-public-commit\n            commit: d170c900dab655bd5c6d8474064e445232d3f49c\n'
+          if marker not in text:
+              anchor = '          - label: post-release-ui-0.3.1-grm3u1\n            commit: bcca083b854e4a6c99e0bb69db4d4868e1210cdd\n'
+              if anchor not in text:
+                  raise SystemExit('v4 matrix anchor not found')
+              text = text.replace(anchor, anchor + marker, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+          grep -Fq '          - label: cleanmode-public-commit' \
+            .github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml
+          grep -Fq '            commit: d170c900dab655bd5c6d8474064e445232d3f49c' \
+            .github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml
+
+      - name: Commit matrix expansion and remove one-shot workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/arm64-analyze-integration-applet-vendor-reconstruction-v4.yml
+          git rm .github/workflows/arm64-add-cleanmode-candidate-to-integration-v4-once.yml
+          git diff --cached --check
+          git commit -m 'Test public cleanmode source in integration applet reconstruction'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1

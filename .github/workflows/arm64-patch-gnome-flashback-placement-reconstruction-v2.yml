@@ -1,0 +1,131 @@
+name: ARM64 port - repair gnome-flashback placement reconstruction v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-patch-gnome-flashback-placement-reconstruction-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-patch-gnome-flashback-placement-reconstruction-v2
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the latest evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply the binary-derived placement reconstruction correction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('arm64/scripts/reconstruct_gnome_flashback_han3u4.py')
+          text = path.read_text(encoding='utf-8')
+
+          old_reconstruction = '''    # ef9a0790: remove only the Placement submenu; keep Sort by and all settings machinery.
+              icon_path = hancom / "gnome-flashback/libdesktop/gf-icon-view.c"
+              icon_text = icon_path.read_text(encoding="utf-8")
+              icon_text = replace_once(
+                  icon_text,
+                  '  item = gtk_menu_item_new_with_label (_("Placement"));\\n'
+                  '  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);\\n'
+                  '  gtk_widget_show (item);\\n\\n'
+                  '  append_placement_submenu (self, item);\\n\\n',
+                  "",
+                  "desktop Placement submenu",
+              )
+              icon_path.write_text(icon_text, encoding="utf-8")
+          '''
+          new_reconstruction = '''    # ef9a0790: preserve the Placement submenu machinery and line geometry, but hide its parent item.
+              icon_path = hancom / "gnome-flashback/libdesktop/gf-icon-view.c"
+              icon_text = icon_path.read_text(encoding="utf-8")
+              placement_block = (
+                  '  item = gtk_menu_item_new_with_label (_("Placement"));\\n'
+                  '  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);\\n'
+                  '  gtk_widget_show (item);\\n\\n'
+                  '  append_placement_submenu (self, item);\\n\\n'
+              )
+              hidden_placement_block = (
+                  '  item = gtk_menu_item_new_with_label (_("Placement"));\\n'
+                  '  gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), item);\\n'
+                  '\\n\\n'
+                  '  append_placement_submenu (self, item);\\n\\n'
+              )
+              icon_text = replace_once(
+                  icon_text,
+                  placement_block,
+                  hidden_placement_block,
+                  "hidden desktop Placement submenu",
+              )
+              icon_path.write_text(icon_text, encoding="utf-8")
+          '''
+
+          old_validation = '''    if 'gtk_menu_item_new_with_label (_("Placement"))' in icon_path.read_text(encoding="utf-8"):
+                  raise SystemExit("Placement submenu survived unique reconstruction")
+          '''
+          new_validation = '''    final_icon_text = icon_path.read_text(encoding="utf-8")
+              if hidden_placement_block not in final_icon_text:
+                  raise SystemExit("hidden Placement submenu geometry was not preserved")
+              if placement_block in final_icon_text:
+                  raise SystemExit("Placement submenu parent is still visible")
+          '''
+
+          replacements = [
+              (old_reconstruction, new_reconstruction, 'placement reconstruction'),
+              (old_validation, new_validation, 'placement validation'),
+              ('                "desktop-placement-submenu-removed",',
+               '                "desktop-placement-submenu-parent-not-shown",',
+               'placement evidence label'),
+          ]
+          for old, new, label in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one anchor, found {count}')
+              text = text.replace(old, new)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          python3 -m py_compile arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          grep -Fq 'hidden_placement_block' arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          grep -Fq 'desktop-placement-submenu-parent-not-shown' arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          ! grep -Fq 'desktop-placement-submenu-removed' arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          git diff --check
+          git diff -- arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+
+      - name: Commit and push the corrected source reconstruction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/scripts/reconstruct_gnome_flashback_han3u4.py
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'The placement reconstruction correction is already present.'
+            exit 0
+          fi
+          git commit -m 'Repair gnome-flashback placement reconstruction'
+          pushed=false
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              pushed=true
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          test "$pushed" = true

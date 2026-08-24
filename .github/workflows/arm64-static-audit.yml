@@ -1,0 +1,124 @@
+name: ARM64 port - static lock and workflow audit
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-*.yml'
+      - 'arm64/scripts/**'
+      - 'arm64/locks/reference/**'
+      - 'arm64/locks/effective-sources/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-arm64-static-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the ARM64 port branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 1
+
+      - name: Install syntax and lock validators
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            jq python3 python3-yaml shellcheck
+
+      - name: Compile every Python resolver and builder helper
+        run: |
+          set -euxo pipefail
+          find arm64/scripts -maxdepth 1 -type f -name '*.py' -print0 \
+            | sort -z \
+            | xargs -0 -r python3 -m py_compile
+
+      - name: Parse every shell builder and run shellcheck
+        run: |
+          set -euxo pipefail
+          mapfile -d '' scripts < <(
+            find arm64/scripts -maxdepth 1 -type f -name '*.sh' -print0 | sort -z
+          )
+          for script in "${scripts[@]}"; do
+            bash -n "$script"
+          done
+          shellcheck --severity=error "${scripts[@]}"
+
+      - name: Parse every ARM64 workflow YAML document
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          count = 0
+          for path in sorted(Path('.github/workflows').glob('arm64-*.yml')):
+              with path.open(encoding='utf-8') as handle:
+                  document = yaml.safe_load(handle)
+              if not isinstance(document, dict):
+                  raise SystemExit(f'{path}: workflow root is not a mapping')
+              if 'jobs' not in document:
+                  raise SystemExit(f'{path}: jobs mapping is absent')
+              count += 1
+          print(f'parsed {count} ARM64 workflows')
+          PY
+
+      - name: Parse all lock JSON and enforce the reference identity
+        run: |
+          set -euxo pipefail
+          find arm64/locks -type f -name '*.json' -print0 \
+            | sort -z \
+            | xargs -0 -r -n1 jq empty
+          test "$(jq -r '.reference_iso.sha256' \
+            arm64/locks/reference/amd64-reference.json)" = \
+            ba3ac40c66c255bccb53b7e5e8bbe1fdee6cec93a63669d1f4c9d75555d7644a
+          test "$(jq -r '.package_count' \
+            arm64/locks/reference/amd64-reference.json)" = 1279
+
+      - name: Cross-check every resolved native rebuild expectation
+        run: |
+          set -euxo pipefail
+          mkdir -p work/static-audit/filtered
+          lock=arm64/locks/effective-sources/effective-source-lock.json
+          reference=arm64/locks/reference/amd64-reference.json
+          jq -r '
+            .sources[]
+            | select(.status == "resolved" and .selected != null)
+            | select((.role // "") | tostring | test("rebuild"))
+            | select([.binary_architectures[]? | select(. != "all")] | length > 0)
+            | .source
+          ' "$lock" | sort -u > work/static-audit/resolved-native-sources.txt
+          count=0
+          while IFS= read -r source; do
+            [ -n "$source" ] || continue
+            safe="$(sed 's/[^A-Za-z0-9_.-]/_/g' <<<"$source")"
+            python3 arm64/scripts/filter_arm64_binary_lock_v2.py \
+              "$lock" "$reference" "$source" \
+              "work/static-audit/filtered/$safe.json"
+            count=$((count + 1))
+          done < work/static-audit/resolved-native-sources.txt
+          test "$count" -gt 0
+          printf '%s\n' "$count" > work/static-audit/validated-source-count.txt
+          find work/static-audit -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > work/static-audit/SHA256SUMS
+          sha256sum --check work/static-audit/SHA256SUMS
+
+      - name: Upload static audit evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-static-audit
+          path: work/static-audit
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9

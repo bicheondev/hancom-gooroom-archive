@@ -1,0 +1,88 @@
+name: ARM64 snapshot active blocker resolution runs once
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-snapshot-active-resolution-runs-once.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: arm64-snapshot-active-resolution-runs-once
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out active branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Collect recent runs for active blocker workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/runs
+          workflows=(
+            arm64-fix-integration-reconstruction-po-check-v2-once.yml
+            arm64-analyze-integration-applet-han3u3-reconstruction-v2.yml
+            arm64-analyze-linux-5.10.179-grm3u1-delta-v1.yml
+            arm64-orchestrate-session-manager-han3u2-v1.yml
+            arm64-final-convergence-v1.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            if gh run list \
+              --repo "${{ github.repository }}" \
+              --workflow "$workflow" \
+              --branch arm64-port \
+              --limit 10 \
+              --json databaseId,number,status,conclusion,createdAt,updatedAt,url,headSha,event,displayTitle \
+              > "work/runs/${workflow}.json" 2>"work/runs/${workflow}.error"; then
+              jq -n \
+                --arg workflow "$workflow" \
+                --slurpfile runs "work/runs/${workflow}.json" \
+                '{workflow:$workflow,registered:true,runs:$runs[0]}' \
+                > "work/runs/${workflow}.entry.json"
+            else
+              jq -n \
+                --arg workflow "$workflow" \
+                --arg error "$(cat "work/runs/${workflow}.error")" \
+                '{workflow:$workflow,registered:false,error:$error,runs:[]}' \
+                > "work/runs/${workflow}.entry.json"
+            fi
+          done
+          jq -s \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{schema:1,generated_at:$generated_at,workflows:.}' \
+            work/runs/*.entry.json > work/snapshot.json
+          jq . work/snapshot.json
+
+      - name: Commit snapshot race-safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          destination=arm64/status/active-resolution-runs/latest.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch origin arm64-port
+            git reset --hard origin/arm64-port
+            mkdir -p "$(dirname "$destination")"
+            cp work/snapshot.json "$destination"
+            git add "$destination"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Record active ARM64 blocker resolution runs'
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1

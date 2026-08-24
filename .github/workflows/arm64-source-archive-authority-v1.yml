@@ -1,0 +1,127 @@
+name: ARM64 source authority - verified reconstructed archives v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - 'arm64/locks/reconstructed-source-archives/**'
+      - 'arm64/locks/effective-sources-v3/**'
+      - 'arm64/locks/rebuild-results/qtbase-opensource-src/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-source-archive-authority-v1
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out source authorities
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Detect verified archive overlays
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ -f arm64/locks/reconstructed-source-archives/source-locks.json ]; then
+            echo 'active=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'active=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply source-archive authority without inventing Git identity
+        if: steps.gate.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile arm64/scripts/finalize_reconstructed_source_archive_authority.py
+          (
+            cd arm64/locks/effective-sources-v3
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          (
+            cd arm64/locks/reconstructed-source-archives
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          rm -rf work/effective-sources-v4
+          python3 arm64/scripts/finalize_reconstructed_source_archive_authority.py \
+            --base-lock arm64/locks/effective-sources-v3/effective-source-lock.json \
+            --archive-overlays arm64/locks/reconstructed-source-archives/source-locks.json \
+            --output-dir work/effective-sources-v4
+          jq -e '
+            .reconstructed_source_archive_resolved_count >= 1
+            and (.reconstructed_source_archive_overlays | length) >= 1
+            and .resolved_count >= 1
+          ' work/effective-sources-v4/effective-source-lock-summary.json >/dev/null
+          jq -e '
+            [.sources[]
+             | select(.source == "qtbase-opensource-src"
+                      and .source_version == "5.15.2+dfsg-9+grm3u1"
+                      and .status == "resolved"
+                      and .selected.type == "reconstructed-source-archive")]
+            | length == 1
+          ' work/effective-sources-v4/effective-source-lock.json >/dev/null
+          jq -n \
+            --arg base_path arm64/locks/effective-sources-v3/effective-source-lock.json \
+            --arg base_sha256 "$(sha256sum arm64/locks/effective-sources-v3/effective-source-lock.json | awk '{print $1}')" \
+            --arg overlay_path arm64/locks/reconstructed-source-archives/source-locks.json \
+            --arg overlay_sha256 "$(sha256sum arm64/locks/reconstructed-source-archives/source-locks.json | awk '{print $1}')" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" '
+              {
+                schema: 1,
+                base_authority: {path: $base_path, sha256: $base_sha256},
+                reconstructed_source_archive_authority: {path: $overlay_path, sha256: $overlay_sha256},
+                workflow_run_id: $workflow_run_id
+              }
+            ' > work/effective-sources-v4/input-locks.json
+          (
+            cd work/effective-sources-v4
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload effective source authority v4
+        if: steps.gate.outputs.active == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-effective-source-authority-v4-${{ github.run_id }}
+          path: work/effective-sources-v4
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit effective source authority v4
+        if: steps.gate.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/effective-sources-v4
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/effective-sources-v4/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Apply verified reconstructed source archive authority'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

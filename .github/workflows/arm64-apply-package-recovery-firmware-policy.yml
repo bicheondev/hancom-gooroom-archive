@@ -1,0 +1,126 @@
+name: ARM64 port - apply firmware-aware package recovery policy
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-apply-package-recovery-firmware-policy.yml'
+      - 'arm64/scripts/apply_package_recovery_firmware_policy.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-apply-package-recovery-firmware-policy
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact package recovery implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Apply guarded path-aware firmware policy
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 arm64/scripts/apply_package_recovery_firmware_policy.py
+          python3 -m py_compile \
+            arm64/scripts/recover_exact_arm64_package_pool.py \
+            arm64/scripts/recover_exact_arm64_package_pool_v2.py \
+            arm64/scripts/summarize_recovered_package_blockers.py
+
+      - name: Prove firmware exemption cannot hide host x86 payloads
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dpkg-dev python3
+          python3 - <<'PY'
+          import importlib.util
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          module_path = Path('arm64/scripts/recover_exact_arm64_package_pool.py')
+          spec = importlib.util.spec_from_file_location('recovery', module_path)
+          recovery = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(recovery)
+
+          def elf(machine: int) -> bytes:
+              header = bytearray(20)
+              header[:4] = b'\x7fELF'
+              header[4] = 2
+              header[5] = 1
+              header[6] = 1
+              header[18:20] = machine.to_bytes(2, 'little')
+              return bytes(header)
+
+          def package(root: Path, name: str, payload: str) -> Path:
+              package_root = root / name
+              control = package_root / 'DEBIAN' / 'control'
+              control.parent.mkdir(parents=True)
+              control.write_text(
+                  f'Package: {name}\nVersion: 1\nArchitecture: arm64\n'
+                  'Maintainer: Test <test@example.invalid>\nDescription: audit test\n'
+              )
+              destination = package_root / payload.lstrip('/')
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              destination.write_bytes(elf(62))
+              output = root / f'{name}.deb'
+              subprocess.run(
+                  ['dpkg-deb', '--build', str(package_root), str(output)],
+                  check=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+              )
+              return output
+
+          with tempfile.TemporaryDirectory(prefix='firmware-policy-test-') as temp:
+              root = Path(temp)
+              firmware_deb = package(
+                  root, 'firmware-path-test', '/lib/firmware/device/coprocessor.bin'
+              )
+              host_deb = package(root, 'host-path-test', '/usr/bin/host-x86')
+              firmware_audit = recovery.audit_payload(firmware_deb)
+              host_audit = recovery.audit_payload(host_deb)
+              assert firmware_audit['passed'] is True, firmware_audit
+              assert len(firmware_audit['embedded_firmware']) == 1, firmware_audit
+              assert firmware_audit['x86'] == [], firmware_audit
+              assert host_audit['passed'] is False, host_audit
+              assert len(host_audit['x86']) == 1, host_audit
+          PY
+
+      - name: Commit the verified Python policy implementation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          # The guarded patcher also prepares the recovery-workflow update, but
+          # the Actions token cannot push workflow files. Restore that file and
+          # commit only the verified Python implementation; the workflow change
+          # is applied separately through the GitHub connector.
+          git restore .github/workflows/arm64-recover-exact-package-pool.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            arm64/scripts/recover_exact_arm64_package_pool.py \
+            arm64/scripts/summarize_recovered_package_blockers.py
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Exempt embedded firmware from host ELF architecture gate'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

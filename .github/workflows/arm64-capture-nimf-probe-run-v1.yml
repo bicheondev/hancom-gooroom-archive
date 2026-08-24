@@ -1,0 +1,40 @@
+name: ARM64 capture nimf probe run v1
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-capture-nimf-probe-run-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=arm64/status/nimf-amd64-probe-v1
+          mkdir -p "$out"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/arm64-probe-nimf-amd64-builddeps-v1.yml/runs?branch=arm64-port&per_page=10" \
+            | jq '{schema:1,runs:[.workflow_runs[]|{id,status,conclusion,head_sha,created_at,updated_at,html_url}]}' > "$out/latest.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$out/latest.json"
+          git commit -m 'Record nimf AMD64 dependency probe run' || exit 0
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1

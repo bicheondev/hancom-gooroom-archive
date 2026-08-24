@@ -1,0 +1,459 @@
+name: ARM64 port - build recovered exact reference sources
+
+on:
+  workflow_run:
+    workflows:
+      - 'ARM64 port - recover exact reference source archives'
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      recovery_run_id:
+        description: Successful source-archive recovery run ID; blank selects latest
+        required: false
+        default: ''
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-build-recovered-reference-sources
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      recovery_run_id: ${{ steps.matrix.outputs.recovery_run_id }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      recovered_count: ${{ steps.matrix.outputs.recovered_count }}
+    steps:
+      - name: Check out build and verification code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Resolve recovery run and exact build matrix
+        id: matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_RECOVERY_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RECOVERY_RUN_ID: ${{ inputs.recovery_run_id }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          run_id="${INPUT_RECOVERY_RUN_ID:-${EVENT_RECOVERY_RUN_ID:-}}"
+          if [ -z "$run_id" ]; then
+            run_id="$(
+              gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow arm64-recover-reference-source-archives.yml \
+                --branch arm64-port \
+                --status success \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId'
+            )"
+          fi
+          test -n "$run_id"
+          rm -rf work/recovery
+          mkdir -p work/recovery
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-reference-source-archive-recovery \
+            --dir work/recovery
+          test -f work/recovery/summary.json
+          matrix="$(
+            jq -c '
+              [
+                .results[]
+                | select(.status == "recovered-exact-source-archive")
+                | {
+                    source,
+                    version,
+                    id: ((.source + "_" + .version) | gsub("[^A-Za-z0-9._-]"; "_"))
+                  }
+              ]
+            ' work/recovery/summary.json
+          )"
+          count="$(jq 'length' <<<"$matrix")"
+          echo "recovery_run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "recovered_count=$count" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Exact recovered source build matrix'
+            echo
+            echo "Recovery run: \`$run_id\`"
+            echo
+            echo '```json'
+            jq . <<<"$matrix"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.recovered_count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 355
+    env:
+      RECOVERY_RUN_ID: ${{ needs.prepare.outputs.recovery_run_id }}
+      SOURCE_NAME: ${{ matrix.source }}
+      SOURCE_VERSION: ${{ matrix.version }}
+      SOURCE_ID: ${{ matrix.id }}
+      ARTIFACT_NAME: exact-recovered-source-arm64-${{ matrix.id }}-${{ github.run_id }}
+      HANCOM_GOOROOM_DEBIAN_SNAPSHOT: 20230730T235959Z
+      HANCOM_GOOROOM_BUILD_JOBS: '3'
+    steps:
+      - name: Check out exact builders and verification policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+
+      - name: Verify native ARM64 host and install host tooling
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ;;
+            *) echo 'Native ARM64 runner is required.' >&2; exit 1 ;;
+          esac
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils ca-certificates docker.io dpkg-dev file gh jq python3
+          docker version
+          python3 -m py_compile \
+            arm64/scripts/verify_recovered_source_archive_arm64.py
+          bash -n arm64/scripts/build_recovered_source_archive_arm64.sh
+
+      - name: Provision bounded swap for Qt and kernel builds
+        shell: bash
+        run: |
+          set -euxo pipefail
+          swap_file=/mnt/hancom-gooroom-recovered-source.swap
+          available_mb="$(df --output=avail -BM /mnt | tail -n1 | tr -dc '0-9')"
+          current_swap_mb="$(free -m | awk '/^Swap:/{print $2}')"
+          if [ "$current_swap_mb" -lt 8192 ] && [ "$available_mb" -ge 28672 ]; then
+            sudo rm -f "$swap_file"
+            sudo fallocate -l 16G "$swap_file"
+            sudo chmod 600 "$swap_file"
+            if sudo mkswap "$swap_file" && sudo swapon "$swap_file"; then
+              sudo sysctl -w vm.swappiness=15 || true
+            else
+              sudo rm -f "$swap_file"
+            fi
+          fi
+          free -h
+          df -h / /mnt
+
+      - name: Download exact source archive recovery artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/recovery work/source work/local-repo work/output work/final-repository
+          mkdir -p work/{recovery,source,local-repo,output,final-repository}
+          gh run download "$RECOVERY_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name hancom-gooroom-3.3-reference-source-archive-recovery \
+            --dir work/recovery
+          source_path="work/recovery/archives/${SOURCE_NAME}/${SOURCE_VERSION}"
+          if [ ! -d "$source_path" ]; then
+            source_path="$(
+              find work/recovery/archives -mindepth 2 -maxdepth 2 -type d \
+                -name "$(printf '%s' "$SOURCE_VERSION" | sed 's/[^A-Za-z0-9._+~-]/_/g')" \
+                -print -quit
+            )"
+          fi
+          test -n "$source_path"
+          test -d "$source_path"
+          cp -a "$source_path/." work/source/
+          mapfile -t dscs < <(find work/source -maxdepth 1 -type f -name '*.dsc' -print)
+          test "${#dscs[@]}" -eq 1
+          find work/source -maxdepth 1 -type f -printf '%f\t%s\n' | LC_ALL=C sort
+
+      - name: Assemble local repository from all previously verified ARM64 artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          repository_run="$(
+            gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow arm64-merge-final-package-repository-v2.yml \
+              --branch arm64-port \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty'
+          )"
+          if [ -n "$repository_run" ]; then
+            gh run download "$repository_run" \
+              --repo "$GITHUB_REPOSITORY" \
+              --dir work/final-repository || true
+          fi
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import shutil
+          from pathlib import Path
+
+          source = Path('work/final-repository')
+          destination = Path('work/local-repo')
+          destination.mkdir(parents=True, exist_ok=True)
+          identities = {}
+          for path in sorted(source.rglob('*.deb')):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              previous = identities.get(path.name)
+              if previous is not None and previous != digest:
+                  raise SystemExit(f'conflicting package filename: {path.name}')
+              identities[path.name] = digest
+              target = destination / path.name
+              if not target.exists():
+                  shutil.copy2(path, target)
+          print(f'local verified DEB count: {len(identities)}')
+          PY
+
+      - name: Build exact recovered source archive
+        id: compile
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          arm64/scripts/build_recovered_source_archive_arm64.sh \
+            work/source \
+            work/local-repo \
+            work/output \
+            "$SOURCE_NAME" \
+            "$SOURCE_VERSION"
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" -eq 0 ]; then
+            echo 'passed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'passed=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify package identity and every native payload
+        id: verify
+        if: steps.compile.outputs.passed == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          python3 arm64/scripts/verify_recovered_source_archive_arm64.py \
+            --source "$SOURCE_NAME" \
+            --version "$SOURCE_VERSION" \
+            --output-dir work/output \
+            --result work/output/result.json \
+            --artifact-name "$ARTIFACT_NAME"
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" -eq 0 ]; then
+            echo 'passed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'passed=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record fail-closed build or verification failure
+        if: steps.compile.outputs.passed != 'true' || steps.verify.outputs.passed != 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          compile_rc='${{ steps.compile.outputs.rc }}'
+          verify_rc='${{ steps.verify.outputs.rc }}'
+          jq -n \
+            --arg source "$SOURCE_NAME" \
+            --arg version "$SOURCE_VERSION" \
+            --arg artifact "$ARTIFACT_NAME" \
+            --arg compile_rc "$compile_rc" \
+            --arg verify_rc "$verify_rc" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" '
+              {
+                schema: 1,
+                policy: "exact-source-archive-native-arm64-build-no-foreign-payload",
+                source: $source,
+                source_version: $version,
+                build_mode: "exact-recovered-debian-source-archive-native-arm64",
+                source_status: "exact-source-archive-recovered-from-signed-apt-authority",
+                byte_identity_claimed: false,
+                artifact_name: $artifact,
+                actions_run_id: $run_id,
+                actions_run_url: $run_url,
+                build_exit_code: $compile_rc,
+                verify_exit_code: $verify_rc,
+                build_outcome: (if $compile_rc == "0" then "success" else "failed" end),
+                verify_outcome: (if $verify_rc == "0" then "success" else "failed-or-not-run" end),
+                verification_passed: false,
+                passed: false
+              }
+            ' > work/output/result.json
+
+      - name: Seal build output and diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f work/output/result.json
+          (
+            cd work/output
+            find . -type f ! -name SHA256SUMS -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Upload complete build output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: work/output
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
+
+      - name: Preserve fail-closed matrix result
+        if: steps.compile.outputs.passed != 'true' || steps.verify.outputs.passed != 'true'
+        shell: bash
+        run: |
+          echo "Exact ARM64 build or verification failed for $SOURCE_NAME $SOURCE_VERSION." >&2
+          exit 1
+
+  record:
+    needs: [prepare, build]
+    if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.recovered_count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out current evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Download all per-source build evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf work/build-artifacts work/build-lock
+          mkdir -p work/build-artifacts work/build-lock
+          gh run download "$GITHUB_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir work/build-artifacts
+          find work/build-artifacts -type f -name result.json -print | sort
+
+      - name: Generate compact immutable build status
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          import shutil
+          from pathlib import Path
+
+          source_root = Path('work/build-artifacts')
+          output = Path('work/build-lock')
+          rows = []
+          for result_path in sorted(source_root.rglob('result.json')):
+              row = json.loads(result_path.read_text(encoding='utf-8'))
+              source = str(row.get('source', ''))
+              version = str(row.get('source_version', ''))
+              if not source or not version:
+                  raise SystemExit(f'malformed result: {result_path}')
+              safe_source = re.sub(r'[^A-Za-z0-9._+~-]', '_', source)
+              safe_version = re.sub(r'[^A-Za-z0-9._+~-]', '_', version)
+              destination = output / safe_source / safe_version
+              destination.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(result_path, destination / 'result.json')
+              sums = result_path.parent / 'SHA256SUMS'
+              if sums.is_file():
+                  shutil.copy2(sums, destination / 'artifact-SHA256SUMS')
+              rows.append(
+                  {
+                      'source': source,
+                      'source_version': version,
+                      'passed': row.get('passed') is True,
+                      'build_outcome': row.get('build_outcome'),
+                      'verify_outcome': row.get('verify_outcome'),
+                      'artifact_name': row.get('artifact_name'),
+                      'actions_run_id': row.get('actions_run_id'),
+                  }
+              )
+          summary = {
+              'schema': 1,
+              'policy': 'record-only-no-source-authority-promotion',
+              'recovery_run_id': '${{ needs.prepare.outputs.recovery_run_id }}',
+              'build_run_id': '${{ github.run_id }}',
+              'result_count': len(rows),
+              'passed_count': sum(row['passed'] for row in rows),
+              'failed_count': sum(not row['passed'] for row in rows),
+              'promotion_allowed': False,
+              'results': rows,
+          }
+          (output / 'summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          (
+            cd work/build-lock
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+
+      - name: Upload consolidated compact status
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-recovered-source-arm64-build-status
+          path: work/build-lock
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit record-only build evidence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          destination=arm64/locks/reference-source-arm64-builds/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp -a work/build-lock/. "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Record ARM64 builds from exact recovered sources'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1

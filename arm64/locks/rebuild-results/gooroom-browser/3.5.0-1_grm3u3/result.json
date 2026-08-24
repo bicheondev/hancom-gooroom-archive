@@ -1,0 +1,167 @@
+{
+  "schema": 4,
+  "batch": "verified-existing-workflow-artifact-promotion",
+  "actions_run_id": "31397104534",
+  "actions_run_url": "https://github.com/bicheondev/hancom-gooroom-archive/actions/runs/31397104534",
+  "artifact_name": "gooroom-browser-exact-arm64-wave5",
+  "source": "gooroom-browser",
+  "source_version": "3.5.0-1+grm3u3",
+  "source_type": "git",
+  "authority_provenance": "github-exact-commit",
+  "repository_full_name": "gooroom/gooroom-browser",
+  "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+  "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+  "required_native_packages": [
+    "gooroom-browser"
+  ],
+  "reused_all_packages": [],
+  "build_outcome": "success",
+  "build_exit_code": "0",
+  "verify_outcome": "success",
+  "job_passed": true,
+  "verification_passed": true,
+  "passed": true,
+  "deb_artifacts": [
+    {
+      "filename": "gooroom-browser-dbgsym_3.5.0-1+grm3u3_arm64.deb",
+      "size": 28294300,
+      "sha256": "8ee3e400bc5807486c5976e63baeb82152e9ddf8bcfe0e90c149d1aa5d7b9c08",
+      "package": "gooroom-browser-dbgsym",
+      "version": "3.5.0-1+grm3u3",
+      "architecture": "arm64",
+      "parsed_source": "gooroom-browser",
+      "parsed_source_version": "3.5.0-1+grm3u3",
+      "source_field": "gooroom-browser",
+      "executable_elf_count": 6,
+      "aarch64_elf_count": 6,
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0
+    },
+    {
+      "filename": "gooroom-browser_3.5.0-1+grm3u3_arm64.deb",
+      "size": 71005524,
+      "sha256": "71e5093e0f7782120eecda0f4acdae7b9e11536d559bb8e8286ccfe321897fba",
+      "package": "gooroom-browser",
+      "version": "3.5.0-1+grm3u3",
+      "architecture": "arm64",
+      "parsed_source": "gooroom-browser",
+      "parsed_source_version": "3.5.0-1+grm3u3",
+      "source_field": "",
+      "executable_elf_count": 6,
+      "aarch64_elf_count": 6,
+      "x86_payload_count": 0,
+      "foreign_payload_count": 0
+    }
+  ],
+  "verification_errors": [],
+  "verification_warnings": [],
+  "verification": {
+    "passed": true,
+    "policy": "canonical-exact-git-artifact-independent-arm64-rescan",
+    "wrong_architecture_executable_count": 0,
+    "packages": [
+      {
+        "filename": "gooroom-browser-dbgsym_3.5.0-1+grm3u3_arm64.deb",
+        "size": 28294300,
+        "sha256": "8ee3e400bc5807486c5976e63baeb82152e9ddf8bcfe0e90c149d1aa5d7b9c08",
+        "package": "gooroom-browser-dbgsym",
+        "version": "3.5.0-1+grm3u3",
+        "architecture": "arm64",
+        "parsed_source": "gooroom-browser",
+        "parsed_source_version": "3.5.0-1+grm3u3",
+        "source_field": "gooroom-browser",
+        "executable_elf_count": 6,
+        "aarch64_elf_count": 6,
+        "x86_payload_count": 0,
+        "foreign_payload_count": 0
+      },
+      {
+        "filename": "gooroom-browser_3.5.0-1+grm3u3_arm64.deb",
+        "size": 71005524,
+        "sha256": "71e5093e0f7782120eecda0f4acdae7b9e11536d559bb8e8286ccfe321897fba",
+        "package": "gooroom-browser",
+        "version": "3.5.0-1+grm3u3",
+        "architecture": "arm64",
+        "parsed_source": "gooroom-browser",
+        "parsed_source_version": "3.5.0-1+grm3u3",
+        "source_field": "",
+        "executable_elf_count": 6,
+        "aarch64_elf_count": 6,
+        "x86_payload_count": 0,
+        "foreign_payload_count": 0
+      }
+    ],
+    "artifact_verification_summary": {
+      "schema": 3,
+      "source": "gooroom-browser",
+      "source_version": "3.5.0-1+grm3u3",
+      "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+      "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+      "source_composition_mode": "packaging-git-plus-exact-debian-orig",
+      "upstream_source": {
+        "source": "chromium",
+        "version": "111.0.5563.110-1~deb11u1",
+        "snapshot": "20230730T235959Z"
+      },
+      "expected_architecture_dependent_packages": [
+        "gooroom-browser"
+      ],
+      "produced_binary_packages": [
+        "gooroom-browser",
+        "gooroom-browser-dbgsym"
+      ],
+      "architecture_all_policy": "reuse exact verified AMD64 Architecture: all binaries",
+      "deb_count": 2,
+      "wrong_architecture_executable_count": 0,
+      "verified": true
+    },
+    "local_dependency_chain": null
+  },
+  "build_lock": {
+    "schema": 3,
+    "source": "gooroom-browser",
+    "source_version": "3.5.0-1+grm3u3",
+    "repository": "gooroom/gooroom-browser",
+    "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+    "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+    "source_archive_sha256": "b162babd7359017edb8156215e7891f8b8cb345171d67048132df13abf124d61",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "gooroom-browser"
+    ],
+    "binary_package_policy": "AMD64 reference packages whose Architecture is not all",
+    "source_composition": {
+      "mode": "packaging-git-plus-exact-debian-orig",
+      "source_component_lock_sha256": "d936a81ff35727729d6936d37fd5232640b9c30e3f6e0d0c61dcf5b24c5c30d3",
+      "upstream_source": "chromium",
+      "upstream_version": "111.0.5563.110-1~deb11u1"
+    },
+    "produced_binary_packages": [
+      "gooroom-browser-dbgsym",
+      "gooroom-browser"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "gooroom-browser",
+    "source_version": "3.5.0-1+grm3u3",
+    "repository": "gooroom/gooroom-browser",
+    "commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+    "tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+    "verified_commit_sha": "829ad92a98f523a79c7b30f3d5b604bfaef03eb0",
+    "verified_tree_sha": "4a5e691645dad54a2a9636dcc21870c66418f978",
+    "deterministic_source_archive_sha256": "b162babd7359017edb8156215e7891f8b8cb345171d67048132df13abf124d61"
+  },
+  "promotion": {
+    "source_lock": "arm64/locks/effective-sources-v3/effective-source-lock.json",
+    "reference": "arm64/locks/reference/amd64-reference.json",
+    "artifact_directory": "work/promote-revalidated-gooroom-browser/payload",
+    "independent_deb_rescan": true,
+    "dependency_source": null,
+    "dependency_version": null,
+    "required_local_packages": []
+  }
+}

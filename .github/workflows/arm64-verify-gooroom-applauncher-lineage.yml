@@ -1,0 +1,179 @@
+name: ARM64 port - verify Gooroom applauncher source lineage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-verify-gooroom-applauncher-lineage.yml'
+      - 'arm64/scripts/run_gooroom_applauncher_lineage_build.sh'
+      - 'arm64/scripts/verify_gooroom_applauncher_lineage.py'
+      - 'arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py'
+      - 'arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py'
+      - 'arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json'
+      - 'arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/source-lineage-lock.json'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: hancom-gooroom-33-verify-applauncher-lineage
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: debian:bullseye
+    env:
+      INPUT_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/input-lock.json
+      LINEAGE_LOCK: arm64/locks/source-reconstruction/gooroom-applauncher-applet/0.4.0_grm3u1_han3u2/source-lineage-lock.json
+
+    steps:
+      - name: Install deterministic build and verification tools
+        run: |
+          set -euxo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            bash binutils build-essential ca-certificates curl debhelper devscripts \
+            diffutils dpkg-dev equivs fakeroot file git gzip jq libglib2.0-bin \
+            pkg-config python3 tar unzip xz-utils
+
+      - name: Check out locked branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Validate reconstruction tooling
+        run: |
+          set -euxo pipefail
+          bash -n arm64/scripts/run_gooroom_applauncher_lineage_build.sh
+          python3 -m py_compile \
+            arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
+
+          # Exercise the exact empty-line condition that previously surfaced
+          # at the end of readelf symbol-table blocks.
+          python3 - <<'PY'
+          for line in ['', '   ', 'Symbol table .dynsym contains 1 entry:']:
+              parts = line.split(None, 7)
+              if len(parts) < 8:
+                  continue
+              if not parts[0].rstrip(':').isdigit():
+                  continue
+              raise SystemExit('non-symbol line reached the symbol parser')
+          PY
+
+          jq -e '.schema == 1 and .claims.byte_identity_claimed == false' \
+            "$LINEAGE_LOCK" >/dev/null
+
+      - name: Reconstruct, build, and compare the complete Hancom candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HANCOM_THEME_RECONSTRUCTOR: ${{ github.workspace }}/arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py
+          HANCOM_INDICATOR_RECONSTRUCTOR: ${{ github.workspace }}/arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
+        run: |
+          set -euxo pipefail
+          chmod +x \
+            arm64/scripts/run_gooroom_applauncher_lineage_build.sh \
+            arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_hancom_theme.py \
+            arm64/scripts/reconstruct_gooroom_applauncher_indicator_size.py
+
+          mkdir -p work
+          runner=work/run-gooroom-applauncher-lineage-build-with-hancom-delta.sh
+          cp arm64/scripts/run_gooroom_applauncher_lineage_build.sh "$runner"
+
+          # The build runner resolves its base verifier relative to $0.  Since
+          # this workflow intentionally runs a patched copy from work/, keep
+          # the locked verifier beside that copy instead of silently resolving
+          # a different path.
+          cp arm64/scripts/verify_gooroom_applauncher_lineage.py \
+            work/verify_gooroom_applauncher_lineage.py
+
+          python3 - "$runner" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          marker = '''echo "${TARGET_ICON_SHA256}  ${SOURCE_DIR}/data/gooroom-applauncher-applet.svg" \\
+            | sha256sum --check --strict
+
+          git -C "$SOURCE_DIR" diff --binary \\
+          '''
+          replacement = '''echo "${TARGET_ICON_SHA256}  ${SOURCE_DIR}/data/gooroom-applauncher-applet.svg" \\
+            | sha256sum --check --strict
+
+          python3 "${HANCOM_THEME_RECONSTRUCTOR:?}" \\
+            --source-dir "$SOURCE_DIR" \\
+            --target-elf "$TARGET_ROOT/usr/lib/x86_64-linux-gnu/gnome-panel/modules/libgooroom-applauncher-applet.so" \\
+            --output "$OUTPUT_DIR_ABS/hancom-theme-reconstruction.json"
+
+          python3 "${HANCOM_INDICATOR_RECONSTRUCTOR:?}" \\
+            --source-dir "$SOURCE_DIR" \\
+            --output "$OUTPUT_DIR_ABS/hancom-indicator-reconstruction.json"
+
+          git -C "$SOURCE_DIR" diff --binary \\
+          '''
+          if text.count(marker) != 1:
+              raise SystemExit('could not locate the source-overlay insertion point')
+          path.write_text(text.replace(marker, replacement), encoding='utf-8')
+          PY
+          bash -n "$runner"
+
+          output=work/gooroom-applauncher-lineage
+          rm -rf "$output"
+          "$runner" \
+            "$INPUT_LOCK" \
+            "$LINEAGE_LOCK" \
+            "$output"
+
+          python3 arm64/scripts/verify_gooroom_applauncher_reproducible_elf.py \
+            --target-deb "$output/target.deb" \
+            --rebuilt-deb "$output/rebuilt.deb" \
+            --verification-json "$output/verification.json" \
+            --summary "$output/verification-summary.md"
+
+          jq -e '
+            .verification_complete == true and
+            .source_relationship_valid == true and
+            .source_lineage_validated == true and
+            .elf_semantic_match == true and
+            .normalized_elf_identity == true and
+            .elf_nondeterministic_metadata_only == true and
+            .payload_reproducible_identity == true and
+            .claims.source_status == "public-direct-parent-lineage-validated" and
+            .claims.reconstruction_status == "built-and-reproducibly-validated" and
+            .claims.functional_elf_identity_claimed == true and
+            (.claims.byte_identity_claimed == .package_byte_identity) and
+            (.elf_byte_identity == .elf_reproducibility.raw_byte_identity) and
+            .elf_reproducibility.unexpected_differing_byte_count == 0 and
+            .elf_reproducibility.raw_differing_byte_count > 0 and
+            .elf_reproducibility.differing_sections == [
+              ".gnu_debuglink",
+              ".note.gnu.build-id"
+            ] and
+            .payload_reproducibility.non_elf_payload_byte_identity == true
+          ' "$output/verification.json" >/dev/null
+
+      - name: Upload source-lineage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gooroom-applauncher-han3u2-source-lineage-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+          path: work/gooroom-applauncher-lineage

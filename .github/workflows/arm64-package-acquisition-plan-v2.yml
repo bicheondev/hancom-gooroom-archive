@@ -1,0 +1,160 @@
+name: ARM64 port - build persistent exact package acquisition plan v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-package-acquisition-plan-v2.yml'
+      - 'arm64/scripts/build_package_acquisition_plan_v2.py'
+      - 'arm64/locks/package-plan/**'
+      - 'arm64/locks/vendor-binaries/**'
+      - 'arm64/locks/rebuild-results/**'
+      - 'arm64/locks/rebuild-release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: hancom-gooroom-33-package-acquisition-plan
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out all exact package evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Build one exact persistent route per reference package
+        id: plan
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/acquisition-plan
+          mkdir -p work/acquisition-plan
+
+          normalized=arm64/locks/package-plan/debian-arm64-map-normalized.json
+          vendor=arm64/locks/vendor-binaries/vendor-binary-lock.json
+          release=arm64/locks/rebuild-release/rebuild-release-lock.json
+          if [ ! -f "$normalized" ] || [ ! -f "$vendor" ]; then
+            jq -n \
+              --arg normalized "$normalized" \
+              --arg vendor "$vendor" \
+              --arg release "$release" \
+              --argjson normalized_exists "$(test -f "$normalized" && echo true || echo false)" \
+              --argjson vendor_exists "$(test -f "$vendor" && echo true || echo false)" \
+              --argjson release_exists "$(test -f "$release" && echo true || echo false)" \
+              '{
+                schema: 2,
+                policy: "persistent-release-preferred-one-exact-route-per-package",
+                ready_for_fetch: false,
+                blocker_count: 1,
+                prerequisite_files: {
+                  normalized_map: {path: $normalized, exists: $normalized_exists},
+                  vendor_binary_lock: {path: $vendor, exists: $vendor_exists},
+                  rebuild_release_lock: {path: $release, exists: $release_exists}
+                }
+              }' > work/acquisition-plan/summary.json
+            jq -n \
+              --arg normalized "$normalized" \
+              --arg vendor "$vendor" \
+              '[{reason:"prerequisite-lock-missing", normalized_map:$normalized, vendor_binary_lock:$vendor}]' \
+              > work/acquisition-plan/blockers.json
+            jq -n \
+              --slurpfile summary work/acquisition-plan/summary.json \
+              '{summary:$summary[0],packages:[]}' \
+              > work/acquisition-plan/package-acquisition-plan.json
+            rc=2
+          else
+            release_arguments=()
+            if [ -f "$release" ]; then
+              release_arguments=(--rebuild-release-lock "$release")
+            fi
+            set +e
+            python3 arm64/scripts/build_package_acquisition_plan_v2.py \
+              --normalized-map "$normalized" \
+              --vendor-binary-lock "$vendor" \
+              --rebuild-results arm64/locks/rebuild-results \
+              "${release_arguments[@]}" \
+              --output-dir work/acquisition-plan
+            rc=$?
+            set -e
+          fi
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/acquisition-plan -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/acquisition-plan/LOCKSUMS.sha256
+          cat work/acquisition-plan/summary.json
+
+      - name: Upload acquisition plan and exact blockers
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-package-acquisition-plan-v2
+          path: work/acquisition-plan
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit current exact acquisition readiness
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/acquisition-plan
+          mkdir -p arm64/locks/acquisition-plan
+          cp -a work/acquisition-plan/. arm64/locks/acquisition-plan/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/acquisition-plan
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Update persistent exact ARM64 package acquisition plan'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce complete exact acquisition coverage
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.plan.outputs.exit_code }}' = '0'
+          jq -e '.ready_for_fetch == true' work/acquisition-plan/summary.json
+
+      - name: Dispatch exact rootfs construction explicitly when ready
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dispatch() {
+            local workflow="$1"
+            shift
+            for attempt in 1 2 3 4; do
+              if gh workflow run "$workflow" \
+                --repo '${{ github.repository }}' \
+                --ref arm64-port "$@"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          if [ -f work/acquisition-plan/summary.json ] \
+             && jq -e '.ready_for_fetch == true' work/acquisition-plan/summary.json >/dev/null; then
+            dispatch arm64-exact-rootfs-v2.yml
+          fi

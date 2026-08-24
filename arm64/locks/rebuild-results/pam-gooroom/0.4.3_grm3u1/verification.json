@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "policy": "exact-iso-version-native-arm64-no-x86-elf",
+  "source": "pam-gooroom",
+  "source_version": "0.4.3+grm3u1",
+  "repository_full_name": "gooroom/libpam-gooroom-authenticator",
+  "commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
+  "tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
+  "expected_native_binary_versions": {
+    "pam-gooroom": "0.4.3+grm3u1"
+  },
+  "produced_package_count": 2,
+  "packages": [
+    {
+      "filename": "pam-gooroom-dbgsym_0.4.3+grm3u1_arm64.deb",
+      "sha256": "313d5a1163fd9dc4b4a628bf3425d92d8ed5dffa84932b2addc4adb5a4ddf396",
+      "size": 84552,
+      "package": "pam-gooroom-dbgsym",
+      "version": "0.4.3+grm3u1",
+      "architecture": "arm64",
+      "source_field": "pam-gooroom",
+      "parsed_source": "pam-gooroom",
+      "parsed_source_version": "0.4.3+grm3u1",
+      "expected_from_iso": false,
+      "payload_entry_count": 6,
+      "elf_machine_counts": {
+        "aarch64": 5
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    },
+    {
+      "filename": "pam-gooroom_0.4.3+grm3u1_arm64.deb",
+      "sha256": "d9b8310bd113e83b07cd25db67b8a85806b69c4d15ed50f0d193c8b567f6c7db",
+      "size": 106492,
+      "package": "pam-gooroom",
+      "version": "0.4.3+grm3u1",
+      "architecture": "arm64",
+      "source_field": "",
+      "parsed_source": "pam-gooroom",
+      "parsed_source_version": "0.4.3+grm3u1",
+      "expected_from_iso": true,
+      "payload_entry_count": 11,
+      "elf_machine_counts": {
+        "aarch64": 5
+      },
+      "x86_payloads": [],
+      "non_aarch64_elfs": []
+    }
+  ],
+  "missing_expected_packages": [],
+  "x86_payloads": [],
+  "non_aarch64_elfs": [],
+  "build_lock": {
+    "schema": 5,
+    "source": "pam-gooroom",
+    "source_version": "0.4.3+grm3u1",
+    "repository": "gooroom/libpam-gooroom-authenticator",
+    "commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
+    "tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
+    "source_archive_sha256": "566ed75e3efb853c91724904da6ae66a29646a49cb432b4c76d5acd30668e32e",
+    "bootstrap_image": "arm64v8/debian:bullseye-slim@sha256:4ec855d0417cdc9cab49cdebad00afed0466edc3a17bb616a02be18e9ae66f8e",
+    "target_architecture": "arm64",
+    "debian_snapshot": "20230730T235959Z",
+    "build_mode": "native-arm64-historical-chroot-binary-arch",
+    "expected_binary_packages": [
+      "pam-gooroom"
+    ],
+    "dependency_repository_packages_sha256": "",
+    "produced_binary_packages": [
+      "pam-gooroom",
+      "pam-gooroom-dbgsym"
+    ]
+  },
+  "source_lock_evidence": {
+    "schema": 2,
+    "source": "pam-gooroom",
+    "source_version": "0.4.3+grm3u1",
+    "repository": "gooroom/libpam-gooroom-authenticator",
+    "commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
+    "tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
+    "verified_commit_sha": "8307ea469ed55c2c05ea8936c967a6e584cd57c7",
+    "verified_tree_sha": "a88f82cfd34681e64217bd973eae44f80e5d120d",
+    "deterministic_source_archive_sha256": "566ed75e3efb853c91724904da6ae66a29646a49cb432b4c76d5acd30668e32e"
+  },
+  "warnings": [],
+  "errors": [],
+  "passed": true
+}

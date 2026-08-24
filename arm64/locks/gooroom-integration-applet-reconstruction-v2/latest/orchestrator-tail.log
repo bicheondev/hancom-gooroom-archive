@@ -1,0 +1,118 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 62392  100 62392    0     0   816k      0 --:--:-- --:--:-- --:--:--  823k
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 50  189k   50 98836    0     0  1198k      0 --:--:-- --:--:-- --:--:-- 1191k100  189k  100  189k    0     0  1953k      0 --:--:-- --:--:-- --:--:-- 1938k
+{
+  "after_sha256": {
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/modules/datetime/datetime-module.c": "ee547ec06e242a25d92838f37f899297bad6949b3abd18682fb4bc6c3caa33bb",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/modules/user/user-module.c": "f0092fcecdca130141855bd7a7009213d99ea84075c276dc80e0218be24b3df2",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/src/gooroom-integration-applet.c": "36276e961b8ac9f9a4323810bc26ba69a8828566f5d39d68aef08f71b3e6c0cf",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/src/popup-window.c": "75eb3235560041003d55527e202f8e9c8c09373cf0e36532c2abb5ebc5a28728"
+  },
+  "before_sha256": {
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/modules/datetime/datetime-module.c": "185f30343b77a23fddf0ab8b5185cfa050632987a8d2cb175da9622a3aaaec61",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/modules/user/user-module.c": "82aec09f6e6bc62a3158a3600c3d44fc52ffb10e16ba9dbc1f1d97e614fbd58e",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/src/gooroom-integration-applet.c": "58280e05bca6db4461df73c740d83a8c5e804844ba065ddc3d1f6df80f4b0010",
+    "/home/runner/work/hancom-gooroom-archive/hancom-gooroom-archive/work/integration-applet-reconstruction-v2/candidate/src/popup-window.c": "adfe96e304fe90f817a04bd8d37351aa4c70f835c885646c71b461b375c6b68c"
+  },
+  "changes": [
+    "add GtkSettings pointer to GooroomIntegrationApplet private data",
+    "apply style1/style2/default CSS according to the Hancom icon theme",
+    "monitor notify::gtk-icon-theme-name",
+    "remove duplicate popup CSS provider setup absent from vendor DWARF",
+    "disable focus on the datetime control button",
+    "remove public clean-mode user-module extension absent from vendor DWARF"
+  ],
+  "checks": {
+    "clean_mode_markup_count": 0,
+    "clean_mode_token_count": 0,
+    "cleanmode_token_count": 0,
+    "datetime_control_can_focus_false_count": 1,
+    "popup_css_provider_load_count": 0,
+    "popup_css_provider_variable_count": 0,
+    "set_style_from_theme_count": 2,
+    "settings_member_count": 1,
+    "theme_property_notified_count": 2,
+    "theme_signal_count": 1
+  },
+  "iso_assembly_allowed": false,
+  "policy": "matching-vendor-dwarf-and-runtime-string-guided-source-delta",
+  "promotion_allowed": false,
+  "schema": 1,
+  "source": "gooroom-integration-applet",
+  "version": "0.3.1+grm3u1+han3u3"
+}
+{
+  "amd64_normalized_equivalence_verified": true,
+  "build_exit": 0,
+  "build_succeeded": true,
+  "built_deb": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+  "built_deb_sha256": "d89fc36a7349a4e6682f2c2bbea774ea83827cfd4ce2d93033e5eaa6dc83de52",
+  "built_entry_count": 67,
+  "candidate_source_reconstructed": true,
+  "compared_elf_count": 2,
+  "control_fields_equal": true,
+  "elf_allocated_sections_equal": true,
+  "entry_mismatch_count": 0,
+  "exact_vendor_source_recovered": false,
+  "fail_closed": true,
+  "filesystem_and_payload_equal": true,
+  "iso_assembly_allowed": false,
+  "native_arm64_build_allowed": false,
+  "native_arm64_candidate_build_allowed": true,
+  "next_action": "build and verify an explicitly provisional native ARM64 candidate; promotion remains disabled",
+  "package_promotion_allowed": false,
+  "public_commit": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "schema": 2,
+  "target_elf_count": 2,
+  "target_entry_count": 67,
+  "version": "0.3.1+grm3u1+han3u3"
+}
+./FILE-INVENTORY.tsv: OK
+./build.exit: OK
+./build.log: OK
+./built-control.normalized.txt: OK
+./bullseye-gresource-tooling.log: OK
+./candidate-status.txt: OK
+./elf-section-comparison.json: OK
+./gooroom-integration-applet_0.3.1+grm3u1+han3u3.candidate-source.tar.xz: OK
+./han3u3-source-reconstruction.json: OK
+./locale-roundtrip.tsv: OK
+./main-gresource-attempts.json: OK
+./main-gresource-reconstruction.json: OK
+./module-gresource-reconstruction.json: OK
+./overlay-name-status.tsv: OK
+./payload-comparison.json: OK
+./public-168ff-to-han3u3-candidate.patch: OK
+./summary.json: OK
+./target-control-fields.txt: OK
+./target-control.normalized.txt: OK
+./vendor-changelog.txt: OK
+{
+  "amd64_normalized_equivalence_verified": true,
+  "build_exit": 0,
+  "build_succeeded": true,
+  "built_deb": "gooroom-integration-applet_0.3.1+grm3u1+han3u3_amd64.deb",
+  "built_deb_sha256": "d89fc36a7349a4e6682f2c2bbea774ea83827cfd4ce2d93033e5eaa6dc83de52",
+  "built_entry_count": 67,
+  "candidate_source_reconstructed": true,
+  "compared_elf_count": 2,
+  "control_fields_equal": true,
+  "elf_allocated_sections_equal": true,
+  "entry_mismatch_count": 0,
+  "exact_vendor_source_recovered": false,
+  "fail_closed": true,
+  "filesystem_and_payload_equal": true,
+  "iso_assembly_allowed": false,
+  "native_arm64_build_allowed": false,
+  "native_arm64_candidate_build_allowed": true,
+  "next_action": "build and verify an explicitly provisional native ARM64 candidate; promotion remains disabled",
+  "package_promotion_allowed": false,
+  "public_commit": "168ff81421ea1f5bae9e715c5ccdd559e015d44c",
+  "schema": 2,
+  "target_elf_count": 2,
+  "target_entry_count": 67,
+  "version": "0.3.1+grm3u1+han3u3"
+}

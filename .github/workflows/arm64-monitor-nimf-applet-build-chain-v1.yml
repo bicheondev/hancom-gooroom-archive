@@ -1,0 +1,112 @@
+name: ARM64 monitor Nimf and Applet build chain v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-monitor-nimf-applet-build-chain-v1.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: arm64-monitor-nimf-applet-build-chain-v1
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out current ARM64 authority branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Resolve or dispatch exact Nimf run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflow=arm64-build-nimf-2023.06.30-grm3u1-arm64-v1.yml
+          mkdir -p work
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=arm64-port&per_page=20" > work/runs-before.json
+          latest_status="$(jq -r '.workflow_runs[0].status // empty' work/runs-before.json)"
+          latest_created="$(jq -r '.workflow_runs[0].created_at // empty' work/runs-before.json)"
+          use_existing=false
+          if [[ "$latest_status" == queued || "$latest_status" == in_progress || "$latest_status" == waiting || "$latest_status" == requested || "$latest_status" == pending ]]; then
+            use_existing=true
+          fi
+          if [[ "$use_existing" != true ]]; then
+            gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/dispatches" \
+              -f ref=arm64-port
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              sleep 3
+              gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=arm64-port&per_page=20" > work/runs-after.json
+              run_id="$(jq -r '.workflow_runs[0].id // empty' work/runs-after.json)"
+              created="$(jq -r '.workflow_runs[0].created_at // empty' work/runs-after.json)"
+              if [[ -n "$run_id" && "$created" != "$latest_created" ]]; then
+                break
+              fi
+            done
+          else
+            cp work/runs-before.json work/runs-after.json
+          fi
+          run_id="$(jq -r '.workflow_runs[0].id // empty' work/runs-after.json)"
+          test -n "$run_id"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" > work/run.json
+          jq -n \
+            --arg workflow "$workflow" \
+            --argjson run "$(cat work/run.json)" '
+              {
+                schema: 1,
+                workflow: $workflow,
+                run_id: ($run.id | tostring),
+                run_number: $run.run_number,
+                run_attempt: $run.run_attempt,
+                event: $run.event,
+                status: $run.status,
+                conclusion: $run.conclusion,
+                head_branch: $run.head_branch,
+                head_sha: $run.head_sha,
+                created_at: $run.created_at,
+                updated_at: $run.updated_at,
+                html_url: $run.html_url
+              }
+            ' > work/status.json
+          jq '.' work/status.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit run identity and live status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          destination=arm64/status/nimf-applet-build-chain/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          cp work/status.json "$destination/nimf-run.json"
+          find "$destination" -type f -printf '%P\t%s\n' | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git commit -m 'Record exact Nimf ARM64 build run identity'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+# retry-after-runner-conflict-fix: 2026-08-22

@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "policy": "conservative-byte-identical-data-payload-arm64-metadata-repack-audit",
+  "package": "gooroom-session-manager",
+  "version": "0.3.9+grm3u1+han3u2",
+  "source": "gooroom-session-manager",
+  "source_version": "0.3.9+grm3u1+han3u2",
+  "selected_deb": "gooroom-session-manager_0.3.9+grm3u1+han3u2_amd64.deb",
+  "selected_deb_size": 20328,
+  "selected_deb_sha256": "6cdc971c8258ae3e05a97b314128ca212141a7a8913c82ebf7690c79d3fc6c4d",
+  "control_fields": {
+    "Package": "gooroom-session-manager",
+    "Version": "0.3.9+grm3u1+han3u2",
+    "Architecture": "amd64",
+    "Maintainer": "Gooroom Maintainers <gooroom@gooroom.kr>",
+    "Installed-Size": "113",
+    "Depends": "libc6 (>= 2.4), libglib2.0-0 (>= 2.65.1), libgtk-3-0 (>= 3.0.0), libjson-c5 (>= 0.15), libnotify4 (>= 0.7.0)",
+    "Section": "misc",
+    "Priority": "optional",
+    "Description": "Session manager for the Gooroom environment."
+  },
+  "parsed_source": "gooroom-session-manager",
+  "parsed_source_version": "0.3.9+grm3u1+han3u2",
+  "payload_scan": {
+    "native_payloads": [
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 39848,
+        "sha256": "d8e7f229beb231b70fdafe35443ed5c7e78eb8de5aafa61785428fc6acf81a66"
+      },
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-helper",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 14704,
+        "sha256": "b326f6d53741844e63c82d98706400789c8a96c22ffb9d733ba33ac50c0d5cc8"
+      },
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-update-blacklist-helper",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 14752,
+        "sha256": "8f6306dbfd32eda6637b1f74b5024cf5424e321aeade10c6efd025d91dd83a27"
+      },
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/grac-reload-helper",
+        "kind": "elf",
+        "machine": "x86_64",
+        "size": 14496,
+        "sha256": "b1327a0fa58c09a36b9ca9926f153ad8eb84f386707346b991eae2e99bfaab7a"
+      }
+    ],
+    "native_looking_suffixes": [],
+    "architecture_specific_paths": [
+      "/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-session-manager",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-delete-helper",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-helper",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-update-blacklist-helper",
+      "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/grac-reload-helper"
+    ],
+    "executable_scripts": [
+      {
+        "path": "/usr/lib/x86_64-linux-gnu/gooroom-session-manager/gooroom-theme-delete-helper",
+        "shebang": "#!/bin/sh"
+      }
+    ],
+    "python_files": []
+  },
+  "maintainer_script_audit": {
+    "scripts": [],
+    "architecture_references": []
+  },
+  "python_verification": {
+    "python_file_count": 0,
+    "compiled_count": 0,
+    "failures": []
+  },
+  "original_payload_manifest_sha256": "84d1aca554679f7a6ec8f54489bf9942ea1f204ae84d8352ee9e364cf67c6297",
+  "original_payload_entry_count": 25,
+  "repack_candidate": false,
+  "blocker_reasons": [
+    "native-payload-present",
+    "architecture-specific-path-present"
+  ],
+  "repacked": false,
+  "promotion_allowed": false,
+  "byte_identity_claimed_for_data_payload_only": false,
+  "original_source_recovered": false
+}

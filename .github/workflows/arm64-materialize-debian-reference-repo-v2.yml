@@ -1,0 +1,171 @@
+name: ARM64 port - materialize exact Debian reference repository v2
+
+on:
+  push:
+    branches: [arm64-port]
+    paths:
+      - '.github/workflows/arm64-materialize-debian-reference-repo-v2.yml'
+      - 'arm64/scripts/materialize_debian_arm64_reference_repo_v2.py'
+      - 'arm64/scripts/materialize_debian_arm64_reference_repo_v3.py'
+      - 'arm64/locks/package-plan/**'
+      - 'arm64/locks/reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-debian-reference-repository-v2
+  cancel-in-progress: true
+
+env:
+  SNAPSHOT_BASE: 20230730T235959Z
+  SNAPSHOT_UPDATES: 20240331T235959Z
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Check out normalized package map and reference inventory
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: arm64-port
+          fetch-depth: 0
+
+      - name: Check normalized package map gate
+        id: gate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ready=false
+          normalized=arm64/locks/package-plan/debian-arm64-map-normalized.json
+          if [ -f "$normalized" ] && jq -e '.summary.complete == true' "$normalized" >/dev/null; then
+            ready=true
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Install isolated APT and repository tools
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 jq dpkg-dev apt-utils ca-certificates
+          python3 -m py_compile \
+            arm64/scripts/materialize_debian_arm64_reference_repo_v2.py \
+            arm64/scripts/materialize_debian_arm64_reference_repo_v3.py
+
+      - name: Prepare immutable Debian ARM64 snapshot metadata
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p work/apt/lists/partial work/apt/archives/partial
+          : > work/apt/status
+          cat > work/apt/sources.list <<EOF
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_BASE}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_BASE}/ bullseye-security main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_UPDATES}/ bullseye-updates main contrib non-free
+          deb [arch=arm64 trusted=yes check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_UPDATES}/ bullseye-security main contrib non-free
+          EOF
+          cat > work/apt/apt.conf <<EOF
+          Dir::Etc::sourcelist "$PWD/work/apt/sources.list";
+          Dir::Etc::sourceparts "-";
+          Dir::State::status "$PWD/work/apt/status";
+          Dir::State::lists "$PWD/work/apt/lists";
+          Dir::Cache::archives "$PWD/work/apt/archives";
+          APT::Architecture "arm64";
+          APT::Architectures { "arm64"; };
+          Acquire::Check-Valid-Until "false";
+          Acquire::AllowInsecureRepositories "true";
+          Acquire::Retries "5";
+          Dpkg::Use-Pty "0";
+          EOF
+          sudo apt-get -c "$PWD/work/apt/apt.conf" update
+
+      - name: Download and verify every Debian-owned ARM64/all package
+        if: steps.gate.outputs.ready == 'true'
+        id: materialize
+        shell: bash
+        run: |
+          set -uxo pipefail
+          rm -rf work/debian-reference-repository work/debian-reference-evidence
+          mkdir -p work/debian-reference-repository work/debian-reference-evidence
+          set +e
+          python3 arm64/scripts/materialize_debian_arm64_reference_repo_v3.py \
+            --normalized-map arm64/locks/package-plan/debian-arm64-map-normalized.json \
+            --reference arm64/locks/reference/amd64-reference.json \
+            --apt-config "$PWD/work/apt/apt.conf" \
+            --repository-dir work/debian-reference-repository \
+            --output-dir work/debian-reference-evidence \
+            --chunk-size 40 \
+            2>&1 | tee work/debian-reference-workflow.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find work/debian-reference-repository work/debian-reference-evidence \
+            -type f ! -name LOCKSUMS.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > work/debian-reference-evidence/LOCKSUMS.sha256
+          cat work/debian-reference-evidence/summary.json
+
+      - name: Upload exact Debian ARM64/all repository and blockers
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-3.3-arm64-debian-reference-repository-v2
+          path: |
+            work/debian-reference-repository
+            work/debian-reference-evidence
+            work/debian-reference-workflow.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Commit repository identity and exact blocker report
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf arm64/locks/debian-reference-repository-v2
+          mkdir -p arm64/locks/debian-reference-repository-v2
+          cp work/debian-reference-evidence/summary.json \
+            arm64/locks/debian-reference-repository-v2/
+          cp work/debian-reference-evidence/debian-arm64-reference-repository.json \
+            arm64/locks/debian-reference-repository-v2/
+          cp work/debian-reference-evidence/blockers.json \
+            arm64/locks/debian-reference-repository-v2/
+          cp work/debian-reference-evidence/LOCKSUMS.sha256 \
+            arm64/locks/debian-reference-repository-v2/
+          jq -n \
+            --arg actions_run_id '${{ github.run_id }}' \
+            --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
+            --arg artifact_name 'hancom-gooroom-3.3-arm64-debian-reference-repository-v2' \
+            --arg snapshot_base "$SNAPSHOT_BASE" \
+            --arg snapshot_updates "$SNAPSHOT_UPDATES" \
+            '{schema:1,actions_run_id:$actions_run_id,actions_run_url:$actions_run_url,artifact_name:$artifact_name,snapshots:[$snapshot_base,$snapshot_updates],scope:"debian-owned-exact-arm64-and-all"}' \
+            > arm64/locks/debian-reference-repository-v2/artifact-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add arm64/locks/debian-reference-repository-v2
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Lock exact Debian ARM64 reference repository v2'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then exit 0; fi
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Enforce complete exact Debian-owned repository
+        if: steps.gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test '${{ steps.materialize.outputs.exit_code }}' = '0'
+          jq -e '.repository_ready == true and .blocker_count == 0' \
+            work/debian-reference-evidence/summary.json
