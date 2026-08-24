@@ -188,9 +188,29 @@ jobs:
           sudo chroot "$chroot" /bin/bash -euxo pipefail -c '
             export DEBIAN_FRONTEND=noninteractive
             export DEB_BUILD_OPTIONS="nocheck parallel=2"
-            export DEB_BUILD_PROFILES="pkg.linux.nokerneldbg pkg.linux.notools pkg.linux.noudeb"
+            export DEB_BUILD_PROFILES="nodoc pkg.linux.notools pkg.linux.nometa"
             export LC_ALL=C.UTF-8
             cd /build/source
+
+            # This authority targets the normal ARM64 linux-image .deb.
+            # Disable Debian-Installer udebs only in this isolated build tree;
+            # keep the kernel, headers, debug-info, and BTF settings intact.
+            grep -Fx "debug-info: true" debian/config/defines
+            packages_section_count="$(grep -c "^\[packages\]$" debian/config/defines || true)"
+            test "$packages_section_count" = "0"
+            cp debian/config/defines /build/debian-config-defines.before
+            printf "\n[packages]\ninstaller: false\n" >> debian/config/defines
+            set +e
+            diff -u \
+              --label a/debian/config/defines \
+              --label b/debian/config/defines \
+              /build/debian-config-defines.before debian/config/defines \
+              > /build/arm64-disable-installer-udebs.patch
+            config_diff_rc=$?
+            set -e
+            test "$config_diff_rc" = "1"
+            test -s /build/arm64-disable-installer-udebs.patch
+            grep -Fx "installer: false" debian/config/defines
 
             # Debian kernel packaging does not store generated debian/control
             # in the packaging Git tree. Generate it before mk-build-deps.
@@ -208,6 +228,14 @@ jobs:
             fi
 
             test -s debian/control
+            test -s debian/rules.gen
+            grep -Fx "Package: linux-image-5.10.0-23-arm64" debian/control
+            udeb_rule_count="$(grep -c "install-udeb_" debian/rules.gen || true)"
+            udeb_control_count="$(grep -Ec "^Package: .+-5\.10\.0-23-arm64-di$" debian/control || true)"
+            test "$udeb_rule_count" = "0"
+            test "$udeb_control_count" = "0"
+            printf "installer udeb rules: %s\\n" "$udeb_rule_count"
+            printf "installer udeb packages: %s\\n" "$udeb_control_count"
             dpkg-parsechangelog -SSource | grep -Fx linux
             dpkg-parsechangelog -SVersion | grep -Fx "5.10.179-1+grm3u1"
 
@@ -221,6 +249,16 @@ jobs:
           rc=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$rc" > "$root/build/build.rc"
+          if sudo test -s "$chroot/build/arm64-disable-installer-udebs.patch"; then
+            sudo cp "$chroot/build/arm64-disable-installer-udebs.patch" \
+              "$root/evidence/arm64-disable-installer-udebs.patch"
+            sudo chown "$(id -u):$(id -g)" \
+              "$root/evidence/arm64-disable-installer-udebs.patch"
+          else
+            echo "ERROR: missing ARM64 installer-udeb adjustment evidence" >&2
+            exit 1
+          fi
+          test -s "$root/evidence/arm64-disable-installer-udebs.patch"
           if [ "$rc" -ne 0 ]; then
             tail -n 1000 "$root/build/build.log" > "$root/evidence/build-tail.log"
             exit "$rc"
@@ -284,6 +322,8 @@ jobs:
           root=work/linux-5.10.179-grm3u1-build
           deb="$root/artifact/${TARGET_PACKAGE}_${TARGET_VERSION}_arm64.deb"
           module_count="$(cat "$root/evidence/module-count.txt")"
+          packaging_adjustment="$root/evidence/arm64-disable-installer-udebs.patch"
+          test -s "$packaging_adjustment"
           jq -n \
             --arg source "$SOURCE_NAME" \
             --arg source_version "$SOURCE_VERSION" \
@@ -292,11 +332,16 @@ jobs:
             --arg architecture arm64 \
             --arg deb_filename "$(basename "$deb")" \
             --arg deb_sha256 "$(sha256sum "$deb" | awk '{print $1}')" \
-            --argjson module_count "$module_count" '
+            --argjson module_count "$module_count" \
+            --arg packaging_adjustment_sha256 "$(sha256sum "$packaging_adjustment" | awk '{print $1}')" '
               {schema:1,status:"native-arm64-build-complete",source:$source,
                source_version:$source_version,package:$package,version:$version,
                architecture:$architecture,deb_filename:$deb_filename,
                deb_sha256:$deb_sha256,module_count:$module_count,
+               build_scope:"target-linux-image-deb",installer_udebs_built:false,
+               installer_udebs_deferred:true,
+               packaging_adjustment:"disable-installer-udebs-for-target-package-build",
+               packaging_adjustment_sha256:$packaging_adjustment_sha256,
                all_elf_aarch64:true,boot_tested:false,abi_equivalence_verified:false,
                package_promotion_allowed:false,iso_assembly_allowed:false}
             ' > "$root/artifact/authority.json"
@@ -339,6 +384,7 @@ jobs:
           cp "$source/evidence/non-aarch64-elf.tsv" "$destination/"
           cp "$source/evidence/kernel-image.file.txt" "$destination/"
           cp "$source/evidence/module-count.txt" "$destination/"
+          cp "$source/evidence/arm64-disable-installer-udebs.patch" "$destination/"
           jq -n \
             --arg actions_run_id '${{ github.run_id }}' \
             --arg actions_run_url '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' \
