@@ -1,0 +1,178 @@
+name: ARM64 search integration applet hybrid source v6
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-search-integration-applet-hybrid-v6.yml'
+      - 'arm64/scripts/generate_integration_applet_hybrid_candidates_v6.py'
+      - 'arm64/scripts/run_integration_applet_hybrid_search_v6.sh'
+      - 'arm64/scripts/integration_applet_vendor_reconstruct.py'
+      - 'arm64/locks/gooroom-integration-applet-history-search-v5c/latest/summary.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hancom-gooroom-33-integration-applet-hybrid-source-v6
+  cancel-in-progress: false
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Check out the triggering ARM64 authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Install hybrid reconstruction and comparison tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils ca-certificates curl dpkg-dev file gettext git jq \
+            libglib2.0-bin python3 tar xz-utils
+          docker version
+          python3 -m py_compile \
+            arm64/scripts/generate_integration_applet_hybrid_candidates_v6.py \
+            arm64/scripts/integration_applet_vendor_reconstruct.py
+          bash -n arm64/scripts/run_integration_applet_hybrid_search_v6.sh
+
+      - name: Search bounded public file-blob combinations
+        id: search
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workspace=work/integration-applet-hybrid-v6
+          log="$RUNNER_TEMP/integration-applet-hybrid-v6.log"
+          set +e
+          bash arm64/scripts/run_integration_applet_hybrid_search_v6.sh "$workspace" \
+            > "$log" 2>&1
+          rc=$?
+          set -e
+          mkdir -p "$workspace/artifact" "$workspace/output"
+          cp "$log" "$workspace/artifact/orchestrator.log"
+          tail -n 300 "$log" > "$workspace/artifact/orchestrator-tail.log"
+          printf '%s\n' "$rc" > "$workspace/artifact/orchestrator.exit"
+          printf 'exit_code=%s\n' "$rc" >> "$GITHUB_OUTPUT"
+          if [[ ! -f "$workspace/output/summary.json" ]]; then
+            jq -n --argjson exit_code "$rc" '
+              {
+                schema:1,source:"gooroom-integration-applet",
+                version:"0.3.1+grm3u1+han3u3",
+                status:"runner-failed-before-summary",exit_code:$exit_code,
+                source_reconstruction_semantically_verified:false,
+                native_arm64_candidate_build_allowed:false,
+                package_layer_promotion_allowed:false,
+                iso_assembly_allowed:false,fail_closed:true,
+                next_action:"inspect complete hybrid-search artifact"
+              }
+            ' > "$workspace/output/summary.json"
+          fi
+          cp "$workspace/output/summary.json" "$workspace/artifact/summary.json"
+          find "$workspace/artifact" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$workspace/artifact/FILE-INVENTORY.final.tsv"
+          (
+            cd "$workspace/artifact"
+            find . -type f ! -name LOCKSUMS.final.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.final.sha256
+            sha256sum --check --strict LOCKSUMS.final.sha256
+          )
+          jq '.' "$workspace/output/summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload complete hybrid-search evidence
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-applet-hybrid-search-v6
+          path: work/integration-applet-hybrid-v6
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Commit compact fail-closed hybrid-search authority
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          SEARCH_EXIT: ${{ steps.search.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source=work/integration-applet-hybrid-v6/artifact
+          destination=arm64/locks/gooroom-integration-applet-hybrid-search-v6/latest
+          rm -rf "$destination"
+          mkdir -p "$destination"
+          for name in \
+            summary.json \
+            discovery.json \
+            matrix.json \
+            build-image-id.txt \
+            closest-comparison.json \
+            different-functions.tsv \
+            hybrid-lock.json \
+            reconstruction-report.json \
+            closest-reconstruction.patch \
+            orchestrator.exit \
+            orchestrator-tail.log
+          do
+            [[ ! -f "$source/$name" ]] || cp "$source/$name" "$destination/"
+          done
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg search_exit "${SEARCH_EXIT:-255}" '
+              {
+                schema:1,actions_run_id:$run_id,
+                actions_run_attempt:$run_attempt,actions_run_url:$run_url,
+                triggering_head_sha:$head_sha,artifact_id:$artifact_id,
+                artifact_digest:$artifact_digest,
+                search_exit_code:($search_exit|tonumber),fail_closed:true
+              }
+            ' > "$destination/artifact-lock.json"
+          find "$destination" -type f -printf '%P\t%s\n' \
+            | LC_ALL=C sort > "$destination/FILE-INVENTORY.tsv"
+          (
+            cd "$destination"
+            find . -type f ! -name LOCKSUMS.sha256 -print0 \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > LOCKSUMS.sha256
+            sha256sum --check --strict LOCKSUMS.sha256
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m 'Search integration applet hybrid source v6'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git pull --rebase origin arm64-port
+            if git push origin HEAD:arm64-port; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          exit 1
+
+      - name: Preserve infrastructure failure as a failed run
+        if: always()
+        env:
+          SEARCH_EXIT: ${{ steps.search.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${SEARCH_EXIT:-255}" = 0
