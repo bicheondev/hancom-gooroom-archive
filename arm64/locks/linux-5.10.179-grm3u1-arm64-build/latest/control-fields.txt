@@ -1,0 +1,17 @@
+Package: linux-image-5.10.0-23-arm64
+Source: linux
+Version: 5.10.179-1+grm3u1
+Architecture: arm64
+Maintainer: Gooroom Kernel Team <gooroom@gooroom.kr>
+Installed-Size: 235113
+Depends: kmod, linux-base (>= 4.3~), initramfs-tools (>= 0.120+deb8u2) | linux-initramfs-tool
+Recommends: firmware-linux-free, apparmor
+Suggests: linux-doc-5.10, debian-kernel-handbook
+Conflicts: linux-image-5.10.0-23-arm64
+Breaks: fwupdate (<< 12-7), initramfs-tools (<< 0.120+deb8u2), libmozjs-24-0 (<< 24.2.0-5.1~), libmozjs185-1.0, wireless-regdb (<< 2019.06.03-1~)
+Replaces: linux-image-5.10.0-23-arm64
+Section: kernel
+Priority: optional
+Homepage: https://www.kernel.org/
+Description: Linux 5.10 for 64-bit ARMv8 machines
+ The Linux kernel 5.10 and modules for use on 64-bit ARMv8 machines.
