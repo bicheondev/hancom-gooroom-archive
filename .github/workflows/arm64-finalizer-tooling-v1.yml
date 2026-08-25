@@ -1,0 +1,99 @@
+name: ARM64 finalizer tooling v1
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - arm64-port
+    paths:
+      - '.github/workflows/arm64-finalizer-tooling-v1.yml'
+      - 'arm64/finalizer/**'
+  pull_request:
+    paths:
+      - '.github/workflows/arm64-finalizer-tooling-v1.yml'
+      - 'arm64/finalizer/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arm64-finalizer-tooling-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out candidate tree
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+
+      - name: Install finalizer and inspection dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils \
+            dosfstools \
+            dpkg-dev \
+            file \
+            grub-efi-arm64-bin \
+            initramfs-tools-core \
+            jq \
+            mtools \
+            python3 \
+            qemu-efi-aarch64 \
+            qemu-system-arm \
+            rsync \
+            shellcheck \
+            squashfs-tools \
+            xorriso
+
+      - name: Parse and lint all finalizer programs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -d '' scripts < <(find arm64/finalizer -type f -name '*.sh' -print0 | sort -z)
+          ((${#scripts[@]} >= 7))
+          for script in "${scripts[@]}"; do
+            bash -n "$script"
+          done
+          shellcheck -x -e SC1091 "${scripts[@]}"
+
+      - name: Run synthetic fail-closed self-test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash arm64/finalizer/tests/selftest.sh \
+            2>&1 | tee arm64-finalizer-selftest.log
+
+      - name: Record immutable tooling manifest
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/arm64-finalizer-tooling-v1
+          cp arm64-finalizer-selftest.log work/arm64-finalizer-tooling-v1/ 2>/dev/null || true
+          find arm64/finalizer -type f -print0 \
+            | LC_ALL=C sort -z \
+            | xargs -0 sha256sum \
+            > work/arm64-finalizer-tooling-v1/LOCKSUMS.sha256
+          {
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "commit=$GITHUB_SHA"
+            echo "ref=$GITHUB_REF"
+            echo "runner_arch=$RUNNER_ARCH"
+          } > work/arm64-finalizer-tooling-v1/context.txt
+
+      - name: Upload finalizer self-test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hancom-gooroom-arm64-finalizer-tooling-v1
+          path: work/arm64-finalizer-tooling-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
